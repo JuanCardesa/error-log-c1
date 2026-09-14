@@ -113,6 +113,7 @@
 .fSubmit {
   display: flex;
   align-items: flex-end;
+  gap: var(--sp-3);
 }
 
 .primary {
