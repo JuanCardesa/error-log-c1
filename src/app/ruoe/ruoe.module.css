@@ -1,0 +1,68 @@
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  background: var(--surface);
+}
+
+.matrix th,
+.matrix td {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--rule);
+  text-align: center;
+}
+
+.matrix thead th,
+.matrix tbody th {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  font-weight: 600;
+  background: var(--surface-sunken);
+  white-space: nowrap;
+}
+
+.weekHead {
+  font-family: var(--font-data);
+}
+
+.cell {
+  font-family: var(--font-data);
+  line-height: 1.25;
+}
+
+.pct {
+  display: block;
+  font-weight: 600;
+}
+
+.ratio {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+}
+
+/* Celda vacia: no hubo practica. Distinta de un 0%, que si seria un dato. */
+.blank {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    var(--surface-sunken) 4px,
+    var(--surface-sunken) 8px
+  );
+}
+
+.tierHigh {
+  background: #dcefe2;
+}
+.tierMid {
+  background: #eaf0d9;
+}
+.tierLow {
+  background: #faeed2;
+}
+.tierBad {
+  background: #f8dcd8;
+}
