@@ -1,0 +1,139 @@
+/**
+ * Taxonomias cerradas (SPEC §3). No se amplian sin tocar antes docs/SPEC.md:
+ * son el contrato del producto, no un detalle de implementacion.
+ */
+
+export const SESSION_KINDS = ['DRILL', 'PARCIAL', 'SIMULACRO', 'CLASE', 'WRITING'] as const;
+export type SessionKind = (typeof SESSION_KINDS)[number];
+
+export const PAPERS = ['RUOE', 'WRITING', 'LISTENING', 'SPEAKING'] as const;
+export type Paper = (typeof PAPERS)[number];
+
+export const SOURCES = [
+  'LIBRO',
+  'WORKBOOK',
+  'TRAINER',
+  'PAST_PAPER',
+  'ONLINE',
+  'ACADEMIA',
+] as const;
+export type Source = (typeof SOURCES)[number];
+
+export const SESSION_STATUSES = ['OPEN', 'CLOSED'] as const;
+export type SessionStatus = (typeof SESSION_STATUSES)[number];
+
+export const CAUSES = [
+  'DESCONOCIMIENTO',
+  'CONFUSION',
+  'DESPISTE',
+  'FORMATO',
+  'TIEMPO',
+  'ORTOGRAFIA',
+] as const;
+export type Cause = (typeof CAUSES)[number];
+
+export const CATEGORIES = [
+  'COLOCACION',
+  'PHRASAL_VERB',
+  'WORD_FORMATION',
+  'PREPOSICION_DEPENDIENTE',
+  'TIEMPO_VERBAL',
+  'ESTRUCTURA',
+  'ARTICULO_CUANTIFICADOR',
+  'LEXICO',
+  'EXPRESION_FIJA',
+  'DISCURSO',
+  'COMPRENSION',
+  'REGISTRO',
+  'ESTRUCTURA_TEXTO',
+  'SPELLING',
+] as const;
+export type Category = (typeof CATEGORIES)[number];
+
+export const CONFIDENCES = ['SEGURO', 'DUDABA', 'ADIVINE'] as const;
+export type Confidence = (typeof CONFIDENCES)[number];
+
+export const GENRES = ['ESSAY', 'REPORT', 'PROPOSAL', 'LETTER', 'REVIEW'] as const;
+export type Genre = (typeof GENRES)[number];
+
+export const CORRECTORS = ['PROFESOR', 'YO', 'IA'] as const;
+export type Corrector = (typeof CORRECTORS)[number];
+
+/** Numero maximo de `part` por paper (SPEC §2). */
+export const MAX_PART: Readonly<Record<Paper, number>> = {
+  RUOE: 8,
+  WRITING: 2,
+  LISTENING: 4,
+  SPEAKING: 4,
+};
+
+/**
+ * `study` = se arregla estudiando. `exec` = se arregla cambiando el protocolo de examen.
+ * Esta division es la que da color a los chips de la UI y la que separa las reglas 0 y 1.
+ */
+export type CauseSide = 'study' | 'exec';
+
+export interface CauseMeta {
+  readonly side: CauseSide;
+  /** Si genera deuda de Anki (`DEBT`). SPEC §3. */
+  readonly generatesCard: boolean;
+  readonly meaning: string;
+  readonly remedy: string;
+}
+
+export const CAUSE_META: Readonly<Record<Cause, CauseMeta>> = {
+  DESCONOCIMIENTO: {
+    side: 'study',
+    generatesCard: true,
+    meaning: 'No lo sabia, no podia saberlo',
+    remedy: 'Tarjeta Anki y nada mas',
+  },
+  CONFUSION: {
+    side: 'study',
+    generatesCard: true,
+    meaning: 'Lo sabia, elegi mal entre dos',
+    remedy: 'Tarjeta de contraste con el par confundido',
+  },
+  DESPISTE: {
+    side: 'exec',
+    generatesCard: false,
+    meaning: 'Lo sabia. No lei / no relei / no comprobe',
+    remedy: 'No se estudia. Cambia el protocolo de revision',
+  },
+  FORMATO: {
+    side: 'exec',
+    generatesCard: false,
+    meaning: 'Rompi una norma de la tarea',
+    remedy: 'Releer instrucciones del paper, checklist',
+  },
+  TIEMPO: {
+    side: 'exec',
+    generatesCard: false,
+    meaning: 'Se acabo el tiempo o fui con prisa',
+    remedy: 'Gestion del tiempo, no contenido',
+  },
+  ORTOGRAFIA: {
+    side: 'study',
+    generatesCard: true,
+    meaning: 'Sabia la palabra, la escribi mal',
+    remedy: 'Tarjeta de spelling. Critico en Listening P2',
+  },
+};
+
+/** Las tres causas que generan deuda de Anki, en el orden de SPEC §3. */
+export const CARD_GENERATING_CAUSES: readonly Cause[] = CAUSES.filter(
+  (cause) => CAUSE_META[cause].generatesCard,
+);
+
+export function generatesCard(cause: Cause): boolean {
+  return CAUSE_META[cause].generatesCard;
+}
+
+export function causeSide(cause: Cause): CauseSide {
+  return CAUSE_META[cause].side;
+}
+
+/** Partes validas de un paper, como lista, para poblar selects. */
+export function partsFor(paper: Paper): readonly number[] {
+  return Array.from({ length: MAX_PART[paper] }, (_, index) => index + 1);
+}
