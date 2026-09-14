@@ -1,0 +1,54 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.bar {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-6);
+  padding: var(--sp-4) var(--sp-6);
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.brand {
+  font-family: var(--font-data);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.nav {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.link {
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.link:hover {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+.main {
+  flex: 1;
+  padding: var(--sp-6);
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.pending {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+}

@@ -1,22 +1,72 @@
 /*
- * Tokens base. La paleta definitiva sale de `Error Log C1.dc.html` (§6) cuando
- * este disponible en docs/reference/; lo de aqui es el esqueleto descrito en texto:
- * fondo hueso, monoespaciada para datos, study azul / exec rojo.
+ * Tokens y estilos base.
+ *
+ * ── PUNTO DE INTERCAMBIO VISUAL ──────────────────────────────────────────────
+ * La paleta definitiva sale de `Error Log C1.dc.html` (§6), que todavia no esta
+ * disponible. Todo lo visual vive en las variables de `:root`; los componentes no
+ * llevan colores ni tamaños literales. Cuando llegue el prototipo se reescriben
+ * estas variables y el comportamiento no se toca.
+ *
+ * Lo que §6 describe en texto y esta reflejado abajo: fondo hueso, monoespaciada
+ * para datos, densidad alta, chips de causa con color por lado (study azul,
+ * exec rojo).
+ * ─────────────────────────────────────────────────────────────────────────────
  */
+
 :root {
-  --bg: #f4f1ea;
-  --surface: #fffdf8;
-  --ink: #1c1a17;
-  --ink-soft: #5c574e;
-  --rule: #ddd6c7;
+  /* Superficies */
+  --bg: #f2efe6;
+  --surface: #fbf9f4;
+  --surface-sunken: #ebe7db;
+  --rule: #d9d2c2;
+  --rule-strong: #b9b09b;
 
-  --side-study: #1d4ed8;
-  --side-study-bg: #e5edfd;
-  --side-exec: #b91c1c;
-  --side-exec-bg: #fce9e9;
+  /* Tinta */
+  --ink: #1b1915;
+  --ink-soft: #5b564b;
+  --ink-faint: #8b8474;
 
-  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-data: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+  /* Lados de la causa */
+  --study: #1d4ed8;
+  --study-bg: #e3ecfd;
+  --study-rule: #b6ccf7;
+  --exec: #b4231d;
+  --exec-bg: #fbe7e5;
+  --exec-rule: #f3c2bd;
+
+  /* Estados del motor de reglas */
+  --do-now: #b4231d;
+  --do-now-bg: #fbe7e5;
+  --queued: #8a6d1f;
+  --queued-bg: #faf0d6;
+  --watch: #6b6352;
+  --watch-bg: #efebe0;
+  --ok: #2f6b43;
+  --ok-bg: #e4f0e7;
+
+  --accent: #1d4ed8;
+  --danger: #b4231d;
+
+  /* Tipografia */
+  --font-ui: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-data: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas, monospace;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-base: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 19px;
+
+  /* Densidad: alta a proposito. Es una herramienta de volcado de datos. */
+  --sp-1: 2px;
+  --sp-2: 4px;
+  --sp-3: 6px;
+  --sp-4: 10px;
+  --sp-5: 14px;
+  --sp-6: 20px;
+  --sp-7: 28px;
+
+  --radius: 3px;
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
 }
 
 * {
@@ -33,6 +83,99 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--fs-base);
   line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: var(--fs-xl);
+}
+h2 {
+  font-size: var(--fs-lg);
+}
+h3 {
+  font-size: var(--fs-base);
+}
+
+/* Los datos van en monoespaciada: se comparan en vertical. */
+.data,
+code,
+kbd {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+kbd {
+  padding: 1px var(--sp-2);
+  border: 1px solid var(--rule-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: var(--fs-xs);
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: var(--surface-sunken);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+/* Accesible para lector de pantalla, invisible en pantalla. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
