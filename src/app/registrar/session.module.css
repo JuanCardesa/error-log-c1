@@ -119,3 +119,21 @@
     grid-column: 1 / -1;
   }
 }
+
+.actions {
+  display: flex;
+  gap: var(--sp-3);
+}
+
+.secondary {
+  padding: var(--sp-3) var(--sp-5);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.secondary:hover {
+  background: var(--surface-sunken);
+}
