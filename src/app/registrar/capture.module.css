@@ -1,0 +1,279 @@
+.capture {
+  margin-top: var(--sp-6);
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+}
+
+.captureHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.hint {
+  margin: var(--sp-2) 0 var(--sp-5);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+.variantSwitch {
+  display: flex;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.variantOn,
+.variantOff {
+  padding: var(--sp-2) var(--sp-5);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+}
+
+.variantOn {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.variantOff {
+  color: var(--ink-soft);
+}
+
+.variantOff:hover {
+  background: var(--surface-sunken);
+}
+
+/* ── Campos ───────────────────────────────────────────────────────────────── */
+
+.label {
+  display: block;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  margin-bottom: var(--sp-1);
+}
+
+.label abbr {
+  color: var(--danger);
+  text-decoration: none;
+}
+
+.grid label,
+.card label {
+  display: block;
+  min-width: 0;
+}
+
+.grid input,
+.grid select,
+.grid textarea,
+.card input,
+.card select,
+.card textarea {
+  width: 100%;
+}
+
+.fieldError {
+  margin: var(--sp-2) 0 0;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+}
+
+.help {
+  display: block;
+  color: var(--ink-faint);
+  font-size: var(--fs-xs);
+}
+
+.check {
+  display: flex !important;
+  align-items: center;
+  gap: var(--sp-3);
+  white-space: nowrap;
+}
+
+.check input {
+  width: auto !important;
+}
+
+.fFlags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-6);
+}
+
+.fSubmit {
+  display: flex;
+  align-items: flex-end;
+}
+
+.primary {
+  padding: var(--sp-3) var(--sp-6);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--surface);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primary:hover:not(:disabled) {
+  background: #000;
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* Chips de causa: color por lado, azul study / rojo exec (§6). */
+.chipStudy,
+.chipExec {
+  display: inline-block;
+  margin-top: var(--sp-2);
+  padding: 0 var(--sp-3);
+  border-radius: 999px;
+  font-family: var(--font-data);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.chipStudy {
+  background: var(--study-bg);
+  border: 1px solid var(--study-rule);
+  color: var(--study);
+}
+
+.chipExec {
+  background: var(--exec-bg);
+  border: 1px solid var(--exec-rule);
+  color: var(--exec);
+}
+
+/* ── Variante GRID: densa, para volcar diez errores seguidos ──────────────── */
+
+.grid {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: 5rem minmax(14rem, 2fr) minmax(8rem, 1fr) minmax(8rem, 1fr);
+  grid-template-areas:
+    'item    prompt      mine       correct'
+    'cause   category    subcat     conf'
+    'rule    rule        rule       rule'
+    'flags   flags       flags      submit';
+  align-items: start;
+}
+
+.grid .fItem {
+  grid-area: item;
+}
+.grid .fPrompt {
+  grid-area: prompt;
+}
+.grid .fMine {
+  grid-area: mine;
+}
+.grid .fCorrect {
+  grid-area: correct;
+}
+.grid .fCause {
+  grid-area: cause;
+}
+.grid .fCategory {
+  grid-area: category;
+}
+.grid .fSubcategory {
+  grid-area: subcat;
+}
+.grid .fConfidence {
+  grid-area: conf;
+}
+.grid .fRule {
+  grid-area: rule;
+}
+.grid .fFlags {
+  grid-area: flags;
+}
+.grid .fSubmit {
+  grid-area: submit;
+  justify-content: flex-end;
+}
+
+.grid input,
+.grid select {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-sm);
+}
+
+/* ── Variante CARD: un error a la vez, campos grandes ─────────────────────── */
+
+.card {
+  display: grid;
+  gap: var(--sp-5);
+  grid-template-columns: 1fr 1fr;
+  max-width: 46rem;
+}
+
+.card .fPrompt,
+.card .fRule,
+.card .fFlags,
+.card .fSubmit {
+  grid-column: 1 / -1;
+}
+
+.card input,
+.card select,
+.card textarea {
+  padding: var(--sp-4) var(--sp-4);
+  font-size: var(--fs-lg);
+}
+
+.card .fSubmit {
+  justify-content: flex-start;
+}
+
+.card .primary {
+  padding: var(--sp-4) var(--sp-7);
+  font-size: var(--fs-lg);
+}
+
+/* ── Estrecho: todo a una columna ─────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .grid,
+  .card {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+  }
+
+  .grid .fItem,
+  .grid .fPrompt,
+  .grid .fMine,
+  .grid .fCorrect,
+  .grid .fCause,
+  .grid .fCategory,
+  .grid .fSubcategory,
+  .grid .fConfidence,
+  .grid .fRule,
+  .grid .fFlags,
+  .grid .fSubmit,
+  .card .fPrompt,
+  .card .fRule,
+  .card .fFlags,
+  .card .fSubmit {
+    grid-area: auto;
+    grid-column: 1;
+  }
+
+  .grid .fSubmit {
+    justify-content: flex-start;
+  }
+}
