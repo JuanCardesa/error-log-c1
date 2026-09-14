@@ -1,0 +1,134 @@
+.wrap {
+  margin-top: var(--sp-5);
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.table th {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  font-weight: 600;
+  background: var(--surface-sunken);
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table tbody tr:hover {
+  background: var(--surface-sunken);
+}
+
+.rowGoing {
+  opacity: 0.45;
+}
+
+.rule {
+  color: var(--ink-soft);
+  max-width: 28rem;
+}
+
+.sub {
+  color: var(--ink-faint);
+}
+
+.sure {
+  color: var(--exec);
+}
+
+.empty {
+  margin-top: var(--sp-5);
+  padding: var(--sp-5);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  max-width: 56ch;
+}
+
+.chipStudy,
+.chipExec {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border-radius: 999px;
+  font-family: var(--font-data);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.chipStudy {
+  background: var(--study-bg);
+  border: 1px solid var(--study-rule);
+  color: var(--study);
+}
+
+.chipExec {
+  background: var(--exec-bg);
+  border: 1px solid var(--exec-rule);
+  color: var(--exec);
+}
+
+.rowActions {
+  white-space: nowrap;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.quiet,
+.danger {
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+.quiet:hover:not(:disabled) {
+  background: var(--surface-sunken);
+}
+
+.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.quiet:disabled,
+.danger:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.warn {
+  color: var(--exec);
+  font-size: var(--fs-sm);
+}
