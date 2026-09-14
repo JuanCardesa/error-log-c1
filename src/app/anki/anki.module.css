@@ -1,0 +1,155 @@
+.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  align-items: start;
+}
+
+.going {
+  opacity: 0.45;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  align-items: center;
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-faint);
+}
+
+.answer {
+  font-family: var(--font-data);
+  font-size: var(--fs-lg);
+  margin: 0 0 var(--sp-2);
+}
+
+.wrong {
+  color: var(--exec);
+  text-decoration: line-through;
+}
+
+.rule {
+  margin: 0;
+  color: var(--ink-soft);
+  max-width: 70ch;
+}
+
+.prompt {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  max-width: 70ch;
+}
+
+.add,
+.undo {
+  padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+}
+
+.add {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.add:hover:not(:disabled) {
+  background: #000;
+}
+
+.undo {
+  border: 1px solid var(--rule-strong);
+  background: var(--surface);
+}
+
+.undo:hover:not(:disabled) {
+  background: var(--surface-sunken);
+}
+
+.add:disabled,
+.undo:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3) var(--sp-7);
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+}
+
+.summary dt {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+.summary dd {
+  margin: var(--sp-1) 0 0;
+  font-family: var(--font-data);
+  font-size: var(--fs-xl);
+}
+
+.done {
+  margin-top: var(--sp-6);
+}
+
+.doneList {
+  list-style: none;
+  margin: var(--sp-4) 0 0;
+  padding: 0;
+  font-size: var(--fs-sm);
+}
+
+.doneItem {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: baseline;
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.chipStudy,
+.chipExec {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border-radius: 999px;
+  font-family: var(--font-data);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.chipStudy {
+  background: var(--study-bg);
+  border: 1px solid var(--study-rule);
+  color: var(--study);
+}
+
+.chipExec {
+  background: var(--exec-bg);
+  border: 1px solid var(--exec-rule);
+  color: var(--exec);
+}

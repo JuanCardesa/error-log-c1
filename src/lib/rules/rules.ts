@@ -156,6 +156,8 @@ export interface RuleEvaluation {
   readonly watch: number;
   readonly unit: 'pct' | 'count';
   readonly direction: Direction;
+  /** Para poder imprimir el umbral tal y como se compara: `> 40%` frente a `>= 5`. */
+  readonly inclusive: boolean;
   readonly sampleSize: number;
   readonly detail: string | null;
 }
@@ -194,6 +196,7 @@ export function evaluateRules(measurements: RuleMeasurements): RulesReport {
       watch: spec.watch,
       unit: spec.unit,
       direction: spec.direction,
+      inclusive: spec.inclusive,
       sampleSize,
       detail,
     };
