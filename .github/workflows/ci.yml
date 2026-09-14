@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: typecheck · lint · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: typecheck
+        run: pnpm typecheck
+
+      - name: lint
+        run: pnpm lint
+
+      - name: test
+        run: pnpm test
+
+      - name: build
+        run: pnpm build
+
+      - name: Sin `any` ni `@ts-ignore` (DoD §8)
+        run: |
+          if grep -rnE '(: *any\b|<any>|as +any\b|@ts-ignore|@ts-nocheck)' src/ --include='*.ts' --include='*.tsx'; then
+            echo '::error::DoD 8 prohibe any y @ts-ignore. Coincidencias arriba.'
+            exit 1
+          fi
+          echo "Limpio."
