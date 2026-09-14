@@ -52,3 +52,28 @@
   font-size: var(--fs-xs);
   color: var(--ink-faint);
 }
+
+/*
+ * Salto al contenido. Invisible hasta que recibe foco: sin el, llegar al contenido con
+ * el teclado obliga a tabular por los siete enlaces de navegacion en cada pagina.
+ */
+.skip {
+  position: absolute;
+  left: var(--sp-4);
+  top: calc(-1 * var(--sp-7) - var(--sp-5));
+  z-index: 10;
+  padding: var(--sp-3) var(--sp-5);
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: top 120ms ease;
+}
+
+.skip:focus-visible {
+  top: var(--sp-4);
+}
+
+.main:focus {
+  outline: none;
+}

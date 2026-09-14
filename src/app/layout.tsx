@@ -25,6 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* TODO(auth): herramienta local monousuario (§1). Aqui iria el proveedor de sesion. */}
       <body>
         <div className={styles.shell}>
+          <a className={styles.skip} href="#contenido">
+            Saltar al contenido
+          </a>
           <header className={styles.bar}>
             <span className={styles.brand}>error-log-c1</span>
             <nav className={styles.nav} aria-label="Secciones">
@@ -35,7 +38,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ))}
             </nav>
           </header>
-          <main className={styles.main}>{children}</main>
+          <main id="contenido" className={styles.main} tabIndex={-1}>
+            {children}
+          </main>
         </div>
       </body>
     </html>
