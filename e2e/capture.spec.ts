@@ -76,7 +76,7 @@ test.describe('registrar una sesion y sus errores', () => {
     await page.getByRole('button', { name: 'Guardar y seguir' }).click();
 
     // Se apunta al error del campo: el anunciador de rutas de Next tambien es role=alert.
-    await expect(page.locator('#ruleNote-error')).toContainText(
+    await expect(page.locator('[data-field="ruleNote"]')).toContainText(
       'no puede ser la respuesta correcta',
     );
   });
