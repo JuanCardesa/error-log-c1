@@ -1,15 +1,24 @@
 # Error Log C1 — plan de implementación
 
-Estado: **pendiente de confirmación.** No se escribe código de producto hasta que este
-documento esté aprobado (§9 del briefing).
+Estado: **aprobado el 2026-09-14.** Las cuatro decisiones abiertas se resolvieron por la
+recomendación de cada una, y las dependencias quedaron autorizadas.
 
 Acompaña a [`SPEC.md`](SPEC.md), que es el qué. Esto es el cómo y el en-qué-orden.
 
 ---
 
-## 0. Bloqueantes y preguntas abiertas
+## 0. Decisiones tomadas
 
-Cinco cuestiones. Las tres primeras cambian el código de la Fase 1; no elijo yo.
+Cinco cuestiones. **P1–P4 resueltas por la opción recomendada** (confirmadas 2026-09-14);
+se dejan escritas con su porqué porque cada una condiciona código que ya está escrito.
+P5 sigue abierta y es externa.
+
+| # | decisión | efecto |
+|---|---|---|
+| P1 | `UNIQUE(session_id)` en `writing_piece` | una pieza por sesión; Q6 puede atribuir errores |
+| P2 | Q4 y regla 2 clavadas a 30 días | el conmutador 30/60 no las toca |
+| P3 | regla 5 se mide solo sobre sesiones cronometradas | `n/a` si no hay ninguna en la ventana |
+| P4 | `kind = WRITING` → `paper = WRITING` (implicación, no ⟺) | el Writing de un `SIMULACRO` se puede registrar |
 
 ### P1 · Q6: a qué texto pertenece un error (bloquea Fase 5)
 
