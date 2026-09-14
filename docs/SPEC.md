@@ -83,7 +83,12 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 - `items_correct <= items_total`, ambos `>= 0`.
 - `part` dentro del máximo del paper: `RUOE:8`, `WRITING:2`, `LISTENING:4`, `SPEAKING:4`.
 - `date` no puede ser futura.
-- `kind = WRITING` ⟺ `paper = WRITING`.
+- `kind = WRITING` → `paper = WRITING`. **Resuelto (P4, 2026-09-14):** el briefing escribía
+  un bicondicional, que impedía registrar el Writing de un `SIMULACRO` o de una `CLASE`.
+  Queda como implicación simple: `paper = WRITING` admite cualquier `kind`.
+- **Resuelto (P1, 2026-09-14):** `writing_piece.session_id` es `UNIQUE`. Una sesión tiene
+  como mucho un texto, y por eso los errores de la sesión son atribuibles a ese texto en
+  Q6. Una reescritura es su propia sesión.
 - `rule_note` mínimo 15 caracteres y **no puede ser igual a `correct_answer`**
   (es la regla, no la respuesta).
 - Una sesión con cero errores es válida y **cuenta en el denominador**.
@@ -128,6 +133,8 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
   `items_correct / items_total`. Celdas vacías si no hay datos.
 - **Q4 · Falsas certezas** — errores con `confidence = SEGURO`, últimos 30 días, listados
   individualmente. Son creencias instaladas, prioridad sobre cualquier categoría.
+  **Resuelto (P2, 2026-09-14):** Q4 usa 30 días fijos, no la ventana conmutable — igual que
+  la regla 2, cuyo umbral absoluto de 5 está calibrado para 30 días.
 - **Q5 · Deuda de Anki** — `pct_convertidos = anki_added / errores que generan tarjeta`.
   Umbral 80%.
 - **Q6 · Eficacia del rewrite** — de los errores del texto original, cuántos reaparecen en
@@ -165,6 +172,10 @@ Siete reglas. Cada una devuelve un estado:
   en ese orden es `DO NOW` y es la única destacada visualmente; el resto quedan `QUEUED`.
   Nunca se muestran dos acciones contradictorias como activas a la vez.
 - La regla 6 es `n/a` si no hay ningún par original/rewrite.
+- **Resuelto (P3, 2026-09-14):** el denominador de la regla 5 son los errores **de sesiones
+  cronometradas**, no todos los de la ventana. El paréntesis «(solo sesiones `timed`)»
+  restringe el universo entero. Si no hay ninguna sesión cronometrada en la ventana, la
+  regla es `n/a`. La guarda `MIN_N` se aplica sobre ese mismo denominador.
 
 ### Tests obligatorios
 
