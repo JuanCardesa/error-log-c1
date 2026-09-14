@@ -1,0 +1,35 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# database — local, never committed. Backup = copy the file.
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# test artifacts
+coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# env
+.env
+.env.*
+!.env.example
+
+# editors / os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# build info
+*.tsbuildinfo
