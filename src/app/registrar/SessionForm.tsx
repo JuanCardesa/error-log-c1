@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useActionState, useEffect, useRef, useState } from 'react';
 
 import { MAX_PART, PAPERS, SESSION_KINDS, SOURCES, partsFor } from '@/lib/domain/enums';
 import type { Paper } from '@/lib/domain/enums';
@@ -24,6 +25,18 @@ export function SessionForm({ today }: Props) {
   const [state, formAction, pending] = useActionState(createSessionAction, EMPTY_STATE);
   const [paper, setPaper] = useState<Paper>('RUOE');
   const [kind, setKind] = useState<string>('DRILL');
+
+  const router = useRouter();
+  const navigated = useRef<number | undefined>(undefined);
+
+  // Se abre una sesion para volcar errores en ella: entrar es el siguiente paso, no
+  // buscarla luego en la lista.
+  useEffect(() => {
+    if (!state.ok || state.createdId === undefined) return;
+    if (navigated.current === state.createdId) return;
+    navigated.current = state.createdId;
+    router.push(`/registrar?s=${String(state.createdId)}`);
+  }, [state, router]);
 
   const isWriting = paper === 'WRITING';
 

@@ -33,3 +33,7 @@ Thumbs.db
 
 # build info
 *.tsbuildinfo
+
+# playwright
+/e2e.db
+data/e2e.db
