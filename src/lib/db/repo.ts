@@ -1,8 +1,12 @@
 import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 
 import type { SessionStatus } from '../domain/enums';
-import type { ErrorRow, SessionRow } from '../domain/types';
-import type { ErrorInput, SessionInput } from '../validation/schemas';
+import type { ErrorRow, SessionRow, WritingPieceRow } from '../domain/types';
+import type {
+  ErrorInput,
+  SessionInput,
+  WritingPieceInput,
+} from '../validation/schemas';
 import type { Db } from './client';
 import { errorRow, session, writingPiece } from './schema';
 
@@ -126,4 +130,43 @@ export function hasWritingPiece(db: Db, sessionId: number): boolean {
     .where(eq(writingPiece.sessionId, sessionId))
     .get();
   return row !== undefined;
+}
+
+export function listWritingPieces(db: Db): WritingPieceRow[] {
+  return db.select().from(writingPiece).orderBy(desc(writingPiece.date), desc(writingPiece.id)).all();
+}
+
+export function getWritingPiece(db: Db, id: number): WritingPieceRow | null {
+  return db.select().from(writingPiece).where(eq(writingPiece.id, id)).get() ?? null;
+}
+
+export function createWritingPiece(db: Db, input: WritingPieceInput): WritingPieceRow {
+  const created = db.insert(writingPiece).values(input).returning().get();
+  if (created === undefined) throw new Error('No se pudo crear el texto');
+  return created;
+}
+
+export function updateWritingPiece(db: Db, id: number, input: WritingPieceInput): void {
+  db.update(writingPiece).set(input).where(eq(writingPiece.id, id)).run();
+}
+
+export function deleteWritingPiece(db: Db, id: number): void {
+  db.delete(writingPiece).where(eq(writingPiece.id, id)).run();
+}
+
+/**
+ * Sesiones de Writing que todavia no tienen texto. `writing_piece.session_id` es UNIQUE
+ * (decision P1), asi que ofrecer una sesion ya usada solo produciria un error.
+ */
+export function writingSessionsWithoutPiece(db: Db): SessionRow[] {
+  const taken = new Set(
+    db.select({ sessionId: writingPiece.sessionId }).from(writingPiece).all().map((r) => r.sessionId),
+  );
+  return db
+    .select()
+    .from(session)
+    .where(eq(session.paper, 'WRITING'))
+    .orderBy(desc(session.date))
+    .all()
+    .filter((row) => !taken.has(row.id));
 }

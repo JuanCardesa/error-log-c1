@@ -1,0 +1,143 @@
+.panel {
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+}
+
+.form {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  align-items: start;
+  margin-top: var(--sp-4);
+}
+
+.form label {
+  display: block;
+  min-width: 0;
+}
+
+.form input,
+.form select {
+  width: 100%;
+}
+
+.label {
+  display: block;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  margin-bottom: var(--sp-1);
+  padding: 0;
+}
+
+.check {
+  display: flex !important;
+  align-items: center;
+  gap: var(--sp-3);
+  align-self: end;
+  padding-bottom: var(--sp-3);
+  white-space: nowrap;
+}
+
+.check input {
+  width: auto !important;
+}
+
+.bands,
+.rewrite {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--sp-4);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.bandGrid {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  margin-top: var(--sp-3);
+}
+
+.bandLabel {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--ink-soft);
+  margin-bottom: var(--sp-1);
+}
+
+.actions {
+  grid-column: 1 / -1;
+}
+
+.primary {
+  padding: var(--sp-3) var(--sp-6);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--surface);
+  cursor: pointer;
+}
+
+.primary:hover:not(:disabled) {
+  background: #000;
+}
+
+.primary:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.fieldError {
+  margin: var(--sp-2) 0 0;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+}
+
+.ok {
+  margin: var(--sp-4) 0 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius);
+  background: var(--ok-bg);
+  border: 1px solid var(--ok);
+  color: var(--ok);
+  font-size: var(--fs-sm);
+}
+
+.empty {
+  padding: var(--sp-6);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+  max-width: 64ch;
+}
+
+.bandsCell {
+  font-family: var(--font-data);
+  white-space: nowrap;
+}
+
+.rewriteTag {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border-radius: 999px;
+  background: var(--study-bg);
+  border: 1px solid var(--study-rule);
+  color: var(--study);
+  font-family: var(--font-data);
+  font-size: var(--fs-xs);
+}
+
+.repeatBad {
+  color: var(--exec);
+  font-weight: 600;
+}
+
+.repeatOk {
+  color: var(--ok);
+  font-weight: 600;
+}
