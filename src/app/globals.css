@@ -1,0 +1,38 @@
+/*
+ * Tokens base. La paleta definitiva sale de `Error Log C1.dc.html` (§6) cuando
+ * este disponible en docs/reference/; lo de aqui es el esqueleto descrito en texto:
+ * fondo hueso, monoespaciada para datos, study azul / exec rojo.
+ */
+:root {
+  --bg: #f4f1ea;
+  --surface: #fffdf8;
+  --ink: #1c1a17;
+  --ink-soft: #5c574e;
+  --rule: #ddd6c7;
+
+  --side-study: #1d4ed8;
+  --side-study-bg: #e5edfd;
+  --side-exec: #b91c1c;
+  --side-exec-bg: #fce9e9;
+
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+}
