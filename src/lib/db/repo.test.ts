@@ -1,7 +1,11 @@
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import type { ErrorInput, SessionInput } from '../validation/schemas';
+import type {
+  ErrorInput,
+  SessionInput,
+  WritingPieceInput,
+} from '../validation/schemas';
 import { type Db, createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
 import {
@@ -17,8 +21,14 @@ import {
   listErrors,
   listOpenSessions,
   listSessions,
+  createWritingPiece,
+  deleteWritingPiece,
+  getWritingPiece,
+  listWritingPieces,
   markAnkiAdded,
   setSessionStatus,
+  updateWritingPiece,
+  writingSessionsWithoutPiece,
   unmarkAnkiAdded,
   updateError,
   updateSession,
@@ -223,8 +233,43 @@ describe('sugerencias para el autocompletado', () => {
 });
 
 describe('textos de writing', () => {
+  function writingSession(date = '2026-09-10') {
+    return createSession(
+      db,
+      sessionInput({
+        date,
+        kind: 'WRITING',
+        paper: 'WRITING',
+        part: 1,
+        itemsTotal: null,
+        itemsCorrect: null,
+      }),
+    );
+  }
+
+  function pieceInput(
+    sessionId: number,
+    overrides: Partial<WritingPieceInput> = {},
+  ): WritingPieceInput {
+    return {
+      sessionId,
+      date: '2026-09-10',
+      genre: 'ESSAY',
+      wordCount: 240,
+      minutes: 45,
+      timed: true,
+      rewriteOf: null,
+      corrector: 'PROFESOR',
+      bandContent: 3,
+      bandCommunicative: 3,
+      bandOrganisation: 2,
+      bandLanguage: 2,
+      ...overrides,
+    };
+  }
+
   it('detecta si la sesion ya tiene uno', () => {
-    const session = createSession(db, sessionInput({ paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null }));
+    const session = writingSession();
     expect(hasWritingPiece(db, session.id)).toBe(false);
 
     db.insert(writingPiece)
@@ -232,5 +277,66 @@ describe('textos de writing', () => {
       .run();
 
     expect(hasWritingPiece(db, session.id)).toBe(true);
+  });
+
+  it('crea y recupera con las cuatro bandas', () => {
+    const session = writingSession();
+    const created = createWritingPiece(db, pieceInput(session.id));
+
+    const found = getWritingPiece(db, created.id);
+    expect(found?.bandContent).toBe(3);
+    expect(found?.bandOrganisation).toBe(2);
+    expect(found?.genre).toBe('ESSAY');
+  });
+
+  it('devuelve null si no existe', () => {
+    expect(getWritingPiece(db, 999)).toBeNull();
+  });
+
+  it('lista de mas reciente a mas antiguo', () => {
+    const a = writingSession('2026-09-01');
+    const b = writingSession('2026-09-12');
+    createWritingPiece(db, pieceInput(a.id, { date: '2026-09-01' }));
+    createWritingPiece(db, pieceInput(b.id, { date: '2026-09-12' }));
+
+    expect(listWritingPieces(db).map((p) => p.date)).toEqual(['2026-09-12', '2026-09-01']);
+  });
+
+  it('actualiza las bandas de un texto ya corregido', () => {
+    const session = writingSession();
+    const created = createWritingPiece(db, pieceInput(session.id));
+
+    updateWritingPiece(db, created.id, pieceInput(session.id, { bandLanguage: 4 }));
+    expect(getWritingPiece(db, created.id)?.bandLanguage).toBe(4);
+  });
+
+  it('borra', () => {
+    const session = writingSession();
+    const created = createWritingPiece(db, pieceInput(session.id));
+
+    deleteWritingPiece(db, created.id);
+    expect(getWritingPiece(db, created.id)).toBeNull();
+  });
+
+  it('enlaza una reescritura con su original', () => {
+    const first = writingSession('2026-09-01');
+    const second = writingSession('2026-09-12');
+    const original = createWritingPiece(db, pieceInput(first.id, { date: '2026-09-01' }));
+    const rewrite = createWritingPiece(
+      db,
+      pieceInput(second.id, { date: '2026-09-12', rewriteOf: original.id }),
+    );
+
+    expect(getWritingPiece(db, rewrite.id)?.rewriteOf).toBe(original.id);
+  });
+
+  it('solo ofrece sesiones de Writing que sigan libres', () => {
+    const free = writingSession('2026-09-12');
+    const taken = writingSession('2026-09-01');
+    // Una sesion de RUOE no puede albergar un texto: no debe aparecer.
+    createSession(db, sessionInput({ paper: 'RUOE' }));
+    createWritingPiece(db, pieceInput(taken.id, { date: '2026-09-01' }));
+
+    expect(writingSessionsWithoutPiece(db).map((s) => s.id)).toEqual([free.id]);
   });
 });
