@@ -11,8 +11,8 @@ import {
 import { toIsoDate } from '@/lib/time/dates';
 import { CaptureForm } from './CaptureForm';
 import { ErrorList } from './ErrorList';
-import { SessionControls } from './SessionControls';
 import { SessionForm } from './SessionForm';
+import { SessionPanel } from './SessionPanel';
 import styles from './page.module.css';
 
 /**
@@ -91,6 +91,7 @@ export default async function RegistrarPage({ searchParams }: Props) {
   }
 
   const errors = listErrors(db, active.id);
+  const subcategories = distinctSubcategories(db);
 
   return (
     <div className={styles.page}>
@@ -106,49 +107,13 @@ export default async function RegistrarPage({ searchParams }: Props) {
           </span>
         </h1>
 
-        <dl className={styles.facts}>
-          <div>
-            <dt>Fuente</dt>
-            <dd className="data">
-              {active.source}
-              {active.sourceRef === null ? '' : ` · ${active.sourceRef}`}
-            </dd>
-          </div>
-          <div>
-            <dt>Items</dt>
-            <dd className="data">
-              {active.itemsTotal === null
-                ? 'no aplica'
-                : `${String(active.itemsCorrect ?? 0)} / ${String(active.itemsTotal)}`}
-            </dd>
-          </div>
-          <div>
-            <dt>Cronometro</dt>
-            <dd className="data">{active.timed ? 'si' : 'no'}</dd>
-          </div>
-          <div>
-            <dt>Errores</dt>
-            <dd className="data">{errors.length}</dd>
-          </div>
-          <div>
-            <dt>Estado</dt>
-            <dd>
-              <span
-                className={active.status === 'OPEN' ? styles.badgeOpen : styles.badgeClosed}
-              >
-                {active.status}
-              </span>
-            </dd>
-          </div>
-        </dl>
-
-        <SessionControls session={active} errorCount={errors.length} />
+        <SessionPanel session={active} errorCount={errors.length} today={today} />
       </header>
 
       {active.status === 'OPEN' ? (
         <CaptureForm
           session={active}
-          subcategorySuggestions={distinctSubcategories(db)}
+          subcategorySuggestions={subcategories}
           lastCategory={lastUsedCategory(db)}
         />
       ) : (
@@ -157,7 +122,11 @@ export default async function RegistrarPage({ searchParams }: Props) {
         </p>
       )}
 
-      <ErrorList errors={errors} />
+      <ErrorList
+        errors={errors}
+        session={active}
+        subcategorySuggestions={subcategories}
+      />
     </div>
   );
 }

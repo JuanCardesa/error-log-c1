@@ -11,6 +11,8 @@ import {
   deleteSession,
   getSession,
   setSessionStatus,
+  updateError,
+  updateSession,
 } from '@/lib/db/repo';
 import { generatesCard } from '@/lib/domain/enums';
 import { toIsoDate } from '@/lib/time/dates';
@@ -93,6 +95,47 @@ export async function createSessionAction(
   };
 }
 
+/**
+ * Lee y valida un error del formulario. La comparten el alta y la edicion para que las
+ * reglas no puedan divergir entre crear y corregir.
+ */
+function parseErrorForm(form: FormData, sessionTimed: boolean) {
+  const ankiAdded = checkbox(form, 'ankiAdded');
+
+  return errorInputSchema().safeParse({
+    sessionId: integer(form, 'sessionId'),
+    itemRef: text(form, 'itemRef'),
+    prompt: text(form, 'prompt'),
+    myAnswer: text(form, 'myAnswer'),
+    correctAnswer: text(form, 'correctAnswer'),
+    cause: text(form, 'cause'),
+    category: text(form, 'category'),
+    subcategory: text(form, 'subcategory'),
+    confidence: text(form, 'confidence'),
+    // `late_in_session` solo significa algo con cronometro (§3 del spec original).
+    lateInSession: sessionTimed ? checkbox(form, 'lateInSession') : false,
+    ruleNote: text(form, 'ruleNote'),
+    ankiAdded,
+    ankiAddedAt: ankiAdded ? new Date().toISOString() : null,
+    secs: integer(form, 'secs'),
+  });
+}
+
+/** Un despiste no se arregla estudiando: convertirlo en tarjeta es el error clasico. */
+function rejectImpossibleCard(cause: string, ankiAdded: boolean): FormState | null {
+  if (!ankiAdded) return null;
+  if (generatesCard(cause as Parameters<typeof generatesCard>[0])) return null;
+  return {
+    ok: false,
+    fieldErrors: {
+      ankiAdded: [
+        `Un error de ${cause} no se arregla con una tarjeta. El remedio es de protocolo, no de estudio.`,
+      ],
+    },
+    message: null,
+  };
+}
+
 export async function addErrorAction(
   _previous: FormState,
   form: FormData,
@@ -114,49 +157,90 @@ export async function addErrorAction(
     };
   }
 
-  const lateInSession = checkbox(form, 'lateInSession');
-  const ankiAdded = checkbox(form, 'ankiAdded');
-  const cause = text(form, 'cause');
-
-  const parsed = errorInputSchema().safeParse({
-    sessionId,
-    itemRef: text(form, 'itemRef'),
-    prompt: text(form, 'prompt'),
-    myAnswer: text(form, 'myAnswer'),
-    correctAnswer: text(form, 'correctAnswer'),
-    cause,
-    category: text(form, 'category'),
-    subcategory: text(form, 'subcategory'),
-    confidence: text(form, 'confidence'),
-    // `late_in_session` solo significa algo con cronometro (§3 del spec original).
-    lateInSession: session.timed ? lateInSession : false,
-    ruleNote: text(form, 'ruleNote'),
-    ankiAdded,
-    ankiAddedAt: ankiAdded ? new Date().toISOString() : null,
-    secs: integer(form, 'secs'),
-  });
-
+  const parsed = parseErrorForm(form, session.timed);
   if (!parsed.success) {
     return { ok: false, fieldErrors: collectIssues(parsed.error), message: null };
   }
 
-  // Un despiste no se arregla estudiando: convertirlo en tarjeta es el error clasico.
-  if (parsed.data.ankiAdded && !generatesCard(parsed.data.cause)) {
-    return {
-      ok: false,
-      fieldErrors: {
-        ankiAdded: [
-          `Un error de ${parsed.data.cause} no se arregla con una tarjeta. El remedio es de protocolo, no de estudio.`,
-        ],
-      },
-      message: null,
-    };
-  }
+  const impossible = rejectImpossibleCard(parsed.data.cause, parsed.data.ankiAdded);
+  if (impossible !== null) return impossible;
 
   const created = createError(getDb(), parsed.data);
   revalidatePath('/registrar');
 
   return { ok: true, fieldErrors: {}, message: null, createdId: created.id };
+}
+
+/** Corregir una fila ya registrada. §6 lo pide: nada de datos que no se puedan arreglar. */
+export async function updateErrorAction(
+  _previous: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const id = integer(form, 'id');
+  if (id === null || Number.isNaN(id)) {
+    return { ok: false, fieldErrors: {}, message: 'Falta el error a corregir.' };
+  }
+
+  const sessionId = integer(form, 'sessionId');
+  if (sessionId === null || Number.isNaN(sessionId)) {
+    return { ok: false, fieldErrors: {}, message: 'Falta la sesion.' };
+  }
+
+  const session = getSession(getDb(), sessionId);
+  if (session === null) {
+    return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe.' };
+  }
+
+  const parsed = parseErrorForm(form, session.timed);
+  if (!parsed.success) {
+    return { ok: false, fieldErrors: collectIssues(parsed.error), message: null };
+  }
+
+  const impossible = rejectImpossibleCard(parsed.data.cause, parsed.data.ankiAdded);
+  if (impossible !== null) return impossible;
+
+  updateError(getDb(), id, parsed.data);
+  revalidatePath('/registrar');
+  revalidatePath('/informe');
+  return { ok: true, fieldErrors: {}, message: 'Error corregido.', createdId: id };
+}
+
+/** Corregir la cabecera de una sesion pasada, sin tocar sus errores. */
+export async function updateSessionAction(
+  _previous: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const id = integer(form, 'id');
+  if (id === null || Number.isNaN(id)) {
+    return { ok: false, fieldErrors: {}, message: 'Falta la sesion a corregir.' };
+  }
+
+  const parsed = sessionInputSchema({ today: today() }).safeParse({
+    date: text(form, 'date'),
+    kind: text(form, 'kind'),
+    paper: text(form, 'paper'),
+    part: integer(form, 'part'),
+    source: text(form, 'source'),
+    sourceRef: text(form, 'sourceRef'),
+    itemsTotal: integer(form, 'itemsTotal'),
+    itemsCorrect: integer(form, 'itemsCorrect'),
+    durationMin: integer(form, 'durationMin'),
+    timed: checkbox(form, 'timed'),
+    status: text(form, 'status') === 'CLOSED' ? 'CLOSED' : 'OPEN',
+  });
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      fieldErrors: collectIssues(parsed.error),
+      message: 'Revisa la cabecera.',
+    };
+  }
+
+  updateSession(getDb(), id, parsed.data);
+  revalidatePath('/registrar');
+  revalidatePath('/informe');
+  return { ok: true, fieldErrors: {}, message: 'Cabecera corregida.', createdId: id };
 }
 
 export async function deleteErrorAction(id: number): Promise<void> {

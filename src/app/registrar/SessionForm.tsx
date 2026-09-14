@@ -5,13 +5,17 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 
 import { MAX_PART, PAPERS, SESSION_KINDS, SOURCES, partsFor } from '@/lib/domain/enums';
 import type { Paper } from '@/lib/domain/enums';
-import { createSessionAction } from './actions';
+import type { SessionRow } from '@/lib/domain/types';
+import { createSessionAction, updateSessionAction } from './actions';
 import { EMPTY_STATE } from './formState';
 import styles from './session.module.css';
 
 /**
- * Cabecera de sesion. §6.1 pide validarla **antes** de aceptar errores y enseñar el
- * error concreto: hasta que esta no se guarda, no aparece el formulario de captura.
+ * Cabecera de sesion, para abrirla y para corregirla despues.
+ *
+ * §6.1 pide validarla **antes** de aceptar errores y enseñar el error concreto: hasta
+ * que esta no se guarda, no aparece el formulario de captura. Corregir una sesion pasada
+ * pasa por la misma validacion, porque las reglas no cambian por ser una correccion.
  *
  * El paper condiciona dos cosas en vivo: cuantas parts hay, y si los items son
  * opcionales. Solo el Writing puede quedarse sin items, porque no se mide por aciertos.
@@ -19,24 +23,37 @@ import styles from './session.module.css';
 
 interface Props {
   readonly today: string;
+  /** Sesion a corregir. `null` para abrir una nueva. */
+  readonly editing?: SessionRow | null;
+  readonly onDone?: () => void;
 }
 
-export function SessionForm({ today }: Props) {
-  const [state, formAction, pending] = useActionState(createSessionAction, EMPTY_STATE);
-  const [paper, setPaper] = useState<Paper>('RUOE');
-  const [kind, setKind] = useState<string>('DRILL');
+export function SessionForm({ today, editing = null, onDone }: Props) {
+  const isEdit = editing !== null;
+  const [state, formAction, pending] = useActionState(
+    isEdit ? updateSessionAction : createSessionAction,
+    EMPTY_STATE,
+  );
+
+  const [paper, setPaper] = useState<Paper>(editing?.paper ?? 'RUOE');
+  const [kind, setKind] = useState<string>(editing?.kind ?? 'DRILL');
 
   const router = useRouter();
-  const navigated = useRef<number | undefined>(undefined);
+  const handled = useRef<number | undefined>(undefined);
 
-  // Se abre una sesion para volcar errores en ella: entrar es el siguiente paso, no
-  // buscarla luego en la lista.
   useEffect(() => {
     if (!state.ok || state.createdId === undefined) return;
-    if (navigated.current === state.createdId) return;
-    navigated.current = state.createdId;
+    if (handled.current === state.createdId) return;
+    handled.current = state.createdId;
+
+    if (isEdit) {
+      onDone?.();
+      return;
+    }
+    // Se abre una sesion para volcar errores en ella: entrar es el siguiente paso, no
+    // buscarla luego en la lista.
     router.push(`/registrar?s=${String(state.createdId)}`);
-  }, [state, router]);
+  }, [state, router, isEdit, onDone]);
 
   const isWriting = paper === 'WRITING';
 
@@ -55,19 +72,29 @@ export function SessionForm({ today }: Props) {
 
   return (
     <section className={styles.panel} aria-labelledby="session-heading">
-      <h2 id="session-heading">Nueva sesion</h2>
+      <h2 id="session-heading">
+        {isEdit ? `Corregir sesion #${String(editing.id)}` : 'Nueva sesion'}
+      </h2>
       <p className={styles.hint}>
-        Una sesion es el denominador. Registrala aunque no hayas fallado nada: sin ella,
-        las tasas mienten al alza.
+        {isEdit
+          ? 'Corregir la cabecera no toca los errores ya registrados. Pasa por la misma validacion que el alta.'
+          : 'Una sesion es el denominador. Registrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
       </p>
 
       <form action={formAction} className={styles.form}>
+        {isEdit && (
+          <>
+            <input type="hidden" name="id" value={editing.id} />
+            <input type="hidden" name="status" value={editing.status} />
+          </>
+        )}
+
         <label>
           <span className={styles.label}>Fecha</span>
           <input
             type="date"
             name="date"
-            defaultValue={today}
+            defaultValue={editing?.date ?? today}
             max={today}
             required
             className="data"
@@ -109,7 +136,11 @@ export function SessionForm({ today }: Props) {
             aria-describedby={invalid('paper') ? 's-paper-error' : undefined}
           >
             {PAPERS.map((value) => (
-              <option key={value} value={value} disabled={kind === 'WRITING' && value !== 'WRITING'}>
+              <option
+                key={value}
+                value={value}
+                disabled={kind === 'WRITING' && value !== 'WRITING'}
+              >
                 {value}
               </option>
             ))}
@@ -121,7 +152,7 @@ export function SessionForm({ today }: Props) {
           <span className={styles.label}>Part</span>
           <select
             name="part"
-            defaultValue="1"
+            defaultValue={String(editing?.part ?? 1)}
             key={paper}
             aria-invalid={invalid('part')}
             aria-describedby={invalid('part') ? 's-part-error' : undefined}
@@ -140,7 +171,7 @@ export function SessionForm({ today }: Props) {
 
         <label>
           <span className={styles.label}>Fuente</span>
-          <select name="source" defaultValue="LIBRO">
+          <select name="source" defaultValue={editing?.source ?? 'LIBRO'}>
             {SOURCES.map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -151,13 +182,16 @@ export function SessionForm({ today }: Props) {
 
         <label className={styles.wide}>
           <span className={styles.label}>Referencia</span>
-          <input name="sourceRef" autoComplete="off" placeholder="Unidad 1, ej. 5" />
+          <input
+            name="sourceRef"
+            autoComplete="off"
+            placeholder="Unidad 1, ej. 5"
+            defaultValue={editing?.sourceRef ?? ''}
+          />
         </label>
 
         <label>
-          <span className={styles.label}>
-            Items{isWriting ? '' : ' *'}
-          </span>
+          <span className={styles.label}>Items{isWriting ? '' : ' *'}</span>
           <input
             type="number"
             name="itemsTotal"
@@ -165,6 +199,7 @@ export function SessionForm({ today }: Props) {
             className="data"
             required={!isWriting}
             disabled={isWriting}
+            defaultValue={editing?.itemsTotal ?? ''}
             aria-invalid={invalid('itemsTotal')}
             aria-describedby={invalid('itemsTotal') ? 's-itemsTotal-error' : undefined}
           />
@@ -172,9 +207,7 @@ export function SessionForm({ today }: Props) {
         </label>
 
         <label>
-          <span className={styles.label}>
-            Aciertos{isWriting ? '' : ' *'}
-          </span>
+          <span className={styles.label}>Aciertos{isWriting ? '' : ' *'}</span>
           <input
             type="number"
             name="itemsCorrect"
@@ -182,29 +215,39 @@ export function SessionForm({ today }: Props) {
             className="data"
             required={!isWriting}
             disabled={isWriting}
+            defaultValue={editing?.itemsCorrect ?? ''}
             aria-invalid={invalid('itemsCorrect')}
             aria-describedby={invalid('itemsCorrect') ? 's-itemsCorrect-error' : undefined}
           />
           {fieldError('itemsCorrect')}
-          {isWriting && (
-            <span className={styles.help}>El Writing no se mide por items.</span>
-          )}
+          {isWriting && <span className={styles.help}>El Writing no se mide por items.</span>}
         </label>
 
         <label>
           <span className={styles.label}>Minutos</span>
-          <input type="number" name="durationMin" min={0} className="data" />
+          <input
+            type="number"
+            name="durationMin"
+            min={0}
+            className="data"
+            defaultValue={editing?.durationMin ?? ''}
+          />
         </label>
 
         <label className={styles.check}>
-          <input type="checkbox" name="timed" />
+          <input type="checkbox" name="timed" defaultChecked={editing?.timed ?? false} />
           <span>Cronometrada</span>
         </label>
 
         <div className={styles.actions}>
           <button type="submit" className={styles.primary} disabled={pending}>
-            {pending ? 'Abriendo…' : 'Abrir sesion'}
+            {pending ? 'Guardando…' : isEdit ? 'Guardar cabecera' : 'Abrir sesion'}
           </button>
+          {isEdit && (
+            <button type="button" className={styles.secondary} onClick={onDone}>
+              Cancelar
+            </button>
+          )}
         </div>
       </form>
 

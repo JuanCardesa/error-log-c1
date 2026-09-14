@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useActionState, useEffect, useState, useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
-import type { ErrorRow } from '@/lib/domain/types';
-import { deleteErrorAction } from './actions';
+import type { ErrorRow, SessionRow } from '@/lib/domain/types';
+import { deleteErrorAction, updateErrorAction } from './actions';
+import { ErrorFields } from './ErrorFields';
+import { EMPTY_STATE } from './formState';
+import capture from './capture.module.css';
 import styles from './list.module.css';
 
 /**
- * Errores ya registrados en la sesion.
+ * Errores ya registrados en la sesion, con correccion en linea.
  *
  * El borrado es en dos pasos, no un `confirm()`: §6 pide que no haya datos
  * irrecuperables por un clic, y un dialogo del navegador se acepta por inercia.
@@ -16,9 +19,13 @@ import styles from './list.module.css';
 
 interface Props {
   readonly errors: readonly ErrorRow[];
+  readonly session: SessionRow;
+  readonly subcategorySuggestions: readonly string[];
 }
 
-export function ErrorList({ errors }: Props) {
+export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
+  const [editingId, setEditingId] = useState<number | null>(null);
+
   if (errors.length === 0) {
     return (
       <p className={styles.empty}>
@@ -47,16 +54,34 @@ export function ErrorList({ errors }: Props) {
           </tr>
         </thead>
         <tbody>
-          {errors.map((error) => (
-            <Row key={error.id} error={error} />
-          ))}
+          {errors.map((error) =>
+            editingId === error.id ? (
+              <EditRow
+                key={error.id}
+                error={error}
+                session={session}
+                subcategorySuggestions={subcategorySuggestions}
+                onDone={() => {
+                  setEditingId(null);
+                }}
+              />
+            ) : (
+              <Row
+                key={error.id}
+                error={error}
+                onEdit={() => {
+                  setEditingId(error.id);
+                }}
+              />
+            ),
+          )}
         </tbody>
       </table>
     </div>
   );
 }
 
-function Row({ error }: { readonly error: ErrorRow }) {
+function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -116,16 +141,72 @@ function Row({ error }: { readonly error: ErrorRow }) {
             </button>
           </>
         ) : (
-          <button
-            type="button"
-            className={styles.quiet}
-            onClick={() => {
-              setConfirming(true);
-            }}
-          >
-            Borrar…
-          </button>
+          <>
+            <button type="button" className={styles.quiet} onClick={onEdit}>
+              Editar
+            </button>
+            <button
+              type="button"
+              className={styles.quiet}
+              onClick={() => {
+                setConfirming(true);
+              }}
+            >
+              Borrar…
+            </button>
+          </>
         )}
+      </td>
+    </tr>
+  );
+}
+
+/**
+ * La fila se sustituye por el formulario en su sitio, sin sacar a nadie de la pagina:
+ * corregir un error es mirar la lista y arreglar lo que chirria.
+ */
+function EditRow({
+  error,
+  session,
+  subcategorySuggestions,
+  onDone,
+}: {
+  readonly error: ErrorRow;
+  readonly session: SessionRow;
+  readonly subcategorySuggestions: readonly string[];
+  readonly onDone: () => void;
+}) {
+  const [state, formAction, pending] = useActionState(updateErrorAction, EMPTY_STATE);
+
+  useEffect(() => {
+    if (state.ok) onDone();
+  }, [state, onDone]);
+
+  return (
+    <tr>
+      <td colSpan={8} className={styles.editCell}>
+        <form action={formAction} className={capture.grid}>
+          <input type="hidden" name="id" value={error.id} />
+          <input type="hidden" name="sessionId" value={error.sessionId} />
+          <input type="hidden" name="secs" value={error.secs ?? 0} />
+
+          <ErrorFields
+            variant="grid"
+            timed={session.timed}
+            subcategorySuggestions={subcategorySuggestions}
+            fieldErrors={state.fieldErrors}
+            defaults={error}
+          />
+
+          <div className={capture.fSubmit}>
+            <button type="submit" className={capture.primary} disabled={pending}>
+              {pending ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+            <button type="button" className={styles.quiet} onClick={onDone}>
+              Cancelar
+            </button>
+          </div>
+        </form>
       </td>
     </tr>
   );

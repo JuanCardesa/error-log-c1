@@ -132,3 +132,13 @@
   color: var(--exec);
   font-size: var(--fs-sm);
 }
+
+/* La fila en edicion se convierte en el formulario, en su sitio. */
+.editCell {
+  padding: var(--sp-5) !important;
+  background: var(--surface-sunken);
+}
+
+.rowActions button + button {
+  margin-left: var(--sp-2);
+}
