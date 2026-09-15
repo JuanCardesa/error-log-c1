@@ -49,14 +49,21 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
           <li>Revisa la vista previa, completa los datos que no se hayan podido leer y guarda la tanda.</li>
         </ol>
         <button type="button" className={styles.secondary} onClick={() => {
-          void navigator.clipboard.writeText(IMPORT_PROMPT).then(
-            () => { setCopyMessage('Instrucciones copiadas. Pegalas junto a tus correcciones.'); },
-            () => {
-              instructions.current?.focus();
-              instructions.current?.select();
-              setCopyMessage('Seleccionadas: pulsa Ctrl+C para copiarlas.');
-            },
-          );
+          const selectInstructions = () => {
+            instructions.current?.focus();
+            instructions.current?.select();
+            setCopyMessage('Seleccionadas: pulsa Ctrl+C para copiarlas.');
+          };
+          // La API de portapapeles solo existe en contexto seguro: abrir la app por http
+          // desde otro equipo hace que leerla lance antes de que haya promesa que fallar.
+          try {
+            void navigator.clipboard.writeText(IMPORT_PROMPT).then(
+              () => { setCopyMessage('Instrucciones copiadas. Pegalas junto a tus correcciones.'); },
+              selectInstructions,
+            );
+          } catch {
+            selectInstructions();
+          }
         }}>Copiar instrucciones para la IA</button>
         <p role="status">{copyMessage}</p>
         <textarea ref={instructions} aria-label="Instrucciones para la IA" value={IMPORT_PROMPT} readOnly rows={5} />
