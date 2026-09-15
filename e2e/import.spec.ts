@@ -43,6 +43,17 @@ test('pega, revisa, quita una fila y guarda la tanda sin duplicarla al repetirla
   await expect(page.getByRole('status').filter({ hasText: '0 errores guardados. 2 repetidos omitidos' })).toBeVisible();
   await page.reload();
   await expect(table.locator('tbody tr')).toHaveCount(2);
+
+  // Sin contexto seguro no hay API de portapapeles: queda el Ctrl+C sobre el texto marcado.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Pegar varios errores', exact: true }).click();
+  await page.getByText('Convertir mis correcciones con IA', { exact: true }).click();
+  await page.getByRole('button', { name: 'Copiar instrucciones para la IA' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'pulsa Ctrl+C' })).toBeVisible();
+  await expect(page.getByLabel('Instrucciones para la IA')).toBeFocused();
 });
 
 test('un error invalido bloquea toda la tanda y se puede corregir sin perder los demas', async ({ page }) => {
