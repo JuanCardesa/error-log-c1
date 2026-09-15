@@ -69,6 +69,29 @@ export function createError(db: Db, input: ErrorInput): ErrorRow {
   return created;
 }
 
+/** Guarda la tanda completa y evita duplicar el mismo error al volver a pegarlo. */
+export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorInput[]) {
+  return db.transaction((tx) => {
+    const target = tx.select().from(session).where(eq(session.id, sessionId)).get();
+    if (target === undefined) return { ok: false, message: 'Esa sesion ya no existe.' } as const;
+    if (target.status !== 'OPEN') return { ok: false, message: 'La sesion esta cerrada. Reabrela para importar.' } as const;
+
+    const fingerprint = (row: Pick<ErrorInput, 'itemRef' | 'prompt' | 'myAnswer' | 'correctAnswer'>) =>
+      JSON.stringify([row.itemRef ?? '', row.prompt, row.myAnswer ?? '', row.correctAnswer].map((value) => value.trim()));
+    const existing = tx.select().from(errorRow).where(eq(errorRow.sessionId, sessionId)).all();
+    const seen = new Set(existing.map(fingerprint));
+    let created = 0;
+    for (const input of inputs) {
+      const key = fingerprint(input);
+      if (seen.has(key)) continue;
+      tx.insert(errorRow).values({ ...input, sessionId, lateInSession: target.timed && input.lateInSession }).run();
+      seen.add(key);
+      created += 1;
+    }
+    return { ok: true, created, skipped: inputs.length - created } as const;
+  });
+}
+
 export function updateError(db: Db, id: number, input: ErrorInput): void {
   db.update(errorRow).set(input).where(eq(errorRow.id, id)).run();
 }
