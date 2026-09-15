@@ -3,7 +3,9 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 
 import type { SessionRow } from '@/lib/domain/types';
+import { usePreservedForm } from '../_shared/usePreservedForm';
 import { addErrorAction } from './actions';
+import { BulkImport } from './BulkImport';
 import { ErrorFields } from './ErrorFields';
 import { EMPTY_STATE } from './formState';
 import styles from './capture.module.css';
@@ -22,7 +24,7 @@ import styles from './capture.module.css';
  * Los campos viven en `ErrorFields`, compartidos con la edicion de una fila.
  */
 
-export type Variant = 'grid' | 'card';
+export type Variant = 'grid' | 'card' | 'paste';
 
 interface Props {
   readonly session: SessionRow;
@@ -34,7 +36,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
   const [state, formAction, pending] = useActionState(addErrorAction, EMPTY_STATE);
   const [variant, setVariant] = useState<Variant>('grid');
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const { formRef, onReset, resetForm } = usePreservedForm();
   const firstFieldRef = useRef<HTMLInputElement>(null);
   // Arranca en 0 y se fija al montar: leer el reloj en el render es impuro.
   const startedAt = useRef<number>(0);
@@ -49,11 +51,11 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
     if (lastCreated.current === state.createdId) return;
     lastCreated.current = state.createdId;
 
-    // Se vacia lo que cambia error a error; lo controlado se queda donde estaba.
-    formRef.current?.reset();
+    // Se vacia lo que cambia error a error y se conservan los valores de la tanda.
+    resetForm(['cause', 'category', 'subcategory', 'confidence']);
     startedAt.current = Date.now();
     firstFieldRef.current?.focus();
-  }, [state]);
+  }, [state, resetForm]);
 
   /**
    * `secs` se calcula aqui, sobre el payload, y no con un input oculto: asi el valor es
@@ -92,9 +94,14 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
           >
             Card
           </button>
+          <button type="button" className={variant === 'paste' ? styles.variantOn : styles.variantOff}
+            aria-pressed={variant === 'paste'} onClick={() => { setVariant('paste'); }}>
+            Pegar varios errores
+          </button>
         </div>
       </div>
 
+      <div hidden={variant === 'paste'}>
       <p className={styles.hint}>
         <kbd>Tab</kbd> entre campos, <kbd>Enter</kbd> para guardar y seguir.
         {variant === 'grid'
@@ -105,6 +112,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
       <form
         ref={formRef}
         action={submit}
+        onReset={onReset}
         className={variant === 'grid' ? styles.grid : styles.card}
         onKeyDown={(event) => {
           // En el textarea, Enter hace salto de linea; Ctrl+Enter guarda.
@@ -121,7 +129,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
         <input type="hidden" name="sessionId" value={session.id} />
 
         <ErrorFields
-          variant={variant}
+          variant={variant === 'card' ? 'card' : 'grid'}
           timed={session.timed}
           subcategorySuggestions={subcategorySuggestions}
           fieldErrors={state.fieldErrors}
@@ -136,9 +144,17 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
         </div>
       </form>
 
+      {state.message !== null && !state.ok && (
+        <p role="alert" className={styles.fieldError}>{state.message}</p>
+      )}
+
       <p aria-live="polite" className="sr-only">
         {state.ok && state.createdId !== undefined ? 'Error registrado.' : ''}
       </p>
+      </div>
+      <div hidden={variant !== 'paste'}>
+        <BulkImport session={session} subcategorySuggestions={subcategorySuggestions} />
+      </div>
     </section>
   );
 }

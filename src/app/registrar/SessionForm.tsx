@@ -6,6 +6,7 @@ import { useActionState, useEffect, useRef, useState } from 'react';
 import { MAX_PART, PAPERS, SESSION_KINDS, SOURCES, partsFor } from '@/lib/domain/enums';
 import type { Paper } from '@/lib/domain/enums';
 import type { SessionRow } from '@/lib/domain/types';
+import { usePreservedForm } from '../_shared/usePreservedForm';
 import { createSessionAction, updateSessionAction } from './actions';
 import { EMPTY_STATE } from './formState';
 import styles from './session.module.css';
@@ -30,6 +31,7 @@ interface Props {
 
 export function SessionForm({ today, editing = null, onDone }: Props) {
   const isEdit = editing !== null;
+  const { formRef, onReset } = usePreservedForm();
   const [state, formAction, pending] = useActionState(
     isEdit ? updateSessionAction : createSessionAction,
     EMPTY_STATE,
@@ -81,7 +83,7 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
           : 'Una sesion es el denominador. Registrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
       </p>
 
-      <form action={formAction} className={styles.form}>
+      <form ref={formRef} action={formAction} onReset={onReset} className={styles.form}>
         {isEdit && (
           <>
             <input type="hidden" name="id" value={editing.id} />

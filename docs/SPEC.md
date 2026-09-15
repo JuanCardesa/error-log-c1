@@ -186,6 +186,15 @@ reglas disparadas a la vez.
 
 ## 6. Vistas
 
+**Prioridad de uso personal (2026-09-15):** reducir la transcripción y permitir empezar
+a usar el registro cuanto antes. Registrar incorpora «Pegar varios errores»: JSON
+preparado con las instrucciones para IA o celdas con tabulaciones, vista previa
+editable y guardado de la tanda en una transacción. No interpreta texto libre ni
+envía contenido a servicios externos. Conserva las validaciones del alta manual;
+no inventa correcciones ausentes. Causa y confianza ausentes usan los valores del
+formulario manual, avisando al usuario para que los revise. Omite duplicados dentro
+de la sesión por item, enunciado y ambas respuestas; no sobrescribe filas existentes.
+
 1. **Registrar** — cabecera de sesión + entrada rápida de errores, en dos variantes
    conmutables: **grid** (tabla, teclado, para volcar diez errores seguidos) y **card**
    (un error a la vez, campos grandes). `category` con autocompletado y última usada

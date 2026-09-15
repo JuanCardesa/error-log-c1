@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState, useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
 import type { ErrorRow, SessionRow } from '@/lib/domain/types';
+import { usePreservedForm } from '../_shared/usePreservedForm';
 import { deleteErrorAction, updateErrorAction } from './actions';
 import { ErrorFields } from './ErrorFields';
 import { EMPTY_STATE } from './formState';
@@ -177,6 +178,7 @@ function EditRow({
   readonly onDone: () => void;
 }) {
   const [state, formAction, pending] = useActionState(updateErrorAction, EMPTY_STATE);
+  const { formRef, onReset } = usePreservedForm();
 
   useEffect(() => {
     if (state.ok) onDone();
@@ -185,7 +187,7 @@ function EditRow({
   return (
     <tr>
       <td colSpan={8} className={styles.editCell}>
-        <form action={formAction} className={capture.grid}>
+        <form ref={formRef} action={formAction} onReset={onReset} className={capture.grid}>
           <input type="hidden" name="id" value={error.id} />
           <input type="hidden" name="sessionId" value={error.sessionId} />
           <input type="hidden" name="secs" value={error.secs ?? 0} />
@@ -207,6 +209,9 @@ function EditRow({
             </button>
           </div>
         </form>
+        {state.message !== null && !state.ok && (
+          <p role="alert" className={capture.fieldError}>{state.message}</p>
+        )}
       </td>
     </tr>
   );

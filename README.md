@@ -32,6 +32,18 @@ ruido cuesta una semana de estudio.
 
 ### Registrar
 
+**Para pasar correcciones sin transcribir cada campo:** abre una sesión y elige
+**Pegar varios errores**. En «Convertir mis correcciones con IA» puedes copiar unas
+instrucciones, pegarlas en la IA que uses junto a tus correcciones y traer su respuesta
+al registro. También admite celdas copiadas de una hoja de cálculo con las cabeceras
+de la plantilla. La app no interpreta texto libre por sí sola ni conecta con una IA.
+
+Revisa los campos ya rellenos, completa lo que falte, quita las filas que no quieras y
+pulsa **Guardar errores**. La causa y la confianza se proponen como DESCONOCIMIENTO y
+DUDABA cuando no constan; ajústalas a lo que te pasó. La tanda se guarda completa, y
+volver a pegar el mismo error en esa sesión no lo duplica ni modifica el anterior.
+Se admiten hasta 100 errores por tanda.
+
 ![Vista de registro](docs/screenshots/registrar.png)
 
 El requisito que manda sobre todos los demás: **dar de alta un error tiene que costar

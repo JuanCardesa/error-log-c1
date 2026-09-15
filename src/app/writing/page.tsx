@@ -57,6 +57,7 @@ export default async function WritingPage({
       </header>
 
       <PieceForm
+        key={editing?.id ?? 'new'}
         availableSessions={writingSessionsWithoutPiece(db)}
         pieces={pieces}
         editing={editing}
