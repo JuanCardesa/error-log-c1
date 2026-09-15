@@ -33,6 +33,15 @@ describe('pegar errores', () => {
     expect(rows[0]).toMatchObject({ itemRef: '', prompt: 'He said "hello"\nand left', correctAnswer: 'hello' });
   });
 
+  it('propone los valores por defecto cuando causa y confianza vienen en blanco', () => {
+    expect(parseImportedErrors('Correcta\tEnunciado\tCategoria\tCausa\tConfianza\noff\tcalled ___\tPHRASAL_VERB\t\t')[0]).toMatchObject({
+      cause: 'DESCONOCIMIENTO', confidence: 'DUDABA',
+    });
+    expect(parseImportedErrors(JSON.stringify([{ ...example, cause: '', confidence: '' }]))[0]).toMatchObject({
+      cause: 'DESCONOCIMIENTO', confidence: 'DUDABA',
+    });
+  });
+
   it.each([
     ['', 'Pega primero'],
     ['Esto es una correccion en texto libre.', 'instrucciones para la IA'],

@@ -68,7 +68,11 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
     <section className={styles.panel} aria-labelledby="piece-heading">
       <h2 id="piece-heading">{editing === null ? 'Nuevo texto' : `Editar texto #${String(editing.id)}`}</h2>
 
-      <form ref={formRef} action={formAction} onReset={onReset} className={styles.form}>
+      <form ref={formRef} action={formAction} className={styles.form} onReset={(event) => {
+        onReset(event);
+        // El checkbox es estado controlado: el reset del formulario no lo desmarca solo.
+        if (!event.defaultPrevented) setIsRewrite(false);
+      }}>
         {editing !== null && <input type="hidden" name="id" value={editing.id} />}
 
         <label>

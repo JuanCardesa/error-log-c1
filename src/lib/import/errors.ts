@@ -5,6 +5,10 @@ import { CATEGORIES, CAUSES, CONFIDENCES } from '../domain/enums';
 export const MAX_IMPORT_ROWS = 100;
 export const MAX_IMPORT_LENGTH = 200_000;
 
+/** Lo que proponemos cuando la tanda no trae causa ni confianza; se revisan en la vista previa. */
+const DEFAULT_CAUSE = 'DESCONOCIMIENTO';
+const DEFAULT_CONFIDENCE = 'DUDABA';
+
 // El borrador admite campos vacios para poder completarlos en la vista previa.
 // La validacion de negocio se aplica al guardar, con errorInputSchema.
 export const importDraftSchema = z.object({
@@ -13,10 +17,10 @@ export const importDraftSchema = z.object({
   myAnswer: z.string().nullish().transform((v) => v ?? ''),
   correctAnswer: z.string().default(''),
   ruleNote: z.string().default(''),
-  cause: z.string().default('DESCONOCIMIENTO'),
+  cause: z.string().default(DEFAULT_CAUSE),
   category: z.string().default(''),
   subcategory: z.string().nullish().transform((v) => v ?? ''),
-  confidence: z.string().default('DUDABA'),
+  confidence: z.string().default(DEFAULT_CONFIDENCE),
   lateInSession: z.boolean().default(false),
   ankiAdded: z.boolean().default(false),
 });
@@ -99,8 +103,9 @@ export function parseImportedErrors(source: string): ImportDraft[] {
     throw new Error(`Se esperan entre 1 y ${String(MAX_IMPORT_ROWS)} errores con campos de texto. Comprueba que has copiado el bloque completo.`);
   }
   return parsed.data.map((row, index) => {
-    const cause = normalize(row.cause);
-    const confidence = normalize(row.confidence);
+    // Una celda en blanco de Causa o Confianza equivale a no traer la columna: vale la propuesta.
+    const cause = normalize(row.cause) || DEFAULT_CAUSE;
+    const confidence = normalize(row.confidence) || DEFAULT_CONFIDENCE;
     if (!CAUSES.some((value) => value === cause) || !CONFIDENCES.some((value) => value === confidence)) {
       throw new Error(`Error ${String(index + 1)}: causa o confianza no reconocida. Usa los valores de las instrucciones.`);
     }

@@ -49,17 +49,23 @@ test('un error invalido bloquea toda la tanda y se puede corregir sin perder los
   await openImport(page);
   await page.getByLabel('Errores para importar').fill(JSON.stringify([
     rows[0], { ...rows[1], correctAnswer: 'una respuesta copiada como regla', ruleNote: 'una respuesta copiada como regla' },
+    { itemRef: '6', prompt: 'He gave ___ smoking.', myAnswer: 'out', correctAnswer: 'up', category: 'PHRASAL_VERB', ruleNote: 'Give up significa abandonar un habito.' },
   ]));
   await page.getByRole('button', { name: 'Preparar vista previa' }).click();
-  await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
+  await page.getByRole('button', { name: 'Guardar 3 errores', exact: true }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'No se ha guardado ningun error' })).toBeVisible();
   await expect(page.getByRole('table', { name: 'Errores registrados en esta sesion' })).toHaveCount(0);
   const first = page.getByRole('group', { name: 'Error 1', exact: true });
   const second = page.getByRole('group', { name: 'Error 2', exact: true });
   await expect(first.getByLabel('Correcta *')).toHaveValue('off');
   await expect(second.locator('[data-field="ruleNote"]')).toContainText('no puede ser la respuesta correcta');
-  await second.getByLabel('Correcta *').fill('in');
-  await second.getByLabel('Regla, con tus palabras *').fill('Interested siempre se construye con in.');
+
+  // Quitar una fila anterior no puede desplazar el mensaje al error de al lado.
+  await page.getByRole('button', { name: 'Quitar error 1 de la tanda' }).click();
+  await expect(first.locator('[data-field="ruleNote"]')).toContainText('no puede ser la respuesta correcta');
+  await expect(second.locator('[data-field="ruleNote"]')).toHaveCount(0);
+  await first.getByLabel('Correcta *').fill('in');
+  await first.getByLabel('Regla, con tus palabras *').fill('Interested siempre se construye con in.');
   await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
 });

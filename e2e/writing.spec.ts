@@ -26,11 +26,15 @@ test('prepara un formulario vacio tras guardar un nuevo texto', async ({ page })
   await page.getByLabel('Palabras', { exact: true }).fill('250');
   await page.getByRole('combobox', { name: 'Genero', exact: true }).selectOption('REVIEW');
   await page.getByLabel('Cronometrado', { exact: true }).check();
+  await page.getByLabel('Es la reescritura de otro texto').check();
+  await expect(page.getByRole('combobox', { name: 'Original', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Guardar texto', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Texto guardado.');
   await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('');
   await expect(page.getByRole('combobox', { name: 'Genero', exact: true })).toHaveValue('ESSAY');
   await expect(page.getByLabel('Cronometrado', { exact: true })).not.toBeChecked();
+  await expect(page.getByLabel('Es la reescritura de otro texto')).not.toBeChecked();
+  await expect(page.getByRole('combobox', { name: 'Original', exact: true })).toHaveCount(0);
 
   await page.getByLabel('Palabras', { exact: true }).fill('251');
   await page.getByRole('button', { name: 'Guardar texto', exact: true }).click();
@@ -38,8 +42,8 @@ test('prepara un formulario vacio tras guardar un nuevo texto', async ({ page })
   const added = readPieces().filter((piece) => !before.some((existing) => existing.id === piece.id));
   expect(added).toHaveLength(2);
   expect(added).toEqual(expect.arrayContaining([
-    expect.objectContaining({ wordCount: 250, genre: 'REVIEW', timed: true }),
-    expect.objectContaining({ wordCount: 251, genre: 'ESSAY', timed: false }),
+    expect.objectContaining({ wordCount: 250, genre: 'REVIEW', timed: true, rewriteOf: null }),
+    expect.objectContaining({ wordCount: 251, genre: 'ESSAY', timed: false, rewriteOf: null }),
   ]));
 });
 

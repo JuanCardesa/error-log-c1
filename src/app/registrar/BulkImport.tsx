@@ -96,6 +96,9 @@ function ImportReview({ session, subcategorySuggestions, drafts, onBack, onSaved
   readonly onSaved: (message: string) => void;
 }) {
   const [rows, setRows] = useState(() => drafts.map((draft, id) => ({ id, draft })));
+  // La accion devuelve los errores por posicion en la tanda enviada. Guardamos que fila
+  // ocupaba cada posicion para que quitar una despues no desplace los mensajes.
+  const [sentIds, setSentIds] = useState<readonly number[]>([]);
   const [state, action, pending] = useActionState(async (previous: typeof EMPTY_STATE, payload: FormData) => {
     try {
       const result = await importErrorsAction(previous, payload);
@@ -109,6 +112,15 @@ function ImportReview({ session, subcategorySuggestions, drafts, onBack, onSaved
   const [startedAt] = useState(() => Date.now());
   const textFields = ['itemRef', 'prompt', 'myAnswer', 'correctAnswer', 'cause', 'category', 'subcategory', 'confidence', 'ruleNote'] as const;
 
+  const errorsForRow = (id: number): Record<string, string[]> => {
+    const position = sentIds.indexOf(id);
+    if (position === -1) return {};
+    const prefix = `${String(position)}.`;
+    return Object.fromEntries(Object.entries(state.fieldErrors)
+      .filter(([key]) => key.startsWith(prefix))
+      .map(([key, value]) => [key.slice(prefix.length), value]));
+  };
+
   return (
     <form ref={formRef} onReset={onReset} action={(form) => {
       const values = rows.map(({ id }) => {
@@ -119,6 +131,7 @@ function ImportReview({ session, subcategorySuggestions, drafts, onBack, onSaved
           ankiAdded: form.has(`${prefix}ankiAdded`),
         };
       });
+      setSentIds(rows.map((row) => row.id));
       const payload = new FormData();
       payload.set('sessionId', String(session.id));
       payload.set('rows', JSON.stringify(values));
@@ -133,9 +146,7 @@ function ImportReview({ session, subcategorySuggestions, drafts, onBack, onSaved
           <div className={`${capture.grid} ${styles.fields}`}>
             <ErrorFields variant="grid" timed={session.timed} subcategorySuggestions={subcategorySuggestions}
               defaults={draft} namePrefix={`${String(id)}.`}
-              fieldErrors={Object.fromEntries(Object.entries(state.fieldErrors)
-                .filter(([key]) => key.startsWith(`${String(index)}.`))
-                .map(([key, value]) => [key.slice(key.indexOf('.') + 1), value]))} />
+              fieldErrors={errorsForRow(id)} />
           </div>
           <button type="button" className={styles.secondary} onClick={() => {
             setRows((current) => current.filter((row) => row.id !== id));
