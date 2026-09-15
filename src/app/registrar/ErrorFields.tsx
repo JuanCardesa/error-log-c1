@@ -39,6 +39,7 @@ interface Props {
   readonly fieldErrors: Readonly<Record<string, string[]>>;
   readonly defaults?: ErrorFieldDefaults;
   readonly firstFieldRef?: RefObject<HTMLInputElement | null>;
+  readonly namePrefix?: string;
 }
 
 export function ErrorFields({
@@ -48,11 +49,12 @@ export function ErrorFields({
   fieldErrors,
   defaults,
   firstFieldRef,
+  namePrefix = '',
 }: Props) {
   const scope = useId();
 
-  // Estos cuatro sobreviven a un `form.reset()` por ser controlados, que es justo lo que
-  // se quiere al dar de alta una tanda: dentro de una tanda se repiten mucho.
+  // La captura conserva estos cuatro valores al limpiar el formulario: dentro de una
+  // tanda se repiten mucho. Los selects tambien necesitan esa conservacion explicita.
   const [cause, setCause] = useState<string>(defaults?.cause ?? CAUSES[0]);
   const [category, setCategory] = useState<string>(defaults?.category ?? '');
   const [subcategory, setSubcategory] = useState<string>(defaults?.subcategory ?? '');
@@ -87,7 +89,7 @@ export function ErrorFields({
         <span className={styles.label}>Item</span>
         <input
           ref={firstFieldRef}
-          name="itemRef"
+          name={`${namePrefix}itemRef`}
           autoComplete="off"
           className="data"
           placeholder="4"
@@ -100,7 +102,7 @@ export function ErrorFields({
           Enunciado <abbr title="obligatorio">*</abbr>
         </span>
         <input
-          name="prompt"
+          name={`${namePrefix}prompt`}
           autoComplete="off"
           required
           defaultValue={defaults?.prompt ?? ''}
@@ -114,7 +116,7 @@ export function ErrorFields({
       <label className={styles.fMine}>
         <span className={styles.label}>Mi respuesta</span>
         <input
-          name="myAnswer"
+          name={`${namePrefix}myAnswer`}
           autoComplete="off"
           className="data"
           defaultValue={defaults?.myAnswer ?? ''}
@@ -126,7 +128,7 @@ export function ErrorFields({
           Correcta <abbr title="obligatorio">*</abbr>
         </span>
         <input
-          name="correctAnswer"
+          name={`${namePrefix}correctAnswer`}
           autoComplete="off"
           required
           className="data"
@@ -140,7 +142,7 @@ export function ErrorFields({
       <label className={styles.fCause}>
         <span className={styles.label}>Causa</span>
         <select
-          name="cause"
+          name={`${namePrefix}cause`}
           value={cause}
           onChange={(event) => {
             setCause(event.target.value);
@@ -160,7 +162,7 @@ export function ErrorFields({
           Categoria <abbr title="obligatorio">*</abbr>
         </span>
         <input
-          name="category"
+          name={`${namePrefix}category`}
           list={`${scope}-categories`}
           autoComplete="off"
           required
@@ -182,7 +184,7 @@ export function ErrorFields({
       <label className={styles.fSubcategory}>
         <span className={styles.label}>Subcategoria</span>
         <input
-          name="subcategory"
+          name={`${namePrefix}subcategory`}
           list={`${scope}-subcategories`}
           autoComplete="off"
           value={subcategory}
@@ -201,7 +203,7 @@ export function ErrorFields({
       <label className={styles.fConfidence}>
         <span className={styles.label}>Confianza</span>
         <select
-          name="confidence"
+          name={`${namePrefix}confidence`}
           value={confidence}
           onChange={(event) => {
             setConfidence(event.target.value);
@@ -220,7 +222,7 @@ export function ErrorFields({
           Regla, con tus palabras <abbr title="obligatorio">*</abbr>
         </span>
         <textarea
-          name="ruleNote"
+          name={`${namePrefix}ruleNote`}
           rows={variant === 'card' ? 4 : 2}
           required
           minLength={15}
@@ -236,7 +238,7 @@ export function ErrorFields({
         <label className={styles.check}>
           <input
             type="checkbox"
-            name="lateInSession"
+            name={`${namePrefix}lateInSession`}
             disabled={!timed}
             defaultChecked={defaults?.lateInSession ?? false}
             aria-describedby={timed ? undefined : `${scope}-late-help`}
@@ -252,7 +254,7 @@ export function ErrorFields({
         <label className={styles.check}>
           <input
             type="checkbox"
-            name="ankiAdded"
+            name={`${namePrefix}ankiAdded`}
             defaultChecked={defaults?.ankiAdded ?? false}
             aria-invalid={invalid('ankiAdded')}
             aria-describedby={describedBy('ankiAdded')}

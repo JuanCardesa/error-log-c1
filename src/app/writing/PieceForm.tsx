@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 
 import { CORRECTORS, GENRES } from '@/lib/domain/enums';
 import type { SessionRow, WritingPieceRow } from '@/lib/domain/types';
+import { usePreservedForm } from '../_shared/usePreservedForm';
 import { EMPTY_STATE } from '../registrar/formState';
 import { saveWritingPieceAction } from './actions';
 import styles from './writing.module.css';
@@ -32,6 +33,12 @@ interface Props {
 export function PieceForm({ availableSessions, pieces, editing, today }: Props) {
   const [state, formAction, pending] = useActionState(saveWritingPieceAction, EMPTY_STATE);
   const [isRewrite, setIsRewrite] = useState(editing?.rewriteOf !== null && editing !== null);
+  const { formRef, onReset, resetForm } = usePreservedForm();
+
+  useEffect(() => {
+    // Al crear se prepara el siguiente texto; al editar se conservan los valores guardados.
+    if (state.ok && editing === null) resetForm();
+  }, [state, editing, resetForm]);
 
   const errorsFor = (field: string): string[] => state.fieldErrors[field] ?? [];
   const invalid = (field: string): boolean => errorsFor(field).length > 0;
@@ -61,7 +68,11 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
     <section className={styles.panel} aria-labelledby="piece-heading">
       <h2 id="piece-heading">{editing === null ? 'Nuevo texto' : `Editar texto #${String(editing.id)}`}</h2>
 
-      <form action={formAction} className={styles.form}>
+      <form ref={formRef} action={formAction} className={styles.form} onReset={(event) => {
+        onReset(event);
+        // El checkbox es estado controlado: el reset del formulario no lo desmarca solo.
+        if (!event.defaultPrevented) setIsRewrite(false);
+      }}>
         {editing !== null && <input type="hidden" name="id" value={editing.id} />}
 
         <label>

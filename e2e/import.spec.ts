@@ -1,0 +1,101 @@
+import { expect, test, type Page } from '@playwright/test';
+
+async function openImport(page: Page) {
+  await page.goto('/registrar');
+  await page.getByLabel('Items *').fill('8');
+  await page.getByLabel('Aciertos *').fill('5');
+  await page.getByLabel('Referencia').fill('Importacion de correcciones');
+  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+  await page.getByRole('button', { name: 'Pegar varios errores', exact: true }).click();
+}
+
+const rows = [
+  { itemRef: '4', prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off', category: 'PHRASAL_VERB', ruleNote: 'Call off significa cancelar una actividad.' },
+  { itemRef: '5', prompt: 'She is interested ___ music.', myAnswer: 'on', correctAnswer: 'in', category: 'PREPOSICION_DEPENDIENTE', ruleNote: 'Interested se construye con la preposicion in.' },
+];
+
+test('pega, revisa, quita una fila y guarda la tanda sin duplicarla al repetirla', async ({ page, context }) => {
+  await openImport(page);
+  await page.getByText('Convertir mis correcciones con IA', { exact: true }).click();
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.getByRole('button', { name: 'Copiar instrucciones para la IA' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Instrucciones copiadas' })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('No inventes respuestas ni errores');
+
+  await page.getByLabel('Errores para importar').fill(JSON.stringify([...rows, rows[0]]));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  await expect(page.getByRole('heading', { name: 'Revisar 3 errores' })).toBeVisible();
+  await page.getByRole('button', { name: 'Quitar error 3 de la tanda' }).click();
+  const first = page.getByRole('group', { name: 'Error 1', exact: true });
+  await first.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
+  await first.getByRole('combobox', { name: 'Confianza', exact: true }).selectOption('SEGURO');
+  await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
+  const table = page.getByRole('table', { name: 'Errores registrados en esta sesion' });
+  await expect(table.locator('tbody tr')).toHaveCount(2);
+  await expect(table.getByRole('cell', { name: 'CONFUSION', exact: true })).toBeVisible();
+  await expect(table.getByRole('cell', { name: 'SEGURO', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Errores para importar')).toHaveValue('');
+
+  await page.getByLabel('Errores para importar').fill(JSON.stringify(rows));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '0 errores guardados. 2 repetidos omitidos' })).toBeVisible();
+  await page.reload();
+  await expect(table.locator('tbody tr')).toHaveCount(2);
+
+  // Sin contexto seguro no hay API de portapapeles: queda el Ctrl+C sobre el texto marcado.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Pegar varios errores', exact: true }).click();
+  await page.getByText('Convertir mis correcciones con IA', { exact: true }).click();
+  await page.getByRole('button', { name: 'Copiar instrucciones para la IA' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'pulsa Ctrl+C' })).toBeVisible();
+  await expect(page.getByLabel('Instrucciones para la IA')).toBeFocused();
+});
+
+test('un error invalido bloquea toda la tanda y se puede corregir sin perder los demas', async ({ page }) => {
+  await openImport(page);
+  await page.getByLabel('Errores para importar').fill(JSON.stringify([
+    rows[0], { ...rows[1], correctAnswer: 'una respuesta copiada como regla', ruleNote: 'una respuesta copiada como regla' },
+    { itemRef: '6', prompt: 'He gave ___ smoking.', myAnswer: 'out', correctAnswer: 'up', category: 'PHRASAL_VERB', ruleNote: 'Give up significa abandonar un habito.' },
+  ]));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  await page.getByRole('button', { name: 'Guardar 3 errores', exact: true }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'No se ha guardado ningun error' })).toBeVisible();
+  await expect(page.getByRole('table', { name: 'Errores registrados en esta sesion' })).toHaveCount(0);
+  const first = page.getByRole('group', { name: 'Error 1', exact: true });
+  const second = page.getByRole('group', { name: 'Error 2', exact: true });
+  await expect(first.getByLabel('Correcta *')).toHaveValue('off');
+  await expect(second.locator('[data-field="ruleNote"]')).toContainText('no puede ser la respuesta correcta');
+
+  // Quitar una fila anterior no puede desplazar el mensaje al error de al lado.
+  await page.getByRole('button', { name: 'Quitar error 1 de la tanda' }).click();
+  await expect(first.locator('[data-field="ruleNote"]')).toContainText('no puede ser la respuesta correcta');
+  await expect(second.locator('[data-field="ruleNote"]')).toHaveCount(0);
+  await first.getByLabel('Correcta *').fill('in');
+  await first.getByLabel('Regla, con tus palabras *').fill('Interested siempre se construye con in.');
+  await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
+});
+
+test('pega una tabla y conserva la tanda si otra pestaña cierra la sesion', async ({ page }) => {
+  await openImport(page);
+  await page.getByLabel('Errores para importar').fill('Item\tEnunciado\tMi respuesta\tCorrecta\tCategoria\tRegla\n4\tThey called ___ the meeting.\tof\toff\tPHRASAL_VERB\tCall off significa cancelar una actividad.');
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  const other = await page.context().newPage();
+  try {
+    await other.goto(page.url());
+    await other.getByRole('button', { name: 'Cerrar sesion', exact: true }).click();
+    await expect(other.getByRole('button', { name: 'Reabrir sesion', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Guardar 1 error', exact: true }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'ya no esta abierta' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Error 1', exact: true }).getByLabel('Correcta *')).toHaveValue('off');
+    await other.getByRole('button', { name: 'Reabrir sesion', exact: true }).click();
+    await expect(other.getByRole('button', { name: 'Cerrar sesion', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Guardar 1 error', exact: true }).click();
+    await expect(page.getByRole('status').filter({ hasText: '1 error guardado.' })).toBeVisible();
+  } finally { await other.close(); }
+});

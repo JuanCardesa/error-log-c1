@@ -43,7 +43,7 @@ test.describe('corregir lo ya registrado', () => {
     await expect(page.getByRole('cell', { name: 'gave up', exact: true })).toBeHidden();
   });
 
-  test('la correccion pasa por la misma validacion que el alta', async ({ page }) => {
+  test('conserva los cambios de un error cuando falla la validacion', async ({ page }) => {
     await openSessionWithError(page, 'Unidad 11, validacion');
 
     await page.getByRole('button', { name: 'Editar' }).first().click();
@@ -53,6 +53,7 @@ test.describe('corregir lo ya registrado', () => {
     // largo a proposito: con uno corto saltaria antes el minLength nativo del navegador
     // y no se probaria la regla del servidor.
     const answer = 'it was only by his voice that I recognised him';
+    await editForm.getByLabel('Enunciado *').fill('Enunciado corregido');
     await editForm.getByLabel('Correcta *').fill(answer);
     await editForm.getByLabel('Regla, con tus palabras *').fill(answer);
     await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
@@ -60,6 +61,16 @@ test.describe('corregir lo ya registrado', () => {
     await expect(editForm.locator('[data-field="ruleNote"]')).toContainText(
       'no puede ser la respuesta correcta',
     );
+    await expect(editForm.getByLabel('Enunciado *')).toHaveValue('Enunciado corregido');
+    await expect(editForm.getByLabel('Correcta *')).toHaveValue(answer);
+    await expect(editForm.getByLabel('Regla, con tus palabras *')).toHaveValue(answer);
+
+    const rule = 'La estructura enfatica destaca la voz como unica pista';
+    await editForm.getByLabel('Regla, con tus palabras *').fill(rule);
+    await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByRole('cell', { name: answer, exact: true })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('cell', { name: rule, exact: true })).toBeVisible();
   });
 
   test('cancelar deja la fila como estaba', async ({ page }) => {
@@ -87,15 +98,25 @@ test.describe('corregir lo ya registrado', () => {
     await expect(page.getByRole('cell', { name: 'gave up' })).toBeVisible();
   });
 
-  test('la cabecera corregida sigue sin admitir mas aciertos que items', async ({ page }) => {
+  test('conserva la cabecera corregida si los aciertos son invalidos', async ({ page }) => {
     await openSessionWithError(page, 'Unidad 14, cabecera invalida');
 
     await page.getByRole('button', { name: 'Corregir cabecera' }).click();
     await page.getByLabel('Aciertos *').fill('99');
+    await page.getByLabel('Referencia').fill('Referencia corregida');
+    await page.getByLabel('Cronometrada').check();
     await page.getByRole('button', { name: 'Guardar cabecera' }).click();
 
     await expect(page.locator('#s-itemsCorrect-error')).toContainText(
       'No puedes acertar mas items de los que intentaste',
     );
+    await expect(page.getByLabel('Aciertos *')).toHaveValue('99');
+    await expect(page.getByLabel('Referencia')).toHaveValue('Referencia corregida');
+    await expect(page.getByLabel('Cronometrada')).toBeChecked();
+    await page.getByLabel('Aciertos *').fill('7');
+    await page.getByRole('button', { name: 'Guardar cabecera' }).click();
+    await expect(page.getByText('7 / 8', { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(page.getByText('LIBRO · Referencia corregida', { exact: true })).toBeVisible();
   });
 });
