@@ -44,6 +44,14 @@ DUDABA cuando no constan; ajústalas a lo que te pasó. La tanda se guarda compl
 volver a pegar el mismo error en esa sesión no lo duplica ni modifica el anterior.
 Se admiten hasta 100 errores por tanda.
 
+**Fotos y capturas:** las mismas instrucciones sirven para una IA que admita imágenes.
+Adjunta allí el ejercicio, tus respuestas y la corrección o el solucionario, agrupados
+por sesión. Copia su respuesta al registro y comprueba en la vista previa los números
+de ejercicio, las respuestas y la regla. Las instrucciones piden dejar vacíos los
+datos ilegibles y pedir aclaraciones si no se puede identificar qué ejercicios has
+fallado. Esto ayuda a revisar la extracción, pero no garantiza que la IA lea todo bien.
+La app recibe el texto preparado; todavía no tiene subida ni lectura directa de fotos.
+
 ![Vista de registro](docs/screenshots/registrar.png)
 
 El requisito que manda sobre todos los demás: **dar de alta un error tiene que costar

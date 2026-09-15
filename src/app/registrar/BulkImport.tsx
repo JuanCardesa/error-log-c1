@@ -43,9 +43,10 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
       <details className={styles.instructions}>
         <summary>Convertir mis correcciones con IA</summary>
         <ol>
-          <li>Copia estas instrucciones en la IA que uses y añade debajo tus correcciones.</li>
+          <li>Copia estas instrucciones en la IA que uses. Pega tus correcciones o adjunta fotos y capturas si esa IA admite imagenes.</li>
+          <li>En las fotos, incluye el ejercicio, tu respuesta y la correccion o el solucionario. Usa imagenes de la misma sesion y amplialas si el texto se ve pequeño.</li>
           <li>Copia el bloque que te devuelva y pegalo en «Errores para importar».</li>
-          <li>Revisa la vista previa y guarda la tanda.</li>
+          <li>Revisa la vista previa, completa los datos que no se hayan podido leer y guarda la tanda.</li>
         </ol>
         <button type="button" className={styles.secondary} onClick={() => {
           void navigator.clipboard.writeText(IMPORT_PROMPT).then(
@@ -59,6 +60,7 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
         }}>Copiar instrucciones para la IA</button>
         <p role="status">{copyMessage}</p>
         <textarea ref={instructions} aria-label="Instrucciones para la IA" value={IMPORT_PROMPT} readOnly rows={5} />
+        <p>Las fotos se adjuntan en la IA que uses. Aqui pegas el bloque que te devuelva; la app todavia no lee imagenes directamente.</p>
       </details>
       <details className={styles.instructions}>
         <summary>Pegar desde una hoja de calculo</summary>

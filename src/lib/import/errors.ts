@@ -110,8 +110,16 @@ export function parseImportedErrors(source: string): ImportDraft[] {
 
 export const IMPORT_TEMPLATE = 'Item\tEnunciado\tMi respuesta\tCorrecta\tCategoria\tRegla\n4\tThey called ___ the meeting.\tof\toff\tPHRASAL_VERB\tCall off significa cancelar; se escribe con doble f.';
 
-export const IMPORT_PROMPT = `Convierte las correcciones de ingles que pegue despues en errores para mi Error Log C1.
-Devuelve solo un array JSON, sin explicaciones externas, con un objeto por error y estas claves:
+export const IMPORT_PROMPT = `Convierte las correcciones de ingles que pegue o adjunte como fotos o capturas de pantalla en errores para mi Error Log C1.
+Las imagenes pueden incluir el ejercicio, mis respuestas, anotaciones del profesor y el solucionario. Procesa una sola sesion de practica por tanda.
+Para leer las imagenes:
+- Relaciona cada respuesta con su numero de ejercicio y su enunciado. Conserva huecos, puntuacion y ortografia; no corrijas mi respuesta al transcribirla.
+- Distingue el texto impreso, mi respuesta y la correccion. Usa el solucionario o una correccion visible para correctAnswer; no presentes una solucion que hayas deducido como si viniera del solucionario.
+- Incluye solo los errores que yo señale, que esten marcados como incorrectos o que puedas identificar comparando mi respuesta legible con una correccion fiable. No conviertas todos los ejercicios de la foto en errores.
+- Si un dato no se lee con claridad, dejalo como "" para revisarlo. No rellenes palabras borrosas por intuicion ni uses textos como "ilegible" o "pendiente" en su lugar.
+- Si no puedes identificar que ejercicios he fallado, pide mis respuestas, el solucionario o una captura mas clara antes de generar el bloque.
+- Si varias capturas se solapan, incluye cada error una sola vez. Comprueba que no mezclas numeros de ejercicios de paginas distintas.
+Cuando tengas informacion suficiente, devuelve solo un array JSON, sin explicaciones externas, con un objeto por error y estas claves:
 itemRef, prompt, myAnswer, correctAnswer, category, ruleNote, subcategory.
 Todos los valores son texto. Conserva el enunciado, mi respuesta y la correccion tal como aparecen. Si no consta mi respuesta o el numero de item, usa "". No inventes respuestas ni errores. Si falta una correccion fiable, deja correctAnswer vacio para que yo lo complete.
 category debe ser una de: ${CATEGORIES.join(', ')}.
@@ -120,5 +128,5 @@ Incluye cause y confidence SOLO si yo las he indicado: cause admite ${CAUSES.joi
 No marques tarjetas como añadidas ni inventes datos sobre tiempo.
 Agrupa como maximo ${String(MAX_IMPORT_ROWS)} errores. No incluyas ejemplos: procesa solo mis correcciones.
 
-Mis correcciones:
+Mis correcciones (texto o imagenes adjuntas):
 `;
