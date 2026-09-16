@@ -4,9 +4,9 @@ import { join } from 'node:path';
 
 import { sql } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 
-import { type Db, createDb, getDb } from './client';
+import { type Db, createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
 
 const scratch = mkdtempSync(join(tmpdir(), 'errorlog-'));
@@ -21,6 +21,7 @@ function open(file: string): Db {
 afterAll(() => {
   // Windows no deja borrar un fichero con el handle abierto.
   for (const db of opened) db.$client.close();
+  vi.unstubAllEnvs();
   rmSync(scratch, { recursive: true, force: true });
 });
 
@@ -41,10 +42,14 @@ describe('conexion', () => {
     expect(row?.foreign_keys).toBe(1);
   });
 
-  it('reutiliza la misma conexion entre llamadas', () => {
-    process.env['DB_FILE_OVERRIDE'] = join(scratch, 'cacheada.db');
+  it('reutiliza la misma conexion entre llamadas sin abrir la base personal', async () => {
+    const file = join(scratch, 'cacheada.db');
+    vi.stubEnv('DB_FILE_OVERRIDE', file);
+    vi.resetModules();
+    const { getDb } = await import('./client');
     const first = getDb();
     expect(getDb()).toBe(first);
+    expect(first.$client.name).toBe(file);
     opened.push(first);
   });
 });

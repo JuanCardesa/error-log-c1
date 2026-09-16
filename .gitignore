@@ -4,15 +4,23 @@ node_modules/
 
 # next.js
 .next/
+.next-demo/
+.next-e2e/
 out/
 next-env.d.ts
 
-# database — local, never committed. Backup = copy the file.
+# database — local, never committed. Use pnpm db:backup for consistent copies.
 data/
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
 
 # test artifacts
 coverage/
@@ -30,6 +38,10 @@ test-results/
 .idea/
 .DS_Store
 Thumbs.db
+
+# instrucciones para agentes que regenera `next dev` en cada arranque; no son del proyecto
+/AGENTS.md
+/CLAUDE.md
 
 # build info
 *.tsbuildinfo

@@ -120,6 +120,15 @@
   color: var(--ink-soft);
 }
 
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  font-size: var(--fs-sm);
+}
+
 @media (max-width: 620px) {
   .sessionLink {
     grid-template-columns: 1fr auto;

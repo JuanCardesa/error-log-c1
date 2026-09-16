@@ -9,7 +9,9 @@ import {
   createSession,
   deleteError,
   deleteSession,
+  getError,
   getSession,
+  hasWritingPiece,
   setSessionStatus,
   updateError,
   updateSession,
@@ -99,7 +101,7 @@ export async function createSessionAction(
  * Lee y valida un error del formulario. La comparten el alta y la edicion para que las
  * reglas no puedan divergir entre crear y corregir.
  */
-function parseErrorForm(form: FormData, sessionTimed: boolean) {
+function parseErrorForm(form: FormData, sessionTimed: boolean, addedAt: string | null = null) {
   const ankiAdded = checkbox(form, 'ankiAdded');
 
   return errorInputSchema().safeParse({
@@ -116,7 +118,7 @@ function parseErrorForm(form: FormData, sessionTimed: boolean) {
     lateInSession: sessionTimed ? checkbox(form, 'lateInSession') : false,
     ruleNote: text(form, 'ruleNote'),
     ankiAdded,
-    ankiAddedAt: ankiAdded ? new Date().toISOString() : null,
+    ankiAddedAt: ankiAdded ? addedAt ?? new Date().toISOString() : null,
     secs: integer(form, 'secs'),
   });
 }
@@ -177,7 +179,7 @@ export async function updateErrorAction(
   form: FormData,
 ): Promise<FormState> {
   const id = integer(form, 'id');
-  if (id === null || Number.isNaN(id)) {
+  if (id === null || !Number.isSafeInteger(id) || id <= 0) {
     return { ok: false, fieldErrors: {}, message: 'Falta el error a corregir.' };
   }
 
@@ -191,7 +193,12 @@ export async function updateErrorAction(
     return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe.' };
   }
 
-  const parsed = parseErrorForm(form, session.timed);
+  const original = getError(getDb(), id);
+  if (original === null || original.sessionId !== sessionId) {
+    return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe en esta sesion. Tus cambios siguen en el formulario.' };
+  }
+
+  const parsed = parseErrorForm(form, session.timed, original.ankiAddedAt);
   if (!parsed.success) {
     return { ok: false, fieldErrors: collectIssues(parsed.error), message: null };
   }
@@ -199,7 +206,9 @@ export async function updateErrorAction(
   const impossible = rejectImpossibleCard(parsed.data.cause, parsed.data.ankiAdded);
   if (impossible !== null) return impossible;
 
-  updateError(getDb(), id, parsed.data);
+  if (!updateError(getDb(), id, parsed.data)) {
+    return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe. Tus cambios siguen en el formulario.' };
+  }
   revalidatePath('/registrar');
   revalidatePath('/informe');
   return { ok: true, fieldErrors: {}, message: 'Error corregido.', createdId: id };
@@ -211,7 +220,7 @@ export async function updateSessionAction(
   form: FormData,
 ): Promise<FormState> {
   const id = integer(form, 'id');
-  if (id === null || Number.isNaN(id)) {
+  if (id === null || !Number.isSafeInteger(id) || id <= 0) {
     return { ok: false, fieldErrors: {}, message: 'Falta la sesion a corregir.' };
   }
 
@@ -237,7 +246,12 @@ export async function updateSessionAction(
     };
   }
 
-  updateSession(getDb(), id, parsed.data);
+  if (parsed.data.paper !== 'WRITING' && hasWritingPiece(getDb(), id)) {
+    return { ok: false, fieldErrors: { paper: ['Esta sesion tiene un texto asociado y debe seguir siendo de Writing.'] }, message: null };
+  }
+  if (!updateSession(getDb(), id, parsed.data)) {
+    return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe. Tus cambios siguen en el formulario.' };
+  }
   revalidatePath('/registrar');
   revalidatePath('/informe');
   return { ok: true, fieldErrors: {}, message: 'Cabecera corregida.', createdId: id };

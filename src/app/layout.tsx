@@ -19,6 +19,9 @@ const NAV = [
   { href: '/exportar', label: 'Exportar' },
 ] as const;
 
+/** `pnpm demo` la enciende; `pnpm dev` no, para que la base personal nunca lleve el aviso. */
+const IS_DEMO = process.env['ERRORLOG_DEMO'] === '1';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
@@ -38,6 +41,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               ))}
             </nav>
           </header>
+          {IS_DEMO && (
+            <p className={styles.demo} role="status">
+              <strong>Demo con datos inventados.</strong> Esta base se descarta: cada
+              <code> pnpm demo </code>
+              crea una nueva. Para tus datos reales usa <code>pnpm dev</code>.
+            </p>
+          )}
           <main id="contenido" className={styles.main} tabIndex={-1}>
             {children}
           </main>

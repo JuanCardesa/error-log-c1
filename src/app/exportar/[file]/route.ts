@@ -34,9 +34,9 @@ export async function GET(
     return new Response('No existe ese fichero.', { status: 404 });
   }
 
-  return new Response(toCsvExport(which, data, options), {
+  // La marca UTF-8 debe estar en el cuerpo, no basta con declarar el charset.
+  return new Response(`\uFEFF${toCsvExport(which, data, options)}`, {
     headers: {
-      // BOM para que Excel no destroce los acentos al abrirlo.
       'content-type': 'text/csv; charset=utf-8',
       'content-disposition': `attachment; filename="errorlog-${which}.csv"`,
     },

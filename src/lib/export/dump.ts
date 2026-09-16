@@ -10,9 +10,8 @@ import { runRules } from '../rules';
 /**
  * Exportacion. Un CSV por query, mas un volcado completo en JSON.
  *
- * El CSV es para llevarse una consulta a otro sitio; el JSON es el respaldo real, y por
- * eso lleva las filas crudas ademas de los resultados: con las agregaciones solas no se
- * puede reconstruir nada.
+ * El CSV permite llevarse una consulta y el JSON incluye las filas crudas para portabilidad.
+ * La restauracion implementada usa las copias SQLite de pnpm db:backup.
  */
 
 export const CSV_EXPORTS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'] as const;

@@ -220,7 +220,7 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
       </form>
 
       {state.message !== null && (
-        <p className={styles.ok} role="status">
+        <p className={state.ok ? styles.ok : styles.fieldError} role={state.ok ? 'status' : 'alert'}>
           {state.message}
         </p>
       )}

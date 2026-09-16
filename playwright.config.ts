@@ -22,11 +22,11 @@ export default defineConfig({
   globalSetup: './e2e/globalSetup.ts',
 
   webServer: {
-    command: `pnpm build && pnpm exec next start --port ${String(PORT)}`,
+    command: `pnpm build && pnpm exec next start --hostname 127.0.0.1 --port ${String(PORT)}`,
     port: PORT,
-    reuseExistingServer: process.env['CI'] === undefined,
+    reuseExistingServer: false,
     timeout: 180_000,
     // La app sirve la base desechable, no la del usuario.
-    env: { DB_FILE_OVERRIDE: E2E_DB },
+    env: { DB_FILE_OVERRIDE: E2E_DB, ERRORLOG_E2E: '1' },
   },
 });

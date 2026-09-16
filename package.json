@@ -1,6 +1,6 @@
 {
   "name": "error-log-c1",
-  "version": "0.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Registro de errores para la preparacion del Cambridge C1 Advanced",
   "license": "MIT",
@@ -9,9 +9,10 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1",
+    "demo": "tsx src/lib/db/demo.run.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --hostname 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
@@ -19,10 +20,12 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx src/lib/db/migrate.run.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/lib/db/seed.run.ts",
-    "screenshots": "playwright test e2e/screenshots.spec.ts"
+    "db:backup": "tsx src/lib/db/backup.run.ts",
+    "db:restore": "tsx src/lib/db/restore.run.ts",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
