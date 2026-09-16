@@ -180,4 +180,5 @@ se restaura conservando filas, relaciones y migraciones. La cobertura de `src/li
 un mínimo del 90 % en líneas, sentencias, funciones y ramas.
 
 [Contribuir](CONTRIBUTING.md) · [Contrato del producto](docs/SPEC.md) ·
+[Plan de implementación](docs/PLAN.md) ·
 [Regenerar la demo y las capturas](docs/DEMO.md) · [Licencia MIT](LICENSE)

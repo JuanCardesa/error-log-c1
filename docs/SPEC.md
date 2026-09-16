@@ -3,7 +3,7 @@
 Transcripción del briefing de encargo. Es la fuente de verdad del proyecto: si el código
 y este documento discrepan, discrepa el código.
 
-El antecedente de este briefing es `error-log-spec.md` (documento de diseño original).
+El antecedente de este briefing es [`error-log-spec.md`](reference/error-log-spec.md) (documento de diseño original).
 Donde ambos difieren, **manda este documento**. Ver §10.
 
 ---
@@ -260,7 +260,7 @@ fase. Conventional Commits, un commit por unidad lógica. CI (`typecheck`, `lint
 
 ## 10. Relación con `error-log-spec.md`
 
-El documento de diseño original queda **superado** por este briefing en estos puntos:
+El [documento de diseño original](reference/error-log-spec.md) queda **superado** por este briefing en estos puntos:
 
 | punto | spec original | este briefing (manda) |
 |---|---|---|
