@@ -39,6 +39,22 @@
   color: var(--ink);
 }
 
+/*
+ * Aviso de `pnpm demo`. La base es desechable: sin esto, nada distingue los ejemplos
+ * inventados de los datos propios, y lo que se escriba aqui se pierde al reiniciar.
+ */
+.demo {
+  padding: var(--sp-3) var(--sp-6);
+  background: var(--queued-bg);
+  color: var(--queued);
+  border-bottom: 1px solid var(--rule-strong);
+  font-size: var(--fs-sm);
+}
+
+.demo strong {
+  font-weight: 600;
+}
+
 .main {
   flex: 1;
   padding: var(--sp-6);

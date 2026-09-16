@@ -18,8 +18,12 @@ import { errorRow, session, writingPiece } from './schema';
  * de cliente.
  */
 
-export function listSessions(db: Db, limit = 50): SessionRow[] {
-  return db.select().from(session).orderBy(desc(session.date), desc(session.id)).limit(limit).all();
+export function listSessions(db: Db, limit = 50, offset = 0): SessionRow[] {
+  return db.select().from(session).orderBy(desc(session.date), desc(session.id)).limit(limit).offset(offset).all();
+}
+
+export function countSessions(db: Db): number {
+  return db.select({ n: sql<number>`count(*)` }).from(session).get()?.n ?? 0;
 }
 
 export function listOpenSessions(db: Db): SessionRow[] {
@@ -41,8 +45,8 @@ export function createSession(db: Db, input: SessionInput): SessionRow {
   return created;
 }
 
-export function updateSession(db: Db, id: number, input: SessionInput): void {
-  db.update(session).set(input).where(eq(session.id, id)).run();
+export function updateSession(db: Db, id: number, input: SessionInput): boolean {
+  return db.update(session).set(input).where(eq(session.id, id)).run().changes > 0;
 }
 
 export function setSessionStatus(db: Db, id: number, status: SessionStatus): void {
@@ -92,8 +96,12 @@ export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorIn
   });
 }
 
-export function updateError(db: Db, id: number, input: ErrorInput): void {
-  db.update(errorRow).set(input).where(eq(errorRow.id, id)).run();
+export function getError(db: Db, id: number): ErrorRow | null {
+  return db.select().from(errorRow).where(eq(errorRow.id, id)).get() ?? null;
+}
+
+export function updateError(db: Db, id: number, input: ErrorInput): boolean {
+  return db.update(errorRow).set(input).where(eq(errorRow.id, id)).run().changes > 0;
 }
 
 export function deleteError(db: Db, id: number): void {
@@ -102,7 +110,8 @@ export function deleteError(db: Db, id: number): void {
 
 /** Sella la conversion a tarjeta. La fecha es obligatoria: hay un CHECK que lo exige. */
 export function markAnkiAdded(db: Db, id: number, at: string): void {
-  db.update(errorRow).set({ ankiAdded: true, ankiAddedAt: at }).where(eq(errorRow.id, id)).run();
+  db.update(errorRow).set({ ankiAdded: true, ankiAddedAt: at })
+    .where(and(eq(errorRow.id, id), eq(errorRow.ankiAdded, false))).run();
 }
 
 export function unmarkAnkiAdded(db: Db, id: number): void {

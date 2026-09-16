@@ -13,6 +13,32 @@ function readPieces() {
   }
 }
 
+test('conserva Writing cuando otra pestaña ocupa la sesion', async ({ page, context }) => {
+  await page.goto('/registrar');
+  await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
+  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+  await expect(page).toHaveURL(/s=\d+/);
+  const sessionId = new URL(page.url()).searchParams.get('s');
+  if (sessionId === null) throw new Error('Falta la sesion recien creada');
+  await page.goto('/writing');
+  await page.getByRole('combobox', { name: 'Sesion', exact: true }).selectOption(sessionId);
+  await page.getByLabel('Palabras', { exact: true }).fill('271');
+  const other = await context.newPage();
+  try {
+    await other.goto('/writing');
+    await other.getByRole('combobox', { name: 'Sesion', exact: true }).selectOption(sessionId);
+    await other.getByLabel('Palabras', { exact: true }).fill('230');
+    await other.getByRole('button', { name: 'Guardar texto', exact: true }).click();
+    await expect(other.getByText(/No hay sesiones de Writing libres/)).toBeVisible();
+
+    await page.getByRole('button', { name: 'Guardar texto', exact: true }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'ya tiene un texto' })).toBeVisible();
+    await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('271');
+    expect(readPieces().filter((piece) => piece.sessionId === Number(sessionId)))
+      .toEqual([expect.objectContaining({ wordCount: 230 })]);
+  } finally { await other.close(); }
+});
+
 test('prepara un formulario vacio tras guardar un nuevo texto', async ({ page }) => {
   const before = readPieces();
   for (let index = 0; index < 2; index += 1) {

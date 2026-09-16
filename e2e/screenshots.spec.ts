@@ -22,7 +22,7 @@ test.describe('capturas', () => {
       await page.waitForLoadState('networkidle');
       await page.screenshot({
         path: `docs/screenshots/${shot.file}`,
-        fullPage: true,
+        fullPage: false,
       });
     });
   }

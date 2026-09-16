@@ -8,7 +8,7 @@ import styles from './exportar.module.css';
  * Exportar. Un CSV por consulta y un volcado completo en JSON.
  *
  * El JSON lleva las filas crudas ademas de los resultados: con las agregaciones solas
- * no se reconstruye nada, y este es el fichero de respaldo de verdad.
+ * no se reconstruye nada. La recuperacion de la app usa una copia SQLite verificada.
  */
 
 export default async function ExportarPage({
@@ -57,9 +57,10 @@ export default async function ExportarPage({
           </li>
         </ul>
         <p className={styles.note}>
-          Q4 sale siempre con 30 dias, ignore lo que diga el conmutador: su umbral esta
-          calibrado a esa ventana. El respaldo de verdad sigue siendo copiar
-          <span className="data"> data/errorlog.db</span>.
+          Q4 usa siempre 30 dias porque su umbral esta calibrado a esa ventana.
+          El JSON permite llevarte tus datos, pero no se puede restaurar desde esta pantalla.
+          Para una copia recuperable, ejecuta <code>pnpm db:backup</code>.
+          Las instrucciones para recuperarla estan en el README.
         </p>
       </section>
     </div>

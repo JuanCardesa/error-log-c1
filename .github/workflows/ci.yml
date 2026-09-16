@@ -10,6 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: typecheck · lint · test · build
@@ -32,8 +35,8 @@ jobs:
       - name: lint
         run: pnpm lint
 
-      - name: test
-        run: pnpm test
+      - name: test y cobertura
+        run: pnpm test:coverage
 
       - name: build
         run: pnpm build

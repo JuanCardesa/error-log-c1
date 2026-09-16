@@ -1,122 +1,183 @@
 # Error Log C1
 
-Registro de errores para la preparación del **Cambridge C1 Advanced**. Clasifica cada
-error por **causa** —qué falló: conocimiento, despiste, formato, tiempo— sobre el
-**denominador** de ítems intentados, porque doce fallos en Part 3 es excelente o
-desastroso según cuántos hiciste. Un motor de siete reglas convierte esas cifras en
-**una sola acción para la semana**, y solo una: un informe con cinco urgencias no ha
-decidido nada.
+**Convierte tus errores del C1 en un plan concreto de estudio.**
+
+[![CI](https://github.com/JuanCardesa/error-log-c1/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JuanCardesa/error-log-c1/actions/workflows/ci.yml)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
+
+Un registro personal para preparar Cambridge C1 Advanced: guarda qué fallaste y por qué,
+revisa tus patrones y elige **una acción para esta semana**. Funciona en tu equipo,
+sin cuenta y con tus datos en SQLite.
+
+![Demo: abrir una sesión, pegar correcciones, revisarlas, guardarlas y consultar el informe](docs/media/demo.gif)
+
+La demo usa datos ficticios. [Ver el recorrido en imágenes estáticas](docs/DEMO.md).
+
+## Qué puedes hacer
+
+- **Registrar sin repetir trabajo.** Captura individual por teclado o importación de
+  hasta 100 errores desde una tabla o un JSON, con vista previa y control de duplicados.
+- **Entender el origen del fallo.** Distingue desconocimiento, confusión, ortografía,
+  despiste, formato y tiempo; relaciona los errores con los ítems intentados.
+- **Decidir qué estudiar.** Siete reglas priorizan una sola acción, con la cifra que
+  la dispara y un mínimo de muestra para las reglas de porcentaje.
+- **Cerrar el ciclo.** Revisa las tarjetas pendientes de Anki, las falsas certezas y
+  los errores que reaparecen al reescribir un texto.
+- **Llevarte tus datos.** Exporta las seis consultas a CSV, las filas a JSON o una
+  copia SQLite restaurable.
+
+| Informe semanal | Evolución de Reading & Use of English |
+| --- | --- |
+| ![Informe con la acción prioritaria y sus reglas](docs/screenshots/informe.png) | ![Precisión por part y semana, con celdas sin datos diferenciadas](docs/screenshots/ruoe.png) |
+
+## Empezar
+
+Necesitas **Node.js 22** (la versión de `.nvmrc` y CI) y **pnpm 10.33.2**.
+Instala las dependencias desde la carpeta del proyecto:
 
 ```bash
-pnpm install
-pnpm db:migrate     # crea ./data/errorlog.db
-pnpm db:seed        # opcional: datos de ejemplo
-pnpm dev            # http://localhost:3000
+git clone https://github.com/JuanCardesa/error-log-c1.git
+cd error-log-c1
+pnpm install --frozen-lockfile
 ```
 
-Local, monousuario, SQLite en un fichero. El backup es copiar `data/errorlog.db`.
+### Probar con ejemplos
 
----
+```bash
+pnpm demo
+```
 
-## Qué hace
+Abre **http://127.0.0.1:3001**. El comando prepara automáticamente una base nueva
+con ejemplos en `data/demo/`. Cada arranque empieza de nuevo; las bases anteriores
+se conservan y la base personal no se modifica. Sal con `Ctrl+C`.
 
-![Informe con la tabla de decisión](docs/screenshots/informe.png)
+La demo lleva un aviso en pantalla: los datos son inventados y lo que escribas ahí
+no pasa a tu registro. Para tus datos reales, usa `pnpm dev`.
 
-El informe es la vista que justifica el resto. Arriba, la única acción destacada, con la
-cifra que la dispara. Debajo, las siete reglas con su estado: `DO NOW`, `QUEUED`,
-`WATCH`, `ok`, `n/a` o `needs n ≥ 15`.
+### Empezar con mis datos
 
-Ese último estado no es un fallo: **ninguna regla de porcentaje se dispara con menos de
-15 errores en la ventana.** Con menos muestra el porcentaje es ruido, y actuar sobre
-ruido cuesta una semana de estudio.
+```bash
+pnpm db:migrate
+pnpm dev
+```
 
-### Registrar
+Abre **http://127.0.0.1:3000**. Tus datos se guardan en `data/errorlog.db`, fuera de Git.
+Para ejecutar la versión compilada: `pnpm build` y después `pnpm start`.
 
-**Para pasar correcciones sin transcribir cada campo:** abre una sesión y elige
-**Pegar varios errores**. En «Convertir mis correcciones con IA» puedes copiar unas
-instrucciones, pegarlas en la IA que uses junto a tus correcciones y traer su respuesta
-al registro. También admite celdas copiadas de una hoja de cálculo con las cabeceras
-de la plantilla. La app no interpreta texto libre por sí sola ni conecta con una IA.
+`pnpm db:seed` sigue disponible para cargar ejemplos en una base **vacía y migrada**.
+Si encuentra datos, se detiene sin cambiarlos. Para probar la app, usa `pnpm demo`.
 
-Revisa los campos ya rellenos, completa lo que falte, quita las filas que no quieras y
-pulsa **Guardar errores**. La causa y la confianza se proponen como DESCONOCIMIENTO y
-DUDABA cuando no constan; ajústalas a lo que te pasó. La tanda se guarda completa, y
-volver a pegar el mismo error en esa sesión no lo duplica ni modifica el anterior.
-Se admiten hasta 100 errores por tanda.
+**Uso local y monousuario.** No hay autenticación. Los comandos de arranque escuchan
+solo en `127.0.0.1`; la app no está preparada para exponerse directamente a Internet.
 
-**Fotos y capturas:** las mismas instrucciones sirven para una IA que admita imágenes.
-Adjunta allí el ejercicio, tus respuestas y la corrección o el solucionario, agrupados
-por sesión. Copia su respuesta al registro y comprueba en la vista previa los números
-de ejercicio, las respuestas y la regla. Las instrucciones piden dejar vacíos los
-datos ilegibles y pedir aclaraciones si no se puede identificar qué ejercicios has
-fallado. Esto ayuda a revisar la extracción, pero no garantiza que la IA lea todo bien.
-La app recibe el texto preparado; todavía no tiene subida ni lectura directa de fotos.
+## Pegar correcciones
 
-![Vista de registro](docs/screenshots/registrar.png)
+1. Abre una sesión en **Registrar** y pulsa **Pegar varios errores**.
+2. Pega celdas con las cabeceras de la plantilla o un JSON de errores. Si partes de
+   correcciones en texto o fotos, copia las instrucciones de **Convertir mis correcciones
+   con IA** y úsalas en la herramienta que prefieras.
+3. Prepara la vista previa, comprueba cada respuesta y ajusta causa y confianza.
+4. Guarda la tanda. Un error repetido en la misma sesión no se duplica ni modifica el anterior.
 
-El requisito que manda sobre todos los demás: **dar de alta un error tiene que costar
-menos de 30 segundos.** Si cuesta dos minutos, dejas de registrarlos en tres semanas y el
-proyecto entero se cae. De ahí salen las decisiones de esta vista:
+La app no conecta con una IA ni lee fotos directamente. Si utilizas una herramienta
+externa, las correcciones se las facilitas tú. Revisa su respuesta: puede interpretar mal
+el ejercicio. Cuando faltan causa y confianza se proponen `DESCONOCIMIENTO` y `DUDABA`.
 
-- dos variantes conmutables: **grid** para volcar diez errores seguidos, **card** para uno
-  a la vez con campos grandes;
-- la causa, la categoría y la subcategoría **sobreviven al envío** — dentro de una tanda se
-  repiten mucho;
-- al guardar, el foco vuelve solo al primer campo;
-- el tiempo de registro se mide solo, no se pregunta.
+Una sesión con cero errores también cuenta: es parte del denominador. Las ventanas
+del informe son de 30 y 60 días; Falsas certezas usa siempre 30 días.
+En Registrar, **Más antiguas** y **Más recientes** permiten recorrer todas tus sesiones.
 
-La cabecera se valida **antes** de aceptar ningún error, y una sesión de cero errores es
-válida: es el denominador. Si solo guardas sesiones con fallos, todas tus tasas mienten al
-alza.
+Los CSV incluyen la marca UTF-8 para conservar los acentos en Excel. Lo que Excel
+evaluaría como fórmula sale con un tabulador protector dentro del campo entrecomillado;
+las respuestas normales no se tocan, sufijos como `-ing` o `-ed` incluidos. Si necesitas
+el contenido literal para procesarlo, usa el JSON.
 
-### RUOE y Anki
+## Copias y recuperación
 
-![Matriz RUOE](docs/screenshots/ruoe.png)
+### Crear una copia
 
-RUOE cruza part × semana ISO. Las celdas sin datos van rayadas, no a cero: no haber
-practicado una part no es haberla fallado.
+```bash
+pnpm db:backup
+# También puedes elegir un nombre nuevo:
+pnpm db:backup data/backups/antes-de-actualizar.db
+```
 
-![Cola de Anki](docs/screenshots/anki.png)
+El comando usa la API de backup de SQLite, comprueba la integridad y genera un fichero
+independiente, también con la app abierta. Incluye los datos confirmados que aún estén
+en el WAL. Nunca sobrescribe una copia existente. Guarda otra copia fuera del equipo.
 
-La cola de Anki solo admite las tres causas que generan tarjeta. Un `DESPISTE` no aparece
-ahí por diseño: no se arregla estudiando, se arregla cambiando cómo revisas.
+**No copies solo `errorlog.db` mientras la app esté abierta:** los últimos cambios pueden
+estar en `errorlog.db-wal`. [Detalles de SQLite](https://www.sqlite.org/wal.html).
 
----
+### Recuperar una copia
 
-## Las seis consultas
+Detén la app con `Ctrl+C` y restaura a un nombre nuevo:
 
-| | | |
-|---|---|---|
-| **Q1** | Reparto de causas | ¿el problema es de conocimiento o de ejecución? |
-| **Q2** | Categorías por tasa | normalizado por ítems, no por volumen |
-| **Q3** | Precisión RUOE | part × semana ISO |
-| **Q4** | Falsas certezas | errores cometidos con `SEGURO` |
-| **Q5** | Deuda de Anki | ¿el log cierra el círculo o solo acumula? |
-| **Q6** | Eficacia del rewrite | ¿cuántos errores reaparecen al reescribir? |
+```bash
+pnpm db:restore data/backups/antes-de-actualizar.db data/restored.db
+```
 
-Todas exportan a CSV, y hay un volcado completo en JSON con las filas crudas.
+La restauración comprueba la copia y rechaza cualquier destino existente, incluidos sus
+archivos WAL. Conserva la base anterior hasta comprobar tus sesiones y errores.
 
-## Stack
+Activa el fichero restaurado **en la misma terminal** antes de migrar y arrancar.
 
-Next.js (App Router) · TypeScript strict · SQLite con Drizzle · Zod · Vitest · Playwright.
-CSS Modules, sin librería de componentes.
+PowerShell (Windows):
 
-Toda la lógica de negocio vive en `src/lib/` como **funciones puras** sobre datos en
-memoria: las queries no abren conexiones y el reloj se inyecta, así que se testean con
-fixtures deterministas y sin base de datos.
+```powershell
+$env:DB_FILE_OVERRIDE = "data/restored.db"
+pnpm db:migrate
+pnpm dev
+```
+
+Bash (macOS/Linux):
+
+```bash
+export DB_FILE_OVERRIDE="$PWD/data/restored.db"
+pnpm db:migrate
+pnpm dev
+```
+
+Mantén esa variable en los siguientes arranques para seguir usando el fichero recuperado;
+`db:backup` también la respeta. Sin ella se utiliza `data/errorlog.db`.
+Si esa ruta predeterminada no existe, puedes restaurar directamente a ella omitiendo
+el segundo argumento. Una exportación JSON sirve para portabilidad; aún no hay importación
+del volcado completo ni restauración desde la interfaz.
+
+## Cómo decide el informe
+
+| Consulta | Para qué sirve |
+| --- | --- |
+| Reparto de causas | Distinguir conocimiento y ejecución |
+| Categorías por tasa | Comparar errores por ítems intentados |
+| Precisión RUOE | Seguir cada part por semana ISO |
+| Falsas certezas | Revisar fallos cometidos con `SEGURO` |
+| Deuda de Anki | Ver qué errores siguen sin convertirse en tarjetas |
+| Eficacia del rewrite | Comprobar si reaparecen errores del original |
+
+Las reglas de porcentaje necesitan al menos 15 observaciones en **su propio denominador**.
+`needs n ≥ 15` indica muestra insuficiente y `n/a`, ausencia de datos aplicables.
+La cola de Anki incluye desconocimiento, confusión y ortografía; marcar una tarjeta
+como añadida es manual, sin sincronización con Anki.
 
 ## Desarrollo
 
+Next.js (App Router), TypeScript strict, SQLite con Drizzle, Zod, Vitest y Playwright.
+CSS Modules, sin librería de componentes. El dominio, las consultas y las reglas son
+funciones puras con el reloj inyectado; `src/lib/db/` contiene los adaptadores de persistencia.
+
 ```bash
-pnpm typecheck && pnpm lint && pnpm test && pnpm build   # lo mismo que corre CI
-pnpm test:coverage    # cobertura de src/lib (umbral 90%)
-pnpm test:e2e         # flujos end-to-end
-pnpm screenshots      # regenera docs/screenshots (con SHOOT=1)
+pnpm typecheck
+pnpm lint
+pnpm test:coverage
+pnpm build
+pnpm exec playwright install chromium
+pnpm test:e2e
 ```
 
-Flujo de ramas y convenciones en [`CONTRIBUTING.md`](CONTRIBUTING.md).
-El contrato del producto —modelo, taxonomías, umbrales— en [`docs/SPEC.md`](docs/SPEC.md).
+La suite prueba también que el seed respeta los datos existentes y que una copia con WAL
+se restaura conservando filas, relaciones y migraciones. La cobertura de `src/lib/` exige
+un mínimo del 90 % en líneas, sentencias, funciones y ramas.
 
-## Licencia
-
-MIT.
+[Contribuir](CONTRIBUTING.md) · [Contrato del producto](docs/SPEC.md) ·
+[Regenerar la demo y las capturas](docs/DEMO.md) · [Licencia MIT](LICENSE)

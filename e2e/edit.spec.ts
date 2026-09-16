@@ -25,6 +25,24 @@ async function openSessionWithError(page: Page, reference: string) {
   await expect(page.getByRole('cell', { name: 'gave up' })).toBeVisible();
 }
 
+test('conserva el borrador al guardar un error borrado desde otra pestaña', async ({ page, context }) => {
+  await openSessionWithError(page, 'Edicion concurrente');
+  const other = await context.newPage();
+  try {
+    await other.goto(page.url());
+    await page.getByRole('button', { name: 'Editar', exact: true }).first().click();
+    const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
+    await editForm.getByLabel('Correcta *').fill('mi correccion pendiente');
+    const table = other.getByRole('table', { name: 'Errores registrados en esta sesion' });
+    await table.getByRole('button', { name: 'Borrar…', exact: true }).click();
+    await table.getByRole('button', { name: 'Borrar', exact: true }).click();
+    await expect(table).toHaveCount(0);
+    await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'ya no existe' })).toBeVisible();
+    await expect(editForm.getByLabel('Correcta *')).toHaveValue('mi correccion pendiente');
+  } finally { await other.close(); }
+});
+
 test.describe('corregir lo ya registrado', () => {
   test('corrige una fila de error en su sitio', async ({ page }) => {
     await openSessionWithError(page, 'Unidad 10, correccion');

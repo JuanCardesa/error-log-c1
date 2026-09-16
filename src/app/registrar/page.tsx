@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getDb } from '@/lib/db/client';
 import {
   distinctSubcategories,
+  countSessions,
   getSession,
   lastUsedCategory,
   listErrors,
@@ -41,10 +42,14 @@ export default async function RegistrarPage({ searchParams }: Props) {
 
   const activeId = parseId(params['s']);
   const active = activeId === null ? null : getSession(db, activeId);
-  const recent = listSessions(db, 12);
   const today = toIsoDate(new Date());
 
   if (active === null) {
+    const pageSize = 12;
+    const total = countSessions(db);
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    const page = Math.min(parseId(params['p']) ?? 1, pages);
+    const recent = listSessions(db, pageSize, (page - 1) * pageSize);
     return (
       <div className={styles.page}>
         <header className={styles.head}>
@@ -59,7 +64,7 @@ export default async function RegistrarPage({ searchParams }: Props) {
 
         {recent.length > 0 && (
           <section className={styles.recent} aria-labelledby="recent-heading">
-            <h2 id="recent-heading">Sesiones recientes</h2>
+            <h2 id="recent-heading">{page === 1 ? 'Sesiones recientes' : 'Historial de sesiones'}</h2>
             <ul className={styles.sessions}>
               {recent.map((session) => (
                 <li key={session.id}>
@@ -84,6 +89,19 @@ export default async function RegistrarPage({ searchParams }: Props) {
                 </li>
               ))}
             </ul>
+            {pages > 1 && (
+              <nav className={styles.pagination} aria-label="Paginas de sesiones">
+                {page > 1 && (
+                  <Link href={page === 2 ? '/registrar' : `/registrar?p=${String(page - 1)}`}>
+                    ← Mas recientes
+                  </Link>
+                )}
+                <span>Pagina {page} de {pages} · {total} sesiones</span>
+                {page < pages && (
+                  <Link href={`/registrar?p=${String(page + 1)}`}>Mas antiguas →</Link>
+                )}
+              </nav>
+            )}
           </section>
         )}
       </div>
