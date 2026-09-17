@@ -70,8 +70,8 @@ export function start(doc) {
     done: new Set(load(DONE_KEY, [])),
     unsupported: 0,
     note: '',
-    // Camino Macmillan: lo ultimo visto sin corregir, y lo que habia justo al corregir.
-    preMark: new Map(),
+    // Camino Macmillan: lo que consta que he escrito yo, y lo que habia al corregir.
+    typed: new Map(),
     atMark: null,
     read: null,
   };
@@ -88,7 +88,7 @@ export function start(doc) {
     if (key === state.activity.key) return;
     state.activity = { key, label };
     state.attempt = 1;
-    state.preMark = new Map();
+    state.typed = new Map();
     state.atMark = null;
     state.verdicts = new Map();
     state.read = null;
@@ -104,11 +104,11 @@ export function start(doc) {
     switchActivity(key, tidy(activity.getAttribute('data-rcfxmlid') ?? 'actividad'));
 
     if (!isMarked(activity)) {
-      // Sin corregir: es el momento de quedarnos con lo que he respondido yo.
-      for (const [id, value] of readAnswers(activity)) {
-        if (value !== '') state.preMark.set(id, value);
+      // Intento nuevo: lo escrito en el anterior no cuenta para este.
+      if (state.phase === 'ready') {
+        state.attempt += 1;
+        state.typed = new Map();
       }
-      if (state.phase === 'ready') state.attempt += 1;
       state.read = null;
       state.atMark = null;
       state.verdicts = new Map();
@@ -133,30 +133,41 @@ export function start(doc) {
   }
 
   /**
-   * Mi respuesta es la que habia al corregir, que es la que la plataforma califico. Si
-   * ese hueco salio vacio pero yo si habia contestado antes, vale lo de antes: eso pasa
-   * cuando la propia plataforma limpia el campo al corregir.
+   * Mi respuesta, por orden de fiabilidad.
+   *
+   * Primero lo que consta que he tecleado yo en ese hueco, porque de eso no hay duda y
+   * manda sobre lo demas: hay actividades que sustituyen el campo por la solucion en el
+   * mismo momento de corregir, y si no se perderia lo que puse.
+   *
+   * Si no he tecleado nada ahi, como en las de arrastrar, vale lo que habia en el hueco
+   * al corregir, que es lo que la plataforma califico. Y si tampoco habia nada, la
+   * respuesta consta vacia: dejarla vacia es honesto, rellenarla de otro sitio no.
    */
   function macmillanAnswers() {
     const map = new Map();
-    for (const [id, current] of state.read.answers) {
-      const graded = state.atMark?.get(id) ?? '';
-      map.set(id, graded !== '' ? graded : (state.preMark.get(id) ?? current));
+    for (const [id] of state.read.answers) {
+      const typed = state.typed.get(id) ?? '';
+      map.set(id, typed !== '' ? typed : (state.atMark?.get(id) ?? ''));
     }
     return map;
   }
 
   /**
-   * Solucion revelada: el valor cambia DESPUES de haber corregido, con la actividad ya
-   * corregida. Si se comparase con lo de antes de corregir, al reintentar mi propia
-   * respuesta nueva pasaria por solucion, que no lo es.
+   * La plataforma revela la solucion de dos maneras, y las dos se reconocen por lo mismo:
+   * un valor que yo no he puesto. O sustituye mi respuesta en el momento de corregir, o
+   * la cambia despues, al mostrar las respuestas.
+   *
+   * Nunca se compara con lo de antes de corregir a secas: al reintentar, mi propia
+   * respuesta nueva pasaria por solucion, y no lo es.
    */
   function macmillanSolutions() {
     const map = new Map();
     if (state.atMark === null) return map;
     for (const [id, current] of state.read.answers) {
-      const graded = state.atMark.get(id);
-      if (graded !== undefined && current !== '' && current !== graded) map.set(id, current);
+      const typed = state.typed.get(id) ?? '';
+      const graded = state.atMark.get(id) ?? '';
+      if (typed !== '' && graded !== '' && graded !== typed) map.set(id, graded);
+      else if (graded !== '' && current !== '' && current !== graded) map.set(id, current);
     }
     return map;
   }
@@ -463,6 +474,27 @@ export function start(doc) {
   };
 
   trackUserInput(root, store, controlIdAt);
+
+  /**
+   * En el reproductor de Macmillan no hay `scan()` que construya el mapa de controles, y
+   * escribir en un campo no genera ninguna mutacion que observar. Asi que ahi nos
+   * apoyamos en los eventos de usuario de verdad: mientras la actividad no este
+   * corregida, lo que haya en los huecos lo he puesto yo.
+   */
+  const rememberMine = (event) => {
+    if (!event.isTrusted) return;
+    const activity = findActivity(doc);
+    if (!activity || isMarked(activity)) return;
+    const holder = event.target?.closest?.('[data-rcfid]');
+    if (!holder || !activity.contains(holder)) return;
+    const id = holder.getAttribute('data-rcfid');
+    if (id === null) return;
+    // Solo el hueco que estoy tocando: de los demas no se sabe quien los puso.
+    const value = readAnswers(activity).get(id) ?? '';
+    if (value === '') state.typed.delete(id);
+    else state.typed.set(id, value);
+  };
+  for (const name of ['input', 'change', 'blur']) root.addEventListener(name, rememberMine, true);
 
   let timer = null;
   const settle = () => {

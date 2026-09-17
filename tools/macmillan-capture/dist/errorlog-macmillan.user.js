@@ -101,13 +101,20 @@ function added(before, after) {
   return after.filter((value) => !seen.has(value));
 }
 
-/** Veredicto unico de una lista de tokens, o null si no hay o si se contradicen. */
+/**
+ * Un hueco que a la vez dice acierto y fallo no es un hueco «sin senal»: es una senal
+ * que no entendemos. Se distingue de `null` para poder fallar en cerrado en vez de
+ * dejar que otro candidato decida por el.
+ */
+const CONFLICT = 'conflict';
+
+/** Veredicto unico de una lista de tokens: `null` si ninguno dice nada. */
 function verdictOf(tokens) {
   let verdict = null;
   for (const token of tokens) {
     const found = classifyToken(token);
     if (found === null) continue;
-    if (verdict !== null && verdict !== found) return null;
+    if (verdict !== null && verdict !== found) return CONFLICT;
     verdict = found;
   }
   return verdict;
@@ -118,7 +125,7 @@ function verdictOfAttributes(pairs) {
   for (const pair of pairs) {
     const found = classifyAttribute(pair.name, pair.value);
     if (found === null) continue;
-    if (verdict !== null && verdict !== found) return null;
+    if (verdict !== null && verdict !== found) return CONFLICT;
     verdict = found;
   }
   return verdict;
@@ -140,24 +147,28 @@ function ariaCandidate(controls) {
 /** Candidato por las clases que aparecen al corregir. */
 function classCandidate(controls) {
   const verdicts = new Map();
+  let conflict = false;
   for (const control of controls) {
     const fresh = added(control.classesBefore ?? [], control.classesAfter ?? []);
     const found = verdictOf(fresh);
-    if (found !== null) verdicts.set(control.id, found);
+    if (found === CONFLICT) conflict = true;
+    else if (found !== null) verdicts.set(control.id, found);
   }
-  return { source: 'clases', verdicts };
+  return { source: 'clases', verdicts, conflict };
 }
 
 /** Candidato por atributos de estado nuevos o cambiados al corregir. */
 function attributeCandidate(controls) {
   const verdicts = new Map();
+  let conflict = false;
   for (const control of controls) {
     const before = new Map((control.attrsBefore ?? []).map((pair) => [pair.name, pair.value]));
     const fresh = (control.attrsAfter ?? []).filter((pair) => before.get(pair.name) !== pair.value);
     const found = verdictOfAttributes(fresh);
-    if (found !== null) verdicts.set(control.id, found);
+    if (found === CONFLICT) conflict = true;
+    else if (found !== null) verdicts.set(control.id, found);
   }
-  return { source: 'atributos', verdicts };
+  return { source: 'atributos', verdicts, conflict };
 }
 
 /**
@@ -196,6 +207,9 @@ function discoverVerdicts(controls) {
   if (!hasAnyChange(list)) return { ok: false, reason: 'uncorrected' };
 
   const candidates = [ariaCandidate(list), attributeCandidate(list), classCandidate(list)];
+  // Si una senal se contradice a si misma en algun hueco, no dejamos que otra decida por
+  // ella: es que no estamos leyendo bien este formato.
+  if (candidates.some((candidate) => candidate.conflict)) return { ok: false, reason: 'conflict' };
   const classified = candidates.filter((candidate) => candidate.verdicts.size > 0);
   if (classified.length === 0) return { ok: false, reason: 'unsupported' };
 
@@ -1262,6 +1276,31 @@ function activityKeyOf(doc, root) {
 
 const MAX_HTML = 6000;
 
+/** Atributos cuyo nombre ya delata que su valor no debe salir de aqui. */
+const SECRET_NAME = /(token|auth|session|secret|password|pwd|signature|credential|api[-_]?key|bearer|jwt|cookie)/i;
+
+/**
+ * Valores con pinta de credencial. El hexadecimal pide 40 o mas a proposito: los
+ * identificadores de contenido de Macmillan son de 32 y hacen falta para el adaptador.
+ */
+const SECRET_VALUE = [
+  /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}/g,
+  /\b[A-Fa-f0-9]{40,}\b/g,
+  /([?&](?:access_token|id_token|token|code|session|auth|key|secret|password|pwd)=)[^&"'\s]+/gi,
+];
+
+const HIDDEN = '[OCULTO]';
+
+/** Enmascara lo que parezca una credencial, por nombre o por forma del valor. */
+function redact(name, value) {
+  if (SECRET_NAME.test(String(name))) return HIDDEN;
+  let safe = String(value);
+  safe = safe.replace(SECRET_VALUE[0], HIDDEN);
+  safe = safe.replace(SECRET_VALUE[1], HIDDEN);
+  safe = safe.replace(SECRET_VALUE[2], `$1${HIDDEN}`);
+  return safe;
+}
+
 function safeLocation(doc) {
   try {
     const url = new URL(doc.defaultView?.location?.href ?? '');
@@ -1275,7 +1314,7 @@ function stateOf(element) {
   const attrs = [];
   for (const attribute of element.attributes) {
     if (attribute.name === 'style') continue;
-    attrs.push(`${attribute.name}="${attribute.value}"`);
+    attrs.push(`${attribute.name}="${redact(attribute.name, attribute.value)}"`);
   }
   return attrs.join(' ');
 }
@@ -1294,6 +1333,14 @@ function cleanHtml(container) {
   const clone = container.cloneNode(true);
   for (const ours of clone.querySelectorAll(`[${UI_ATTR}]`)) ours.remove();
   for (const node of clone.querySelectorAll('script, style')) node.remove();
+  // La muestra se comparte con alguien para escribir el adaptador, asi que ningun
+  // atributo sale de aqui sin pasar antes por el enmascarado.
+  for (const node of [clone, ...clone.querySelectorAll('*')]) {
+    for (const attribute of [...node.attributes]) {
+      const safe = redact(attribute.name, attribute.value);
+      if (safe !== attribute.value) node.setAttribute(attribute.name, safe);
+    }
+  }
   const html = clone.outerHTML ?? '';
   return html.length > MAX_HTML ? `${html.slice(0, MAX_HTML)}\n<!-- recortado -->` : html;
 }
@@ -1567,8 +1614,8 @@ function start(doc) {
     done: new Set(load(DONE_KEY, [])),
     unsupported: 0,
     note: '',
-    // Camino Macmillan: lo ultimo visto sin corregir, y lo que habia justo al corregir.
-    preMark: new Map(),
+    // Camino Macmillan: lo que consta que he escrito yo, y lo que habia al corregir.
+    typed: new Map(),
     atMark: null,
     read: null,
   };
@@ -1585,7 +1632,7 @@ function start(doc) {
     if (key === state.activity.key) return;
     state.activity = { key, label };
     state.attempt = 1;
-    state.preMark = new Map();
+    state.typed = new Map();
     state.atMark = null;
     state.verdicts = new Map();
     state.read = null;
@@ -1601,11 +1648,11 @@ function start(doc) {
     switchActivity(key, tidy(activity.getAttribute('data-rcfxmlid') ?? 'actividad'));
 
     if (!isMarked(activity)) {
-      // Sin corregir: es el momento de quedarnos con lo que he respondido yo.
-      for (const [id, value] of readAnswers(activity)) {
-        if (value !== '') state.preMark.set(id, value);
+      // Intento nuevo: lo escrito en el anterior no cuenta para este.
+      if (state.phase === 'ready') {
+        state.attempt += 1;
+        state.typed = new Map();
       }
-      if (state.phase === 'ready') state.attempt += 1;
       state.read = null;
       state.atMark = null;
       state.verdicts = new Map();
@@ -1630,30 +1677,41 @@ function start(doc) {
   }
 
   /**
-   * Mi respuesta es la que habia al corregir, que es la que la plataforma califico. Si
-   * ese hueco salio vacio pero yo si habia contestado antes, vale lo de antes: eso pasa
-   * cuando la propia plataforma limpia el campo al corregir.
+   * Mi respuesta, por orden de fiabilidad.
+   *
+   * Primero lo que consta que he tecleado yo en ese hueco, porque de eso no hay duda y
+   * manda sobre lo demas: hay actividades que sustituyen el campo por la solucion en el
+   * mismo momento de corregir, y si no se perderia lo que puse.
+   *
+   * Si no he tecleado nada ahi, como en las de arrastrar, vale lo que habia en el hueco
+   * al corregir, que es lo que la plataforma califico. Y si tampoco habia nada, la
+   * respuesta consta vacia: dejarla vacia es honesto, rellenarla de otro sitio no.
    */
   function macmillanAnswers() {
     const map = new Map();
-    for (const [id, current] of state.read.answers) {
-      const graded = state.atMark?.get(id) ?? '';
-      map.set(id, graded !== '' ? graded : (state.preMark.get(id) ?? current));
+    for (const [id] of state.read.answers) {
+      const typed = state.typed.get(id) ?? '';
+      map.set(id, typed !== '' ? typed : (state.atMark?.get(id) ?? ''));
     }
     return map;
   }
 
   /**
-   * Solucion revelada: el valor cambia DESPUES de haber corregido, con la actividad ya
-   * corregida. Si se comparase con lo de antes de corregir, al reintentar mi propia
-   * respuesta nueva pasaria por solucion, que no lo es.
+   * La plataforma revela la solucion de dos maneras, y las dos se reconocen por lo mismo:
+   * un valor que yo no he puesto. O sustituye mi respuesta en el momento de corregir, o
+   * la cambia despues, al mostrar las respuestas.
+   *
+   * Nunca se compara con lo de antes de corregir a secas: al reintentar, mi propia
+   * respuesta nueva pasaria por solucion, y no lo es.
    */
   function macmillanSolutions() {
     const map = new Map();
     if (state.atMark === null) return map;
     for (const [id, current] of state.read.answers) {
-      const graded = state.atMark.get(id);
-      if (graded !== undefined && current !== '' && current !== graded) map.set(id, current);
+      const typed = state.typed.get(id) ?? '';
+      const graded = state.atMark.get(id) ?? '';
+      if (typed !== '' && graded !== '' && graded !== typed) map.set(id, graded);
+      else if (graded !== '' && current !== '' && current !== graded) map.set(id, current);
     }
     return map;
   }
@@ -1960,6 +2018,27 @@ function start(doc) {
   };
 
   trackUserInput(root, store, controlIdAt);
+
+  /**
+   * En el reproductor de Macmillan no hay `scan()` que construya el mapa de controles, y
+   * escribir en un campo no genera ninguna mutacion que observar. Asi que ahi nos
+   * apoyamos en los eventos de usuario de verdad: mientras la actividad no este
+   * corregida, lo que haya en los huecos lo he puesto yo.
+   */
+  const rememberMine = (event) => {
+    if (!event.isTrusted) return;
+    const activity = findActivity(doc);
+    if (!activity || isMarked(activity)) return;
+    const holder = event.target?.closest?.('[data-rcfid]');
+    if (!holder || !activity.contains(holder)) return;
+    const id = holder.getAttribute('data-rcfid');
+    if (id === null) return;
+    // Solo el hueco que estoy tocando: de los demas no se sabe quien los puso.
+    const value = readAnswers(activity).get(id) ?? '';
+    if (value === '') state.typed.delete(id);
+    else state.typed.set(id, value);
+  };
+  for (const name of ['input', 'change', 'blur']) root.addEventListener(name, rememberMine, true);
 
   let timer = null;
   const settle = () => {

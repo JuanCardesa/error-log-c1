@@ -32,9 +32,15 @@ function gap(item, options) {
     ? `<span class="mark ${markClass}" aria-hidden="true" aria-label="${label}">&nbsp;<span class="dev-mark-label visually-hidden">${label.toLowerCase()}</span></span>`
     : '';
 
+  // Hay actividades de arrastrar y actividades de escribir. El adaptador tiene que leer
+  // mi respuesta en las dos: del texto del elemento o del valor del campo.
+  const target = item.kind === 'input'
+    ? `<input class="dev-droppable gapInput" type="text" value="${item.answer}" data-solution="${solutionOf(item)}" aria-label="gap ${item.ref}">`
+    : `<span class="dev-droppable complexDroppable dragTarget movable ui-draggable ui-droppable populated" data-solution="${solutionOf(item)}" title="drag and drop gap ${item.ref}, ${item.answer}, ${label}" role="application" aria-label="drag and drop gap ${item.ref}, empty" tabindex="0" aria-roledescription="draggable">${item.answer}</span>`;
+
   return `<span data-rcfid="${item.id}" data-rcfinteraction="complexDroppable" class="complexDroppable clickAndStickable rcfDroppable">`
     + markable
-    + `<span class="dev-droppable complexDroppable dragTarget movable ui-draggable ui-droppable populated" data-solution="${solutionOf(item)}" title="drag and drop gap ${item.ref}, ${item.answer}, ${label}" role="application" aria-label="drag and drop gap ${item.ref}, empty" tabindex="0" aria-roledescription="draggable">${item.answer}</span>`
+    + target
     + mark
     + '</span></span>';
 }
@@ -51,6 +57,7 @@ export function rcfActivityPage(options = {}) {
     score = '',
     activityId = 'act0000000000000000000000000001',
     interactions = 'rcfDroppable',
+    replaceOnCheck = false,
   } = options;
 
   const list = items.map((item) => {
@@ -102,14 +109,23 @@ ${scoreCard}
 <button id="mark" type="button">Check</button>
 <button id="retry" type="button">Try again</button>
 <script>
+  const REPLACE_ON_CHECK = ${String(replaceOnCheck)};
+  const valueOf = (target) => (target.tagName === 'INPUT' ? target.value : target.textContent).trim();
+  const setValue = (target, value) => {
+    if (target.tagName === 'INPUT') target.value = value;
+    else target.textContent = value;
+  };
+
   // Corrige como la plataforma: compara lo que hay en el hueco con su solucion.
   document.getElementById('mark').addEventListener('click', () => {
     const activity = document.querySelector('.activity');
     activity.classList.add('marked', 'marking', 'showFeedback', 'disabled');
     for (const holder of document.querySelectorAll('[data-rcfid]')) {
       const markable = holder.querySelector('.markable');
-      const target = markable.querySelector('.dragTarget');
-      const ok = target.textContent.trim() === target.dataset.solution;
+      const target = markable.querySelector('.dragTarget, .gapInput');
+      const ok = valueOf(target) === target.dataset.solution;
+      // Algunas actividades sustituyen mi respuesta por la solucion al corregir.
+      if (!ok && REPLACE_ON_CHECK) setValue(target, target.dataset.solution);
       markable.classList.remove('correctAnswer', 'incorrectAnswer');
       markable.classList.add(ok ? 'correctAnswer' : 'incorrectAnswer');
       markable.setAttribute('aria-invalid', ok ? 'false' : 'true');

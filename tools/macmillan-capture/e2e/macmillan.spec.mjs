@@ -219,3 +219,67 @@ test('si reintento y vuelvo a fallar, no se inventa ninguna solucion', async ({ 
   const rows = await copiedRows(page);
   expect(rows.every((row) => row.correctAnswer === '')).toBe(true);
 });
+
+test('si en el reintento dejo el hueco en blanco, no se arrastra la respuesta anterior', async ({ page }) => {
+  await openActivity(page);
+  await expect(page.locator('.tray')).toHaveText(/1 fallo guardado/i);
+
+  // Segundo intento: borro el hueco y lo dejo sin contestar.
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(status(page)).toHaveText(/no esta corregido/i);
+  await dropInto(page, 'CAPE_ID_9', '');
+  await page.getByRole('button', { name: 'Check' }).click();
+
+  const rows = await copiedRows(page);
+  const respuestas = rows.map((row) => row.myAnswer).sort();
+  expect(respuestas).toEqual(['', 'visit']);
+});
+
+test('si la actividad sustituye mi respuesta al corregir, se conserva la mia', async ({ page }) => {
+  await openActivity(page, {
+    replaceOnCheck: true,
+    marked: false,
+    items: [
+      { ref: '1', lines: ['They called'], id: 'CAPE_ID_3', answer: '', solution: 'off', verdict: 'incorrect', kind: 'input' },
+    ],
+  });
+
+  // Escribo con pulsaciones reales, que es lo unico que distingue lo mio de lo suyo.
+  const campo = page.locator('.gapInput').first();
+  await campo.click();
+  await campo.pressSequentially('of');
+  await page.getByRole('button', { name: 'Check' }).click();
+
+  // La plataforma ha puesto «off» en el campo, pero mi respuesta fue «of».
+  await expect(campo).toHaveValue('off');
+
+  const rows = await copiedRows(page);
+  expect(rows).toHaveLength(1);
+  expect(rows[0].myAnswer).toBe('of');
+  expect(rows[0].correctAnswer).toBe('off');
+});
+
+test('la muestra tecnica enmascara lo que parezca una credencial de la pagina', async ({ page }) => {
+  await openActivity(page);
+
+  // La pagina puede llevar cosas asi en cualquier atributo; la muestra se comparte.
+  await page.evaluate(() => {
+    const gap = document.querySelector('[data-rcfid]');
+    gap.setAttribute('data-session-token', 'secreto-que-no-debe-salir');
+    gap.setAttribute('data-src', 'https://ejemplo.test/x?contentId=42&access_token=otro-secreto');
+    document.querySelector('.activity').setAttribute('data-config', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r');
+  });
+
+  await page.getByRole('button', { name: 'Copiar muestra tecnica' }).click();
+  const muestra = await block(page).inputValue();
+
+  expect(muestra).not.toContain('secreto-que-no-debe-salir');
+  expect(muestra).not.toContain('otro-secreto');
+  expect(muestra).not.toContain('eyJhbGci');
+  expect(muestra).toContain('[OCULTO]');
+
+  // Y lo que si hace falta para escribir el adaptador sigue estando.
+  expect(muestra).toContain('data-rcfid');
+  expect(muestra).toContain('markable');
+  expect(muestra).toContain('aria-invalid');
+});
