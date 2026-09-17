@@ -26,6 +26,7 @@
     "db:backup": "tsx src/lib/db/backup.run.ts",
     "db:restore": "tsx src/lib/db/restore.run.ts",
     "screenshots": "node scripts/screenshots.mjs",
+    "macmillan:build": "node tools/macmillan-capture/build.mjs",
     "macmillan:test": "vitest run --root tools/macmillan-capture"
   },
   "dependencies": {
