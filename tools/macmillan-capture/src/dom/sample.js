@@ -12,6 +12,31 @@ import { readValue } from './answers.js';
 
 const MAX_HTML = 6000;
 
+/** Atributos cuyo nombre ya delata que su valor no debe salir de aqui. */
+const SECRET_NAME = /(token|auth|session|secret|password|pwd|signature|credential|api[-_]?key|bearer|jwt|cookie)/i;
+
+/**
+ * Valores con pinta de credencial. El hexadecimal pide 40 o mas a proposito: los
+ * identificadores de contenido de Macmillan son de 32 y hacen falta para el adaptador.
+ */
+const SECRET_VALUE = [
+  /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}/g,
+  /\b[A-Fa-f0-9]{40,}\b/g,
+  /([?&](?:access_token|id_token|token|code|session|auth|key|secret|password|pwd)=)[^&"'\s]+/gi,
+];
+
+const HIDDEN = '[OCULTO]';
+
+/** Enmascara lo que parezca una credencial, por nombre o por forma del valor. */
+export function redact(name, value) {
+  if (SECRET_NAME.test(String(name))) return HIDDEN;
+  let safe = String(value);
+  safe = safe.replace(SECRET_VALUE[0], HIDDEN);
+  safe = safe.replace(SECRET_VALUE[1], HIDDEN);
+  safe = safe.replace(SECRET_VALUE[2], `$1${HIDDEN}`);
+  return safe;
+}
+
 function safeLocation(doc) {
   try {
     const url = new URL(doc.defaultView?.location?.href ?? '');
@@ -25,7 +50,7 @@ function stateOf(element) {
   const attrs = [];
   for (const attribute of element.attributes) {
     if (attribute.name === 'style') continue;
-    attrs.push(`${attribute.name}="${attribute.value}"`);
+    attrs.push(`${attribute.name}="${redact(attribute.name, attribute.value)}"`);
   }
   return attrs.join(' ');
 }
@@ -44,6 +69,14 @@ function cleanHtml(container) {
   const clone = container.cloneNode(true);
   for (const ours of clone.querySelectorAll(`[${UI_ATTR}]`)) ours.remove();
   for (const node of clone.querySelectorAll('script, style')) node.remove();
+  // La muestra se comparte con alguien para escribir el adaptador, asi que ningun
+  // atributo sale de aqui sin pasar antes por el enmascarado.
+  for (const node of [clone, ...clone.querySelectorAll('*')]) {
+    for (const attribute of [...node.attributes]) {
+      const safe = redact(attribute.name, attribute.value);
+      if (safe !== attribute.value) node.setAttribute(attribute.name, safe);
+    }
+  }
   const html = clone.outerHTML ?? '';
   return html.length > MAX_HTML ? `${html.slice(0, MAX_HTML)}\n<!-- recortado -->` : html;
 }

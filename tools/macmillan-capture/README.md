@@ -108,8 +108,14 @@ Mira la URL del marco del ejercicio y añade su host como `@match` en la cabecer
 
 Para añadir un formato nuevo hace falta ver su HTML. Con el ejercicio **ya corregido**,
 pulsa **Copiar muestra técnica**: genera el contenedor de una pregunta, el estado de sus
-controles y la cadena de ancestros. No incluye cookies, ni tokens, ni la query de la URL,
-ni nada de tu cuenta. Ese texto es lo único que hace falta para escribir el adaptador.
+controles y la cadena de ancestros. Ese texto es lo único que hace falta para escribir el
+adaptador.
+
+Lleva la estructura del ejercicio y tus respuestas, que es justo lo que hay que mirar. No
+lleva cookies ni la query de la URL, y **todo atributo pasa por un enmascarado** antes de
+salir: se ocultan los que se llaman token, auth, session, key o parecido, y los valores
+con forma de credencial. Los identificadores de contenido de Macmillan sí se conservan,
+porque sin ellos el adaptador no se puede escribir.
 
 ## Cómo lee el ejercicio
 
