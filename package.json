@@ -25,7 +25,8 @@
     "db:seed": "tsx src/lib/db/seed.run.ts",
     "db:backup": "tsx src/lib/db/backup.run.ts",
     "db:restore": "tsx src/lib/db/restore.run.ts",
-    "screenshots": "node scripts/screenshots.mjs"
+    "screenshots": "node scripts/screenshots.mjs",
+    "macmillan:test": "vitest run --root tools/macmillan-capture"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
