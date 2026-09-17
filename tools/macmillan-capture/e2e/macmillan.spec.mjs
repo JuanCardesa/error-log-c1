@@ -270,6 +270,11 @@ test('la muestra tecnica enmascara lo que parezca una credencial de la pagina', 
     document.querySelector('.activity').setAttribute('data-config', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r');
   });
 
+  // Y tambien en el texto visible, que es donde vive mi respuesta en las de arrastrar.
+  await page.evaluate(() => {
+    document.querySelector('.dragTarget').textContent = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJ';
+  });
+
   await page.getByRole('button', { name: 'Copiar muestra tecnica' }).click();
   const muestra = await block(page).inputValue();
 

@@ -1033,51 +1033,68 @@ function usable(element) {
 }
 
 /**
+ * Registro de identidad de los controles.
+ *
+ * Los identificadores NO pueden salir del orden en el DOM. La linea base y las
+ * respuestas guardadas se indexan por ellos y sobreviven entre lecturas, asi que si la
+ * pagina inserta o reordena un hueco, cada control heredaria la linea base y la
+ * respuesta del de al lado. El mismo elemento conserva siempre su identificador; uno
+ * nuevo recibe uno nuevo, sin nada heredado.
+ */
+function createRegistry() {
+  return { byElement: new WeakMap(), byName: new Map(), next: 0 };
+}
+
+function idFor(registry, element, groupName) {
+  const table = groupName === null ? registry.byElement : registry.byName;
+  const key = groupName === null ? element : groupName;
+  let id = table.get(key);
+  if (id === undefined) {
+    registry.next += 1;
+    id = `c${String(registry.next)}`;
+    table.set(key, id);
+  }
+  return id;
+}
+
+/** Que clase de hueco es un elemento, o `null` si no es un hueco de respuesta. */
+function kindOf(element) {
+  const tag = element.tagName.toLowerCase();
+  if (tag === 'select') return 'select';
+  if (tag === 'textarea') return 'text';
+  if (tag === 'input') {
+    const type = String(element.getAttribute('type') ?? '').toLowerCase();
+    if (type === 'radio' || type === 'checkbox') return 'choice';
+    return TEXT_INPUT_TYPES.includes(type) ? 'text' : null;
+  }
+  const editable = element.getAttribute('contenteditable');
+  return editable === '' || editable === 'true' ? 'contenteditable' : null;
+}
+
+/**
  * Controles logicos del ejercicio. Un grupo de radios o casillas con el mismo nombre
  * cuenta como un unico hueco, que es como se responde y como se corrige.
  */
-function findControls(root) {
+function findControls(root, registry = createRegistry()) {
   const controls = [];
   const byElement = new Map();
-  const groups = new Map();
-  let serial = 0;
+  const byId = new Map();
 
-  const nodes = root.querySelectorAll('input, textarea, select, [contenteditable]');
-  for (const element of nodes) {
-    if (!usable(element)) continue;
-    if (element.disabled) continue;
-    const tag = element.tagName.toLowerCase();
-    let kind = null;
-    if (tag === 'select') kind = 'select';
-    else if (tag === 'textarea') kind = 'text';
-    else if (tag === 'input') {
-      const type = String(element.getAttribute('type') ?? '').toLowerCase();
-      if (type === 'radio' || type === 'checkbox') kind = 'choice';
-      else if (TEXT_INPUT_TYPES.includes(type)) kind = 'text';
-    } else {
-      const editable = element.getAttribute('contenteditable');
-      if (editable === '' || editable === 'true') kind = 'contenteditable';
-    }
+  for (const element of root.querySelectorAll('input, textarea, select, [contenteditable]')) {
+    if (!usable(element) || element.disabled) continue;
+    const kind = kindOf(element);
     if (kind === null) continue;
     if (kind === 'text' && element.readOnly) continue;
 
-    if (kind === 'choice') {
-      const key = element.name !== '' ? `name:${element.name}` : `group:${String(serial)}`;
-      let control = groups.get(key);
-      if (!control) {
-        serial += 1;
-        control = { id: `c${String(serial)}`, kind, elements: [] };
-        groups.set(key, control);
-        controls.push(control);
-      }
-      control.elements.push(element);
-      byElement.set(element, control);
-      continue;
+    const groupName = kind === 'choice' && element.name !== '' ? `name:${element.name}` : null;
+    const id = idFor(registry, element, groupName);
+    let control = byId.get(id);
+    if (control === undefined) {
+      control = { id, kind, elements: [] };
+      byId.set(id, control);
+      controls.push(control);
     }
-
-    serial += 1;
-    const control = { id: `c${String(serial)}`, kind, elements: [element] };
-    controls.push(control);
+    control.elements.push(element);
     byElement.set(element, control);
   }
   return { controls, byElement };
@@ -1286,19 +1303,28 @@ const SECRET_NAME = /(token|auth|session|secret|password|pwd|signature|credentia
 const SECRET_VALUE = [
   /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}/g,
   /\b[A-Fa-f0-9]{40,}\b/g,
-  /([?&](?:access_token|id_token|token|code|session|auth|key|secret|password|pwd)=)[^&"'\s]+/gi,
+  /([?&][^=&\s"']*(?:token|secret|password|pwd|auth|session|key|credential|signature|code)[^=&\s"']*=)[^&"'\s]+/gi,
 ];
 
 const HIDDEN = '[OCULTO]';
 
-/** Enmascara lo que parezca una credencial, por nombre o por forma del valor. */
-function redact(name, value) {
-  if (SECRET_NAME.test(String(name))) return HIDDEN;
+/**
+ * Enmascara un valor por su forma: JWT, cadenas largas con pinta de clave y parametros
+ * sensibles dentro de una URL. Sirve igual para un atributo, para un texto visible o
+ * para una respuesta, que son las tres vias por las que algo puede salir de aqui.
+ */
+function redactValue(value) {
   let safe = String(value);
   safe = safe.replace(SECRET_VALUE[0], HIDDEN);
   safe = safe.replace(SECRET_VALUE[1], HIDDEN);
   safe = safe.replace(SECRET_VALUE[2], `$1${HIDDEN}`);
   return safe;
+}
+
+/** Igual, pero el nombre del atributo por si solo ya puede condenar su valor. */
+function redact(name, value) {
+  if (SECRET_NAME.test(String(name))) return HIDDEN;
+  return redactValue(value);
 }
 
 function safeLocation(doc) {
@@ -1341,6 +1367,13 @@ function cleanHtml(container) {
       if (safe !== attribute.value) node.setAttribute(attribute.name, safe);
     }
   }
+  const walker = clone.ownerDocument.createTreeWalker(clone, 4);
+  const texts = [];
+  while (walker.nextNode()) texts.push(walker.currentNode);
+  for (const node of texts) {
+    const safe = redactValue(node.nodeValue ?? '');
+    if (safe !== node.nodeValue) node.nodeValue = safe;
+  }
   const html = clone.outerHTML ?? '';
   return html.length > MAX_HTML ? `${html.slice(0, MAX_HTML)}\n<!-- recortado -->` : html;
 }
@@ -1365,8 +1398,8 @@ function buildSample(input) {
   for (const control of controls.slice(0, 12)) {
     lines.push('');
     lines.push(`### ${control.id} (${control.kind})`);
-    lines.push(`valor visible ahora: ${JSON.stringify(readValue(control))}`);
-    lines.push(`mi respuesta guardada: ${JSON.stringify(store.answerOf(control.id))}`);
+    lines.push(`valor visible ahora: ${JSON.stringify(redactValue(readValue(control)))}`);
+    lines.push(`mi respuesta guardada: ${JSON.stringify(redactValue(store.answerOf(control.id)))}`);
     const [first] = control.elements;
     if (first) {
       lines.push('cadena de ancestros, del control hacia fuera:');
@@ -1609,6 +1642,7 @@ function start(doc) {
     byElement: new Map(),
     questions: [],
     baseline: new Map(),
+    registry: createRegistry(),
     verdicts: new Map(),
     tray: load(TRAY_KEY, []),
     done: new Set(load(DONE_KEY, [])),
@@ -1632,6 +1666,8 @@ function start(doc) {
     if (key === state.activity.key) return;
     state.activity = { key, label };
     state.attempt = 1;
+    // Otra actividad, otros huecos: nadie hereda el identificador de nadie.
+    state.registry = createRegistry();
     state.typed = new Map();
     state.atMark = null;
     state.verdicts = new Map();
@@ -1719,7 +1755,7 @@ function start(doc) {
   // ------------------------------------------------------------------ Generico
 
   function scan() {
-    const { controls, byElement } = findControls(root);
+    const { controls, byElement } = findControls(root, state.registry);
     state.controls = controls;
     state.byElement = byElement;
     state.questions = buildQuestions(root, controls, byElement);
@@ -1742,10 +1778,13 @@ function start(doc) {
 
   function evaluateGeneric() {
     state.mode = 'generic';
-    const controls = scan();
+    let controls = scan();
     const activity = activityKeyOf(doc, root);
     if (activity.key !== state.activity.key) {
       switchActivity(activity.key, activity.label);
+      // El registro se ha renovado: volvemos a leer para que los identificadores y la
+      // linea base que guardamos sean los mismos.
+      controls = scan();
       rebaseline(controls);
     }
 

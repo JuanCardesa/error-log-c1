@@ -221,3 +221,28 @@ test('la muestra tecnica no lleva cookies ni la query de la URL', async ({ page 
   expect(sample).not.toContain('secreto-que-no-debe-salir');
   expect(sample).toContain('ejercicios.example.org/unidad/3');
 });
+
+test('si la pagina inserta un hueco nuevo, cada respuesta sigue siendo de su pregunta', async ({ page }) => {
+  await openExercise(page, exercisePage({ title: 'Unit 9 — huecos que aparecen' }));
+  await answer(page, 0, 'of');
+  await answer(page, 1, 'after');
+  await answer(page, 2, 'out');
+
+  // El ejercicio anade una pregunta ANTES de las demas, como hacen los que cargan por
+  // partes. Si los identificadores se recalculan por orden, cada control hereda la
+  // respuesta del de al lado.
+  await page.evaluate(() => {
+    const lista = document.querySelector('ol.exercise');
+    const nueva = document.createElement('li');
+    nueva.className = 'question';
+    nueva.innerHTML = '<span class="num">0</span> Extra <span class="gap"><input type="text" data-solution="x"></span> question.';
+    lista.insertBefore(nueva, lista.firstChild);
+  });
+
+  await page.getByRole('button', { name: 'Check' }).click();
+
+  const rows = await copiedRows(page);
+  const porItem = Object.fromEntries(rows.map((row) => [row.itemRef, row.myAnswer]));
+  expect(porItem['1']).toBe('of');
+  expect(porItem['3']).toBe('out');
+});
