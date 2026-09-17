@@ -38,6 +38,17 @@ jobs:
       - name: test y cobertura
         run: pnpm test:coverage
 
+      - name: Herramienta de Macmillan · logica pura
+        run: pnpm macmillan:test
+
+      - name: Herramienta de Macmillan · el userscript versionado esta al dia
+        run: |
+          pnpm macmillan:build
+          git diff --exit-code tools/macmillan-capture/dist || {
+            echo '::error::dist/errorlog-macmillan.user.js no coincide con sus fuentes. Ejecuta pnpm macmillan:build y versiona el resultado.'
+            exit 1
+          }
+
       - name: build
         run: pnpm build
 
@@ -69,6 +80,9 @@ jobs:
 
       - name: Flujos end-to-end
         run: pnpm test:e2e
+
+      - name: Herramienta de Macmillan · captura en navegador
+        run: pnpm macmillan:e2e
 
       - if: failure()
         uses: actions/upload-artifact@v7
