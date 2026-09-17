@@ -85,13 +85,20 @@ function added(before, after) {
   return after.filter((value) => !seen.has(value));
 }
 
-/** Veredicto unico de una lista de tokens, o null si no hay o si se contradicen. */
+/**
+ * Un hueco que a la vez dice acierto y fallo no es un hueco «sin senal»: es una senal
+ * que no entendemos. Se distingue de `null` para poder fallar en cerrado en vez de
+ * dejar que otro candidato decida por el.
+ */
+const CONFLICT = 'conflict';
+
+/** Veredicto unico de una lista de tokens: `null` si ninguno dice nada. */
 function verdictOf(tokens) {
   let verdict = null;
   for (const token of tokens) {
     const found = classifyToken(token);
     if (found === null) continue;
-    if (verdict !== null && verdict !== found) return null;
+    if (verdict !== null && verdict !== found) return CONFLICT;
     verdict = found;
   }
   return verdict;
@@ -102,7 +109,7 @@ function verdictOfAttributes(pairs) {
   for (const pair of pairs) {
     const found = classifyAttribute(pair.name, pair.value);
     if (found === null) continue;
-    if (verdict !== null && verdict !== found) return null;
+    if (verdict !== null && verdict !== found) return CONFLICT;
     verdict = found;
   }
   return verdict;
@@ -124,24 +131,28 @@ function ariaCandidate(controls) {
 /** Candidato por las clases que aparecen al corregir. */
 function classCandidate(controls) {
   const verdicts = new Map();
+  let conflict = false;
   for (const control of controls) {
     const fresh = added(control.classesBefore ?? [], control.classesAfter ?? []);
     const found = verdictOf(fresh);
-    if (found !== null) verdicts.set(control.id, found);
+    if (found === CONFLICT) conflict = true;
+    else if (found !== null) verdicts.set(control.id, found);
   }
-  return { source: 'clases', verdicts };
+  return { source: 'clases', verdicts, conflict };
 }
 
 /** Candidato por atributos de estado nuevos o cambiados al corregir. */
 function attributeCandidate(controls) {
   const verdicts = new Map();
+  let conflict = false;
   for (const control of controls) {
     const before = new Map((control.attrsBefore ?? []).map((pair) => [pair.name, pair.value]));
     const fresh = (control.attrsAfter ?? []).filter((pair) => before.get(pair.name) !== pair.value);
     const found = verdictOfAttributes(fresh);
-    if (found !== null) verdicts.set(control.id, found);
+    if (found === CONFLICT) conflict = true;
+    else if (found !== null) verdicts.set(control.id, found);
   }
-  return { source: 'atributos', verdicts };
+  return { source: 'atributos', verdicts, conflict };
 }
 
 /**
@@ -180,6 +191,9 @@ export function discoverVerdicts(controls) {
   if (!hasAnyChange(list)) return { ok: false, reason: 'uncorrected' };
 
   const candidates = [ariaCandidate(list), attributeCandidate(list), classCandidate(list)];
+  // Si una senal se contradice a si misma en algun hueco, no dejamos que otra decida por
+  // ella: es que no estamos leyendo bien este formato.
+  if (candidates.some((candidate) => candidate.conflict)) return { ok: false, reason: 'conflict' };
   const classified = candidates.filter((candidate) => candidate.verdicts.size > 0);
   if (classified.length === 0) return { ok: false, reason: 'unsupported' };
 

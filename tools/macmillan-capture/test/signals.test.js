@@ -138,6 +138,25 @@ describe('descubrimiento del veredicto', () => {
     expect(found).toEqual({ ok: false, reason: 'conflict' });
   });
 
+  it('un hueco cuyas clases dicen acierto y fallo a la vez invalida la lectura entera', () => {
+    // Aunque aria clasifique los dos huecos sin problema, una senal que se contradice a
+    // si misma significa que no entendemos el formato. No decide otra por ella.
+    const found = discoverVerdicts([
+      control('a', { classesAfter: ['gap', 'correct', 'incorrect'], ariaInvalidAfter: 'true' }),
+      control('b', { ariaInvalidAfter: 'false' }),
+    ]);
+    expect(found).toEqual({ ok: false, reason: 'conflict' });
+  });
+
+  it('lo mismo con atributos de estado que se contradicen entre si', () => {
+    const found = discoverVerdicts([
+      control('a', {
+        attrsAfter: [{ name: 'data-result', value: 'correct' }, { name: 'data-state', value: 'wrong' }],
+      }),
+    ]);
+    expect(found).toEqual({ ok: false, reason: 'conflict' });
+  });
+
   it('no toma por senal una clase que ya estaba antes de corregir', () => {
     const found = discoverVerdicts([
       control('a', { classesBefore: ['gap', 'correct'], classesAfter: ['gap', 'correct'] }),
