@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { redact } from '../src/dom/sample.js';
+import { redact, redactValue } from '../src/dom/sample.js';
 
 describe('enmascarado de la muestra tecnica', () => {
   it('oculta el valor de cualquier atributo cuyo nombre suene a credencial', () => {
@@ -25,6 +25,23 @@ describe('enmascarado de la muestra tecnica', () => {
     const safe = redact('data-src', url);
     expect(safe).not.toContain('secreto-de-verdad');
     expect(safe).toContain('contentId=42');
+  });
+
+  it('reconoce el parametro por su forma, no por una lista cerrada de nombres', () => {
+    // Una lista cerrada siempre se queda corta: estos dos no estaban y son credenciales.
+    for (const parametro of ['refresh_token', 'client_secret', 'x-api-key', 'sessionId', 'signature']) {
+      const safe = redactValue(`https://ejemplo.test/x?a=1&${parametro}=NO-DEBE-SALIR`);
+      expect(safe, parametro).not.toContain('NO-DEBE-SALIR');
+      expect(safe, parametro).toContain('a=1');
+    }
+  });
+
+  it('enmascara tambien un valor suelto, sin nombre de atributo', () => {
+    // Por aqui pasan los textos visibles y mis respuestas, que no son atributos.
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r';
+    expect(redactValue(`pegue esto sin querer: ${jwt}`)).not.toContain('eyJhbGci');
+    expect(redactValue('off')).toBe('off');
+    expect(redactValue('')).toBe('');
   });
 
   it('no estropea lo que el adaptador necesita', () => {

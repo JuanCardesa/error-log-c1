@@ -112,9 +112,11 @@ controles y la cadena de ancestros. Ese texto es lo único que hace falta para e
 adaptador.
 
 Lleva la estructura del ejercicio y tus respuestas, que es justo lo que hay que mirar. No
-lleva cookies ni la query de la URL, y **todo atributo pasa por un enmascarado** antes de
-salir: se ocultan los que se llaman token, auth, session, key o parecido, y los valores
-con forma de credencial. Los identificadores de contenido de Macmillan sí se conservan,
+lleva cookies ni la query de la URL, y **nada sale sin pasar por un enmascarado**: ni los
+atributos, ni el texto visible, ni las respuestas. Se ocultan los atributos que se llaman
+token, auth, session, key o parecido, y en cualquier valor se enmascara lo que tenga forma
+de credencial: un JWT, una cadena larga con pinta de clave, o un parámetro sensible dentro
+de una URL, reconocido por su forma y no por una lista cerrada de nombres. Los identificadores de contenido de Macmillan sí se conservan,
 porque sin ellos el adaptador no se puede escribir.
 
 ## Cómo lee el ejercicio

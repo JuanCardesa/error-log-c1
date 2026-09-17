@@ -22,19 +22,28 @@ const SECRET_NAME = /(token|auth|session|secret|password|pwd|signature|credentia
 const SECRET_VALUE = [
   /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}/g,
   /\b[A-Fa-f0-9]{40,}\b/g,
-  /([?&](?:access_token|id_token|token|code|session|auth|key|secret|password|pwd)=)[^&"'\s]+/gi,
+  /([?&][^=&\s"']*(?:token|secret|password|pwd|auth|session|key|credential|signature|code)[^=&\s"']*=)[^&"'\s]+/gi,
 ];
 
 const HIDDEN = '[OCULTO]';
 
-/** Enmascara lo que parezca una credencial, por nombre o por forma del valor. */
-export function redact(name, value) {
-  if (SECRET_NAME.test(String(name))) return HIDDEN;
+/**
+ * Enmascara un valor por su forma: JWT, cadenas largas con pinta de clave y parametros
+ * sensibles dentro de una URL. Sirve igual para un atributo, para un texto visible o
+ * para una respuesta, que son las tres vias por las que algo puede salir de aqui.
+ */
+export function redactValue(value) {
   let safe = String(value);
   safe = safe.replace(SECRET_VALUE[0], HIDDEN);
   safe = safe.replace(SECRET_VALUE[1], HIDDEN);
   safe = safe.replace(SECRET_VALUE[2], `$1${HIDDEN}`);
   return safe;
+}
+
+/** Igual, pero el nombre del atributo por si solo ya puede condenar su valor. */
+export function redact(name, value) {
+  if (SECRET_NAME.test(String(name))) return HIDDEN;
+  return redactValue(value);
 }
 
 function safeLocation(doc) {
@@ -77,6 +86,13 @@ function cleanHtml(container) {
       if (safe !== attribute.value) node.setAttribute(attribute.name, safe);
     }
   }
+  const walker = clone.ownerDocument.createTreeWalker(clone, 4);
+  const texts = [];
+  while (walker.nextNode()) texts.push(walker.currentNode);
+  for (const node of texts) {
+    const safe = redactValue(node.nodeValue ?? '');
+    if (safe !== node.nodeValue) node.nodeValue = safe;
+  }
   const html = clone.outerHTML ?? '';
   return html.length > MAX_HTML ? `${html.slice(0, MAX_HTML)}\n<!-- recortado -->` : html;
 }
@@ -101,8 +117,8 @@ export function buildSample(input) {
   for (const control of controls.slice(0, 12)) {
     lines.push('');
     lines.push(`### ${control.id} (${control.kind})`);
-    lines.push(`valor visible ahora: ${JSON.stringify(readValue(control))}`);
-    lines.push(`mi respuesta guardada: ${JSON.stringify(store.answerOf(control.id))}`);
+    lines.push(`valor visible ahora: ${JSON.stringify(redactValue(readValue(control)))}`);
+    lines.push(`mi respuesta guardada: ${JSON.stringify(redactValue(store.answerOf(control.id)))}`);
     const [first] = control.elements;
     if (first) {
       lines.push('cadena de ancestros, del control hacia fuera:');
