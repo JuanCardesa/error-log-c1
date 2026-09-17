@@ -331,7 +331,7 @@ const MAX_BATCH_ROWS = 100;
 
 /** Hash estable y corto para el control de duplicados. FNV-1a, sin dependencias. */
 function fingerprint(parts) {
-  const text = parts.join(' ');
+  const text = parts.join('\u0000');
   let hash = 0x811c9dc5;
   for (let i = 0; i < text.length; i += 1) {
     hash ^= text.charCodeAt(i);
