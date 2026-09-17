@@ -12,7 +12,7 @@ import { MAX_BATCH_ROWS, rowFingerprint, toImportEntries, toJson } from '../core
 import { addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, takeBatch, trayStats } from '../core/tray.js';
 import { describe } from '../core/report.js';
 import { AnswerStore, readValue, trackUserInput } from './answers.js';
-import { activityKeyOf, buildQuestions, detectUnsupported, findControls, snapshotState, toSignalInput } from './collect.js';
+import { activityKeyOf, buildQuestions, createRegistry, detectUnsupported, findControls, snapshotState, toSignalInput } from './collect.js';
 import { findActivity, isMarked, readActivity, readAnswers } from './macmillan.js';
 import { buildSample } from './sample.js';
 import { Panel } from './ui.js';
@@ -65,6 +65,7 @@ export function start(doc) {
     byElement: new Map(),
     questions: [],
     baseline: new Map(),
+    registry: createRegistry(),
     verdicts: new Map(),
     tray: load(TRAY_KEY, []),
     done: new Set(load(DONE_KEY, [])),
@@ -88,6 +89,8 @@ export function start(doc) {
     if (key === state.activity.key) return;
     state.activity = { key, label };
     state.attempt = 1;
+    // Otra actividad, otros huecos: nadie hereda el identificador de nadie.
+    state.registry = createRegistry();
     state.typed = new Map();
     state.atMark = null;
     state.verdicts = new Map();
@@ -175,7 +178,7 @@ export function start(doc) {
   // ------------------------------------------------------------------ Generico
 
   function scan() {
-    const { controls, byElement } = findControls(root);
+    const { controls, byElement } = findControls(root, state.registry);
     state.controls = controls;
     state.byElement = byElement;
     state.questions = buildQuestions(root, controls, byElement);
@@ -198,10 +201,13 @@ export function start(doc) {
 
   function evaluateGeneric() {
     state.mode = 'generic';
-    const controls = scan();
+    let controls = scan();
     const activity = activityKeyOf(doc, root);
     if (activity.key !== state.activity.key) {
       switchActivity(activity.key, activity.label);
+      // El registro se ha renovado: volvemos a leer para que los identificadores y la
+      // linea base que guardamos sean los mismos.
+      controls = scan();
       rebaseline(controls);
     }
 
