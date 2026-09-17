@@ -27,7 +27,8 @@
     "db:restore": "tsx src/lib/db/restore.run.ts",
     "screenshots": "node scripts/screenshots.mjs",
     "macmillan:build": "node tools/macmillan-capture/build.mjs",
-    "macmillan:test": "vitest run --root tools/macmillan-capture"
+    "macmillan:test": "vitest run --root tools/macmillan-capture",
+    "macmillan:e2e": "playwright test --config tools/macmillan-capture/playwright.config.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
