@@ -37,8 +37,8 @@ export const session = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     date: text('date').notNull(),
     kind: text('kind', { enum: SESSION_KINDS }).notNull(),
-    paper: text('paper', { enum: PAPERS }).notNull(),
-    part: integer('part').notNull(),
+    paper: text('paper', { enum: PAPERS }),
+    part: integer('part'),
     source: text('source', { enum: SOURCES }).notNull(),
     sourceRef: text('source_ref'),
     itemsTotal: integer('items_total'),
@@ -62,20 +62,26 @@ export const session = sqliteTable(
     `),
     // Solo el Writing puede quedarse sin items: no se mide por aciertos.
     check('session_items_required_outside_writing', sql`
-      ${table.paper} = 'WRITING'
+      ${table.paper} IS 'WRITING'
       OR (${table.itemsTotal} IS NOT NULL AND ${table.itemsCorrect} IS NOT NULL)
     `),
     check('session_part_within_paper', sql`
-      ${table.part} >= 1 AND ${table.part} <= CASE ${table.paper}
-        WHEN 'RUOE' THEN 8
-        WHEN 'WRITING' THEN 2
-        WHEN 'LISTENING' THEN 4
-        WHEN 'SPEAKING' THEN 4
-      END
+      (${table.paper} IS NULL AND ${table.part} IS NULL)
+      OR (
+        ${table.paper} IS NOT NULL AND ${table.part} IS NOT NULL
+        AND typeof(${table.part}) = 'integer'
+        AND ${table.part} >= 1 AND ${table.part} <= CASE ${table.paper}
+          WHEN 'RUOE' THEN 8
+          WHEN 'WRITING' THEN 2
+          WHEN 'LISTENING' THEN 4
+          WHEN 'SPEAKING' THEN 4
+          ELSE 0
+        END
+      )
     `),
     // Implicacion, no bicondicional (decision P4).
     check('session_writing_kind_implies_writing_paper', sql`
-      ${table.kind} <> 'WRITING' OR ${table.paper} = 'WRITING'
+      ${table.kind} <> 'WRITING' OR ${table.paper} IS 'WRITING'
     `),
   ],
 );
