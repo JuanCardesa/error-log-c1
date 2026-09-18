@@ -37,6 +37,28 @@ export function findActivity(doc) {
   return doc.querySelector(ACTIVITY_SELECTOR);
 }
 
+/** Rastros del reproductor RCF, este la actividad como este. */
+const PLAYER_HINT = '[data-rcfid], [data-rcfinteraction], .markable, .dev-markable-container, .dev-rcf-content';
+
+/**
+ * Si estamos dentro del reproductor pero la actividad no encaja con el adaptador, hay
+ * que decirlo. Esconder el panel deja al usuario sin panel y sin explicacion, y sin
+ * manera de mandar la muestra que hace falta para soportar ese formato.
+ */
+export function looksLikePlayer(doc) {
+  const path = doc.defaultView?.location?.pathname ?? '';
+  if (/rcf-?player/i.test(path)) return true;
+  return doc.querySelector(PLAYER_HINT) !== null;
+}
+
+/** El trozo de pagina que mejor describe el formato cuando no reconocemos la actividad. */
+export function sampleContainerOf(doc) {
+  const activity = findActivity(doc);
+  if (activity) return activity;
+  const gap = doc.querySelector('[data-rcfid], .markable, [data-rcfinteraction]');
+  return gap?.closest('li, tr, section, div') ?? doc.body;
+}
+
 /** La plataforma añade `marked` a la actividad cuando la ha corregido. */
 export function isMarked(activity) {
   return activity.classList.contains('marked');
