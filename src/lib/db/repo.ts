@@ -1,6 +1,7 @@
 import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
 
 import type { SessionStatus } from '../domain/enums';
+import { withSessionFormat } from '../domain/session';
 import type { ErrorRow, SessionRow, WritingPieceRow } from '../domain/types';
 import type {
   ErrorInput,
@@ -19,7 +20,7 @@ import { errorRow, session, writingPiece } from './schema';
  */
 
 export function listSessions(db: Db, limit = 50, offset = 0): SessionRow[] {
-  return db.select().from(session).orderBy(desc(session.date), desc(session.id)).limit(limit).offset(offset).all();
+  return db.select().from(session).orderBy(desc(session.date), desc(session.id)).limit(limit).offset(offset).all().map(withSessionFormat);
 }
 
 export function countSessions(db: Db): number {
@@ -32,17 +33,18 @@ export function listOpenSessions(db: Db): SessionRow[] {
     .from(session)
     .where(eq(session.status, 'OPEN'))
     .orderBy(desc(session.date), desc(session.id))
-    .all();
+    .all().map(withSessionFormat);
 }
 
 export function getSession(db: Db, id: number): SessionRow | null {
-  return db.select().from(session).where(eq(session.id, id)).get() ?? null;
+  const row = db.select().from(session).where(eq(session.id, id)).get();
+  return row === undefined ? null : withSessionFormat(row);
 }
 
 export function createSession(db: Db, input: SessionInput): SessionRow {
   const created = db.insert(session).values(input).returning().get();
   if (created === undefined) throw new Error('No se pudo crear la sesion');
-  return created;
+  return withSessionFormat(created);
 }
 
 export function updateSession(db: Db, id: number, input: SessionInput): boolean {
@@ -200,5 +202,6 @@ export function writingSessionsWithoutPiece(db: Db): SessionRow[] {
     .where(eq(session.paper, 'WRITING'))
     .orderBy(desc(session.date))
     .all()
-    .filter((row) => !taken.has(row.id));
+    .filter((row) => !taken.has(row.id))
+    .map(withSessionFormat);
 }

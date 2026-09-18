@@ -20,6 +20,25 @@ import { q6RewriteEfficacy } from './q6RewriteEfficacy';
 
 const opts: QueryOptions = { now: NOW, windowDays: 30 };
 
+it('incluye practica libre en el informe global sin alterar RUOE ni perder sesiones perfectas', () => {
+  const exam = makeSession({ id: 101, itemsTotal: 8, itemsCorrect: 6 });
+  const free = makeSession({ id: 102, paper: null, part: null, itemsTotal: 10, itemsCorrect: 9 });
+  const perfect = makeSession({ id: 103, paper: null, part: null, itemsTotal: 2, itemsCorrect: 2 });
+  const base = makeDataset({ sessions: [exam], errors: [makeError({ sessionId: 101, category: 'LEXICO' })] });
+  const data = makeDataset({
+    sessions: [exam, free, perfect],
+    errors: [...base.errors, makeError({ sessionId: 102, category: 'LEXICO', confidence: 'SEGURO' })],
+  });
+  expect(q3RuoeAccuracy(data, opts)).toEqual(q3RuoeAccuracy(base, opts));
+  expect(q2CategoryRate(data, opts)).toEqual({
+    itemsAttempted: 20, excludedErrors: 0,
+    rows: [{ category: 'LEXICO', errors: 2, ratePer100: 10 }],
+  });
+  expect(q4FalseCertainties(data, { now: NOW })).toHaveLength(1);
+  expect(q1CauseSplit(data, opts).total).toBe(2);
+  expect(q5AnkiDebt(data, opts)).toMatchObject({ eligible: 2, added: 0, pending: 2 });
+});
+
 beforeEach(() => {
   resetIds();
 });

@@ -6,6 +6,7 @@ import type {
   SessionInput,
   WritingPieceInput,
 } from '../validation/schemas';
+import { sessionInputSchema } from '../validation/schemas';
 import { type Db, createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
 import {
@@ -38,7 +39,7 @@ import { writingPiece } from './schema';
 let db: Db;
 
 function sessionInput(overrides: Partial<SessionInput> = {}): SessionInput {
-  return {
+  return sessionInputSchema({ today: '2026-09-14' }).parse({
     date: '2026-09-10',
     kind: 'DRILL',
     paper: 'RUOE',
@@ -51,7 +52,7 @@ function sessionInput(overrides: Partial<SessionInput> = {}): SessionInput {
     timed: false,
     status: 'OPEN',
     ...overrides,
-  };
+  });
 }
 
 function errorInput(sessionId: number, overrides: Partial<ErrorInput> = {}): ErrorInput {

@@ -71,7 +71,7 @@ export default async function RegistrarPage({ searchParams }: Props) {
                   <Link className={styles.sessionLink} href={`/registrar?s=${String(session.id)}`}>
                     <span className="data">{session.date}</span>
                     <span className={styles.meta}>
-                      {session.paper} P{session.part} · {session.kind}
+                      {session.paper === null ? 'Sin formato de examen' : `${session.paper} P${String(session.part)}`} · {session.kind}
                     </span>
                     <span className="data">
                       {session.itemsTotal === null
@@ -121,7 +121,7 @@ export default async function RegistrarPage({ searchParams }: Props) {
         <h1>
           <span className="data">{active.date}</span>{' '}
           <span className={styles.title}>
-            {active.paper} Part {active.part} · {active.kind}
+            {active.paper === null ? 'Sin formato de examen' : `${active.paper} Part ${String(active.part)}`} · {active.kind}
           </span>
         </h1>
 

@@ -91,6 +91,12 @@ Una sesión con cero errores también cuenta: es parte del denominador. Las vent
 del informe son de 30 y 60 días; Falsas certezas usa siempre 30 días.
 En Registrar, **Más antiguas** y **Más recientes** permiten recorrer todas tus sesiones.
 
+Para ejercicios del libro que no siguen una tarea de Cambridge, elige **Sin formato de
+examen** en Paper. No tendrás que indicar Part; sí los ítems y aciertos. Indica unidad,
+página y ejercicio en Referencia. Estas sesiones cuentan en el informe general y Anki,
+y quedan fuera de la precisión RUOE. Un ejercicio del libro con formato de examen
+puede seguir usando su paper y part correspondientes.
+
 Los CSV incluyen la marca UTF-8 para conservar los acentos en Excel. Lo que Excel
 evaluaría como fórmula sale con un tabulador protector dentro del campo entrecomillado;
 las respuestas normales no se tocan, sufijos como `-ing` o `-ed` incluidos. Si necesitas

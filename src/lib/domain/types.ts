@@ -18,12 +18,14 @@ import type {
  * timestamps son ISO 8601 completos.
  */
 
-export interface SessionRow {
+export type SessionFormat =
+  | { readonly paper: Paper; readonly part: number }
+  | { readonly paper: null; readonly part: null };
+
+export type SessionRow = SessionFormat & {
   readonly id: number;
   readonly date: string;
   readonly kind: SessionKind;
-  readonly paper: Paper;
-  readonly part: number;
   readonly source: Source;
   readonly sourceRef: string | null;
   /** `null` solo cuando `paper === 'WRITING'`: el Writing no se mide por items. */
@@ -32,7 +34,7 @@ export interface SessionRow {
   readonly durationMin: number | null;
   readonly timed: boolean;
   readonly status: SessionStatus;
-}
+};
 
 export interface ErrorRow {
   readonly id: number;

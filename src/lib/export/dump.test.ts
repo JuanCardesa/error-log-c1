@@ -15,6 +15,13 @@ import { CSV_EXPORTS, isCsvExport, toCsvExport, toJsonDump } from './dump';
 
 const opts: QueryOptions = { now: NOW, windowDays: 30 };
 
+it('exporta los nulos de practica libre sin inventar paper ni part', () => {
+  const free = makeSession({ paper: null, part: null });
+  const dump = toJsonDump(makeDataset({ sessions: [free] }), opts);
+  expect(JSON.stringify(dump.rows.sessions)).toContain('"paper":null,"part":null');
+  expect(dump.queries.q3).toEqual({ weeks: [], rows: [] });
+});
+
 function sample() {
   return makeDataset({
     sessions: [
