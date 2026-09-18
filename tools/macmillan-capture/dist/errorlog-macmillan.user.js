@@ -586,6 +586,12 @@ const MESSAGES = {
     canExport: false,
   },
   unsupported: UNSUPPORTED,
+  unknownActivity: {
+    tone: 'problem',
+    title: 'Estoy en el ejercicio, pero no reconozco esta actividad',
+    detail: 'Que veas esto ya significa que el guion corre aqui. Lo que no encaja es la estructura de esta actividad concreta, asi que no me invento nada. Pulsa «Copiar muestra tecnica» y pasamela: con eso se escribe el adaptador para este formato.',
+    canExport: false,
+  },
   conflict: {
     tone: 'problem',
     title: 'Dos senales de correccion se contradicen',
@@ -810,6 +816,28 @@ const VERIFIED_INTERACTIONS = ['rcfDroppable'];
 
 function findActivity(doc) {
   return doc.querySelector(ACTIVITY_SELECTOR);
+}
+
+/** Rastros del reproductor RCF, este la actividad como este. */
+const PLAYER_HINT = '[data-rcfid], [data-rcfinteraction], .markable, .dev-markable-container, .dev-rcf-content';
+
+/**
+ * Si estamos dentro del reproductor pero la actividad no encaja con el adaptador, hay
+ * que decirlo. Esconder el panel deja al usuario sin panel y sin explicacion, y sin
+ * manera de mandar la muestra que hace falta para soportar ese formato.
+ */
+function looksLikePlayer(doc) {
+  const path = doc.defaultView?.location?.pathname ?? '';
+  if (/rcf-?player/i.test(path)) return true;
+  return doc.querySelector(PLAYER_HINT) !== null;
+}
+
+/** El trozo de pagina que mejor describe el formato cuando no reconocemos la actividad. */
+function sampleContainerOf(doc) {
+  const activity = findActivity(doc);
+  if (activity) return activity;
+  const gap = doc.querySelector('[data-rcfid], .markable, [data-rcfinteraction]');
+  return gap?.closest('li, tr, section, div') ?? doc.body;
 }
 
 /** La plataforma añade `marked` a la actividad cuando la ha corregido. */
@@ -1853,8 +1881,22 @@ function start(doc) {
 
   function evaluate() {
     const activity = findActivity(doc);
-    if (activity) evaluateMacmillan(activity);
-    else evaluateGeneric();
+    if (activity) {
+      evaluateMacmillan(activity);
+      return;
+    }
+    // En el reproductor, callarse no es una opcion: si la actividad no encaja hay que
+    // decirlo y dejar a mano la muestra, que es lo unico que desatasca ese formato.
+    if (quietHost && looksLikePlayer(doc)) {
+      state.mode = 'macmillan';
+      state.read = null;
+      state.verdicts = new Map();
+      state.questions = [];
+      state.controls = [];
+      state.phase = 'unknownActivity';
+      return;
+    }
+    evaluateGeneric();
   }
 
   /** Huecos que la plataforma acaba de dar por buenos, con el valor que acepto. */
@@ -2025,8 +2067,7 @@ function start(doc) {
   }
 
   function copySample() {
-    const activity = findActivity(doc);
-    const question = state.questions[0] ?? (activity ? { container: activity, segments: [] } : null);
+    const question = state.questions[0] ?? { container: sampleContainerOf(doc), segments: [] };
     const text = buildSample({
       doc,
       question,

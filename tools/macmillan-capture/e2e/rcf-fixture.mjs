@@ -58,6 +58,9 @@ export function rcfActivityPage(options = {}) {
     activityId = 'act0000000000000000000000000001',
     interactions = 'rcfDroppable',
     replaceOnCheck = false,
+    // Una actividad del reproductor cuya raiz no encaja con el adaptador: pasa cuando
+    // Macmillan usa una estructura que todavia no hemos visto.
+    raizDesconocida = false,
   } = options;
 
   const list = items.map((item) => {
@@ -75,13 +78,17 @@ export function rcfActivityPage(options = {}) {
     ? ''
     : `<div class="player__scoreCard--1dqo7" data-player-control="score-card"><div class="player__scoreCard_scoreText--1BB-m" data-player-control="score-card-text">${score}</div></div>`;
 
+  const raiz = raizDesconocida
+    ? '<div class="algo-que-no-conocemos">'
+    : `<div class="dev-rcf-content activity mm_c06 ${marks} hasInteractive has_plyr"
+     id="${activityId}" data-pseudoid="${activityId}" data-rcfxmlid="${activityId}"
+     data-pointsavailable="${String(items.length)}" data-interactions="${interactions}"
+     data-gradabletype="closed-gradable" data-isanswerkey="n" data-usingdragdrop="y">`;
+
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Reproductor</title></head>
 <body>
-<div class="dev-rcf-content activity mm_c06 ${marks} hasInteractive has_plyr"
-     id="${activityId}" data-pseudoid="${activityId}" data-rcfxmlid="${activityId}"
-     data-pointsavailable="${String(items.length)}" data-interactions="${interactions}"
-     data-gradabletype="closed-gradable" data-isanswerkey="n" data-usingdragdrop="y">
+${raiz}
   <form onsubmit="return false;">
     <div id="${activityId}_ariaLive" class="globalAriaLive visually-hidden" aria-live="assertive">ruido de accesibilidad que no debe salir</div>
     <div class="rubricContainer hasText"><div class="rubric clearfix"><div class="rubricBody lastChild">

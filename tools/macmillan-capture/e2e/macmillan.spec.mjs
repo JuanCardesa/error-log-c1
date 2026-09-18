@@ -288,3 +288,20 @@ test('la muestra tecnica enmascara lo que parezca una credencial de la pagina', 
   expect(muestra).toContain('markable');
   expect(muestra).toContain('aria-invalid');
 });
+
+test('si la actividad no encaja, el panel lo dice en vez de esconderse', async ({ page }) => {
+  // Lo peor que puede pasar es no ver nada y no saber por que: si el guion esta ahi,
+  // tiene que decirlo y dejar la muestra a mano.
+  await openActivity(page, { raizDesconocida: true });
+
+  await expect(status(page)).toHaveText(/no reconozco esta actividad/i);
+  await expect(page.locator('.detail')).toHaveText(/muestra tecnica/i);
+  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+
+  // Y la muestra tiene que salir util, con el marcado del hueco que no sabemos leer.
+  await page.getByRole('button', { name: 'Copiar muestra tecnica' }).click();
+  const muestra = await block(page).inputValue();
+  expect(muestra).toContain('data-rcfid');
+  expect(muestra).toContain('markable');
+  expect(muestra).not.toContain('no he podido aislar');
+});
