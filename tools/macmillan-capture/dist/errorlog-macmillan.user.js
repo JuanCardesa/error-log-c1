@@ -1461,39 +1461,60 @@ function buildSample(input) {
  */
 
 
+/**
+ * El panel se pinta encima del ejercicio, que ya trae su propia tipografia pequena, asi
+ * que aqui todo va con tamano y contraste propios: nada hereda de la pagina por el
+ * `all: initial` del anfitrion. El boton flotante es rojo y grande a proposito, para que
+ * se distinga del azul que usa Macmillan en sus controles.
+ */
 const STYLE = `
 :host { all: initial; }
 .box {
   position: fixed; right: 16px; bottom: 16px; z-index: 2147483647;
-  width: 320px; max-width: calc(100vw - 32px); max-height: 70vh; overflow: auto;
-  font: 13px/1.45 system-ui, -apple-system, Segoe UI, sans-serif;
-  background: #fff; color: #1b1b1b; border: 1px solid #c8c8c8; border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 12px;
+  width: 390px; max-width: calc(100vw - 32px); max-height: 82vh; overflow: auto;
+  font: 15px/1.55 system-ui, -apple-system, Segoe UI, sans-serif;
+  background: #fff; color: #141414; border: 2px solid #c62828; border-radius: 12px;
+  box-shadow: 0 10px 32px rgba(0,0,0,.30); padding: 16px;
 }
 .box[hidden] { display: none; }
-h1 { font-size: 13px; margin: 0 0 6px; display: flex; justify-content: space-between; gap: 8px; }
-h1 span { font-weight: 600; }
-.status { margin: 0 0 4px; font-weight: 600; }
-.detail { margin: 0 0 10px; color: #444; }
-.good .status { color: #14622f; }
-.problem .status { color: #8a1c1c; }
-.info .status { color: #1b4b8a; }
-.counts { margin: 0 0 6px; padding: 6px 8px; background: #f3f5f8; border-radius: 6px; color: #333; }
-.tray { margin: 0 0 10px; padding: 6px 8px; background: #eef4ec; border-radius: 6px; color: #23502f; font-weight: 600; }
-.counts b { font-weight: 600; }
-button {
-  font: inherit; padding: 7px 10px; margin: 0 6px 6px 0; cursor: pointer;
-  border: 1px solid #b6b6b6; border-radius: 6px; background: #f6f6f6;
+h1 {
+  font-size: 15px; margin: 0 0 12px; display: flex; align-items: center;
+  justify-content: space-between; gap: 10px;
 }
-button.primary { background: #1b4b8a; border-color: #1b4b8a; color: #fff; }
-button:disabled { opacity: .5; cursor: default; }
-textarea { width: 100%; min-height: 90px; font: 11px/1.4 ui-monospace, monospace; margin-top: 6px; }
+h1 span { font-weight: 700; }
+h1 button { padding: 6px 11px; font-size: 13px; margin: 0; }
+.status { margin: 0 0 6px; font-size: 18px; font-weight: 700; line-height: 1.3; }
+.detail { margin: 0 0 12px; color: #2f2f2f; font-size: 14px; }
+.good .status { color: #135c2c; }
+.problem .status { color: #a01313; }
+.info .status { color: #133f75; }
+.counts, .tray { margin: 0 0 9px; padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+.counts { background: #eef1f6; color: #22303f; }
+.tray { background: #e6f2e9; color: #17472a; font-weight: 700; }
+.counts b { font-weight: 700; }
+button {
+  font: 600 14px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  padding: 11px 15px; margin: 0 8px 8px 0; cursor: pointer; color: #141414;
+  border: 1px solid #949494; border-radius: 8px; background: #f1f1f1;
+}
+button:hover:not(:disabled) { background: #e3e3e3; }
+button.primary { background: #133f75; border-color: #133f75; color: #fff; }
+button.primary:hover:not(:disabled) { background: #0e2f58; }
+button:disabled { opacity: .45; cursor: default; }
+textarea {
+  width: 100%; box-sizing: border-box; min-height: 130px; margin-top: 8px; padding: 9px;
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+  color: #141414; background: #fcfcfc; border: 1px solid #b4b4b4; border-radius: 8px;
+}
 .toggle {
   position: fixed; right: 16px; bottom: 16px; z-index: 2147483647;
-  font: 13px system-ui, sans-serif; padding: 8px 12px; border-radius: 999px;
-  border: 1px solid #1b4b8a; background: #1b4b8a; color: #fff; cursor: pointer;
+  font: 700 16px/1.2 system-ui, -apple-system, Segoe UI, sans-serif;
+  padding: 14px 22px; border-radius: 999px; cursor: pointer;
+  border: 2px solid #8d1b1b; background: #c62828; color: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,.32);
 }
-.note { color: #666; margin: 8px 0 0; }
+.toggle:hover { background: #a81f1f; }
+.note { color: #4a4a4a; font-size: 13px; margin: 12px 0 0; }
 `;
 
 function element(doc, tag, props = {}) {
