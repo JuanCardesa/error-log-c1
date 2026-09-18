@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from './migrate';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { q1CauseSplit } from '../queries/q1CauseSplit';
