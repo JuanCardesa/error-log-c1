@@ -1,4 +1,4 @@
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from './migrate';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import { errorInputSchema, sessionInputSchema } from '../validation/schemas';

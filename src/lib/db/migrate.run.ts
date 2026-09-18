@@ -1,4 +1,4 @@
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from './migrate';
 
 import { createDb } from './client';
 import { DB_FILE, MIGRATIONS_DIR } from './paths';

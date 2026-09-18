@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { sql } from 'drizzle-orm';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from './migrate';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 import { type Db, createDb } from './client';

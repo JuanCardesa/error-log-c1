@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from '../src/lib/db/migrate';
 
 import { createDb } from '../src/lib/db/client';
 import { seed } from '../src/lib/db/seed';

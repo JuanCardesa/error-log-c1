@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from './migrate';
 
 import { createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
