@@ -202,3 +202,7 @@ Las pruebas de `e2e/` interceptan el dominio de Macmillan y sirven HTML propio: 
 ninguna petición del equipo y no tocan tu base de datos. `rcf-fixture.mjs` replica la
 estructura real del reproductor (clases, atributos y anidamiento) con contenido
 inventado: aquí no se guarda material del libro.
+
+La prueba de la extensión la carga de verdad en Chromium y comprueba el panel en
+marcos normales y `blob:`. Se ejecuta también en CI, sin ventana, usando el
+[canal `chromium` de Playwright](https://playwright.dev/docs/chrome-extensions).

@@ -18,9 +18,6 @@ const EXTENSION = join(here, '../extension');
  */
 const PORTAL = 'https://mee.macmillaneducation.com/bookviewer/unidad-3';
 
-// Cargar una extension obliga a abrir ventana, y en CI no hay pantalla donde abrirla.
-test.skip(process.env.CI !== undefined, 'necesita navegador con ventana');
-
 /** Pagina contenedora con la actividad en un iframe normal y en otro `blob:`. */
 function paginaConMarcos() {
   return `<!doctype html>
@@ -45,7 +42,10 @@ function paginaConMarcos() {
 test('la extension entra en el iframe del reproductor y tambien en uno servido desde blob', async () => {
   const actividad = rcfActivityPage({ activityId: 'act000000000000000000000000ext' });
   const context = await chromium.launchPersistentContext('', {
-    headless: false,
+    // El canal chromium admite extensiones sin ventana, tambien en CI.
+    // https://playwright.dev/docs/chrome-extensions
+    channel: 'chromium',
+    headless: true,
     args: [
       `--disable-extensions-except=${EXTENSION}`,
       `--load-extension=${EXTENSION}`,
@@ -57,32 +57,22 @@ test('la extension entra en el iframe del reproductor y tambien en uno servido d
       const body = route.request().url().includes('rcf-player.html')
         ? actividad
         : paginaConMarcos();
-      route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body });
+      return route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body });
     });
 
     const page = await context.newPage();
     await page.goto(PORTAL);
-    await page.waitForTimeout(2500);
+    await expect(page.locator('#desdeBlob')).toHaveAttribute('src', /^blob:/);
 
-    const marcos = page.frames().map((frame) => frame.url());
-    expect(marcos.some((url) => url.startsWith('blob:')), `marcos: ${marcos.join(' | ')}`).toBe(true);
-
-    for (const frame of page.frames()) {
-      const url = frame.url();
-      if (url === PORTAL) continue;
-
-      // El panel vive en un shadow root, asi que se busca por su marca en el anfitrion.
-      const tienePanel = await frame.evaluate(() => {
-        const host = document.querySelector('[data-errorlog-ui]');
-        return {
-          existe: Boolean(host),
-          boton: host?.shadowRoot?.querySelector('.toggle')?.textContent ?? null,
-          estado: host?.shadowRoot?.querySelector('.status')?.textContent ?? null,
-        };
-      });
-      expect(tienePanel.existe, `sin panel en ${url}`).toBe(true);
-      expect(tienePanel.boton, `boton en ${url}`).toContain('Errores');
-      expect(tienePanel.estado, `estado en ${url}`).toContain('fallo');
+    for (const selector of ['#normal', '#desdeBlob']) {
+      await page.locator(selector).scrollIntoViewIfNeeded();
+      // Los locators esperan la inyeccion y atraviesan el shadow root del panel.
+      const panel = page.frameLocator(selector).locator('[data-errorlog-ui]');
+      await expect(panel.locator('.toggle'), `sin boton en ${selector}`).toBeVisible();
+      await expect(panel.locator('.toggle')).toContainText('Errores');
+      await panel.locator('.toggle').click();
+      await expect(panel.locator('.status')).toBeVisible();
+      await expect(panel.locator('.status')).toContainText('fallo');
     }
   } finally {
     await context.close();
