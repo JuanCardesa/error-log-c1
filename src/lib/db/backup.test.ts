@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Database from 'better-sqlite3';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from './migrate';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { backupDatabase, restoreDatabase } from './backup';

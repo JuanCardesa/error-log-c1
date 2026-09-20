@@ -11,14 +11,34 @@ parar a exportar después de cada actividad.
 
 ## Instalación (una vez)
 
-1. Instala [Tampermonkey](https://www.tampermonkey.net/) o
-   [Violentmonkey](https://violentmonkey.github.io/) en tu navegador.
-2. Genera el guion: `pnpm macmillan:build`.
-3. Abre `tools/macmillan-capture/dist/errorlog-macmillan.user.js` y el gestor te ofrecerá
-   instalarlo. También puedes copiar su contenido en un script nuevo.
+Genera las dos versiones con `pnpm macmillan:build`. Hay dos formas de instalarla y **la
+recomendada es la extensión**.
 
-No pide permisos especiales (`@grant none`), no hace peticiones de red y no lee cookies
-ni tokens. Todo ocurre en la página que ya tienes abierta.
+### Extensión de Chrome (recomendada)
+
+1. Abre `chrome://extensions`.
+2. Activa **Modo de desarrollador**, arriba a la derecha.
+3. Pulsa **Cargar descomprimida** y elige la carpeta `tools/macmillan-capture/extension`.
+
+Es la recomendada por un motivo concreto, no por gusto. Un userscript solo entra donde
+llega su `@match`, y `@match` no cubre los marcos `blob:` ni `about:blank`. Macmillan
+sirve páginas del libro en marcos `blob:`, así que hay sitios del reproductor donde un
+gestor de userscripts **no llega y no avisa**: no ves panel, ni error, ni pista. La
+extensión declara `all_frames` y `match_origin_as_fallback`, que sí los cubren, y eso está
+comprobado cargándola de verdad en el navegador (`e2e/extension.spec.mjs`).
+
+### Userscript (alternativa)
+
+Instala [Tampermonkey](https://www.tampermonkey.net/) o
+[Violentmonkey](https://violentmonkey.github.io/), crea un script nuevo, **vacía el editor
+del todo** y pega el contenido de `tools/macmillan-capture/dist/errorlog-macmillan.user.js`.
+Si dejas la plantilla que trae Tampermonkey, el fichero acaba con dos cabeceras, manda la
+primera, y el script no se ejecuta nunca en Macmillan.
+
+No uses las dos a la vez o verás dos paneles.
+
+Ninguna de las dos pide permisos de red, ni lee cookies ni tokens. Todo ocurre en la
+página que ya tienes abierta.
 
 ## Uso
 

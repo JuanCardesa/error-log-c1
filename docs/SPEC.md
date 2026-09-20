@@ -29,8 +29,8 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 | `id` | PK | |
 | `date` | ISO date | no puede ser futura |
 | `kind` | enum | `DRILL` `PARCIAL` `SIMULACRO` `CLASE` `WRITING` |
-| `paper` | enum | `RUOE` `WRITING` `LISTENING` `SPEAKING` |
-| `part` | int | dentro del máximo del paper |
+| `paper` | enum, nullable | `RUOE` `WRITING` `LISTENING` `SPEAKING`; null si no tiene formato de examen |
+| `part` | int, nullable | dentro del máximo del paper; null exactamente cuando `paper` es null |
 | `source` | enum | `LIBRO` `WORKBOOK` `TRAINER` `PAST_PAPER` `ONLINE` `ACADEMIA` |
 | `source_ref` | texto | |
 | `items_total` | int | **nullable solo si `paper = WRITING`** |
@@ -82,6 +82,14 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 
 - `items_correct <= items_total`, ambos `>= 0`.
 - `part` dentro del máximo del paper: `RUOE:8`, `WRITING:2`, `LISTENING:4`, `SPEAKING:4`.
+- **Práctica sin formato de examen (2026-09-18):** `paper` y `part` son ambos nulos
+  o ambos están informados. Null significa «no aplica», no «pendiente de rellenar».
+  Se rechazan pares parcialmente nulos, papers desconocidos y parts no enteras.
+  El enum de papers conserva los cuatro valores de Cambridge.
+- Fuente y formato son independientes: `LIBRO` puede contener ejercicios libres o
+  tareas de examen. Unidad, página y ejercicio se indican en `source_ref`. Las sesiones
+  sin formato siguen necesitando `items_total` e `items_correct`, incluidos los ceros;
+  la excepción de ítems nulos sigue siendo exclusiva de `paper = WRITING`.
 - `date` no puede ser futura.
 - `kind = WRITING` → `paper = WRITING`. **Resuelto (P4, 2026-09-14):** el briefing escribía
   un bicondicional, que impedía registrar el Writing de un `SIMULACRO` o de una `CLASE`.
@@ -143,6 +151,14 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
 
 Cada query exporta también a **CSV** (comillas escapadas correctamente).
 
+Los informes generales y las reglas incluyen la práctica sin formato de examen en su
+universo habitual: describen el estudio global, no exclusivamente el rendimiento en
+examen. Q2 incluye sus ítems y errores correspondientes, también las sesiones sin
+errores en el denominador. Q3 incluye exclusivamente `paper = RUOE`; Writing y Q6
+conservan sus requisitos actuales. Las agrupaciones generales por paper deben mostrar
+el grupo «Sin formato de examen»; cualquier filtro por formato debe restringir por
+igual sesiones, errores y denominadores. El dump JSON conserva ambos campos como null.
+
 ---
 
 ## 5. Motor de reglas de decisión
@@ -201,6 +217,9 @@ de la sesión por item, enunciado y ambas respuestas; no sobrescribe filas exist
    preseleccionada; `subcategory` texto libre con sugerencias de lo ya escrito.
    `late_in_session` deshabilitado si la sesión no es `timed`. Valida la cabecera **antes**
    de aceptar errores y muestra el error concreto.
+   Paper ofrece «Sin formato de examen», que oculta Part y guarda ambos campos como
+   null. Al editar se conserva esa elección; cabeceras e historial muestran esa etiqueta
+   sin una part ficticia. Elegir el tipo `WRITING` sigue exigiendo paper `WRITING`.
 2. **Informe** — Q1, Q2, Q5 y la tabla de reglas de decisión con el `DO NOW` destacado.
 3. **RUOE** — Q3.
 4. **Anki** — cola de pendientes con botón «añadida» que sella `anki_added_at`.
@@ -242,6 +261,10 @@ Una rama, un PR y un tag por fase. Al cerrar cada fase, merge a `main` y tag `v0
 - Ninguna regla puede dispararse por debajo de `MIN_N`, y nunca hay dos `DO NOW`.
 - `README.md` explica en cinco líneas qué hace la app y cómo arrancarla.
 - Cero `any` y cero `@ts-ignore`.
+- Práctica sin formato: probar alta y edición, rechazo de pares parcialmente nulos en
+  Zod y SQLite, ítems obligatorios, exclusión de Q3 e inclusión correcta en Q2.
+  La migración debe preservar sesiones, errores, textos, IDs, relaciones y secuencias
+  autoincrementales, sin reclasificar datos históricos; verificar rollback ante fallos.
 
 ---
 

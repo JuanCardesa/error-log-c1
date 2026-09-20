@@ -1,4 +1,5 @@
 import type { Dataset, ErrorRow, SessionRow, WritingPieceRow } from '../domain/types';
+import { withSessionFormat } from '../domain/session';
 import type { Db } from './client';
 import { errorRow, session, writingPiece } from './schema';
 
@@ -10,7 +11,7 @@ import { errorRow, session, writingPiece } from './schema';
  * herramienta personal —centenares de filas al año— hace que la diferencia no se note.
  */
 export function loadDataset(db: Db): Dataset {
-  const sessions = db.select().from(session).all() satisfies SessionRow[];
+  const sessions = db.select().from(session).all().map(withSessionFormat) satisfies SessionRow[];
   const errors = db.select().from(errorRow).all() satisfies ErrorRow[];
   const pieces = db.select().from(writingPiece).all() satisfies WritingPieceRow[];
 

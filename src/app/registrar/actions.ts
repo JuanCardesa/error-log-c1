@@ -67,7 +67,7 @@ export async function createSessionAction(
   const parsed = sessionInputSchema({ today: today() }).safeParse({
     date: text(form, 'date'),
     kind: text(form, 'kind'),
-    paper: text(form, 'paper'),
+    paper: text(form, 'paper') === '' && form.has('paper') ? null : text(form, 'paper'),
     part: integer(form, 'part'),
     source: text(form, 'source'),
     sourceRef: text(form, 'sourceRef'),
@@ -227,7 +227,7 @@ export async function updateSessionAction(
   const parsed = sessionInputSchema({ today: today() }).safeParse({
     date: text(form, 'date'),
     kind: text(form, 'kind'),
-    paper: text(form, 'paper'),
+    paper: text(form, 'paper') === '' && form.has('paper') ? null : text(form, 'paper'),
     part: integer(form, 'part'),
     source: text(form, 'source'),
     sourceRef: text(form, 'sourceRef'),

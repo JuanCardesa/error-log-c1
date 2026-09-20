@@ -37,7 +37,7 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
     EMPTY_STATE,
   );
 
-  const [paper, setPaper] = useState<Paper>(editing?.paper ?? 'RUOE');
+  const [paper, setPaper] = useState<Paper | null>(editing === null ? 'RUOE' : editing.paper);
   const [kind, setKind] = useState<string>(editing?.kind ?? 'DRILL');
 
   const router = useRouter();
@@ -130,13 +130,15 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
           <span className={styles.label}>Paper</span>
           <select
             name="paper"
-            value={paper}
+            value={paper ?? ''}
             onChange={(event) => {
-              setPaper(event.target.value as Paper);
+              const selected = PAPERS.find((value) => value === event.target.value);
+              setPaper(selected ?? null);
             }}
             aria-invalid={invalid('paper')}
             aria-describedby={invalid('paper') ? 's-paper-error' : undefined}
           >
+            <option value="" disabled={kind === 'WRITING'}>Sin formato de examen</option>
             {PAPERS.map((value) => (
               <option
                 key={value}
@@ -150,11 +152,11 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
           {fieldError('paper')}
         </label>
 
-        <label>
+        {paper !== null && <label>
           <span className={styles.label}>Part</span>
           <select
             name="part"
-            defaultValue={String(editing?.part ?? 1)}
+            defaultValue={String(editing?.paper === paper ? editing.part : 1)}
             key={paper}
             aria-invalid={invalid('part')}
             aria-describedby={invalid('part') ? 's-part-error' : undefined}
@@ -169,7 +171,8 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
             {paper} llega a {MAX_PART[paper]}
           </span>
           {fieldError('part')}
-        </label>
+        </label>}
+        {paper === null && fieldError('part')}
 
         <label>
           <span className={styles.label}>Fuente</span>

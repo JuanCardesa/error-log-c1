@@ -1,18 +1,3 @@
-// ==UserScript==
-// @name         Error Log C1 — copiar errores de Macmillan
-// @namespace    https://github.com/JuanCardesa/error-log
-// @version      0.1.0
-// @description  Copia solo los fallos de un ejercicio corregido de Macmillan Education Everywhere en el formato que importa el Error Log C1.
-// @author       Juan Cardesa
-// @match        https://mee.macmillaneducation.com/*
-// @match        https://lms-cdn.mee.macmillaneducation.com/*
-// @run-at       document-idle
-// @grant        none
-// ==/UserScript==
-
-(function () {
-  'use strict';
-
 // ----- src/core/signals.js -----
 /**
  * Descubrimiento de la senal de correccion.
@@ -2177,5 +2162,3 @@ try {
 } catch (problem) {
   console.error('[error-log] no he podido arrancar en este marco:', problem);
 }
-
-})();

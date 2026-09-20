@@ -64,6 +64,10 @@ pnpm dev
 Abre **http://127.0.0.1:3000**. Tus datos se guardan en `data/errorlog.db`, fuera de Git.
 Para ejecutar la versión compilada: `pnpm build` y después `pnpm start`.
 
+Para actualizar una base existente, detén la app, ejecuta `pnpm db:backup` y después
+`pnpm db:migrate`. Usa este comando también para las migraciones que reconstruyen
+tablas: conserva las relaciones y verifica la integridad antes de confirmar los cambios.
+
 `pnpm db:seed` sigue disponible para cargar ejemplos en una base **vacía y migrada**.
 Si encuentra datos, se detiene sin cambiarlos. Para probar la app, usa `pnpm demo`.
 
@@ -86,6 +90,12 @@ el ejercicio. Cuando faltan causa y confianza se proponen `DESCONOCIMIENTO` y `D
 Una sesión con cero errores también cuenta: es parte del denominador. Las ventanas
 del informe son de 30 y 60 días; Falsas certezas usa siempre 30 días.
 En Registrar, **Más antiguas** y **Más recientes** permiten recorrer todas tus sesiones.
+
+Para ejercicios del libro que no siguen una tarea de Cambridge, elige **Sin formato de
+examen** en Paper. No tendrás que indicar Part; sí los ítems y aciertos. Indica unidad,
+página y ejercicio en Referencia. Estas sesiones cuentan en el informe general y Anki,
+y quedan fuera de la precisión RUOE. Un ejercicio del libro con formato de examen
+puede seguir usando su paper y part correspondientes.
 
 Los CSV incluyen la marca UTF-8 para conservar los acentos en Excel. Lo que Excel
 evaluaría como fórmula sale con un tabulador protector dentro del campo entrecomillado;

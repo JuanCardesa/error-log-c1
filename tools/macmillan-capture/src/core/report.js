@@ -33,6 +33,12 @@ const MESSAGES = {
     canExport: false,
   },
   unsupported: UNSUPPORTED,
+  unknownActivity: {
+    tone: 'problem',
+    title: 'Estoy en el ejercicio, pero no reconozco esta actividad',
+    detail: 'Que veas esto ya significa que el guion corre aqui. Lo que no encaja es la estructura de esta actividad concreta, asi que no me invento nada. Pulsa «Copiar muestra tecnica» y pasamela: con eso se escribe el adaptador para este formato.',
+    canExport: false,
+  },
   conflict: {
     tone: 'problem',
     title: 'Dos senales de correccion se contradicen',

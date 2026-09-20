@@ -44,8 +44,8 @@ jobs:
       - name: Herramienta de Macmillan · el userscript versionado esta al dia
         run: |
           pnpm macmillan:build
-          git diff --exit-code tools/macmillan-capture/dist || {
-            echo '::error::dist/errorlog-macmillan.user.js no coincide con sus fuentes. Ejecuta pnpm macmillan:build y versiona el resultado.'
+          git diff --exit-code tools/macmillan-capture/dist tools/macmillan-capture/extension || {
+            echo '::error::El userscript o la extension no coinciden con sus fuentes. Ejecuta pnpm macmillan:build y versiona el resultado.'
             exit 1
           }
 

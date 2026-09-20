@@ -118,3 +118,41 @@ ${bootstrap}
 mkdirSync(join(here, 'dist'), { recursive: true });
 writeFileSync(join(here, 'dist/errorlog-macmillan.user.js'), output, 'utf8');
 process.stdout.write(`dist/errorlog-macmillan.user.js: ${String(output.length)} bytes\n`);
+
+/**
+ * La misma herramienta como extension de Chrome sin empaquetar.
+ *
+ * Un userscript solo entra donde llega `@match`, y `@match` no cubre los marcos `blob:`
+ * ni `about:blank`. Macmillan sirve las paginas del libro en marcos `blob:`, asi que un
+ * gestor de userscripts puede quedarse fuera del reproductor sin dar ninguna senal: ni
+ * panel, ni aviso, ni forma de saber por que.
+ *
+ * Una extension lo declara y no depende de nadie: `all_frames` entra en todos los marcos
+ * y `match_origin_as_fallback` cubre los que no tienen una URL que casar, siempre que su
+ * origen sea el de Macmillan.
+ */
+const MANIFEST = {
+  manifest_version: 3,
+  name: 'Error Log C1 — copiar errores de Macmillan',
+  version: '0.1.0',
+  description: 'Copia solo los fallos de un ejercicio corregido de Macmillan Education Everywhere en el formato que importa el Error Log C1.',
+  content_scripts: [
+    {
+      matches: [
+        'https://mee.macmillaneducation.com/*',
+        'https://lms-cdn.mee.macmillaneducation.com/*',
+      ],
+      js: ['content.js'],
+      all_frames: true,
+      match_about_blank: true,
+      match_origin_as_fallback: true,
+      run_at: 'document_idle',
+    },
+  ],
+};
+
+const extension = join(here, 'extension');
+mkdirSync(extension, { recursive: true });
+writeFileSync(join(extension, 'manifest.json'), JSON.stringify(MANIFEST, null, 2), 'utf8');
+writeFileSync(join(extension, 'content.js'), `${body}\n${bootstrap}`, 'utf8');
+process.stdout.write(`extension/: manifest.json + content.js (${String(body.length)} bytes)\n`);

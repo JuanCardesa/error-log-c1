@@ -13,7 +13,7 @@ import { addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, takeBatch,
 import { describe } from '../core/report.js';
 import { AnswerStore, readValue, trackUserInput } from './answers.js';
 import { activityKeyOf, buildQuestions, createRegistry, detectUnsupported, findControls, snapshotState, toSignalInput } from './collect.js';
-import { findActivity, isMarked, readActivity, readAnswers } from './macmillan.js';
+import { findActivity, isMarked, looksLikePlayer, readActivity, readAnswers, sampleContainerOf } from './macmillan.js';
 import { buildSample } from './sample.js';
 import { Panel } from './ui.js';
 
@@ -276,8 +276,22 @@ export function start(doc) {
 
   function evaluate() {
     const activity = findActivity(doc);
-    if (activity) evaluateMacmillan(activity);
-    else evaluateGeneric();
+    if (activity) {
+      evaluateMacmillan(activity);
+      return;
+    }
+    // En el reproductor, callarse no es una opcion: si la actividad no encaja hay que
+    // decirlo y dejar a mano la muestra, que es lo unico que desatasca ese formato.
+    if (quietHost && looksLikePlayer(doc)) {
+      state.mode = 'macmillan';
+      state.read = null;
+      state.verdicts = new Map();
+      state.questions = [];
+      state.controls = [];
+      state.phase = 'unknownActivity';
+      return;
+    }
+    evaluateGeneric();
   }
 
   /** Huecos que la plataforma acaba de dar por buenos, con el valor que acepto. */
@@ -448,8 +462,7 @@ export function start(doc) {
   }
 
   function copySample() {
-    const activity = findActivity(doc);
-    const question = state.questions[0] ?? (activity ? { container: activity, segments: [] } : null);
+    const question = state.questions[0] ?? { container: sampleContainerOf(doc), segments: [] };
     const text = buildSample({
       doc,
       question,

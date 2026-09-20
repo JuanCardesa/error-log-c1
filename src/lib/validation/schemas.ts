@@ -13,6 +13,7 @@ import {
   SOURCES,
 } from '../domain/enums';
 import { isIsoDate } from '../time/dates';
+import { withSessionFormat } from '../domain/session';
 
 /**
  * Validacion de entrada. Los mismos invariantes viven tambien como CHECK en la base
@@ -44,8 +45,8 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
     .object({
       date: isoDate,
       kind: z.enum(SESSION_KINDS),
-      paper: z.enum(PAPERS),
-      part: z.number().int().positive(),
+      paper: z.enum(PAPERS).nullable(),
+      part: z.number().int().positive().nullable(),
       source: z.enum(SOURCES),
       sourceRef: optionalText.default(null),
       itemsTotal: z.number().int().min(0).nullable().default(null),
@@ -63,13 +64,21 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
         });
       }
 
-      const maxPart = MAX_PART[value.paper];
-      if (value.part > maxPart) {
+      if (value.paper === null && value.part !== null) {
         ctx.addIssue({
           code: 'custom',
           path: ['part'],
-          message: `${value.paper} llega hasta la part ${String(maxPart)}`,
+          message: 'Una sesion sin formato de examen no tiene part',
         });
+      } else if (value.paper !== null) {
+        const maxPart = MAX_PART[value.paper];
+        if (value.part === null || value.part > maxPart) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['part'],
+            message: `${value.paper} requiere una part entre 1 y ${String(maxPart)}`,
+          });
+        }
       }
 
       // Implicacion, no bicondicional (decision P4): el Writing de un SIMULACRO es valido.
@@ -110,7 +119,8 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
           message: 'No puedes acertar mas items de los que intentaste',
         });
       }
-    });
+    })
+    .transform((value) => withSessionFormat(value));
 }
 
 export function errorInputSchema() {
