@@ -13,8 +13,7 @@
 
 import { contextOf, itemRefFor, renderPrompt, tidy } from './items.js';
 
-/** Igual que MAX_IMPORT_ROWS en src/lib/import/errors.ts. Lo fija una prueba. */
-export const MAX_BATCH_ROWS = 100;
+export const MAX_EXPORT_LENGTH = 200_000;
 
 /** Hash estable y corto para el control de duplicados. FNV-1a, sin dependencias. */
 export function fingerprint(parts) {
@@ -90,6 +89,6 @@ export function rowFingerprint(row, activityKey) {
 }
 
 /** El bloque que se pega en «Errores para importar». */
-export function toJson(rows) {
-  return JSON.stringify(rows, null, 2);
+export function toJson(rows, session) {
+  return JSON.stringify(session ? { session, errors: rows } : rows);
 }

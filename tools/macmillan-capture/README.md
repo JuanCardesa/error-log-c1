@@ -1,7 +1,8 @@
 # Copiar errores de Macmillan al Error Log C1
 
 Userscript que lee un ejercicio ya corregido en Macmillan Education Everywhere y copia
-**solo tus fallos** en el JSON que acepta «Errores para importar» del error-log.
+la **cabecera de la tanda y solo tus fallos** en el JSON que acepta «Sesión y errores
+para importar» en la raíz de Registrar. Una tanda de estudio crea una sesión.
 
 Flujo previsto: haces **varios** ejercicios corrigiéndolos → al terminar pulsas «Copiar
 todo» una vez → pegas en el error-log → revisas y guardas la tanda entera.
@@ -53,10 +54,31 @@ El panel aparece abajo a la derecha, dentro del marco del ejercicio.
 3. Sigue con los demás ejercicios de la unidad. La bandeja acumula y aguanta cambios de
    actividad y recargas.
 4. Al terminar, abre el panel y pulsa **Copiar todo**.
-5. Pega el bloque en el error-log, revisa la vista previa y guarda.
+5. Pega el bloque en **Registrar → Pegar sesión y errores**, revisa la cabecera y los
+   errores y guarda. La sesión y todas sus filas se crean juntas; si algo no valida,
+   no se crea nada y se conserva la vista previa.
 
-El panel muestra aparte **respuestas comprobadas y aciertos**: eso va en la cabecera de la
-sesión, nunca en el listado de errores.
+El panel muestra **respuestas comprobadas y aciertos de toda la tanda**, también de
+actividades perfectas. Se conserva la primera corrección de cada actividad, aunque
+al abrirla de nuevo cambien los identificadores de sus huecos;
+recargar o reintentar no mejora artificialmente ese recuento. Los reintentos siguen
+sirviendo para que Macmillan confirme la solución de un fallo.
+
+El bloque es `{ "session": { ... }, "errors": [...] }`. Propone la fecha local del
+inicio de la tanda, tipo `DRILL`, fuente `LIBRO`, `paper` y `part` nulos («Sin formato
+de examen») y `timed: false`. Todo se puede revisar en la cabecera. **La duración no
+viaja en el bloque**: escribe los minutos a mano si has cronometrado.
+
+La referencia agrupa los datos legibles, por ejemplo «Ready for C1 Advanced · págs.
+6-7 · actividades 1-5». El visor y el reproductor comparten el contexto por origen,
+aislado por pestaña; si no se lee libro, página o actividad, ese dato se omite. No se
+deducen números de los identificadores internos. Los selectores nuevos de estos
+metadatos están probados con fixtures; falta contrastarlos en una sesión real de
+Macmillan (los selectores que no coincidan simplemente omitirán esos datos).
+
+Si ya tienes sesiones abiertas, puedes crear otra con esta tanda o elegir una para
+añadir los errores. Al añadir **se conserva su cabecera y no se suman los recuentos**;
+la vista previa lo avisa. El cuadro dentro de una sesión sigue aceptando arrays y TSV.
 
 ### Qué copia y qué deja pendiente
 
@@ -70,7 +92,7 @@ sesión, nunca en el listado de errores.
 | `category`, `subcategory` | siempre vacíos: los eliges tú |
 
 No envía `cause` ni `confidence`: el importador propone DESCONOCIMIENTO y DUDABA y los
-revisas tú. No marca tarjetas de Anki ni asigna paper ni part.
+revisas tú. No marca tarjetas de Anki; paper y part van como null en la cabecera.
 
 ### La bandeja
 
@@ -84,11 +106,21 @@ Cada fallo se identifica por actividad, item, enunciado y tu respuesta. Con eso:
   hueco como correcto con el valor bueno dentro, y eso es su veredicto, no una deducción
   nuestra. El hueco se reconoce por `data-rcfid`, que no cambia entre intentos. Si vuelves
   a fallar, no se rellena nada.
-- **Vaciar la bandeja** descarta lo guardado y no lo vuelve a recoger solo.
-- **Olvidar lo exportado** hace lo contrario: permite que vuelva a entrar lo ya copiado.
+- **Vaciar la bandeja** descarta errores y recuentos y no los vuelve a recoger solos.
+- **Olvidar lo exportado** reinicia la memoria de errores y recuentos ya exportados.
+  Sirve para recuperar una tanda copiada que no llegaste a pegar: recoge la actividad
+  actual y, al volver a abrir las demás actividades, recoge también sus errores y recuentos.
 
-Si juntas más de cien fallos, «Copiar todo» te da la primera tanda y guarda el resto:
-vuelve a pulsar. El tope de la bandeja son trescientos, y avisa antes de llegar.
+«Copiar todo» entrega toda la tanda en un solo sobre y reinicia errores y recuentos.
+El tope de la bandeja son trescientos fallos; al llenarse avisa. Si el texto supera
+200 000 caracteres incluso en JSON compacto, se conservan la bandeja y los recuentos.
+El panel muestra el bloque completo para copiarlo a un editor y acortar los enunciados
+antes de importarlo; no se trunca ningún dato ni se marca la tanda como exportada.
+Una tanda perfecta se puede copiar con `errors: []`: también cuenta en los informes.
+
+Al actualizar desde una versión anterior, una bandeja guardada puede carecer de los
+recuentos de actividades previas. En ese caso se entrega el array de errores antiguo
+y se avisa para que completes la cabecera manualmente; no se inventan esos totales.
 
 ### Lo que de verdad cuesta tiempo
 
@@ -117,7 +149,8 @@ Funciona igual, pero hay que repetirlo en cada ejercicio.
 El panel distingue tres cosas que no son lo mismo:
 
 - **«El ejercicio no está corregido»**: aún no has pulsado corregir. No exporta nada.
-- **«Todo correcto»**: has acertado todo. No genera ninguna entrada; no es un error.
+- **«Todo correcto»**: has acertado todo. No genera errores, pero puedes copiar la
+  cabecera de la tanda para que esos aciertos cuenten.
 - **«No reconozco cómo marca la corrección»** o **«está a medio corregir»**: no se ha
   podido leer con garantías. No exporta nada para no dejarse fallos fuera.
 

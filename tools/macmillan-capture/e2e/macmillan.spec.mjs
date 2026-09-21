@@ -33,7 +33,7 @@ const block = (page) => page.locator('textarea[aria-label="Bloque para copiar"]'
 async function copiedRows(page) {
   await page.getByRole('button', { name: 'Copiar todo' }).click();
   await expect(block(page)).not.toHaveValue('');
-  return JSON.parse(await block(page).inputValue());
+  return JSON.parse(await block(page).inputValue()).errors;
 }
 
 test('de una actividad corregida salen solo los fallos, con su numero de item', async ({ page }) => {
@@ -64,7 +64,7 @@ test('una actividad entera correcta no genera entradas', async ({ page }) => {
   });
 
   await expect(status(page)).toHaveText(/todo correcto/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  expect(await copiedRows(page)).toEqual([]);
 });
 
 test('si aria y la clase se contradicen, no se elige ganador', async ({ page }) => {

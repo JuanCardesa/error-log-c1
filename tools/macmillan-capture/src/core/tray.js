@@ -103,11 +103,6 @@ export function trayStats(tray) {
   };
 }
 
-/** Saca la primera tanda y devuelve el resto, para respetar el limite del importador. */
-export function takeBatch(tray, size) {
-  return { batch: tray.slice(0, size), rest: tray.slice(size) };
-}
-
 /** Marca como despachadas las huellas dadas, sin duplicar. */
 export function markDone(done, marks) {
   const next = new Set(done);

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Error Log C1 — copiar errores de Macmillan",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Copia solo los fallos de un ejercicio corregido de Macmillan Education Everywhere en el formato que importa el Error Log C1.",
   "content_scripts": [
     {

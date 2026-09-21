@@ -1,9 +1,8 @@
 /**
- * Aritmetica de fechas civiles (`YYYY-MM-DD`) en UTC.
+ * Fechas civiles (`YYYY-MM-DD`): calendario local y aritmética de días en UTC.
  *
- * Todo se hace en UTC a proposito: una sesion registrada el dia 1 a las 23:00 en Madrid
- * no puede contar como del dia 2 porque el servidor este en otra zona. La fecha de una
- * sesion es un dato civil que escribe la persona, no un instante.
+ * «Hoy» se obtiene del reloj local. Una vez convertido a fecha civil, se calcula
+ * en UTC para que los cambios de hora no alteren las sumas de días.
  */
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -14,7 +13,7 @@ export function isIsoDate(value: string): boolean {
   const match = ISO_DATE.exec(value);
   if (match === null) return false;
   // Rechaza fechas que existen como cadena pero no como dia (2026-02-30).
-  return toIsoDate(parseIsoDate(value)) === value;
+  return toUtcIsoDate(parseIsoDate(value)) === value;
 }
 
 /** `YYYY-MM-DD` -> `Date` a medianoche UTC. Lanza si la cadena no tiene la forma. */
@@ -25,8 +24,13 @@ export function parseIsoDate(value: string): Date {
   return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
 }
 
-/** `Date` -> `YYYY-MM-DD`, tomando los componentes UTC. */
+/** Instante -> fecha del calendario local (formularios, validación y fin de informes). */
 export function toIsoDate(date: Date): string {
+  return `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+/** Fecha civil representada en UTC -> `YYYY-MM-DD`, sin cambiar su día. */
+export function toUtcIsoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
@@ -42,7 +46,7 @@ export function addDays(date: Date, days: number): Date {
  */
 export function windowStart(now: Date, days: number): string {
   const today = parseIsoDate(toIsoDate(now));
-  return toIsoDate(addDays(today, -(days - 1)));
+  return toUtcIsoDate(addDays(today, -(days - 1)));
 }
 
 /** Si una fecha civil cae dentro de la ventana que termina en `now`. */

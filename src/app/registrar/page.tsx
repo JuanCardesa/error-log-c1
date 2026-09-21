@@ -8,12 +8,14 @@ import {
   lastUsedCategory,
   listErrors,
   listSessions,
+  listOpenSessions,
 } from '@/lib/db/repo';
 import { toIsoDate } from '@/lib/time/dates';
 import { CaptureForm } from './CaptureForm';
 import { ErrorList } from './ErrorList';
 import { SessionForm } from './SessionForm';
 import { SessionPanel } from './SessionPanel';
+import { SessionImport } from './SessionImport';
 import styles from './page.module.css';
 
 /**
@@ -60,6 +62,7 @@ export default async function RegistrarPage({ searchParams }: Props) {
           </p>
         </header>
 
+        <SessionImport today={today} openSessions={listOpenSessions(db)} subcategorySuggestions={distinctSubcategories(db)} />
         <SessionForm today={today} />
 
         {recent.length > 0 && (
