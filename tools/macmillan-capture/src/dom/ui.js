@@ -138,14 +138,14 @@ export class Panel {
     this.detail.textContent = view.detail;
     const pending = view.tray?.count ?? 0;
     this.copy.textContent = pending > 0 ? `Copiar todo (${String(pending)})` : 'Copiar todo';
-    this.copy.disabled = pending === 0;
-    this.empty.disabled = pending === 0;
+    this.copy.disabled = pending === 0 && !view.hasStudy;
+    this.empty.disabled = pending === 0 && !view.hasStudy;
     this.tray.textContent = view.trayText ?? '';
     this.counts.hidden = !view.counts;
     if (view.counts) {
       this.counts.textContent = '';
       this.counts.append(
-        element(this.doc, 'b', { textContent: 'Para la cabecera de la sesion: ' }),
+        element(this.doc, 'b', { textContent: 'Toda la tanda (primera corrección de cada hueco): ' }),
         this.doc.createTextNode(`${String(view.counts.checked)} respuestas comprobadas, ${String(view.counts.correct)} aciertos.`),
       );
     }
@@ -159,7 +159,7 @@ export class Panel {
     try {
       await this.doc.defaultView.navigator.clipboard.writeText(text);
       this.area.hidden = true;
-      done('Copiado. Pegalo en «Errores para importar» del error-log.');
+      done('Copiado. Pégalo en «Sesión y errores para importar» de Registrar.');
       return;
     } catch {
       // Un iframe de otro origen no suele tener permiso de portapapeles: seguimos.
@@ -174,7 +174,7 @@ export class Panel {
       copied = false;
     }
     done(copied
-      ? 'Copiado. Pegalo en «Errores para importar» del error-log.'
+      ? 'Copiado. Pégalo en «Sesión y errores para importar» de Registrar.'
       : 'Seleccionado abajo: pulsa Ctrl+C para copiarlo.');
   }
 }

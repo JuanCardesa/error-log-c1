@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAX_IMPORT_ROWS, parseImportedErrors } from '../../../src/lib/import/errors.ts';
+import { parseImportedErrors } from '../../../src/lib/import/errors.ts';
 import { itemRefFor, renderPrompt, summarize } from '../src/core/items.js';
-import { MAX_BATCH_ROWS, rowFingerprint, toImportEntries, toJson } from '../src/core/exportable.js';
+import { rowFingerprint, toImportEntries, toJson } from '../src/core/exportable.js';
 
 /** Las filas tal como se pegan, sin el identificador de hueco que se queda dentro. */
 const toImportRows = (capture) => toImportEntries(capture).map((entry) => entry.row);
@@ -138,9 +138,6 @@ describe('huella para el control de duplicados', () => {
     expect(rowFingerprint(row, 'act-2')).not.toBe(rowFingerprint(row, activity));
   });
 
-  it('respeta el limite de filas del importador', () => {
-    expect(MAX_BATCH_ROWS).toBe(MAX_IMPORT_ROWS);
-  });
 });
 
 describe('recuento para la cabecera de la sesion', () => {

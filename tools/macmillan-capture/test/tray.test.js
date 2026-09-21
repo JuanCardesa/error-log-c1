@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAX_IMPORT_ROWS } from '../../../src/lib/import/errors.ts';
 import {
-  addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, takeBatch, trayStats,
+  addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, trayStats,
 } from '../src/core/tray.js';
 
 const entry = (mark, activityKey = 'act-1', row = {}) => ({
@@ -61,27 +60,11 @@ describe('acumular fallos de varias actividades', () => {
   });
 });
 
-describe('entrega en tandas', () => {
-  it('parte por el limite que admite el importador', () => {
-    const many = Array.from({ length: 250 }, (_, index) => entry(`m${String(index)}`));
-    const { tray } = addToTray([], new Set(), many);
-    const { batch, rest } = takeBatch(tray, MAX_IMPORT_ROWS);
-    expect(batch).toHaveLength(MAX_IMPORT_ROWS);
-    expect(rest).toHaveLength(150);
-  });
-
-  it('una bandeja pequena sale entera y no deja resto', () => {
-    const { tray } = addToTray([], new Set(), [entry('a'), entry('b')]);
-    const { batch, rest } = takeBatch(tray, MAX_IMPORT_ROWS);
-    expect(batch).toHaveLength(2);
-    expect(rest).toEqual([]);
-  });
-
+describe('entrega de la tanda completa', () => {
   it('lo despachado no vuelve a entrar', () => {
     const { tray } = addToTray([], new Set(), [entry('a'), entry('b')]);
-    const { batch, rest } = takeBatch(tray, MAX_IMPORT_ROWS);
-    const done = markDone(new Set(), batch.map((item) => item.mark));
-    const again = addToTray(rest, done, [entry('a'), entry('b')]);
+    const done = markDone(new Set(), tray.map((item) => item.mark));
+    const again = addToTray([], done, [entry('a'), entry('b')]);
     expect(again.added).toBe(0);
   });
 });

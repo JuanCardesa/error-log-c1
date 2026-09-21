@@ -17,10 +17,12 @@ const ORDER = [
   'src/core/items.js',
   'src/core/exportable.js',
   'src/core/tray.js',
+  'src/core/study.js',
   'src/core/report.js',
   'src/dom/answers.js',
   'src/dom/macmillan.js',
   'src/dom/collect.js',
+  'src/dom/context.js',
   'src/dom/sample.js',
   'src/dom/ui.js',
   'src/dom/main.js',
@@ -29,7 +31,7 @@ const ORDER = [
 const HEADER = `// ==UserScript==
 // @name         Error Log C1 — copiar errores de Macmillan
 // @namespace    https://github.com/JuanCardesa/error-log
-// @version      0.1.0
+// @version      0.2.0
 // @description  Copia solo los fallos de un ejercicio corregido de Macmillan Education Everywhere en el formato que importa el Error Log C1.
 // @author       Juan Cardesa
 // @match        https://mee.macmillaneducation.com/*
@@ -134,7 +136,7 @@ process.stdout.write(`dist/errorlog-macmillan.user.js: ${String(output.length)} 
 const MANIFEST = {
   manifest_version: 3,
   name: 'Error Log C1 — copiar errores de Macmillan',
-  version: '0.1.0',
+  version: '0.2.0',
   description: 'Copia solo los fallos de un ejercicio corregido de Macmillan Education Everywhere en el formato que importa el Error Log C1.',
   content_scripts: [
     {
