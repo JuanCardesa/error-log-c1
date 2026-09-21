@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { IMPORT_TEMPLATE, MAX_IMPORT_LENGTH, parseImportedErrors } from './errors';
+import { errorsForRow, IMPORT_TEMPLATE, MAX_IMPORT_LENGTH, parseImportedBatch, parseImportedErrors } from './errors';
 
 const example = {
   itemRef: 4, prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off',
@@ -22,7 +22,6 @@ it.each([
   [{ session: { ...session, itemsTotal: null }, errors: [example] }, 'itemsTotal'],
   [{ session: { ...session, part: 1 }, errors: [example] }, 'part'],
   [{ session: { ...session, date: '2999-01-01' }, errors: [example] }, 'futura'],
-  [{ errors: [example] }, 'session'],
   [{ session }, 'errors'],
   [{ session, errors: 'incorrecto' }, 'errors'],
 ])('rechaza un sobre incompleto o manipulado con el campo concreto', (value, message) => {
@@ -30,6 +29,19 @@ it.each([
 });
 
 describe('pegar errores', () => {
+  it('acepta errors sin session igual que el array para que la UI indique dónde pegarlo', () => {
+    const parsed = parseImportedBatch(JSON.stringify({ errors: [example] }));
+    expect(parsed.session).toBe(null);
+    expect(parsed.errors).toEqual(parseImportedErrors(JSON.stringify([example])));
+  });
+
+  it('mapea ambos prefijos sin confundir posiciones ni cabecera', () => {
+    const fields = { '1.prompt': ['Obligatorio'], 'errors.1.prompt': ['Debe ser texto'],
+      'errors.10.prompt': ['Otra fila'], 'session.sourceRef': ['Cabecera'] };
+    expect(errorsForRow(fields, 1)).toEqual({ prompt: ['Obligatorio', 'Debe ser texto'] });
+    expect(errorsForRow(fields, -1)).toEqual({});
+  });
+
   it('acepta el bloque de la IA, normaliza categorias y deja visibles los valores por defecto', () => {
     expect(parseImportedErrors('```json\n' + JSON.stringify([example]) + '\n```')[0]).toMatchObject({
       ...example, itemRef: '4', category: 'PHRASAL_VERB', cause: 'DESCONOCIMIENTO', confidence: 'DUDABA',

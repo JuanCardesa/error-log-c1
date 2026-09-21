@@ -59,7 +59,8 @@ El panel aparece abajo a la derecha, dentro del marco del ejercicio.
    no se crea nada y se conserva la vista previa.
 
 El panel muestra **respuestas comprobadas y aciertos de toda la tanda**, también de
-actividades perfectas. Cada hueco cuenta una vez, con el primer veredicto observado;
+actividades perfectas. Se conserva la primera corrección de cada actividad, aunque
+al abrirla de nuevo cambien los identificadores de sus huecos;
 recargar o reintentar no mejora artificialmente ese recuento. Los reintentos siguen
 sirviendo para que Macmillan confirme la solución de un fallo.
 
@@ -106,11 +107,15 @@ Cada fallo se identifica por actividad, item, enunciado y tu respuesta. Con eso:
   nuestra. El hueco se reconoce por `data-rcfid`, que no cambia entre intentos. Si vuelves
   a fallar, no se rellena nada.
 - **Vaciar la bandeja** descarta errores y recuentos y no los vuelve a recoger solos.
-- **Olvidar lo exportado** hace lo contrario: permite que vuelva a entrar lo ya copiado.
+- **Olvidar lo exportado** reinicia la memoria de errores y recuentos ya exportados.
+  Sirve para recuperar una tanda copiada que no llegaste a pegar: recoge la actividad
+  actual y, al volver a abrir las demás actividades, recoge también sus errores y recuentos.
 
 «Copiar todo» entrega toda la tanda en un solo sobre y reinicia errores y recuentos.
 El tope de la bandeja son trescientos fallos; al llenarse avisa. Si el texto supera
-200 000 caracteres se conserva la bandeja y se avisa, sin entregar un bloque truncado.
+200 000 caracteres incluso en JSON compacto, se conservan la bandeja y los recuentos.
+El panel muestra el bloque completo para copiarlo a un editor y acortar los enunciados
+antes de importarlo; no se trunca ningún dato ni se marca la tanda como exportada.
 Una tanda perfecta se puede copiar con `errors: []`: también cuenta en los informes.
 
 Al actualizar desde una versión anterior, una bandeja guardada puede carecer de los

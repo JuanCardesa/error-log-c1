@@ -1,5 +1,18 @@
-/** Una tanda completa; cada hueco conserva su primer veredicto observado. */
+/** Una tanda completa; cada actividad conserva su primera corrección observada. */
 export function emptyStudy() { return { date: null, activities: [] }; }
+
+/**
+ * Lo guardado puede venir de otra version, a medias o manipulado. Antes se daba por
+ * bueno y una forma inesperada tumbaba el arranque entero sin panel ni explicacion.
+ */
+export function normalizeStudy(value) {
+  if (value === null || typeof value !== 'object' || !Array.isArray(value.activities)) return emptyStudy();
+  const activities = value.activities.filter((entry) => entry !== null && typeof entry === 'object'
+    && typeof entry.key === 'string'
+    && Array.isArray(entry.items) && entry.items.every((item) => Array.isArray(item) && item.length === 2)
+    && entry.context !== null && typeof entry.context === 'object' && Array.isArray(entry.context.pages));
+  return { date: typeof value.date === 'string' ? value.date : null, activities };
+}
 
 export function studyDate(now = new Date()) {
   return `${String(now.getFullYear()).padStart(4, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -7,12 +20,11 @@ export function studyDate(now = new Date()) {
 
 export function recordStudy(study, key, verdicts, context = {}, signature = '', date = studyDate()) {
   const previous = study.activities.find((entry) => entry.key === key);
-  const items = new Map(previous?.items ?? []);
-  for (const [id, verdict] of verdicts) {
-    if (!items.has(id) && (verdict === 'correct' || verdict === 'incorrect')) items.set(id, verdict);
-  }
-  if (items.size === 0) return study;
-  const entry = { key, items: [...items], signature, context: {
+  // Los ids del DOM pueden cambiar al volver a montar la misma actividad. Su primera
+  // corrección es la unidad de recuento; un reintento no añade huecos ni aciertos.
+  const items = previous?.items ?? [...verdicts].filter(([, verdict]) => verdict === 'correct' || verdict === 'incorrect');
+  if (items.length === 0) return study;
+  const entry = { key, items, signature, context: {
     book: context.book || previous?.context.book || '',
     pages: [...new Set([...(previous?.context.pages ?? []), ...(context.pages ?? [])])],
     activity: context.activity || previous?.context.activity || '',

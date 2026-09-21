@@ -41,7 +41,7 @@ jobs:
       - name: Herramienta de Macmillan · logica pura
         run: pnpm macmillan:test
 
-      - name: Herramienta de Macmillan · el userscript versionado esta al dia
+      - name: Herramienta de Macmillan · userscript y extension versionados al dia
         run: |
           pnpm macmillan:build
           git diff --exit-code tools/macmillan-capture/dist tools/macmillan-capture/extension || {

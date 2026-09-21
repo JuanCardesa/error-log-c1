@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState } from 'react';
 
-import { IMPORT_PROMPT, IMPORT_TEMPLATE, parseImportedBatch, type ImportDraft, type ImportedSession } from '@/lib/import/errors';
+import { errorsForRow, IMPORT_PROMPT, IMPORT_TEMPLATE, parseImportedBatch, type ImportDraft, type ImportedSession } from '@/lib/import/errors';
 import type { SessionRow } from '@/lib/domain/types';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { ErrorFields } from './ErrorFields';
@@ -129,15 +129,6 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
   const [startedAt] = useState(() => Date.now());
   const textFields = ['itemRef', 'prompt', 'myAnswer', 'correctAnswer', 'cause', 'category', 'subcategory', 'confidence', 'ruleNote'] as const;
 
-  const errorsForRow = (id: number): Record<string, string[]> => {
-    const position = sentIds.indexOf(id);
-    if (position === -1) return {};
-    const prefix = `${String(position)}.`;
-    return Object.fromEntries(Object.entries(state.fieldErrors)
-      .filter(([key]) => key.startsWith(prefix))
-      .map(([key, value]) => [key.slice(prefix.length), value]));
-  };
-
   return (
     <form ref={formRef} onReset={onReset} action={(form) => {
       const values = rows.map(({ id }) => {
@@ -196,7 +187,7 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
           <div className={`${capture.grid} ${styles.fields}`}>
             <ErrorFields variant="grid" timed={target?.timed ?? timed} subcategorySuggestions={subcategorySuggestions}
               defaults={draft} namePrefix={`${String(id)}.`}
-              fieldErrors={errorsForRow(id)} />
+              fieldErrors={errorsForRow(state.fieldErrors, sentIds.indexOf(id))} />
           </div>
           <button type="button" className={styles.secondary} onClick={() => {
             setRows((current) => current.filter((row) => row.id !== id));

@@ -16,6 +16,9 @@ function contextPages(text) {
   return Array.from({ length: last - first + 1 }, (_, i) => first + i);
 }
 
+/** Marcos que alguna vez leyeron el visor; solo ellos retiran lo que publicaron. */
+const publishers = new WeakSet();
+
 /** Un contexto por pestaña del visor: otras pestañas no prestan su página. */
 export function viewerContextKey(doc) {
   try {
@@ -46,8 +49,16 @@ export function readStudyContext(doc, activity, key) {
     // Solo los marcos que muestran el visor publican su contexto. Si la página ya no
     // se puede leer, se borra; no reutilizamos el número de la página anterior.
     if (key && (book || page)) {
+      publishers.add(doc);
       shared = { book, pages, scope };
       doc.defaultView.localStorage.setItem(key, JSON.stringify(shared));
+    } else if (key && publishers.has(doc)) {
+      // El marco que publicaba ha dejado de ver el visor. Retira lo suyo en vez de
+      // prestarle libro y página a la siguiente actividad. Un marco que nunca publicó
+      // —el reproductor— no borra nada: es justo quien necesita leer el contexto.
+      publishers.delete(doc);
+      shared = {};
+      doc.defaultView.localStorage.removeItem(key);
     }
   } catch { shared = {}; }
   const label = contextText(doc, '[data-activity-number]', 'data-activity-number')

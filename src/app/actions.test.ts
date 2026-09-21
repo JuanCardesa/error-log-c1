@@ -5,10 +5,12 @@ import { type Db, createDb, getDb } from '@/lib/db/client';
 import type * as DbClient from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
 import { MIGRATIONS_DIR } from '@/lib/db/paths';
-import { deleteError, deleteSession, deleteWritingPiece, getError, listWritingPieces, markAnkiAdded } from '@/lib/db/repo';
+import { deleteError, deleteSession, deleteWritingPiece, getError, getSession, listErrors, listWritingPieces, markAnkiAdded } from '@/lib/db/repo';
 import { seed } from '@/lib/db/seed';
 import { createSessionAction, updateErrorAction, updateSessionAction } from './registrar/actions';
 import { EMPTY_STATE } from './registrar/formState';
+import { importErrorsAction } from './registrar/importActions';
+import { MAX_IMPORT_ROWS, MAX_SESSION_IMPORT_ROWS } from '@/lib/import/errors';
 import { saveWritingPieceAction } from './writing/actions';
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
@@ -33,6 +35,54 @@ function form(values: object): FormData {
   }
   return result;
 }
+
+describe('importar en una sesión abierta', () => {
+  const header = { date: '2020-01-20', kind: 'DRILL', paper: null, part: null, source: 'LIBRO', itemsTotal: 10, itemsCorrect: 8 };
+  const row = { prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off',
+    category: 'PHRASAL_VERB', ruleNote: 'Call off significa cancelar una actividad.' };
+
+  it.each([{ ...header, date: '2999-01-01' }, { status: 'INVALID' }, null, undefined])('ignora una cabecera que no va a escribir (%j)', async (session) => {
+    const created = await createSessionAction(EMPTY_STATE, form(header));
+    const id = created.createdId!;
+    const before = getSession(db, id);
+    const result = await importErrorsAction(EMPTY_STATE, form({ sessionId: id, envelope: JSON.stringify({ session, errors: [row] }) }));
+    expect(result.ok).toBe(true);
+    expect(result.message).toBe('1 error guardado.');
+    expect(getSession(db, id)).toEqual(before);
+    expect(listErrors(db, id)).toHaveLength(1);
+  });
+
+  it('concuerda el recuento de repetidos omitidos con su verbo', async () => {
+    const created = await createSessionAction(EMPTY_STATE, form(header));
+    const id = created.createdId!;
+    await importErrorsAction(EMPTY_STATE, form({ sessionId: id, rows: JSON.stringify([row]) }));
+    const again = await importErrorsAction(EMPTY_STATE, form({ sessionId: id, rows: JSON.stringify([row]) }));
+    expect(again.message).toBe('0 errores guardados. 1 repetido omitido; los existentes se conservan.');
+    expect(listErrors(db, id)).toHaveLength(1);
+  });
+
+  it.each([['rows', MAX_IMPORT_ROWS], ['envelope', MAX_SESSION_IMPORT_ROWS]] as const)('respeta el límite de %s sin guardar parcialmente', async (field, limit) => {
+    const created = await createSessionAction(EMPTY_STATE, form(header));
+    const id = created.createdId!;
+    const errors = Array.from({ length: limit + 1 }, (_, i) => ({ ...row, itemRef: String(i) }));
+    const payload = (rows: typeof errors) => form({ sessionId: id, [field]: JSON.stringify(field === 'envelope' ? { session: null, errors: rows } : rows) });
+    const rejected = await importErrorsAction(EMPTY_STATE, payload(errors));
+    expect(rejected.ok).toBe(false);
+    expect(rejected.message).toContain(`entre 1 y ${limit}`);
+    expect(listErrors(db, id)).toHaveLength(0);
+    expect((await importErrorsAction(EMPTY_STATE, payload(errors.slice(1)))).ok).toBe(true);
+    expect(listErrors(db, id)).toHaveLength(limit);
+  });
+
+  it('devuelve un error de tipo junto a la fila y no guarda las demás', async () => {
+    const created = await createSessionAction(EMPTY_STATE, form(header));
+    const result = await importErrorsAction(EMPTY_STATE, form({ sessionId: created.createdId,
+      envelope: JSON.stringify({ session: null, errors: [row, { ...row, prompt: 123 }] }) }));
+    expect(result.fieldErrors['1.prompt']?.[0]).toContain('se esperaba texto');
+    expect(result.ok).toBe(false);
+    expect(listErrors(db, created.createdId!)).toHaveLength(0);
+  });
+});
 
 describe('sesiones sin formato de examen', () => {
   const free = { date: '2020-01-20', kind: 'DRILL', paper: null, part: null, source: 'LIBRO', itemsTotal: 10, itemsCorrect: 8 };

@@ -1,5 +1,5 @@
 /**
- * Aritmetica de fechas civiles (`YYYY-MM-DD`) en UTC.
+ * Fechas civiles (`YYYY-MM-DD`): calendario local y aritmética de días en UTC.
  *
  * «Hoy» se obtiene del reloj local. Una vez convertido a fecha civil, se calcula
  * en UTC para que los cambios de hora no alteren las sumas de días.

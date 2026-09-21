@@ -94,3 +94,9 @@ test('explica un sobre manipulado sin preparar una vista previa falsa', async ({
   await expect(page.getByRole('alert').filter({ hasText: 'Sobre inválido' })).toContainText('campos no permitidos (status)');
   await expect(page.getByRole('group', { name: 'Cabecera propuesta' })).toHaveCount(0);
 });
+
+test('un bloque con solo errors indica que hay que abrir una sesión', async ({ page }) => {
+  await preview(page, { errors: [row] });
+  await expect(page.getByRole('alert').filter({ hasText: 'Este bloque solo trae errores' })).toContainText('Abre una sesión y usa «Pegar varios errores»');
+  await expect(page.getByRole('group', { name: 'Cabecera propuesta' })).toHaveCount(0);
+});

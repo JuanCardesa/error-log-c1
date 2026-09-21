@@ -7,7 +7,7 @@ import { getSession, importErrors } from '@/lib/db/repo';
 import { importSessionWithErrors } from '@/lib/db/sessionImport';
 import { validateImportRows } from '@/lib/import/validateRows';
 import { toIsoDate } from '@/lib/time/dates';
-import { importBatchSchema, importEnvelopeSchema, importIssues, MAX_IMPORT_LENGTH } from '@/lib/import/errors';
+import { importBatchSchema, importParseOptions, sessionImportRowsSchema, MAX_IMPORT_LENGTH, MAX_IMPORT_ROWS, MAX_SESSION_IMPORT_ROWS } from '@/lib/import/errors';
 import type { FormState } from './formState';
 
 export async function importErrorsAction(_previous: FormState, form: FormData): Promise<FormState> {
@@ -27,12 +27,15 @@ export async function importErrorsAction(_previous: FormState, form: FormData): 
   try { data = JSON.parse(raw); }
   catch { return { ok: false, fieldErrors: {}, message: 'No se pudo leer la tanda. Vuelve a preparar la vista previa.' }; }
   if (isEnvelope) {
-    const parsed = importEnvelopeSchema(toIsoDate(new Date())).safeParse(data);
-    if (!parsed.success) return { ok: false, fieldErrors: {}, message: `Sobre inválido. ${importIssues(parsed.error)}` };
-    data = parsed.data.errors;
+    // La cabecera no se escribe: solo se validan los errores para la sesión abierta.
+    data = data !== null && typeof data === 'object' && !Array.isArray(data) && 'errors' in data ? data.errors : undefined;
   }
-  const batch = (isEnvelope ? importEnvelopeSchema(toIsoDate(new Date())).shape.errors.min(1) : importBatchSchema).safeParse(data);
-  if (!batch.success) return { ok: false, fieldErrors: {}, message: `La tanda debe contener entre 1 y ${isEnvelope ? '300' : '100'} errores válidos.` };
+  const batch = (isEnvelope ? sessionImportRowsSchema.min(1) : importBatchSchema).safeParse(data, importParseOptions);
+  if (!batch.success) {
+    const fieldErrors: Record<string, string[]> = {};
+    for (const issue of batch.error.issues) (fieldErrors[issue.path.join('.')] ??= []).push(issue.message);
+    return { ok: false, fieldErrors, message: `La tanda debe contener entre 1 y ${String(isEnvelope ? MAX_SESSION_IMPORT_ROWS : MAX_IMPORT_ROWS)} errores válidos.` };
+  }
 
   const { fieldErrors, inputs } = validateImportRows(batch.data, {
     sessionId, timed: session.timed, elapsed: Number(form.get('secs')), now: new Date().toISOString(),
@@ -46,7 +49,7 @@ export async function importErrorsAction(_previous: FormState, form: FormData): 
     revalidatePath('/', 'layout');
     return {
       ok: true, fieldErrors: {},
-      message: `${String(result.created)} ${result.created === 1 ? 'error guardado' : 'errores guardados'}.${result.skipped > 0 ? ` ${String(result.skipped)} repetidos omitidos; los existentes se conservan.` : ''}`,
+      message: `${String(result.created)} ${result.created === 1 ? 'error guardado' : 'errores guardados'}.${result.skipped > 0 ? ` ${result.skipped === 1 ? '1 repetido omitido' : `${String(result.skipped)} repetidos omitidos`}; los existentes se conservan.` : ''}`,
     };
   } catch {
     return { ok: false, fieldErrors: {}, message: 'No se pudo guardar la tanda. Los datos siguen aqui para que puedas reintentarlo.' };

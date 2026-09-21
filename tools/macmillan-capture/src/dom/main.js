@@ -8,9 +8,9 @@
 
 import { discoverVerdicts } from '../core/signals.js';
 import { summarize, tidy } from '../core/items.js';
-import { fingerprint, rowFingerprint, toImportEntries, toJson } from '../core/exportable.js';
+import { fingerprint, MAX_EXPORT_LENGTH, rowFingerprint, toImportEntries, toJson } from '../core/exportable.js';
 import { addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, trayStats } from '../core/tray.js';
-import { emptyStudy, recordStudy, studySession } from '../core/study.js';
+import { emptyStudy, normalizeStudy, recordStudy, studySession } from '../core/study.js';
 import { readStudyContext, viewerContextKey } from './context.js';
 import { describe } from '../core/report.js';
 import { AnswerStore, readValue, trackUserInput } from './answers.js';
@@ -44,6 +44,18 @@ function save(key, value) {
   }
 }
 
+/** Las listas guardadas se descartan enteras si no lo son: un objeto suelto rompe todo. */
+function loadList(key, fallback) {
+  const value = load(key, fallback);
+  return Array.isArray(value) ? value : fallback;
+}
+
+/** Igual para el diccionario de tandas ya exportadas, que se indexa por clave. */
+function loadMarks(key, fallback) {
+  const value = load(key, fallback);
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : fallback;
+}
+
 /**
  * En Macmillan el ejercicio vive en el marco del reproductor. El visor del libro y las
  * paginas sueltas tienen campos (zoom, buscador, notas) que el detector generico tomaria
@@ -72,10 +84,10 @@ export function start(doc) {
     baseline: new Map(),
     registry: createRegistry(),
     verdicts: new Map(),
-    tray: load(TRAY_KEY, []),
-    done: new Set(load(DONE_KEY, [])),
-    study: load(STUDY_KEY, emptyStudy()),
-    studyDone: load(STUDY_DONE_KEY, {}),
+    tray: loadList(TRAY_KEY, []),
+    done: new Set(loadList(DONE_KEY, [])),
+    study: normalizeStudy(load(STUDY_KEY, null)),
+    studyDone: loadMarks(STUDY_DONE_KEY, {}),
     context: {},
     unsupported: 0,
     note: '',
@@ -362,7 +374,8 @@ export function start(doc) {
     syncShared();
     if (state.phase !== 'ready') return;
     const signature = fingerprint([...state.verdicts].map(([id, verdict]) => `${id}:${verdict}:${state.mode === 'macmillan' ? state.read?.answers.get(id) : store.answerOf(id)}`));
-    if (state.studyDone[state.activity.key] !== signature) {
+    const known = state.study.activities.find((entry) => entry.key === state.activity.key)?.signature;
+    if (state.studyDone[state.activity.key] !== signature && known !== signature) {
       state.study = recordStudy(state.study, state.activity.key, state.verdicts, state.context, signature);
       save(STUDY_KEY, state.study);
     }
@@ -397,10 +410,10 @@ export function start(doc) {
   // Los reproductores y el visor comparten origen. Antes de escribir se recoge lo
   // último que haya guardado otro marco, para no pisar su bandeja con una copia vieja.
   function syncShared() {
-    state.tray = load(TRAY_KEY, state.tray);
-    state.done = new Set(load(DONE_KEY, [...state.done]));
-    state.study = load(STUDY_KEY, state.study);
-    state.studyDone = load(STUDY_DONE_KEY, state.studyDone);
+    state.tray = loadList(TRAY_KEY, state.tray);
+    state.done = new Set(loadList(DONE_KEY, [...state.done]));
+    state.study = normalizeStudy(load(STUDY_KEY, state.study));
+    state.studyDone = loadMarks(STUDY_DONE_KEY, state.studyDone);
   }
 
   function finishStudy() {
@@ -472,8 +485,9 @@ export function start(doc) {
     // actividades: se conserva su array compatible, nunca se inventa su denominador.
     const legacy = batch.some((entry) => !state.study.activities.some((activity) => activity.key === entry.activityKey));
     const json = toJson(batch.map((entry) => entry.row), legacy ? undefined : studySession(state.study));
-    if (json.length > 200_000) {
-      state.note = 'El bloque supera el tamaño del importador. La bandeja se conserva; reduce el contenido antes de exportar.';
+    if (json.length > MAX_EXPORT_LENGTH) {
+      panel.show(json);
+      state.note = 'El bloque supera el tamaño del importador. Copia el texto completo de abajo a un editor y acorta los enunciados antes de importarlo. La bandeja y los recuentos se conservan.';
       render();
       return;
     }
@@ -527,7 +541,7 @@ export function start(doc) {
     save(STUDY_DONE_KEY, {});
     // Recogemos ya, sin esperar a que la pagina vuelva a moverse.
     collect();
-    state.note = 'Olvidado lo ya copiado: los fallos de esta actividad vuelven a la bandeja.';
+    state.note = 'Olvidado lo ya copiado: los fallos y recuentos de esta actividad vuelven a la bandeja. Abre las demás actividades para recuperarlos también.';
     render();
   }
 

@@ -8,6 +8,10 @@ export const MAX_IMPORT_ROWS = 100;
 export const MAX_IMPORT_LENGTH = 200_000;
 export const MAX_SESSION_IMPORT_ROWS = 300;
 
+const spanishError = z.locales.es().localeError;
+export const importParseOptions = { error: ((issue) => issue.code === 'unrecognized_keys'
+  ? `campos no permitidos (${issue.keys.join(', ')})` : spanishError(issue)) satisfies z.core.$ZodErrorMap };
+
 // Lista cerrada de campos de la cabecera pegada. Ni id, status ni duración.
 export const importedSessionSchema = z.strictObject({
   date: z.string(), kind: z.enum(SESSION_KINDS), paper: z.enum(PAPERS).nullable(),
@@ -20,10 +24,10 @@ export type ImportedSession = z.infer<typeof importedSessionSchema>;
 export function importEnvelopeSchema(today: string) {
   return z.strictObject({
     session: importedSessionSchema.superRefine((value, ctx) => {
-      const parsed = sessionInputSchema({ today }).safeParse(value);
+      const parsed = sessionInputSchema({ today }).safeParse(value, importParseOptions);
       if (!parsed.success) for (const issue of parsed.error.issues) ctx.addIssue({ code: 'custom', path: issue.path, message: issue.message });
     }),
-    errors: z.array(importDraftSchema).max(MAX_SESSION_IMPORT_ROWS),
+    errors: sessionImportRowsSchema,
   });
 }
 
@@ -56,6 +60,19 @@ export const importDraftSchema = z.object({
 export type ImportDraft = z.infer<typeof importDraftSchema>;
 
 export const importBatchSchema = z.array(importDraftSchema).min(1).max(MAX_IMPORT_ROWS);
+export const sessionImportRowsSchema = z.array(importDraftSchema).max(MAX_SESSION_IMPORT_ROWS, {
+  error: `El bloque admite como máximo ${String(MAX_SESSION_IMPORT_ROWS)} errores. Divide la tanda en partes.`,
+});
+
+/** Ambos validadores identifican la posición enviada, con o sin el prefijo del sobre. */
+export function errorsForRow(fieldErrors: Record<string, string[]>, position: number): Record<string, string[]> {
+  const result: Record<string, string[]> = {};
+  for (const [key, messages] of Object.entries(fieldErrors)) {
+    const prefix = [`${String(position)}.`, `errors.${String(position)}.`].find((value) => key.startsWith(value));
+    if (prefix !== undefined) (result[key.slice(prefix.length)] ??= []).push(...messages);
+  }
+  return result;
+}
 
 const columns = [
   'itemRef', 'prompt', 'myAnswer', 'correctAnswer', 'category', 'ruleNote',
@@ -117,10 +134,13 @@ export function parseImportedBatch(source: string, today = toIsoDate(new Date())
     try { data = JSON.parse(text); }
     catch { throw new Error('El bloque esta incompleto o no es JSON valido. Copia la respuesta completa de la IA.'); }
     if (data !== null && typeof data === 'object' && !Array.isArray(data) && ('errors' in data || 'session' in data)) {
-      const envelope = importEnvelopeSchema(today).safeParse(data);
-      if (!envelope.success) throw new Error(`Sobre inválido. ${importIssues(envelope.error)}`);
-      session = envelope.data.session;
-      data = envelope.data.errors;
+      if ('errors' in data && !('session' in data)) data = data.errors;
+      else {
+        const envelope = importEnvelopeSchema(today).safeParse(data, importParseOptions);
+        if (!envelope.success) throw new Error(`Sobre inválido. ${importIssues(envelope.error)}`);
+        session = envelope.data.session;
+        data = envelope.data.errors;
+      }
     } else if (!Array.isArray(data)) data = [data];
   } else {
     if (!text.includes('\t')) throw new Error('Para texto libre, usa «Copiar instrucciones para la IA» y pega aqui su respuesta. Tambien puedes pegar filas de una hoja de calculo.');
@@ -139,7 +159,7 @@ export function parseImportedBatch(source: string, today = toIsoDate(new Date())
       return Object.fromEntries(values.map((value, i) => [fields[i], value]));
     });
   }
-  const parsed = (session === null ? importBatchSchema : z.array(importDraftSchema).max(MAX_SESSION_IMPORT_ROWS)).safeParse(data);
+  const parsed = (session === null ? importBatchSchema : sessionImportRowsSchema).safeParse(data, importParseOptions);
   if (!parsed.success) {
     throw new Error(`Se esperan entre 1 y ${String(MAX_IMPORT_ROWS)} errores con campos de texto. Comprueba que has copiado el bloque completo.`);
   }

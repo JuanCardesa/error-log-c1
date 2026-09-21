@@ -81,3 +81,89 @@ test('no atribuye a otro visor los metadatos que quedaron de una navegación ant
   await attach(page);
   expect((await copy(page)).session.sourceRef).toBe(null);
 });
+
+test('no escribe los mismos recuentos cada vez que cambia el DOM', async ({ page }) => {
+  await page.route(`${origin}/**`, (route) => route.fulfill({ contentType: 'text/html', body: rcfActivityPage() }));
+  await page.goto(`${origin}/estable`);
+  await page.evaluate(() => {
+    window.studyWrites = 0;
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === 'errorlog-macmillan:study') window.studyWrites += 1;
+      return original.call(this, key, value);
+    };
+  });
+  await attach(page);
+  expect(await page.evaluate(() => window.studyWrites)).toBe(1);
+  for (let i = 0; i < 3; i += 1) {
+    await page.locator('body').evaluate((body, value) => body.setAttribute('data-unrelated', String(value)), i);
+    await page.waitForTimeout(450);
+  }
+  expect(await page.evaluate(() => window.studyWrites)).toBe(1);
+  expect((await copy(page)).session).toMatchObject({ itemsTotal: 3, itemsCorrect: 2 });
+});
+
+test('un bloque demasiado largo queda accesible entero y no se marca como exportado', async ({ page }) => {
+  const items = Array.from({ length: 300 }, (_, i) => ({ ref: String(i + 1), lines: ['x'.repeat(1000)], id: `gap-${i}`, answer: 'x', verdict: 'incorrect' }));
+  await page.route(`${origin}/**`, (route) => route.fulfill({ contentType: 'text/html', body: rcfActivityPage({ items }) }));
+  await page.goto(`${origin}/demasiado-largo`);
+  await attach(page);
+  const block = await copy(page);
+  await expect(page.getByLabel('Bloque para copiar')).toBeVisible();
+  await expect(page.locator('.note')).toContainText('acorta los enunciados');
+  expect(block.errors).toHaveLength(300);
+  expect(block.errors[0].prompt).toContain('x'.repeat(1000));
+  const stored = await page.evaluate(() => ({
+    tray: JSON.parse(localStorage.getItem('errorlog-macmillan:tray')),
+    study: JSON.parse(localStorage.getItem('errorlog-macmillan:study')),
+    done: JSON.parse(localStorage.getItem('errorlog-macmillan:study-done') ?? '{}'),
+  }));
+  expect(stored.tray).toHaveLength(300);
+  expect(stored.study.activities).toHaveLength(1);
+  expect(stored.done).toEqual({});
+  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeEnabled();
+});
+
+test('un estado guardado con forma inesperada no impide arrancar ni pierde la tanda nueva', async ({ page }) => {
+  await page.route(`${origin}/**`, (route) => route.fulfill({ contentType: 'text/html', body: rcfActivityPage() }));
+  await page.goto(`${origin}/corrupto`);
+  const failures = [];
+  page.on('console', (message) => { if (message.type() === 'error') failures.push(message.text()); });
+  await page.evaluate(() => {
+    localStorage.setItem('errorlog-macmillan:study', '{"activities":"bad"}');
+    localStorage.setItem('errorlog-macmillan:study-done', 'null');
+    localStorage.setItem('errorlog-macmillan:tray', '{}');
+  });
+  await attach(page);
+  expect(failures).toEqual([]);
+  await expect(page.locator('.counts')).toContainText('3 respuestas comprobadas, 2 aciertos');
+  expect((await copy(page)).errors).toHaveLength(1);
+});
+
+test('el visor que deja de mostrar libro y página retira su contexto en vez de prestarlo', async ({ page }) => {
+  await page.route(`${origin}/**`, (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const body = path === '/visor'
+      ? '<span data-book-title="Libro observado"></span><span data-page-number="6"></span><iframe src="/act-1"></iframe>'
+      : rcfActivityPage({ activityId: path, ...(path === '/act-2' ? { items: [{ ref: '1', lines: ['draw a'], id: 'a', answer: 'conclusion', verdict: 'correct' }] } : {}) })
+        .replace('<body>', `<body><span data-activity-number="${path === '/act-1' ? 1 : 2}"></span>`);
+    return route.fulfill({ contentType: 'text/html', body });
+  });
+  await page.goto(`${origin}/visor`);
+  await page.addScriptTag({ content: script });
+  let frame = page.frames().find((value) => value.url().endsWith('/act-1'));
+  await attach(frame);
+  // Cambio de sitio dentro del mismo visor, sin recargar: ya no consta ni libro ni página.
+  await page.evaluate(() => {
+    document.querySelector('[data-book-title]')?.remove();
+    document.querySelector('[data-page-number]')?.remove();
+  });
+  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter((key) => key.includes(':context:')).length)).toBe(0);
+  await page.evaluate(() => { const child = document.createElement('iframe'); child.src = '/act-2'; document.body.append(child); });
+  await expect(page.frameLocator('iframe').nth(1).locator('.activity')).toBeVisible();
+  frame = page.frames().find((value) => value.url().endsWith('/act-2'));
+  await attach(frame);
+  const { sourceRef } = (await copy(frame)).session;
+  expect(sourceRef).not.toContain('actividades 1-2');
+  expect(sourceRef).toContain('Libro observado · págs. 6 · actividades 1');
+});

@@ -340,6 +340,8 @@ function summarize(controls, verdicts) {
  */
 
 
+const MAX_EXPORT_LENGTH = 200_000;
+
 /** Hash estable y corto para el control de duplicados. FNV-1a, sin dependencias. */
 function fingerprint(parts) {
   const text = parts.join('\u0000');
@@ -415,7 +417,7 @@ function rowFingerprint(row, activityKey) {
 
 /** El bloque que se pega en «Errores para importar». */
 function toJson(rows, session) {
-  return JSON.stringify(session ? { session, errors: rows } : rows, null, 2);
+  return JSON.stringify(session ? { session, errors: rows } : rows);
 }
 
 
@@ -543,8 +545,21 @@ function describeTray(tray) {
 
 
 // ----- src/core/study.js -----
-/** Una tanda completa; cada hueco conserva su primer veredicto observado. */
+/** Una tanda completa; cada actividad conserva su primera corrección observada. */
 function emptyStudy() { return { date: null, activities: [] }; }
+
+/**
+ * Lo guardado puede venir de otra version, a medias o manipulado. Antes se daba por
+ * bueno y una forma inesperada tumbaba el arranque entero sin panel ni explicacion.
+ */
+function normalizeStudy(value) {
+  if (value === null || typeof value !== 'object' || !Array.isArray(value.activities)) return emptyStudy();
+  const activities = value.activities.filter((entry) => entry !== null && typeof entry === 'object'
+    && typeof entry.key === 'string'
+    && Array.isArray(entry.items) && entry.items.every((item) => Array.isArray(item) && item.length === 2)
+    && entry.context !== null && typeof entry.context === 'object' && Array.isArray(entry.context.pages));
+  return { date: typeof value.date === 'string' ? value.date : null, activities };
+}
 
 function studyDate(now = new Date()) {
   return `${String(now.getFullYear()).padStart(4, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -552,12 +567,11 @@ function studyDate(now = new Date()) {
 
 function recordStudy(study, key, verdicts, context = {}, signature = '', date = studyDate()) {
   const previous = study.activities.find((entry) => entry.key === key);
-  const items = new Map(previous?.items ?? []);
-  for (const [id, verdict] of verdicts) {
-    if (!items.has(id) && (verdict === 'correct' || verdict === 'incorrect')) items.set(id, verdict);
-  }
-  if (items.size === 0) return study;
-  const entry = { key, items: [...items], signature, context: {
+  // Los ids del DOM pueden cambiar al volver a montar la misma actividad. Su primera
+  // corrección es la unidad de recuento; un reintento no añade huecos ni aciertos.
+  const items = previous?.items ?? [...verdicts].filter(([, verdict]) => verdict === 'correct' || verdict === 'incorrect');
+  if (items.length === 0) return study;
+  const entry = { key, items, signature, context: {
     book: context.book || previous?.context.book || '',
     pages: [...new Set([...(previous?.context.pages ?? []), ...(context.pages ?? [])])],
     activity: context.activity || previous?.context.activity || '',
@@ -1375,6 +1389,9 @@ function contextPages(text) {
   return Array.from({ length: last - first + 1 }, (_, i) => first + i);
 }
 
+/** Marcos que alguna vez leyeron el visor; solo ellos retiran lo que publicaron. */
+const publishers = new WeakSet();
+
 /** Un contexto por pestaña del visor: otras pestañas no prestan su página. */
 function viewerContextKey(doc) {
   try {
@@ -1405,8 +1422,16 @@ function readStudyContext(doc, activity, key) {
     // Solo los marcos que muestran el visor publican su contexto. Si la página ya no
     // se puede leer, se borra; no reutilizamos el número de la página anterior.
     if (key && (book || page)) {
+      publishers.add(doc);
       shared = { book, pages, scope };
       doc.defaultView.localStorage.setItem(key, JSON.stringify(shared));
+    } else if (key && publishers.has(doc)) {
+      // El marco que publicaba ha dejado de ver el visor. Retira lo suyo en vez de
+      // prestarle libro y página a la siguiente actividad. Un marco que nunca publicó
+      // —el reproductor— no borra nada: es justo quien necesita leer el contexto.
+      publishers.delete(doc);
+      shared = {};
+      doc.defaultView.localStorage.removeItem(key);
     }
   } catch { shared = {}; }
   const label = contextText(doc, '[data-activity-number]', 'data-activity-number')
@@ -1706,12 +1731,20 @@ class Panel {
     if (view.counts) {
       this.counts.textContent = '';
       this.counts.append(
-        element(this.doc, 'b', { textContent: 'Toda la tanda (primera corrección de cada hueco): ' }),
+        element(this.doc, 'b', { textContent: 'Toda la tanda (primera corrección de cada actividad): ' }),
         this.doc.createTextNode(`${String(view.counts.checked)} respuestas comprobadas, ${String(view.counts.correct)} aciertos.`),
       );
     }
     this.note.textContent = view.note ?? '';
     if (view.note === '') this.note.textContent = '';
+  }
+
+  /** Deja el bloque completo accesible incluso cuando no se puede importar todavía. */
+  show(text) {
+    this.area.value = text;
+    this.area.hidden = false;
+    this.area.focus();
+    this.area.select();
   }
 
   /** Copia con los tres caminos: API moderna, execCommand y seleccion manual. */
@@ -1725,9 +1758,7 @@ class Panel {
     } catch {
       // Un iframe de otro origen no suele tener permiso de portapapeles: seguimos.
     }
-    this.area.hidden = false;
-    this.area.focus();
-    this.area.select();
+    this.show(text);
     let copied = false;
     try {
       copied = this.doc.execCommand('copy');
@@ -1776,6 +1807,18 @@ function save(key, value) {
   }
 }
 
+/** Las listas guardadas se descartan enteras si no lo son: un objeto suelto rompe todo. */
+function loadList(key, fallback) {
+  const value = load(key, fallback);
+  return Array.isArray(value) ? value : fallback;
+}
+
+/** Igual para el diccionario de tandas ya exportadas, que se indexa por clave. */
+function loadMarks(key, fallback) {
+  const value = load(key, fallback);
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : fallback;
+}
+
 /**
  * En Macmillan el ejercicio vive en el marco del reproductor. El visor del libro y las
  * paginas sueltas tienen campos (zoom, buscador, notas) que el detector generico tomaria
@@ -1804,10 +1847,10 @@ function start(doc) {
     baseline: new Map(),
     registry: createRegistry(),
     verdicts: new Map(),
-    tray: load(TRAY_KEY, []),
-    done: new Set(load(DONE_KEY, [])),
-    study: load(STUDY_KEY, emptyStudy()),
-    studyDone: load(STUDY_DONE_KEY, {}),
+    tray: loadList(TRAY_KEY, []),
+    done: new Set(loadList(DONE_KEY, [])),
+    study: normalizeStudy(load(STUDY_KEY, null)),
+    studyDone: loadMarks(STUDY_DONE_KEY, {}),
     context: {},
     unsupported: 0,
     note: '',
@@ -2094,7 +2137,8 @@ function start(doc) {
     syncShared();
     if (state.phase !== 'ready') return;
     const signature = fingerprint([...state.verdicts].map(([id, verdict]) => `${id}:${verdict}:${state.mode === 'macmillan' ? state.read?.answers.get(id) : store.answerOf(id)}`));
-    if (state.studyDone[state.activity.key] !== signature) {
+    const known = state.study.activities.find((entry) => entry.key === state.activity.key)?.signature;
+    if (state.studyDone[state.activity.key] !== signature && known !== signature) {
       state.study = recordStudy(state.study, state.activity.key, state.verdicts, state.context, signature);
       save(STUDY_KEY, state.study);
     }
@@ -2129,10 +2173,10 @@ function start(doc) {
   // Los reproductores y el visor comparten origen. Antes de escribir se recoge lo
   // último que haya guardado otro marco, para no pisar su bandeja con una copia vieja.
   function syncShared() {
-    state.tray = load(TRAY_KEY, state.tray);
-    state.done = new Set(load(DONE_KEY, [...state.done]));
-    state.study = load(STUDY_KEY, state.study);
-    state.studyDone = load(STUDY_DONE_KEY, state.studyDone);
+    state.tray = loadList(TRAY_KEY, state.tray);
+    state.done = new Set(loadList(DONE_KEY, [...state.done]));
+    state.study = normalizeStudy(load(STUDY_KEY, state.study));
+    state.studyDone = loadMarks(STUDY_DONE_KEY, state.studyDone);
   }
 
   function finishStudy() {
@@ -2204,8 +2248,9 @@ function start(doc) {
     // actividades: se conserva su array compatible, nunca se inventa su denominador.
     const legacy = batch.some((entry) => !state.study.activities.some((activity) => activity.key === entry.activityKey));
     const json = toJson(batch.map((entry) => entry.row), legacy ? undefined : studySession(state.study));
-    if (json.length > 200_000) {
-      state.note = 'El bloque supera el tamaño del importador. La bandeja se conserva; reduce el contenido antes de exportar.';
+    if (json.length > MAX_EXPORT_LENGTH) {
+      panel.show(json);
+      state.note = 'El bloque supera el tamaño del importador. Copia el texto completo de abajo a un editor y acorta los enunciados antes de importarlo. La bandeja y los recuentos se conservan.';
       render();
       return;
     }
@@ -2259,7 +2304,7 @@ function start(doc) {
     save(STUDY_DONE_KEY, {});
     // Recogemos ya, sin esperar a que la pagina vuelva a moverse.
     collect();
-    state.note = 'Olvidado lo ya copiado: los fallos de esta actividad vuelven a la bandeja.';
+    state.note = 'Olvidado lo ya copiado: los fallos y recuentos de esta actividad vuelven a la bandeja. Abre las demás actividades para recuperarlos también.';
     render();
   }
 

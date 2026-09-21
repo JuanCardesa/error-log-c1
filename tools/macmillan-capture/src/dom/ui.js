@@ -145,12 +145,20 @@ export class Panel {
     if (view.counts) {
       this.counts.textContent = '';
       this.counts.append(
-        element(this.doc, 'b', { textContent: 'Toda la tanda (primera corrección de cada hueco): ' }),
+        element(this.doc, 'b', { textContent: 'Toda la tanda (primera corrección de cada actividad): ' }),
         this.doc.createTextNode(`${String(view.counts.checked)} respuestas comprobadas, ${String(view.counts.correct)} aciertos.`),
       );
     }
     this.note.textContent = view.note ?? '';
     if (view.note === '') this.note.textContent = '';
+  }
+
+  /** Deja el bloque completo accesible incluso cuando no se puede importar todavía. */
+  show(text) {
+    this.area.value = text;
+    this.area.hidden = false;
+    this.area.focus();
+    this.area.select();
   }
 
   /** Copia con los tres caminos: API moderna, execCommand y seleccion manual. */
@@ -164,9 +172,7 @@ export class Panel {
     } catch {
       // Un iframe de otro origen no suele tener permiso de portapapeles: seguimos.
     }
-    this.area.hidden = false;
-    this.area.focus();
-    this.area.select();
+    this.show(text);
     let copied = false;
     try {
       copied = this.doc.execCommand('copy');
