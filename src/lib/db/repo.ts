@@ -98,6 +98,24 @@ export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorIn
   });
 }
 
+/** Cabecera y filas comparten una única transacción SQLite. */
+export function createSessionWithErrors(db: Db, header: SessionInput, inputs: readonly ErrorInput[]) {
+  return db.transaction((tx) => {
+    const createdSession = tx.insert(session).values({ ...header, status: 'OPEN' }).returning().get();
+    if (createdSession === undefined) throw new Error('No se pudo crear la sesión.');
+    const seen = new Set<string>();
+    let created = 0;
+    for (const input of inputs) {
+      const key = JSON.stringify([input.itemRef ?? '', input.prompt, input.myAnswer ?? '', input.correctAnswer].map((text) => text.trim()));
+      if (seen.has(key)) continue;
+      tx.insert(errorRow).values({ ...input, sessionId: createdSession.id, lateInSession: header.timed && input.lateInSession }).run();
+      seen.add(key);
+      created += 1;
+    }
+    return { sessionId: createdSession.id, created, skipped: inputs.length - created };
+  });
+}
+
 export function getError(db: Db, id: number): ErrorRow | null {
   return db.select().from(errorRow).where(eq(errorRow.id, id)).get() ?? null;
 }

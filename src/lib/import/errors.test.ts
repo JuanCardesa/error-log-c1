@@ -7,6 +7,28 @@ const example = {
   category: 'phrasal verb', ruleNote: 'Call off significa cancelar una actividad.',
 };
 
+const session = { date: '2026-09-15', kind: 'DRILL', paper: null, part: null, source: 'LIBRO',
+  sourceRef: 'Ready for C1 Advanced · págs. 6-7 · actividades 1-5', itemsTotal: 8, itemsCorrect: 6, timed: false };
+
+it('reconoce el sobre sin convertirlo en una fila vacía', () => {
+  expect(parseImportedErrors(JSON.stringify({ session, errors: [example] }))[0]?.prompt).toBe(example.prompt);
+});
+
+it.each([
+  [{ session: { ...session, id: 123 }, errors: [example] }, 'id'],
+  [{ session: { ...session, status: 'CLOSED' }, errors: [example] }, 'status'],
+  [{ session: { ...session, durationMin: 10 }, errors: [example] }, 'durationMin'],
+  [{ session: { ...session, timed: 'false' }, errors: [example] }, 'timed'],
+  [{ session: { ...session, itemsTotal: null }, errors: [example] }, 'itemsTotal'],
+  [{ session: { ...session, part: 1 }, errors: [example] }, 'part'],
+  [{ session: { ...session, date: '2999-01-01' }, errors: [example] }, 'futura'],
+  [{ errors: [example] }, 'session'],
+  [{ session }, 'errors'],
+  [{ session, errors: 'incorrecto' }, 'errors'],
+])('rechaza un sobre incompleto o manipulado con el campo concreto', (value, message) => {
+  expect(() => parseImportedErrors(JSON.stringify(value))).toThrow(message);
+});
+
 describe('pegar errores', () => {
   it('acepta el bloque de la IA, normaliza categorias y deja visibles los valores por defecto', () => {
     expect(parseImportedErrors('```json\n' + JSON.stringify([example]) + '\n```')[0]).toMatchObject({

@@ -1,9 +1,37 @@
 import { z } from 'zod';
 
-import { CATEGORIES, CAUSES, CONFIDENCES } from '../domain/enums';
+import { CATEGORIES, CAUSES, CONFIDENCES, PAPERS, SESSION_KINDS, SOURCES } from '../domain/enums';
+import { sessionInputSchema } from '../validation/schemas';
+import { toIsoDate } from '../time/dates';
 
 export const MAX_IMPORT_ROWS = 100;
 export const MAX_IMPORT_LENGTH = 200_000;
+export const MAX_SESSION_IMPORT_ROWS = 300;
+
+// Lista cerrada de campos de la cabecera pegada. Ni id, status ni duración.
+export const importedSessionSchema = z.strictObject({
+  date: z.string(), kind: z.enum(SESSION_KINDS), paper: z.enum(PAPERS).nullable(),
+  part: z.number().int().positive().nullable(), source: z.enum(SOURCES),
+  sourceRef: z.string().nullable(), itemsTotal: z.number().int().nonnegative().nullable(),
+  itemsCorrect: z.number().int().nonnegative().nullable(), timed: z.boolean(),
+});
+export type ImportedSession = z.infer<typeof importedSessionSchema>;
+
+export function importEnvelopeSchema(today: string) {
+  return z.strictObject({
+    session: importedSessionSchema.superRefine((value, ctx) => {
+      const parsed = sessionInputSchema({ today }).safeParse(value);
+      if (!parsed.success) for (const issue of parsed.error.issues) ctx.addIssue({ code: 'custom', path: issue.path, message: issue.message });
+    }),
+    errors: z.array(importDraftSchema).max(MAX_SESSION_IMPORT_ROWS),
+  });
+}
+
+export function importIssues(error: z.ZodError): string {
+  return error.issues.map((issue) => `${issue.path.join('.') || 'sobre'}: ${
+    issue.code === 'unrecognized_keys' ? `campos no permitidos (${issue.keys.join(', ')})` : issue.message
+  }`).join('; ');
+}
 
 /** Lo que proponemos cuando la tanda no trae causa ni confianza; se revisan en la vista previa. */
 const DEFAULT_CAUSE = 'DESCONOCIMIENTO';
@@ -71,16 +99,29 @@ function readTable(text: string): string[][] {
   return rows.filter((values) => values.some((value) => value.trim() !== ''));
 }
 
+export interface ImportedBatch { session: ImportedSession | null; errors: ImportDraft[] }
+
+// Conserva el retorno histórico para quienes solo añaden errores a una sesión.
 export function parseImportedErrors(source: string): ImportDraft[] {
+  return parseImportedBatch(source).errors;
+}
+
+export function parseImportedBatch(source: string, today = toIsoDate(new Date())): ImportedBatch {
   if (source.length > MAX_IMPORT_LENGTH) throw new Error('El texto es demasiado largo. Divide la importacion en tandas mas pequeñas.');
   const text = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').replace(/^\n+|\n+$/g, '')
     .replace(/^\s*```(?:json|tsv)?[^\S\n]*\n/i, '').replace(/\n```\s*$/, '');
   if (text.trim() === '') throw new Error('Pega primero tus errores.');
   let data: unknown;
+  let session: ImportedSession | null = null;
   if (text.trimStart().startsWith('[') || text.trimStart().startsWith('{')) {
     try { data = JSON.parse(text); }
     catch { throw new Error('El bloque esta incompleto o no es JSON valido. Copia la respuesta completa de la IA.'); }
-    if (!Array.isArray(data)) data = [data];
+    if (data !== null && typeof data === 'object' && !Array.isArray(data) && ('errors' in data || 'session' in data)) {
+      const envelope = importEnvelopeSchema(today).safeParse(data);
+      if (!envelope.success) throw new Error(`Sobre inválido. ${importIssues(envelope.error)}`);
+      session = envelope.data.session;
+      data = envelope.data.errors;
+    } else if (!Array.isArray(data)) data = [data];
   } else {
     if (!text.includes('\t')) throw new Error('Para texto libre, usa «Copiar instrucciones para la IA» y pega aqui su respuesta. Tambien puedes pegar filas de una hoja de calculo.');
     const rows = readTable(text);
@@ -98,11 +139,11 @@ export function parseImportedErrors(source: string): ImportDraft[] {
       return Object.fromEntries(values.map((value, i) => [fields[i], value]));
     });
   }
-  const parsed = importBatchSchema.safeParse(data);
+  const parsed = (session === null ? importBatchSchema : z.array(importDraftSchema).max(MAX_SESSION_IMPORT_ROWS)).safeParse(data);
   if (!parsed.success) {
     throw new Error(`Se esperan entre 1 y ${String(MAX_IMPORT_ROWS)} errores con campos de texto. Comprueba que has copiado el bloque completo.`);
   }
-  return parsed.data.map((row, index) => {
+  const errors = parsed.data.map((row, index) => {
     // Una celda en blanco de Causa o Confianza equivale a no traer la columna: vale la propuesta.
     const cause = normalize(row.cause) || DEFAULT_CAUSE;
     const confidence = normalize(row.confidence) || DEFAULT_CONFIDENCE;
@@ -111,6 +152,7 @@ export function parseImportedErrors(source: string): ImportDraft[] {
     }
     return { ...row, cause, confidence, category: normalize(row.category).replace(/\s+/g, '_') };
   });
+  return { session, errors };
 }
 
 export const IMPORT_TEMPLATE = 'Item\tEnunciado\tMi respuesta\tCorrecta\tCategoria\tRegla\n4\tThey called ___ the meeting.\tof\toff\tPHRASAL_VERB\tCall off significa cancelar; se escribe con doble f.';

@@ -1,10 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useRef } from 'react';
 
-import { MAX_PART, PAPERS, SESSION_KINDS, SOURCES, partsFor } from '@/lib/domain/enums';
-import type { Paper } from '@/lib/domain/enums';
+import { SessionFields } from './SessionFields';
 import type { SessionRow } from '@/lib/domain/types';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { createSessionAction, updateSessionAction } from './actions';
@@ -37,9 +36,6 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
     EMPTY_STATE,
   );
 
-  const [paper, setPaper] = useState<Paper | null>(editing === null ? 'RUOE' : editing.paper);
-  const [kind, setKind] = useState<string>(editing?.kind ?? 'DRILL');
-
   const router = useRouter();
   const handled = useRef<number | undefined>(undefined);
 
@@ -56,21 +52,6 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
     // buscarla luego en la lista.
     router.push(`/registrar?s=${String(state.createdId)}`);
   }, [state, router, isEdit, onDone]);
-
-  const isWriting = paper === 'WRITING';
-
-  const errorsFor = (field: string): string[] => state.fieldErrors[field] ?? [];
-  const invalid = (field: string): boolean => errorsFor(field).length > 0;
-
-  const fieldError = (field: string) => {
-    const messages = errorsFor(field);
-    if (messages.length === 0) return null;
-    return (
-      <p className={styles.fieldError} id={`s-${field}-error`} role="alert">
-        {messages.join(' ')}
-      </p>
-    );
-  };
 
   return (
     <section className={styles.panel} aria-labelledby="session-heading">
@@ -91,158 +72,7 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
           </>
         )}
 
-        <label>
-          <span className={styles.label}>Fecha</span>
-          <input
-            type="date"
-            name="date"
-            defaultValue={editing?.date ?? today}
-            max={today}
-            required
-            className="data"
-            aria-invalid={invalid('date')}
-            aria-describedby={invalid('date') ? 's-date-error' : undefined}
-          />
-          {fieldError('date')}
-        </label>
-
-        <label>
-          <span className={styles.label}>Tipo</span>
-          <select
-            name="kind"
-            value={kind}
-            onChange={(event) => {
-              const next = event.target.value;
-              setKind(next);
-              // kind = WRITING obliga a paper = WRITING (implicacion, decision P4).
-              if (next === 'WRITING') setPaper('WRITING');
-            }}
-          >
-            {SESSION_KINDS.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          <span className={styles.label}>Paper</span>
-          <select
-            name="paper"
-            value={paper ?? ''}
-            onChange={(event) => {
-              const selected = PAPERS.find((value) => value === event.target.value);
-              setPaper(selected ?? null);
-            }}
-            aria-invalid={invalid('paper')}
-            aria-describedby={invalid('paper') ? 's-paper-error' : undefined}
-          >
-            <option value="" disabled={kind === 'WRITING'}>Sin formato de examen</option>
-            {PAPERS.map((value) => (
-              <option
-                key={value}
-                value={value}
-                disabled={kind === 'WRITING' && value !== 'WRITING'}
-              >
-                {value}
-              </option>
-            ))}
-          </select>
-          {fieldError('paper')}
-        </label>
-
-        {paper !== null && <label>
-          <span className={styles.label}>Part</span>
-          <select
-            name="part"
-            defaultValue={String(editing?.paper === paper ? editing.part : 1)}
-            key={paper}
-            aria-invalid={invalid('part')}
-            aria-describedby={invalid('part') ? 's-part-error' : undefined}
-          >
-            {partsFor(paper).map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-          <span className={styles.help}>
-            {paper} llega a {MAX_PART[paper]}
-          </span>
-          {fieldError('part')}
-        </label>}
-        {paper === null && fieldError('part')}
-
-        <label>
-          <span className={styles.label}>Fuente</span>
-          <select name="source" defaultValue={editing?.source ?? 'LIBRO'}>
-            {SOURCES.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className={styles.wide}>
-          <span className={styles.label}>Referencia</span>
-          <input
-            name="sourceRef"
-            autoComplete="off"
-            placeholder="Unidad 1, ej. 5"
-            defaultValue={editing?.sourceRef ?? ''}
-          />
-        </label>
-
-        <label>
-          <span className={styles.label}>Items{isWriting ? '' : ' *'}</span>
-          <input
-            type="number"
-            name="itemsTotal"
-            min={0}
-            className="data"
-            required={!isWriting}
-            disabled={isWriting}
-            defaultValue={editing?.itemsTotal ?? ''}
-            aria-invalid={invalid('itemsTotal')}
-            aria-describedby={invalid('itemsTotal') ? 's-itemsTotal-error' : undefined}
-          />
-          {fieldError('itemsTotal')}
-        </label>
-
-        <label>
-          <span className={styles.label}>Aciertos{isWriting ? '' : ' *'}</span>
-          <input
-            type="number"
-            name="itemsCorrect"
-            min={0}
-            className="data"
-            required={!isWriting}
-            disabled={isWriting}
-            defaultValue={editing?.itemsCorrect ?? ''}
-            aria-invalid={invalid('itemsCorrect')}
-            aria-describedby={invalid('itemsCorrect') ? 's-itemsCorrect-error' : undefined}
-          />
-          {fieldError('itemsCorrect')}
-          {isWriting && <span className={styles.help}>El Writing no se mide por items.</span>}
-        </label>
-
-        <label>
-          <span className={styles.label}>Minutos</span>
-          <input
-            type="number"
-            name="durationMin"
-            min={0}
-            className="data"
-            defaultValue={editing?.durationMin ?? ''}
-          />
-        </label>
-
-        <label className={styles.check}>
-          <input type="checkbox" name="timed" defaultChecked={editing?.timed ?? false} />
-          <span>Cronometrada</span>
-        </label>
+        <SessionFields today={today} defaults={editing ?? undefined} fieldErrors={state.fieldErrors} idPrefix="s" />
 
         <div className={styles.actions}>
           <button type="submit" className={styles.primary} disabled={pending}>
