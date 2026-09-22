@@ -88,6 +88,12 @@ export function noteForError(error: ErrorRow, namespace: string, deck: string) {
   };
 }
 
+async function assertProfile(api: ReturnType<typeof ankiApi>, profile: string): Promise<void> {
+  if (await api.profile() !== profile) {
+    throw new AnkiError('ANKI_CONFIG', 'El perfil cambió. Vuelve a intentarlo con el perfil original.');
+  }
+}
+
 export async function createAnkiNote(db: Db, errorId: number, transport?: Transport, now = new Date(), config: AnkiConfig = ankiConfig()) {
   forgetAnkiStatus(db);
   return withAnkiLock(db, async () => {
@@ -110,6 +116,7 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
     }
     if (noteId === undefined) {
       if (!(await api.modelNames()).includes(ERRORLOG_MODEL)) {
+        await assertProfile(api, profile);
         await api.createModel({
           modelName: ERRORLOG_MODEL, inOrderFields: ERRORLOG_FIELDS, isCloze: false,
           css: '.card { font: 20px system-ui; text-align: left; max-width: 48em; margin: 2em auto; padding: 1em; } .wrong { color: #aa3333; } .meta { font-size: 14px; opacity: .7; }',
@@ -119,8 +126,9 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
       }
       const fields = await api.modelFields(ERRORLOG_MODEL);
       if (fields.join('|') !== ERRORLOG_FIELDS.join('|')) throw new AnkiError('ANKI_CONFIG', 'Ya existe un tipo «Error Log C1» con otros campos. No se ha modificado.');
+      await assertProfile(api, profile);
       await api.createDeck(config.targetDeck);
-      if (await api.profile() !== profile) throw new AnkiError('ANKI_CONFIG', 'El perfil cambió. Vuelve a intentarlo con el perfil original.');
+      await assertProfile(api, profile);
       noteId = await api.addNote(note);
     }
     const [confirmed] = await api.notesInfo([noteId]);
@@ -128,10 +136,13 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
       throw new AnkiError('ANKI_RESPUESTA_RARA', 'No se ha podido verificar una tarjeta para este error. Vuelve a intentarlo.');
     }
     if (await api.profile() !== profile) throw new AnkiError('ANKI_CONFIG', 'El perfil cambió antes de verificar la nota. Vuelve a intentarlo.');
+    // Recuperar una identidad no implica que sus campos coincidan con el error actual.
+    // La huella describe lo leído, también tras deshacer o reintentar un timeout.
+    const confirmedFields = Object.fromEntries(ERRORLOG_FIELDS.map((name) => [name, confirmed.fields[name]?.value ?? '']));
     linkAnkiNote(db, errorId, {
       noteId, model: confirmed.modelName, label: noteLabel(confirmed), tags: confirmed.tags,
       category: categoryOf(confirmed.tags), firstSeenAt: now.toISOString(), lastSeenAt: now.toISOString(),
-    }, now.toISOString(), contentHash(note.fields));
+    }, now.toISOString(), contentHash(confirmedFields));
     return noteId;
   });
 }
@@ -160,6 +171,7 @@ export async function updateAnkiNote(db: Db, errorId: number, transport?: Transp
     if (!current || current.fields[ERRORLOG_ID_FIELD]?.value !== note.fields.ErrorLogId) {
       throw new AnkiError('ANKI_CONFIG', 'Esa nota ya no corresponde a este error. Sincroniza y vuelve a intentarlo.');
     }
+    await assertProfile(api, profile);
     await api.updateNoteFields({ id: error.ankiNoteId, fields: note.fields });
     if (await api.profile() !== profile) {
       throw new AnkiError('ANKI_CONFIG', 'El perfil cambió durante la escritura. Vuelve a intentarlo con el perfil original.');
@@ -169,6 +181,7 @@ export async function updateAnkiNote(db: Db, errorId: number, transport?: Transp
     if (!confirmed || Object.entries(note.fields).some(([name, value]) => confirmed.fields[name]?.value !== value)) {
       throw new AnkiError('ANKI_RESPUESTA_RARA', 'Anki no ha confirmado todos los campos de la actualización. Vuelve a intentarlo.');
     }
+    await assertProfile(api, profile);
     setAnkiContentHash(db, errorId, contentHash(note.fields));
     return error.ankiNoteId;
   });

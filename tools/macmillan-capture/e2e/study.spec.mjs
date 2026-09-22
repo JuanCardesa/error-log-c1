@@ -140,6 +140,31 @@ test('un estado guardado con forma inesperada no impide arrancar ni pierde la ta
   expect((await copy(page)).errors).toHaveLength(1);
 });
 
+for (const phase of ['arranque', 'sincronización']) {
+  test(`conserva las filas válidas ante entradas corruptas de bandeja en ${phase}`, async ({ page }) => {
+    await page.route(`${origin}/**`, (route) => route.fulfill({ contentType: 'text/html', body: rcfActivityPage() }));
+    await page.goto(`${origin}/bandeja-corrupta`);
+    const failures = [];
+    page.on('pageerror', (error) => failures.push(error.message));
+    page.on('console', (message) => { if (message.type() === 'error') failures.push(message.text()); });
+    if (phase === 'sincronización') await attach(page);
+    await page.evaluate(() => {
+      const valid = { mark: 'legacy-1', activityKey: 'legacy', row: {
+        itemRef: '1', prompt: 'Saved prompt', myAnswer: 'wrong', correctAnswer: 'right', ruleNote: '', category: '', subcategory: '',
+      } };
+      localStorage.setItem('errorlog-macmillan:tray', JSON.stringify([
+        null, {}, { ...valid, row: null }, { ...valid, row: [] }, { ...valid, row: { prompt: 42 } }, valid,
+      ]));
+    });
+    if (phase === 'arranque') await attach(page);
+    const exported = await copy(page);
+    expect(failures).toEqual([]);
+    // La fila antigua no tiene recuentos: se conserva el formato compatible anterior.
+    expect(exported).toHaveLength(2);
+    expect(exported[0]).toMatchObject({ prompt: 'Saved prompt', correctAnswer: 'right' });
+  });
+}
+
 test('el visor que deja de mostrar libro y página retira su contexto en vez de prestarlo', async ({ page }) => {
   await page.route(`${origin}/**`, (route) => {
     const path = new URL(route.request().url()).pathname;

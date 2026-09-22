@@ -438,6 +438,19 @@ function toJson(rows, session) {
 
 const MAX_TRAY = 300;
 
+/** Recupera las filas válidas sin dejar que una entrada corrupta inutilice la bandeja. */
+function normalizeTray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry) => entry !== null && typeof entry === 'object' && !Array.isArray(entry)
+    && typeof entry.mark === 'string' && typeof entry.activityKey === 'string'
+    // Las primeras versiones no guardaban el identificador del hueco.
+    && (entry.gapId === undefined || typeof entry.gapId === 'string')
+    && entry.row !== null && typeof entry.row === 'object' && !Array.isArray(entry.row)
+    && typeof entry.row.prompt === 'string'
+    && ['itemRef', 'myAnswer', 'correctAnswer', 'ruleNote', 'category', 'subcategory']
+      .every((field) => entry.row[field] == null || typeof entry.row[field] === 'string'));
+}
+
 /**
  * Completa una fila ya guardada con lo que se sepa despues.
  *
@@ -1847,7 +1860,7 @@ function start(doc) {
     baseline: new Map(),
     registry: createRegistry(),
     verdicts: new Map(),
-    tray: loadList(TRAY_KEY, []),
+    tray: normalizeTray(load(TRAY_KEY, [])),
     done: new Set(loadList(DONE_KEY, [])),
     study: normalizeStudy(load(STUDY_KEY, null)),
     studyDone: loadMarks(STUDY_DONE_KEY, {}),
@@ -2173,7 +2186,7 @@ function start(doc) {
   // Los reproductores y el visor comparten origen. Antes de escribir se recoge lo
   // último que haya guardado otro marco, para no pisar su bandeja con una copia vieja.
   function syncShared() {
-    state.tray = loadList(TRAY_KEY, state.tray);
+    state.tray = normalizeTray(load(TRAY_KEY, state.tray));
     state.done = new Set(loadList(DONE_KEY, [...state.done]));
     state.study = normalizeStudy(load(STUDY_KEY, state.study));
     state.studyDone = loadMarks(STUDY_DONE_KEY, state.studyDone);

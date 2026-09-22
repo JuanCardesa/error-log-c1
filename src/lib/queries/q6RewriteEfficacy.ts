@@ -40,7 +40,7 @@ export interface Q6Result {
 function errorKey(error: ErrorRow): string {
   const subcategory = (error.subcategory ?? '').trim().toLowerCase();
   const answer = error.correctAnswer.trim().toLowerCase();
-  return `${error.category}|${subcategory}|${answer}`;
+  return JSON.stringify([error.category, subcategory, answer]);
 }
 
 /** Errores de una sesion; lista vacia si no tiene ninguno, que es un caso normal. */

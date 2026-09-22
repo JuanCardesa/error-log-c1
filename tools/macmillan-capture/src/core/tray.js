@@ -14,6 +14,19 @@
 
 export const MAX_TRAY = 300;
 
+/** Recupera las filas válidas sin dejar que una entrada corrupta inutilice la bandeja. */
+export function normalizeTray(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry) => entry !== null && typeof entry === 'object' && !Array.isArray(entry)
+    && typeof entry.mark === 'string' && typeof entry.activityKey === 'string'
+    // Las primeras versiones no guardaban el identificador del hueco.
+    && (entry.gapId === undefined || typeof entry.gapId === 'string')
+    && entry.row !== null && typeof entry.row === 'object' && !Array.isArray(entry.row)
+    && typeof entry.row.prompt === 'string'
+    && ['itemRef', 'myAnswer', 'correctAnswer', 'ruleNote', 'category', 'subcategory']
+      .every((field) => entry.row[field] == null || typeof entry.row[field] === 'string'));
+}
+
 /**
  * Completa una fila ya guardada con lo que se sepa despues.
  *

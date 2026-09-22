@@ -201,6 +201,34 @@ it('avisa de que la tarjeta quedó vieja al corregir un error ya convertido', as
   expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(true);
 });
 
+it.each(['deshacer', 'timeout'])('recuperar una nota tras %s conserva el aviso si el error cambió', async (mode) => {
+  if (mode === 'timeout') {
+    fake.afterAddFails = true;
+    await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow();
+    db.update(errorRow).set({ correctAnswer: 'taken' }).where(eq(errorRow.id, 1)).run();
+  } else {
+    await convertThenEdit();
+    unmarkAnkiAdded(db, 1);
+  }
+  const noteId = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  const namespace = ensureAnkiScope(db, CONFIG, 'Juan').namespace;
+  expect(fake.added).toBe(1);
+  expect(fake.notes.get(noteId)?.fields['Correct']?.value).toBe('made');
+  expect(getError(db, 1)?.correctAnswer).toBe('taken');
+  expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(true);
+  await updateAnkiNote(db, 1, fake.transport, CONFIG);
+  expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(false);
+});
+
+it('una nota recuperada con campos ausentes sigue mostrando que necesita actualización', async () => {
+  const noteId = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  const existing = fake.notes.get(noteId)!;
+  fake.notes.set(noteId, { ...existing, fields: { ErrorLogId: existing.fields['ErrorLogId']! } });
+  unmarkAnkiAdded(db, 1);
+  await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  expect(ankiContentStale(getError(db, 1)!, ensureAnkiScope(db, CONFIG, 'Juan').namespace, CONFIG.targetDeck)).toBe(true);
+});
+
 it('actualizar reescribe los campos en Anki y deja de avisar', async () => {
   const noteId = await convertThenEdit();
   const namespace = ensureAnkiScope(db, CONFIG, 'Juan').namespace;
@@ -211,6 +239,36 @@ it('actualizar reescribe los campos en Anki y deja de avisar', async () => {
   // Actualizar no crea una segunda nota, ni mazos, ni tipos de nota, ni borra nada.
   expect(fake.added).toBe(1);
   expect(fake.calls.slice(duringUpdate).map((call) => call.action).filter((action) => /^(create|add|delete)/.test(action))).toEqual([]);
+});
+
+it.each([
+  ['modelNames', 'createModel'],
+  ['modelFieldNames', 'createDeck'],
+  ['createDeck', 'addNote'],
+])('comprueba el perfil antes de %s → %s', async (afterRead, write) => {
+  const transport: Transport = async (request) => {
+    const result = await fake.transport(request);
+    if (request.action === afterRead) fake.profile = 'Otro';
+    return result;
+  };
+  await expect(createAnkiNote(db, 1, transport, NOW, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CONFIG' });
+  expect(fake.calls.some(({ action }) => action === write)).toBe(false);
+  expect(getError(db, 1)?.ankiAdded).toBe(false);
+});
+
+it.each([1, 2])('no escribe ni sella en otro perfil tras la lectura de nota número %s', async (switchAt) => {
+  await convertThenEdit();
+  const before = getError(db, 1);
+  const start = fake.calls.length;
+  let reads = 0;
+  const transport: Transport = async (request) => {
+    const result = await fake.transport(request);
+    if (request.action === 'notesInfo' && ++reads === switchAt) fake.profile = 'Otro';
+    return result;
+  };
+  await expect(updateAnkiNote(db, 1, transport, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CONFIG' });
+  expect(getError(db, 1)).toEqual(before);
+  expect(fake.calls.slice(start).filter(({ action }) => action === 'updateNoteFields')).toHaveLength(switchAt - 1);
 });
 
 it.each(ERRORLOG_FIELDS)('no sella la huella si Anki acepta actualizar pero no confirma %s', async (field) => {
@@ -582,8 +640,7 @@ it('impide vincular coincidencias ambiguas y cambios de perfil durante la creaci
   expect(fake.added).toBe(0);
 });
 it('un cambio de perfil al verificar deja la nota recuperable pero no elimina deuda', async () => {
-  let profiles = 0;
-  fake.override = ({ action }) => action === 'getActiveProfile' ? { result: ++profiles < 3 ? 'Juan' : 'Otro', error: null } : undefined;
+  fake.override = ({ action }) => action === 'getActiveProfile' ? { result: fake.added === 0 ? 'Juan' : 'Otro', error: null } : undefined;
   await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('perfil cambió');
   expect(fake.added).toBe(1);
   expect(getError(db, 1)?.ankiAdded).toBe(false);
