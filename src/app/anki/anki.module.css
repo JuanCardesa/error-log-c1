@@ -142,6 +142,33 @@
   white-space: nowrap;
 }
 
+.sync {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-6);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.sync h2 { margin-top: 0; }
+.sync p { max-width: 75ch; }
+.controls { display: grid; gap: var(--sp-2); max-width: 22ch; }
+.hint { color: var(--ink-soft); font-size: var(--fs-sm); }
+.manual { border: 0; background: none; text-decoration: underline; cursor: pointer; padding: var(--sp-2); }
+.manual:disabled { cursor: progress; }
+.failures ul { list-style: none; padding: 0; }
+.failures li { display: flex; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-3) 0; border-bottom: 1px solid var(--rule); }
+.failures strong { white-space: nowrap; }
+@media (max-width: 600px) {
+  .card { grid-template-columns: 1fr; }
+  .controls { max-width: none; }
+  .doneItem { flex-wrap: wrap; }
+}
+
 .chipStudy {
   background: var(--study-bg);
   border: 1px solid var(--study-rule);

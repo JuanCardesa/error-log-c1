@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/db/client';
-import { loadDataset } from '@/lib/db/load';
+import { loadAnkiDataset, loadDataset } from '@/lib/db/load';
+import { compareAnkiPractice } from '@/lib/queries/q7AnkiReviews';
 import { CAUSE_META } from '@/lib/domain/enums';
 import { ANKI_TARGET_PCT } from '@/lib/domain/thresholds';
 import { q1CauseSplit } from '@/lib/queries/q1CauseSplit';
@@ -34,6 +35,8 @@ export default async function InformePage({
   const q2 = q2CategoryRate(data, options);
   const q5 = q5AnkiDebt(data, options);
   const report = runRules(data, options);
+  const anki = loadAnkiDataset(getDb());
+  const comparison = compareAnkiPractice(data, anki, options);
 
   return (
     <div>
@@ -49,6 +52,26 @@ export default async function InformePage({
       </header>
 
       <RulesTable report={report} />
+
+      <section className={shared.panel} aria-labelledby="anki-comparison-heading">
+        <h2 id="anki-comparison-heading">Práctica y repaso en Anki</h2>
+        <p className={shared.note}>Errores registrados frente a respuestas «Again» en la misma ventana.
+          Son recuentos con denominadores distintos; no son tasas comparables ni cambian la decisión del informe.
+          La categoría de Anki se propone a partir de sus etiquetas.</p>
+        {anki.sync?.lastSyncedAt == null ? <p className={shared.empty}>Todavía no has sincronizado Anki. Puedes hacerlo en la pestaña Anki.</p>
+          : <>
+            <p className={shared.note}>Datos de Anki sincronizados el {new Date(anki.sync.lastSyncedAt).toLocaleString('es-ES')}.</p>
+            {comparison.length === 0 ? <p>Sin actividad en esta ventana.</p> : <div className={shared.tableWrap}>
+              <table className={shared.table}>
+                <caption className="sr-only">Errores de práctica y fallos en Anki por categoría</caption>
+                <thead><tr><th scope="col">Categoría</th><th scope="col">Errores de práctica</th><th scope="col">Fallos en Anki</th><th scope="col">Repasos en Anki</th></tr></thead>
+                <tbody>{comparison.map((row) => <tr key={row.category ?? 'SIN_MAPEAR'}>
+                  <td>{row.category ?? 'Sin categoría asignada'}</td><td>{row.practiceErrors}</td><td>{row.ankiFailures}</td><td>{row.ankiReviews}</td>
+                </tr>)}</tbody>
+              </table>
+            </div>}
+          </>}
+      </section>
 
       <section className={shared.panel} aria-labelledby="q1-heading">
         <div className={shared.panelHead}>

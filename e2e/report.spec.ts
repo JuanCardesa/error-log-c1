@@ -57,7 +57,7 @@ test.describe('informe semanal', () => {
     await page.goto('/anki');
 
     const pendingBefore = await page.locator('dd').nth(1).innerText();
-    await page.getByRole('button', { name: 'Añadida' }).first().click();
+    await page.getByRole('button', { name: 'Marcar a mano' }).first().click();
 
     await expect(async () => {
       const pendingAfter = await page.locator('dd').nth(1).innerText();

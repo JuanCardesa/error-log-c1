@@ -1,10 +1,10 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
 import type { ErrorRow } from '@/lib/domain/types';
-import { markAddedAction, undoAddedAction } from './actions';
+import { createAnkiAction, markAddedAction, undoAddedAction } from './actions';
 import styles from './anki.module.css';
 
 /**
@@ -13,8 +13,9 @@ import styles from './anki.module.css';
  * La `CONFUSION` se muestra como par mi-respuesta / correcta a proposito: el spec pide
  * tarjeta **de contraste** para esa causa, no una tarjeta suelta.
  */
-export function QueueItem({ error, date }: { readonly error: ErrorRow; readonly date: string }) {
+export function QueueItem({ error, date, available }: { readonly error: ErrorRow; readonly date: string; readonly available: boolean }) {
   const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState('');
   const meta = CAUSE_META[error.cause];
 
   return (
@@ -41,18 +42,28 @@ export function QueueItem({ error, date }: { readonly error: ErrorRow; readonly 
         <p className={styles.rule}>{error.ruleNote}</p>
       </div>
 
+      <div className={styles.controls}>
       <button
         type="button"
         className={styles.add}
-        disabled={pending}
+        disabled={pending || !available}
+        aria-describedby={!available ? 'anki-status' : undefined}
+        title={!available ? 'Abre Anki y pulsa Sincronizar para habilitar la creación.' : undefined}
         onClick={() => {
           startTransition(async () => {
-            await markAddedAction(error.id);
+            const result = await createAnkiAction(error.id);
+            setMessage(result.message);
           });
         }}
       >
-        {pending ? 'Sellando…' : 'Añadida'}
+        {pending ? 'Creando…' : 'Crear en Anki'}
       </button>
+      <button type="button" className={styles.manual} disabled={pending}
+        onClick={() => startTransition(async () => { await markAddedAction(error.id); })}>
+        Marcar a mano
+      </button>
+      {message !== '' && <p role="status">{message}</p>}
+      </div>
     </li>
   );
 }
@@ -64,6 +75,7 @@ export function UndoButton({ id }: { readonly id: number }) {
     <button
       type="button"
       className={styles.undo}
+      title="Devuelve el error a la cola. La nota de Anki se conserva."
       disabled={pending}
       onClick={() => {
         startTransition(async () => {
