@@ -4,6 +4,7 @@ import type { Db } from './client';
 import { ankiCard, ankiNote, ankiReview, ankiSync, errorRow } from './schema';
 import type { AnkiConfig } from '../anki/config';
 import { AnkiError } from '../anki/connect';
+import { errorLogIdentity } from '../anki/identity';
 import type { AnkiNoteRow, AnkiSyncRow } from '../domain/types';
 import type { reconcile } from '../anki/reconcile';
 
@@ -16,7 +17,7 @@ export function getAnkiSync(db: AnkiDb): AnkiSyncRow | null {
 export function assertAnkiScope(state: AnkiSyncRow | null, config: AnkiConfig, profile: string): void {
   if (state !== null && (state.profile !== profile || state.url !== config.url
     || state.sourceDeck !== config.sourceDeck || state.targetDeck !== config.targetDeck)) {
-    throw new AnkiError('ANKI_CONFIG', `Esta base está vinculada al perfil ${state.profile} y al mazo ${state.sourceDeck}. Abre ese perfil y conserva su configuración para no mezclar colecciones.`);
+    throw new AnkiError('ANKI_CONFIG', `Esta base está vinculada al perfil ${state.profile} y al mazo ${state.sourceDeck}. Abre ese perfil y conserva su configuración para no mezclar colecciones. Para otra colección usa una base nueva con DB_FILE_OVERRIDE.`);
   }
 }
 
@@ -36,6 +37,23 @@ export function ensureAnkiScope(db: AnkiDb, config: AnkiConfig, profile: string)
 export function linkedAnkiNotes(db: AnkiDb): number[] {
   return db.select({ noteId: errorRow.ankiNoteId }).from(errorRow)
     .where(isNotNull(errorRow.ankiNoteId)).all().flatMap((row) => row.noteId === null ? [] : [row.noteId]);
+}
+
+/** Un ID existente no basta: puede haberse reutilizado en otra colección. */
+function assertLinkedIdentities(db: AnkiDb, namespace: string, plan: ReturnType<typeof reconcile>): void {
+  const missing = new Set(plan.missingNoteIds);
+  const linked = db.select({ errorId: errorRow.id, noteId: errorRow.ankiNoteId }).from(errorRow)
+    .where(isNotNull(errorRow.ankiNoteId)).all();
+  for (const { errorId, noteId } of linked) {
+    if (noteId === null) continue;
+    if (missing.has(noteId) && !plan.noteIdentities.has(noteId)) continue;
+    if (plan.noteIdentities.get(noteId) !== errorLogIdentity(namespace, errorId)) {
+      throw new AnkiError('ANKI_CONFIG',
+        `La nota ${String(noteId)} no contiene el ErrorLogId esperado para el error ${String(errorId)}. `
+        + 'La colección puede haber cambiado. No se ha guardado nada. Abre la colección original; '
+        + 'para otra colección usa una base nueva con DB_FILE_OVERRIDE.');
+    }
+  }
 }
 
 /**
@@ -90,9 +108,11 @@ function chunked<T>(values: readonly T[]): T[][] {
 }
 
 /** Solo toca el espejo local. Nunca borra ni modifica notas de Anki. */
-export function saveAnkiSnapshot(db: Db, plan: ReturnType<typeof reconcile>, config: AnkiConfig, profile: string, at: string): void {
+export function saveAnkiSnapshot(db: Db, plan: ReturnType<typeof reconcile>, config: AnkiConfig, profile: string, at: string, checkDeadline: () => void = () => undefined): void {
   db.transaction((tx) => {
-    ensureAnkiScope(tx, config, profile);
+    checkDeadline();
+    const state = ensureAnkiScope(tx, config, profile);
+    assertLinkedIdentities(tx, state.namespace, plan);
     // Dentro de la transaccion: el recuento de vinculos que se comprueba es el que se escribe.
     assertNotWholesaleUnlink(tx, plan.missingNoteIds);
     for (const noteId of plan.missingNoteIds) {
@@ -112,5 +132,7 @@ export function saveAnkiSnapshot(db: Db, plan: ReturnType<typeof reconcile>, con
     tx.update(ankiSync).set({ lastSyncedAt: at, notesSeen: plan.notes.length,
       rolloverHour: plan.rollover.hour, rolloverSource: plan.rollover.source })
       .where(eq(ankiSync.id, 1)).run();
+    // SQLite es síncrono: si guardar agotó el plazo, se revierte antes del commit.
+    checkDeadline();
   });
 }

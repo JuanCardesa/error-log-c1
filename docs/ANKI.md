@@ -26,7 +26,8 @@ los puntos que podían causar pérdidas o duplicados:
   puede perder sin editar la nota. La forma `"Campo:valor"` está verificada contra una
   colección real: empareja, y los dos puntos del valor son literales entre comillas.
 - **Un vínculo de referencia.** `error_row.anki_note_id` referencia `anki_note`; no se
-  duplica el enlace en `anki_note.error_id`. Una nota puede servir a más de un error.
+  duplica el enlace en `anki_note.error_id`. El campo `ErrorLogId` identifica un error
+  concreto: la sincronización rechaza vínculos que no coincidan con esa identidad.
   `ON DELETE SET NULL` se añadió a mano al SQL generado: Drizzle no lo emitió para el
   `ALTER TABLE`. La sincronización devuelve la deuda antes de retirar la nota del espejo.
 - **Identidades que no se reutilizan.** `error_row.id` es AUTOINCREMENT, así que no se
@@ -42,6 +43,12 @@ los puntos que podían causar pérdidas o duplicados:
   Cambiar de colección requiere otra base. Renombrar/restaurar otra colección bajo el
   mismo nombre de perfil no tiene un identificador de colección garantizado por esta API;
   no debe reutilizarse esta base para una colección distinta.
+  Además, dentro de la transacción se compara el `ErrorLogId` leído de cada nota
+  vinculada con `errorlog::<namespace>::<error.id>`, también fuera del filtro de mazo.
+  Un campo ausente o distinto aborta todo el guardado aunque otras notas sí coincidan.
+  Es una comprobación de identidad de los vínculos, no un identificador universal de
+  colección: sin vínculos, o con una copia que conserve las mismas identidades, esta API
+  no permite distinguirlas. Para otra colección se usa una base nueva con `DB_FILE_OVERRIDE`.
 - **Borrado frente a traslado.** Las notas vinculadas se consultan por ID también fuera
   del filtro de mazo. Solo un resultado vacío confirmado devuelve la deuda. Que
   desaparezcan **todas** a la vez, habiendo tres o más, no se acepta como borrado: el
@@ -124,7 +131,9 @@ texto actual ya no cuadra. Actualizar usa `updateNoteFields`: reescribe los camp
 nota y nada más. No toca tags, mazo ni programación, así que si cambias la categoría del
 error, la clasificación local es la que manda y la etiqueta en Anki se queda como estaba.
 Antes de escribir se comprueba que la nota siga siendo la de ese error, y la huella solo
-se sella cuando Anki confirma; si la escritura falla, el aviso sigue ahí. Deshacer olvida
+se sella cuando `notesInfo` confirma exactamente `ErrorLogId`, `Prompt`, `MyAnswer`,
+`Correct`, `Rule` y `Meta`; un éxito sin aplicar todos los campos conserva la huella
+anterior y el aviso. Deshacer olvida
 la huella: no se avisa de una tarjeta que ya no se reclama.
 
 El plazo depende de la acción: 5 s para el saludo, 15 s para escribir y 60 s para los
@@ -132,9 +141,8 @@ lotes. `cardsInfo` renderiza la pregunta y la respuesta de cada carta, así que 
 único obligaba a elegir entre abortar lotes legítimos y dejar colgado el saludo. Solo se
 reintenta —dos veces, esperando 0,5 s y 1 s— una **lectura** que expiró: repetir una
 escritura es como se acaba con dos notas, y que Anki esté cerrado no mejora esperando.
-Agotar los reintentos de un lote aborta la sincronización entera sin guardar nada, así
-que el peor caso está acotado en unos tres minutos. El tamaño de lote sigue en 250 y
-está sin medir contra una colección real: es lo primero que hay que ajustar con datos.
+Agotar los reintentos de un lote aborta la sincronización entera sin guardar nada.
+Además, el presupuesto global limita el conjunto de llamadas y sus esperas.
 
 ## Escala medida
 
@@ -156,10 +164,13 @@ por defecto se queda en 250, ahora con la medida detrás, y se puede ajustar con
 completa de esta colección son 2,6 s, y 10 000 cartas rondarían 8,6 s: para eso basta el
 botón en «Sincronizando…». Lo que sí hacía falta era acotar el caso patológico, cuando
 Anki no responde y cada lote agota su plazo y sus reintentos. `ANKI_SYNC_BUDGET_MS`
-—tres minutos por defecto— corta la lectura entre lotes y explica por qué, en vez de
-dejar la pantalla girando sin final a la vista. No interrumpe una petición en vuelo, pero
-el peor caso deja de ser indefinido. El aviso final dice cuántas cartas y notas se han
-leído, para que el resultado sea proporcional a lo que hay.
+—tres minutos por defecto— empieza al entrar en `syncAnki`, incluida la espera por el
+bloqueo local, el saludo, perfil, mazos, preferencias, `findCards` y los reintentos.
+Al expirar cancela el HTTP en vuelo y rechaza respuestas tardías. Se comprueba el plazo
+antes y después de cada llamada y antes de guardar; si la escritura síncrona en SQLite
+agota el plazo, la transacción se revierte antes del commit. Esa escritura síncrona no
+puede interrumpirse mientras bloquea el hilo. El aviso final dice cuántas cartas y notas
+se han leído.
 
 Con 3000 cartas y 30 000 repasos, `reconcile` tarda 88 ms y guardar el espejo 1188 ms;
 antes de insertar por lotes eran 2768 ms. El recorrido que comprobaba la nota de cada
@@ -167,9 +178,10 @@ carta era cuadrático y ahora usa un conjunto.
 
 Preguntar el estado de conexión cuesta 67 ms medidos —AnkiConnect atiende en el bucle de
 Qt y cada llamada paga esa espera—, y `/anki` es `force-dynamic`, así que se pagaba en
-cada render. Se guarda unos segundos por conexión; a cambio, cerrar Anki tarda esa
-ventana en notarse, de modo que crear, actualizar y sincronizar la invalidan. En demo y
-e2e vale cero: ahí el estado se cambia a propósito de un test a otro.
+cada render. Se guarda el saludo unos segundos por conexión, URL, mazos, clave, modo
+activado y alcance local. El perfil se consulta incluso dentro del TTL para detectar
+cambios en Anki. Crear, actualizar y sincronizar invalidan la caché; los errores no se
+guardan. En demo y e2e el TTL vale cero.
 
 Notas que salen del mazo conservan su fila en `anki_note` sin cartas. Es deliberado
 —preserva `first_seen_at` si vuelven— y no crece sin límite: el tope es el número de

@@ -14,7 +14,7 @@ export interface AnkiRequest {
   readonly params: Record<string, unknown>;
   readonly key?: string;
 }
-export type Transport = (body: AnkiRequest) => Promise<unknown>;
+export type Transport = (body: AnkiRequest, signal?: AbortSignal) => Promise<unknown>;
 
 /** Repetirlas no cambia la coleccion. Lo que no este aqui se trata como escritura. */
 const READ_ACTIONS: ReadonlySet<string> = new Set([
@@ -60,7 +60,8 @@ function isTimeout(error: unknown): boolean {
 }
 
 export function httpTransport(config: AnkiConfig, fetcher: typeof fetch = globalThis.fetch): Transport {
-  return async (body) => {
+  return async (body, signal) => {
+    signal?.throwIfAborted();
     if (config.disabled) throw new AnkiError('ANKI_CONFIG', 'Anki está desactivado en la demo y en las pruebas.');
     let response: Response;
     // multi vuelve a pasar cada acción por el validador de claves de AnkiConnect.
@@ -80,9 +81,10 @@ export function httpTransport(config: AnkiConfig, fetcher: typeof fetch = global
         body: JSON.stringify(authorized),
         cache: 'no-store',
         redirect: 'error',
-        signal: AbortSignal.timeout(timeoutFor(body.action)),
+        signal: AbortSignal.any([AbortSignal.timeout(timeoutFor(body.action)), ...(signal ? [signal] : [])]),
       });
     } catch (error) {
+      signal?.throwIfAborted();
       // Expirar y no poder conectar se arreglan de formas distintas: una espera, la otra no.
       if (isTimeout(error)) {
         throw new AnkiError('ANKI_LENTO', 'Anki tardó demasiado en responder. Con colecciones grandes puede pasar mientras está ocupado; vuelve a intentarlo.');
@@ -91,7 +93,10 @@ export function httpTransport(config: AnkiConfig, fetcher: typeof fetch = global
     }
     if (!response.ok) throw new AnkiError('ANKI_ERROR', `AnkiConnect respondió con HTTP ${String(response.status)}.`);
     try { return await response.json() as unknown; }
-    catch { throw new AnkiError('ANKI_RESPUESTA_RARA', 'AnkiConnect no devolvió JSON válido.'); }
+    catch {
+      signal?.throwIfAborted();
+      throw new AnkiError('ANKI_RESPUESTA_RARA', 'AnkiConnect no devolvió JSON válido.');
+    }
   };
 }
 
@@ -114,11 +119,13 @@ export function withRetry(transport: Transport, options: RetryOptions = {}): Tra
   const attempts = options.attempts ?? 3;
   const delayMs = options.delayMs ?? 500;
   const sleep = options.sleep ?? wait;
-  return async (body) => {
+  return async (body, signal) => {
     for (let attempt = 1; ; attempt += 1) {
+      signal?.throwIfAborted();
       try {
-        return await transport(body);
+        return await transport(body, signal);
       } catch (error) {
+        signal?.throwIfAborted();
         const retryable = error instanceof AnkiError && error.code === 'ANKI_LENTO' && isReadRequest(body);
         if (!retryable || attempt >= attempts) throw error;
         await sleep(delayMs * 2 ** (attempt - 1));

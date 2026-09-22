@@ -6,7 +6,8 @@ import { loadAnkiDataset } from '../db/load';
 import { ensureAnkiScope, linkAnkiNote, saveAnkiSnapshot } from '../db/ankiRepo';
 import { getError, unmarkAnkiAdded, updateError, deleteError } from '../db/repo';
 import { ankiNote, ankiReview, errorRow, session } from '../db/schema';
-import { ankiContentStale, createAnkiNote, escapeAnkiHtml, notePredatesError, updateAnkiNote } from './create';
+import { ankiContentStale, createAnkiNote, ERRORLOG_FIELDS, escapeAnkiHtml, notePredatesError, updateAnkiNote } from './create';
+import { AnkiError, type Transport } from './connect';
 import { ankiStatus, batches, syncAnki, withAnkiLock } from './sync';
 import { CONFIG, NOW, REVIEW, ROLLOVER, FakeAnki, ankiFixture, review, card, note } from './fixtures/build';
 
@@ -84,6 +85,41 @@ it('solo devuelve la deuda cuando notesInfo confirma que la nota vinculada no ex
   fake.notes.delete(nid);
   await syncAnki(db, fake.transport, NOW, CONFIG);
   expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null });
+});
+
+it.each([true, false])('rechaza otra colección con el mismo perfil, URL, mazos y un note_id coincidente (en mazo: %s)', async (inDeck) => {
+  const ids = await convertThree();
+  const before = loadAnkiDataset(db);
+  const errors = db.select().from(errorRow).all();
+  const other = new FakeAnki();
+  // Una colisión basta para engañar al antiguo guard de desaparición total.
+  const collided = fake.notes.get(ids[0]!)!;
+  other.notes.set(collided.noteId, { ...collided, fields: {
+    ...collided.fields, ErrorLogId: { value: 'errorlog::otra-coleccion::1', order: 0 },
+  } });
+  if (inDeck) other.cards.push(card({ cardId: 11, note: collided.noteId }));
+  await expect(syncAnki(db, other.transport, NOW, CONFIG)).rejects.toMatchObject({
+    code: 'ANKI_CONFIG', message: expect.stringContaining('DB_FILE_OVERRIDE'),
+  });
+  expect(loadAnkiDataset(db)).toEqual(before);
+  expect(db.select().from(errorRow).all()).toEqual(errors);
+});
+
+it.each(['missing', 'empty', 'wrong-error', 'html'])('un vínculo válido no oculta otro ErrorLogId incorrecto: %s', async (mode) => {
+  const ids = await convertThree();
+  const before = loadAnkiDataset(db);
+  const errors = db.select().from(errorRow).all();
+  const changed = fake.notes.get(ids[1]!)!;
+  const fields = { ...changed.fields };
+  const identity = fields['ErrorLogId']!.value;
+  if (mode === 'missing') delete fields['ErrorLogId'];
+  else fields['ErrorLogId'] = { order: 0, value: mode === 'empty' ? ''
+    : mode === 'wrong-error' ? identity.replace(/::2$/, '::1') : `<b>${identity}</b>` };
+  fake.notes.set(changed.noteId, { ...changed, fields });
+  fake.notes.delete(ids[2]!);
+  await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CONFIG' });
+  expect(loadAnkiDataset(db)).toEqual(before);
+  expect(db.select().from(errorRow).all()).toEqual(errors);
 });
 /** Tres errores convertidos: el minimo con el que perderlos todos deja de ser una limpieza. */
 async function convertThree(): Promise<number[]> {
@@ -177,6 +213,37 @@ it('actualizar reescribe los campos en Anki y deja de avisar', async () => {
   expect(fake.calls.slice(duringUpdate).map((call) => call.action).filter((action) => /^(create|add|delete)/.test(action))).toEqual([]);
 });
 
+it.each(ERRORLOG_FIELDS)('no sella la huella si Anki acepta actualizar pero no confirma %s', async (field) => {
+  const noteId = await convertThenEdit();
+  const before = getError(db, 1)!;
+  fake.override = ({ action, params }) => {
+    if (action !== 'updateNoteFields') return undefined;
+    const input = params['note'] as { fields: Record<string, string> };
+    const existing = fake.notes.get(noteId)!;
+    // Devuelve éxito y actualiza los demás campos: una lectura de existencia no basta.
+    fake.notes.set(noteId, { ...existing, fields: Object.fromEntries(Object.entries(input.fields)
+      .map(([name, value], order) => [name, { order, value: name === field ? 'valor sin actualizar' : value }])) });
+    return { result: null, error: null };
+  };
+  await expect(updateAnkiNote(db, 1, fake.transport, CONFIG)).rejects.toMatchObject({ code: 'ANKI_RESPUESTA_RARA' });
+  expect(getError(db, 1)).toEqual(before);
+  expect(ankiContentStale(getError(db, 1)!, ensureAnkiScope(db, CONFIG, 'Juan').namespace, CONFIG.targetDeck)).toBe(true);
+});
+
+it('rechaza una actualización de éxito sin ningún cambio y una confirmación sin campos', async () => {
+  const noteId = await convertThenEdit();
+  const before = getError(db, 1)!;
+  fake.override = ({ action }) => action === 'updateNoteFields' ? { result: null, error: null } : undefined;
+  await expect(updateAnkiNote(db, 1, fake.transport, CONFIG)).rejects.toMatchObject({ code: 'ANKI_RESPUESTA_RARA' });
+  fake.override = ({ action }) => {
+    if (action !== 'updateNoteFields') return undefined;
+    fake.notes.set(noteId, { ...fake.notes.get(noteId)!, fields: {} });
+    return { result: null, error: null };
+  };
+  await expect(updateAnkiNote(db, 1, fake.transport, CONFIG)).rejects.toMatchObject({ code: 'ANKI_RESPUESTA_RARA' });
+  expect(getError(db, 1)).toEqual(before);
+});
+
 it('no actualiza si la escritura falla ni si la nota ya no es de este error', async () => {
   const noteId = await convertThenEdit();
   const namespace = ensureAnkiScope(db, CONFIG, 'Juan').namespace;
@@ -240,8 +307,7 @@ it('se rinde con explicación si la lectura entera se pasa de tiempo, sin guarda
   const before = loadAnkiDataset(db);
   fake.cards = [card(), card({ cardId: 11, note: 20 })];
 
-  // Reloj que avanza un minuto por consulta: el presupuesto se agota entre lotes, que es
-  // donde se comprueba. Con tiempos reales el doble responde antes de que avance el reloj.
+  // El tiempo en cola también cuenta: al conseguir el bloqueo ya no queda presupuesto.
   let clock = Date.now();
   const spy = vi.spyOn(Date, 'now').mockImplementation(() => (clock += 60_000));
   try {
@@ -252,6 +318,98 @@ it('se rinde con explicación si la lectura entera se pasa de tiempo, sin guarda
 
   // El corte ocurre antes de escribir: el espejo se queda como estaba.
   expect(loadAnkiDataset(db)).toEqual(before);
+});
+
+it.each([
+  ['version', 1], ['getActiveProfile', 1], ['deckNames', 1], ['getPreferences', 1],
+  ['findCards', 1], ['multi', 1], ['notesInfo', 1], ['getActiveProfile', 2],
+] as const)('el presupuesto cancela una espera en %s (llamada %s) y nunca guarda al llegar tarde', async (action, occurrence) => {
+  await syncAnki(db, fake.transport, NOW, CONFIG);
+  const before = loadAnkiDataset(db);
+  vi.useFakeTimers();
+  let release!: (value: unknown) => void;
+  const stalled = new Promise<unknown>((resolve) => { release = resolve; });
+  let seen = 0;
+  let signal: AbortSignal | undefined;
+  const transport: Transport = async (request, cancellation) => {
+    if (request.action === action && ++seen === occurrence) {
+      signal = cancellation;
+      // Este doble ignora la cancelación a propósito para comprobar respuestas tardías.
+      return stalled;
+    }
+    return fake.transport(request);
+  };
+  try {
+    const failed = expect(syncAnki(db, transport, NOW, { ...CONFIG, syncBudgetMs: 100 }))
+      .rejects.toMatchObject({ code: 'ANKI_LENTO' });
+    await vi.advanceTimersByTimeAsync(100);
+    await failed;
+    expect(signal?.aborted).toBe(true);
+    release({ result: null, error: 'unsupported action' });
+    await withAnkiLock(db, async () => undefined);
+    expect(loadAnkiDataset(db)).toEqual(before);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally { vi.useRealTimers(); }
+});
+
+it('suma las llamadas iniciales y comprueba el plazo al volver de cada await', async () => {
+  let clock = Date.now();
+  const spy = vi.spyOn(Date, 'now').mockImplementation(() => clock);
+  const calls: string[] = [];
+  try {
+    await expect(syncAnki(db, async (request) => {
+      calls.push(request.action);
+      const result = await fake.transport(request);
+      clock += 25;
+      return result;
+    }, NOW, { ...CONFIG, syncBudgetMs: 100 })).rejects.toMatchObject({ code: 'ANKI_LENTO' });
+    expect(calls).toEqual(['version', 'getActiveProfile', 'deckNames', 'getPreferences']);
+    expect(loadAnkiDataset(db).sync).toBeNull();
+  } finally { spy.mockRestore(); }
+});
+
+it('aborta el HTTP en vuelo y libera el bloqueo al agotar el presupuesto', async () => {
+  vi.useFakeTimers();
+  let signal: AbortSignal | undefined;
+  const fetcher = vi.fn<typeof fetch>().mockImplementation(async (_url, options) => {
+    const request = JSON.parse(String(options?.body)) as Parameters<Transport>[0];
+    if (request.action !== 'findCards') return Response.json(await fake.transport(request));
+    signal = options?.signal ?? undefined;
+    return new Promise<Response>((_, reject) => signal!.addEventListener('abort', () => reject(signal!.reason), { once: true }));
+  });
+  vi.stubGlobal('fetch', fetcher);
+  try {
+    const failed = expect(syncAnki(db, undefined, NOW, { ...CONFIG, syncBudgetMs: 100 }))
+      .rejects.toMatchObject({ code: 'ANKI_LENTO' });
+    await vi.advanceTimersByTimeAsync(100);
+    await failed;
+    expect(signal?.aborted).toBe(true);
+    await withAnkiLock(db, async () => undefined);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(fetcher).toHaveBeenCalledTimes(5);
+    expect(loadAnkiDataset(db).sync).toBeNull();
+  } finally { vi.unstubAllGlobals(); vi.useRealTimers(); }
+});
+
+it('incluye las esperas de reintento en el presupuesto y no vuelve a enviar tras expirar', async () => {
+  vi.useFakeTimers();
+  const fetcher = vi.fn<typeof fetch>().mockRejectedValue(new DOMException('lento', 'TimeoutError'));
+  vi.stubGlobal('fetch', fetcher);
+  try {
+    const failed = expect(syncAnki(db, undefined, NOW, { ...CONFIG, syncBudgetMs: 100 }))
+      .rejects.toMatchObject({ code: 'ANKI_LENTO' });
+    await vi.advanceTimersByTimeAsync(100);
+    await failed;
+    await vi.advanceTimersByTimeAsync(2000);
+    await withAnkiLock(db, async () => undefined);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(loadAnkiDataset(db).sync).toBeNull();
+  } finally { vi.unstubAllGlobals(); vi.useRealTimers(); }
+});
+
+it.each([0, -1, 1.5, NaN, Infinity])('batches rechaza un tamaño inválido incluso sin valores: %s', (size) => {
+  expect(() => batches([], size)).toThrow('entero positivo');
+  expect(() => batches([1], size)).toThrow(RangeError);
 });
 
 it('los errores de red y snapshots incompletos no cambian nada en SQLite', async () => {
@@ -293,15 +451,40 @@ it('muestra estado útil con Anki abierto y cerrado', async () => {
 it('no vuelve a preguntar a Anki en cada render, pero no tapa un cambio real', async () => {
   const t0 = Date.now();
   await ankiStatus(db, CONFIG, fake.transport, t0);
-  const asked = fake.calls.length;
+  const versions = () => fake.calls.filter((call) => call.action === 'version').length;
+  const asked = versions();
 
-  // Dentro de la ventana no se pregunta otra vez: es el caso de navegar por la pantalla.
+  // Dentro de la ventana se reutiliza el saludo, pero se verifica el perfil.
   await ankiStatus(db, CONFIG, fake.transport, t0 + 1000);
-  expect(fake.calls.length).toBe(asked);
+  expect(versions()).toBe(asked);
+  expect(fake.calls.at(-1)?.action).toBe('getActiveProfile');
 
   // Pasada la ventana, sí.
   await ankiStatus(db, CONFIG, fake.transport, t0 + 6000);
-  expect(fake.calls.length).toBeGreaterThan(asked);
+  expect(versions()).toBeGreaterThan(asked);
+});
+
+it.each([{ sourceDeck: 'Otro' }, { targetDeck: 'Otro' }, { url: 'http://localhost:8766/' }])(
+  'invalida el estado cuando cambia el alcance dentro del TTL: %j', async (changed) => {
+    await syncAnki(db, fake.transport, NOW, CONFIG);
+    const t0 = Date.now();
+    expect(await ankiStatus(db, CONFIG, fake.transport, t0)).toMatchObject({ available: true });
+    expect(await ankiStatus(db, { ...CONFIG, ...changed }, fake.transport, t0 + 1))
+      .toMatchObject({ available: false });
+  });
+
+it('no oculta un cambio de perfil, clave o desactivación durante el TTL', async () => {
+  await syncAnki(db, fake.transport, NOW, CONFIG);
+  const t0 = Date.now();
+  await ankiStatus(db, CONFIG, fake.transport, t0);
+  fake.profile = 'Otro';
+  expect(await ankiStatus(db, CONFIG, fake.transport, t0 + 1)).toMatchObject({ available: false });
+  fake.profile = 'Juan';
+  await ankiStatus(db, CONFIG, fake.transport, t0 + 2);
+  const calls = fake.calls.length;
+  await ankiStatus(db, { ...CONFIG, apiKey: 'nueva' }, fake.transport, t0 + 3);
+  expect(fake.calls.slice(calls).map((call) => call.action)).toEqual(['version', 'getActiveProfile']);
+  expect(await ankiStatus(db, { ...CONFIG, disabled: true }, undefined, t0 + 4)).toMatchObject({ available: false });
 });
 
 it('hablar con Anki invalida el estado guardado: abrirlo se nota al momento', async () => {
@@ -316,18 +499,27 @@ it('hablar con Anki invalida el estado guardado: abrirlo se nota al momento', as
 });
 it('revierte todo el snapshot si falla un CHECK al escribir', () => {
   const initial = ankiFixture();
-  const broken = { ...initial, reviews: [{ ...initial.reviews[0]!, ease: 0 }], missingNoteIds: [], newReviews: 1, rollover: ROLLOVER };
+  const broken = { ...initial, noteIdentities: new Map(), reviews: [{ ...initial.reviews[0]!, ease: 0 }], missingNoteIds: [], newReviews: 1, rollover: ROLLOVER };
   expect(() => saveAnkiSnapshot(db, broken, CONFIG, 'Juan', NOW.toISOString())).toThrow();
   expect(loadAnkiDataset(db)).toEqual({ notes: [], cards: [], reviews: [], sync: null });
 });
 it('aplica SET NULL al vínculo y cascada al espejo, sin borrar el error', () => {
   const data = ankiFixture();
-  saveAnkiSnapshot(db, { ...data, missingNoteIds: [], newReviews: 1, rollover: ROLLOVER }, CONFIG, 'Juan', NOW.toISOString());
+  saveAnkiSnapshot(db, { ...data, noteIdentities: new Map(), missingNoteIds: [], newReviews: 1, rollover: ROLLOVER }, CONFIG, 'Juan', NOW.toISOString());
   linkAnkiNote(db, 1, data.notes[0]!, NOW.toISOString(), 'huella');
   db.delete(ankiNote).where(eq(ankiNote.noteId, 20)).run();
   expect(getError(db, 1)?.ankiNoteId).toBeNull();
   expect(loadAnkiDataset(db).cards).toEqual([]);
   expect(db.select().from(ankiReview).all()).toEqual([]);
+});
+it('revierte SQLite si la escritura del espejo agota el presupuesto', () => {
+  const data = ankiFixture();
+  let checks = 0;
+  expect(() => saveAnkiSnapshot(db, { ...data, noteIdentities: new Map(), missingNoteIds: [], newReviews: 1, rollover: ROLLOVER },
+    CONFIG, 'Juan', NOW.toISOString(), () => {
+      if (++checks === 2) throw new AnkiError('ANKI_LENTO', 'presupuesto agotado');
+    })).toThrow('presupuesto agotado');
+  expect(loadAnkiDataset(db)).toEqual({ notes: [], cards: [], reviews: [], sync: null });
 });
 it('serializa operaciones, incluso si falla la anterior', async () => {
   const order: number[] = [];

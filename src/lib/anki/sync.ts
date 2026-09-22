@@ -33,6 +33,7 @@ export async function withAnkiLock<T>(db: Db, operation: () => Promise<T>): Prom
 }
 
 export function batches<T>(values: readonly T[], size: number): T[][] {
+  if (!Number.isInteger(size) || size <= 0) throw new RangeError('El tamaño de lote debe ser un entero positivo.');
   const result: T[][] = [];
   for (let i = 0; i < values.length; i += size) result.push(values.slice(i, i + size));
   return result;
@@ -44,13 +45,10 @@ export interface AnkiStatus {
 }
 
 /**
- * El estado se guarda un rato por conexion; cuanto, lo dice la configuracion.
- *
- * `/anki` es `force-dynamic`, asi que cada visita preguntaba dos veces a Anki: 67 ms
- * medidos por render. A cambio, cerrar Anki tarda esa ventana en notarse, asi que las
- * acciones que hablan con Anki la invalidan y en las pruebas vale cero.
+ * Se guarda el saludo por conexión y configuración. El perfil se consulta incluso
+ * dentro del TTL: puede cambiar en Anki sin que cambie el entorno del servidor.
  */
-const statusCache = new WeakMap<Db, { at: number; status: AnkiStatus }>();
+const statusCache = new WeakMap<Db, { key: string; profile: string; at: number; status: AnkiStatus }>();
 
 export function forgetAnkiStatus(db: Db): void {
   statusCache.delete(db);
@@ -59,24 +57,49 @@ export function forgetAnkiStatus(db: Db): void {
 /** Sin reintentos: se ejecuta al pintar la pagina y aqui esperar solo retrasa el aviso. */
 export async function ankiStatus(db: Db, config = ankiConfig(), transport = httpTransport(config), now = Date.now()): Promise<AnkiStatus> {
   const cached = statusCache.get(db);
-  if (cached !== undefined && now - cached.at < config.statusTtlMs) return cached.status;
-  const status = await (async (): Promise<AnkiStatus> => {
-    try {
-      const api = ankiApi(transport);
-      await api.version();
-      const profile = await api.profile();
-      assertAnkiScope(getAnkiSync(db), config, profile);
-      return { available: true, message: `Anki conectado · perfil ${profile}` };
-    } catch (error) { return { available: false, message: ankiMessage(error) }; }
-  })();
-  statusCache.set(db, { at: now, status });
-  return status;
+  const state = getAnkiSync(db);
+  const key = JSON.stringify([config.url, config.sourceDeck, config.targetDeck, config.apiKey,
+    config.disabled, config.statusTtlMs, state?.namespace, state?.profile, state?.url, state?.sourceDeck, state?.targetDeck]);
+  try {
+    const api = ankiApi(transport);
+    const fresh = cached !== undefined && cached.key === key && now >= cached.at && now - cached.at < config.statusTtlMs;
+    if (!fresh) await api.version();
+    const profile = await api.profile();
+    assertAnkiScope(getAnkiSync(db), config, profile);
+    if (fresh && cached.profile === profile) return cached.status;
+    if (fresh) await api.version();
+    const status = { available: true, message: `Anki conectado · perfil ${profile}` };
+    statusCache.set(db, { key, profile, at: now, status });
+    return status;
+  } catch (error) {
+    forgetAnkiStatus(db);
+    return { available: false, message: ankiMessage(error) };
+  }
 }
 
 export async function syncAnki(db: Db, transport?: Transport, now = new Date(), config: AnkiConfig = ankiConfig()) {
+  const deadline = Date.now() + config.syncBudgetMs;
+  const controller = new AbortController();
+  const timeout = new AnkiError('ANKI_LENTO',
+    `La sincronización ha agotado su plazo de ${String(config.syncBudgetMs / 1000)} s y se ha detenido sin guardar nada. `
+    + 'Comprueba que Anki responde y vuelve a intentarlo; si tu colección es muy grande, sube ANKI_SYNC_BUDGET_MS.');
+  const checkDeadline = (): void => {
+    if (Date.now() >= deadline) controller.abort(timeout);
+    controller.signal.throwIfAborted();
+  };
+  let timer: ReturnType<typeof setTimeout>;
+  const expired = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => { controller.abort(timeout); reject(timeout); }, config.syncBudgetMs);
+  });
   forgetAnkiStatus(db);
-  return withAnkiLock(db, async () => {
-    const api = ankiApi(transport ?? withRetry(httpTransport(config)));
+  const operation = withAnkiLock(db, async () => {
+    checkDeadline();
+    const send = transport ?? withRetry(httpTransport(config));
+    const api = ankiApi(async (request) => {
+      checkDeadline();
+      try { return await send(request, controller.signal); }
+      finally { checkDeadline(); }
+    });
     await api.version();
     const profile = await api.profile();
     assertAnkiScope(getAnkiSync(db), config, profile);
@@ -85,24 +108,9 @@ export async function syncAnki(db: Db, transport?: Transport, now = new Date(), 
     const rollover = await readRollover(api, config);
     // Incluir nuevas: una carta restablecida puede seguir teniendo historial.
     const ids = [...new Set(await api.findCards(`(${searchTerm('deck', config.sourceDeck)} OR ${searchTerm('deck', config.targetDeck)})`))];
-    /**
-     * Tope para la lectura entera, no solo por peticion. El plazo por lote acota cada
-     * llamada, pero una coleccion que responde despacio en todas podia dejar la pantalla
-     * girando sin final a la vista. Se comprueba entre lotes: no interrumpe una peticion
-     * en vuelo, pero el peor caso deja de ser indefinido.
-     */
-    const deadline = Date.now() + config.syncBudgetMs;
-    const outOfTime = (): boolean => Date.now() > deadline;
-    const giveUp = (): never => {
-      throw new AnkiError('ANKI_LENTO',
-        `La sincronización lleva más de ${String(Math.round(config.syncBudgetMs / 1000))} s y se ha detenido sin guardar nada. `
-        + 'Comprueba que Anki responde y vuelve a intentarlo; si tu colección es muy grande, sube ANKI_SYNC_BUDGET_MS.');
-    };
-
     const cards: AnkiCard[] = [];
     const reviews: Record<string, AnkiReview[]> = {};
     for (const batch of batches(ids, config.batchSize)) {
-      if (outOfTime()) giveUp();
       const snapshot = await api.cardSnapshot(batch);
       cards.push(...snapshot.cards);
       Object.assign(reviews, snapshot.reviews);
@@ -112,7 +120,6 @@ export async function syncAnki(db: Db, transport?: Transport, now = new Date(), 
     const notes: AnkiNote[] = [];
     const missingNoteIds: number[] = [];
     for (const batch of batches(noteIds, config.batchSize)) {
-      if (outOfTime()) giveUp();
       const found = await api.notesInfo(batch);
       found.forEach((note, index) => {
         if (note === null) missingNoteIds.push(batch[index]!);
@@ -121,7 +128,14 @@ export async function syncAnki(db: Db, transport?: Transport, now = new Date(), 
     }
     if (await api.profile() !== profile) throw new AnkiError('ANKI_CONFIG', 'El perfil cambió durante la lectura. No se ha guardado; vuelve a sincronizar.');
     const plan = reconcile({ cards, notes, reviews, missingNoteIds }, loadAnkiDataset(db), now, rollover);
-    saveAnkiSnapshot(db, plan, config, profile, now.toISOString());
+    checkDeadline();
+    saveAnkiSnapshot(db, plan, config, profile, now.toISOString(), checkDeadline);
     return { reviews: plan.reviews.length, newReviews: plan.newReviews, cards: cards.length, notes: notes.length, rollover };
   });
+  try {
+    return await Promise.race([expired, operation]);
+  } finally {
+    clearTimeout(timer!);
+    forgetAnkiStatus(db);
+  }
 }

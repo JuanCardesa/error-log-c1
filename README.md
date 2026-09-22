@@ -221,6 +221,11 @@ Configuración opcional del servidor (variables de entorno):
 | `ANKI_BATCH_SIZE` | `250` cartas por petición |
 | `ANKI_SYNC_BUDGET_MS` | `180000`, tope de una sincronización entera |
 
+Los nombres de mazo admiten hasta 256 caracteres (también el destino derivado), la
+clave hasta 1024 y la URL hasta 2048. Los valores declarados deben ser no vacíos y no
+contener caracteres de control. La URL admite puertos del 1 al 65535, solo en este equipo.
+Para conectar sin clave, deja `ANKI_CONNECT_API_KEY` sin definir.
+
 `ANKI_ROLLOVER_HOUR` es la hora a la que empieza el día en tu colección («next day starts
 at» en las preferencias de Anki). Los repasos se agrupan por ese corte, no por medianoche:
 uno de la 1:30 pertenece al día anterior. AnkiConnect no expone ese dato —comprobado
@@ -229,8 +234,12 @@ aquí. La pantalla de Anki dice siempre si la hora que está usando la sabe o la
 
 La primera sincronización o creación vincula esta base al perfil, dirección y mazos
 configurados. Un cambio de perfil/configuración se rechaza para no mezclar colecciones
-ni devolver deuda por notas de otro perfil. Para otra colección usa otra base mediante
-`DB_FILE_OVERRIDE`. Requiere una versión reciente de AnkiConnect con `getActiveProfile`.
+ni devolver deuda por notas de otro perfil. Antes de guardar, cada nota vinculada que
+existe debe tener exactamente el `ErrorLogId` de su error y del namespace de esta base;
+una sola discrepancia detiene toda la sincronización sin cambiar SQLite, incluso si el
+perfil y los mazos coinciden. Para otra colección usa una base nueva mediante
+`DB_FILE_OVERRIDE`; no se cambia automáticamente la colección de una base existente.
+Requiere una versión reciente de AnkiConnect con `getActiveProfile`.
 La demo y las pruebas desactivan el acceso a la colección personal. No hay llamadas
 automáticas para borrar notas, cambiar el planificador o responder tarjetas.
 

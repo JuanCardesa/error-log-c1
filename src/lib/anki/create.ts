@@ -9,11 +9,12 @@ import { ankiApi, fieldTerm, searchTerm } from './api';
 import { ankiConfig, type AnkiConfig } from './config';
 import { AnkiError, httpTransport, withRetry, type Transport } from './connect';
 import { categoryOf } from './categories';
+import { ERRORLOG_ID_FIELD, errorLogIdentity } from './identity';
 import { noteLabel } from './reconcile';
 import { forgetAnkiStatus, withAnkiLock } from './sync';
 
 export const ERRORLOG_MODEL = 'Error Log C1';
-export const ERRORLOG_ID_FIELD = 'ErrorLogId';
+export { ERRORLOG_ID_FIELD } from './identity';
 export const ERRORLOG_FIELDS = [ERRORLOG_ID_FIELD, 'Prompt', 'MyAnswer', 'Correct', 'Rule', 'Meta'];
 
 /**
@@ -74,7 +75,7 @@ export function ankiContentStale(error: ErrorRow, namespace: string, deck: strin
 }
 
 export function noteForError(error: ErrorRow, namespace: string, deck: string) {
-  const identity = `errorlog::${namespace}::${String(error.id)}`;
+  const identity = errorLogIdentity(namespace, error.id);
   return {
     deckName: deck, modelName: ERRORLOG_MODEL,
     fields: {
@@ -165,7 +166,9 @@ export async function updateAnkiNote(db: Db, errorId: number, transport?: Transp
     }
     // Solo se sella tras confirmar: si no cuajo, el aviso de «texto cambiado» sigue ahi.
     const [confirmed] = await api.notesInfo([error.ankiNoteId]);
-    if (!confirmed) throw new AnkiError('ANKI_RESPUESTA_RARA', 'No se ha podido verificar la actualización. Vuelve a intentarlo.');
+    if (!confirmed || Object.entries(note.fields).some(([name, value]) => confirmed.fields[name]?.value !== value)) {
+      throw new AnkiError('ANKI_RESPUESTA_RARA', 'Anki no ha confirmado todos los campos de la actualización. Vuelve a intentarlo.');
+    }
     setAnkiContentHash(db, errorId, contentHash(note.fields));
     return error.ankiNoteId;
   });

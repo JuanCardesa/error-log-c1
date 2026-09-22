@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { AnkiError } from './connect';
 import { isRolloverHour } from './schedule';
 
 export interface AnkiConfig {
@@ -37,7 +39,7 @@ function positiveInt(env: Readonly<Record<string, string | undefined>>, name: st
   if (raw === undefined || raw === '') return fallback;
   const value = Number(raw);
   if (!Number.isInteger(value) || value < 1 || value > max) {
-    throw new Error(`${name} debe ser un entero entre 1 y ${String(max)}.`);
+    throw new AnkiError('ANKI_CONFIG', `${name} debe ser un entero entre 1 y ${String(max)}.`);
   }
   return value;
 }
@@ -53,6 +55,32 @@ const STATUS_TTL_MS = 5_000;
 /** Puerto por defecto del complemento real. El doble tiene prohibido usarlo. */
 const ANKI_CONNECT_PORT = '8765';
 
+const textSchema = (max: number) => z.string().min(1).max(max)
+  .refine((value) => value.trim().length > 0 && !/\p{Cc}/u.test(value));
+
+function configText(name: string, value: unknown, max: number): string {
+  const parsed = textSchema(max).safeParse(value);
+  if (!parsed.success) {
+    throw new AnkiError('ANKI_CONFIG', `${name} debe ser una cadena no vacía de hasta ${String(max)} caracteres, sin caracteres de control.`);
+  }
+  return parsed.data;
+}
+
+function connectUrl(raw: unknown): URL {
+  const value = configText('ANKI_CONNECT_URL', raw, 2048);
+  let url: URL;
+  try { url = new URL(value); }
+  catch { throw new AnkiError('ANKI_CONFIG', 'ANKI_CONNECT_URL debe ser una URL HTTP o HTTPS válida de este equipo, con puerto entre 1 y 65535.'); }
+  const port = Number(url.port || (url.protocol === 'https:' ? 443 : 80));
+  if (!['http:', 'https:'].includes(url.protocol)
+    || !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
+    || url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== ''
+    || port < 1 || port > 65535 || url.href.length > 2048) {
+    throw new AnkiError('ANKI_CONFIG', 'ANKI_CONNECT_URL debe apuntar a AnkiConnect en este equipo, con puerto entre 1 y 65535 y sin credenciales, consulta ni fragmento.');
+  }
+  return url;
+}
+
 /** Solo el servidor habla con el complemento local; nunca se envía la clave al cliente. */
 export function ankiConfig(env: Readonly<Record<string, string | undefined>> = process.env): AnkiConfig {
   const demo = env['ERRORLOG_DEMO'] === '1';
@@ -61,26 +89,24 @@ export function ankiConfig(env: Readonly<Record<string, string | undefined>> = p
   // Playwright, cuya URL se inyecta aquí: `ANKI_CONNECT_URL` queda fuera de juego, así
   // que ninguna configuración heredada del entorno puede devolverlos a la colección real.
   const fakeUrl = e2e && !demo ? env['ERRORLOG_ANKI_FAKE_URL'] : undefined;
-  const url = new URL(fakeUrl ?? env['ANKI_CONNECT_URL'] ?? `http://127.0.0.1:${ANKI_CONNECT_PORT}`);
-  if (!['http:', 'https:'].includes(url.protocol)
-    || !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
-    || url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== '') {
-    throw new Error('ANKI_CONNECT_URL debe apuntar a AnkiConnect en este equipo.');
-  }
+  const url = connectUrl(fakeUrl ?? env['ANKI_CONNECT_URL'] ?? `http://127.0.0.1:${ANKI_CONNECT_PORT}`);
   // Un doble en el puerto real dejaría de ser un doble.
   if (fakeUrl !== undefined && (url.port === ANKI_CONNECT_PORT || url.port === '')) {
-    throw new Error(`El doble de AnkiConnect no puede escuchar en el puerto ${ANKI_CONNECT_PORT}.`);
+    throw new AnkiError('ANKI_CONFIG', `El doble de AnkiConnect no puede escuchar en el puerto ${ANKI_CONNECT_PORT}.`);
   }
   const rollover = env['ANKI_ROLLOVER_HOUR']?.trim();
   if (rollover !== undefined && rollover !== '' && !isRolloverHour(Number(rollover))) {
-    throw new Error('ANKI_ROLLOVER_HOUR debe ser una hora entera entre 0 y 23.');
+    throw new AnkiError('ANKI_CONFIG', 'ANKI_ROLLOVER_HOUR debe ser una hora entera entre 0 y 23.');
   }
-  const sourceDeck = env['ANKI_SOURCE_DECK']?.trim() || 'English B2 to C1 Practice';
+  const sourceDeck = configText('ANKI_SOURCE_DECK', env['ANKI_SOURCE_DECK'] ?? 'English B2 to C1 Practice', 256).trim();
+  const targetDeck = configText('ANKI_TARGET_DECK', env['ANKI_TARGET_DECK'] ?? `${sourceDeck}::Error Log`, 256).trim();
+  const apiKey = env['ANKI_CONNECT_API_KEY'] === undefined ? undefined
+    : configText('ANKI_CONNECT_API_KEY', env['ANKI_CONNECT_API_KEY'], 1024);
   return {
     url: url.href,
     sourceDeck,
-    targetDeck: env['ANKI_TARGET_DECK']?.trim() || `${sourceDeck}::Error Log`,
-    apiKey: env['ANKI_CONNECT_API_KEY'],
+    targetDeck,
+    apiKey,
     ...(rollover !== undefined && rollover !== '' ? { rolloverHour: Number(rollover) } : {}),
     statusTtlMs: demo || e2e ? 0 : STATUS_TTL_MS,
     batchSize: positiveInt(env, 'ANKI_BATCH_SIZE', BATCH_SIZE, 2000),

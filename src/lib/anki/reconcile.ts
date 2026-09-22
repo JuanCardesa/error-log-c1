@@ -1,5 +1,6 @@
 import type { AnkiCard, AnkiNote, AnkiReview } from './api';
 import { AnkiError } from './connect';
+import { ERRORLOG_ID_FIELD } from './identity';
 import { categoryOf } from './categories';
 import type { AnkiDataset } from '../domain/types';
 import { ankiDay, type Rollover } from './schedule';
@@ -20,6 +21,8 @@ export function noteLabel(note: AnkiNote): string {
 
 /** Snapshot completo por carta: incluye importaciones antiguas y elimina repasos deshechos. */
 export interface AnkiReconciliation extends Omit<AnkiDataset, 'sync'> {
+  /** Identidades leídas de Anki para verificar los vínculos dentro de la transacción. */
+  readonly noteIdentities: ReadonlyMap<number, string | undefined>;
   readonly missingNoteIds: readonly number[];
   readonly newReviews: number;
   /** El corte con el que se han fechado estos repasos, y de donde salio. */
@@ -58,5 +61,6 @@ export function reconcile(snapshot: AnkiSnapshot, current: AnkiDataset, now: Dat
   }
   const oldIds = new Set(current.reviews.map((review) => review.reviewId));
   return { notes, cards, reviews, missingNoteIds: snapshot.missingNoteIds, rollover,
+    noteIdentities: new Map(snapshot.notes.map((note) => [note.noteId, note.fields[ERRORLOG_ID_FIELD]?.value])),
     newReviews: reviews.filter((review) => !oldIds.has(review.reviewId)).length };
 }
