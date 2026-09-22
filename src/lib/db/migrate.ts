@@ -8,6 +8,34 @@ import { MIGRATIONS_DIR } from './paths';
  * foreign_keys dentro del BEGIN del migrador estandar no tiene efecto en SQLite.
  * La reconstruccion de session debe conservar sus hijos y validar antes del COMMIT.
  */
+export interface MigrationState {
+  /** Migraciones ya registradas: con cero, la base es nueva y no hay nada que copiar. */
+  readonly applied: number;
+  readonly pending: number;
+}
+
+/**
+ * Cuenta lo que haria `migrate` sin tocar la base, para decidir si hace falta una copia
+ * previa. Usa exactamente el mismo criterio de salto que el bucle de `migrate`: cualquier
+ * diferencia entre ambos dejaria una actualizacion sin respaldo.
+ */
+export function migrationState(db: Db, config = { migrationsFolder: MIGRATIONS_DIR }): MigrationState {
+  const sqlite = db.$client;
+  const migrations = readMigrationFiles(config);
+  const journal = sqlite.prepare<[], { name: string }>(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = '__drizzle_migrations'",
+  ).get();
+  if (journal === undefined) return { applied: 0, pending: migrations.length };
+  const applied = sqlite.prepare<[], { total: number }>('SELECT count(*) AS total FROM __drizzle_migrations').get();
+  const last = sqlite.prepare<[], { created_at: number }>(
+    'SELECT created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1',
+  ).get();
+  return {
+    applied: applied?.total ?? 0,
+    pending: migrations.filter((migration) => last === undefined || migration.folderMillis > last.created_at).length,
+  };
+}
+
 export function migrate(db: Db, config = { migrationsFolder: MIGRATIONS_DIR }): void {
   const sqlite = db.$client;
   if (sqlite.inTransaction) throw new Error('Las migraciones requieren una conexion sin transaccion activa.');

@@ -29,7 +29,12 @@ los puntos que podían causar pérdidas o duplicados:
   mismo nombre de perfil no tiene un identificador de colección garantizado por esta API;
   no debe reutilizarse esta base para una colección distinta.
 - **Borrado frente a traslado.** Las notas vinculadas se consultan por ID también fuera
-  del filtro de mazo. Solo un resultado vacío confirmado devuelve la deuda.
+  del filtro de mazo. Solo un resultado vacío confirmado devuelve la deuda. Que
+  desaparezcan **todas** a la vez, habiendo tres o más, no se acepta como borrado: el
+  perfil y el mazo coinciden también cuando se restaura otra colección, y desvincular
+  borra `anki_added_at`, que no se reconstruye sincronizando otra vez. La sincronización
+  se detiene sin escribir nada y explica cómo forzarlo con «Deshacer» si de verdad se
+  han borrado esas tarjetas.
 - **Tipos de revisión.** Se aceptan tipos 0–3 con botón 1–4; se excluyen manual (4),
   reprogramado (5) y registros sin respuesta. Intervalos negativos del revlog se guardan
   tal cual: representan segundos, no un número negativo de días.
@@ -48,7 +53,11 @@ sincronización y creación. `src/lib/db/ankiRepo.ts` contiene las escrituras de
 `q7AnkiReviews` y `compareAnkiPractice` son consultas puras. No hay nuevas dependencias.
 
 La migración `0002_anki_sync.sql` añade cuatro tablas y una columna nullable. No
-reclasifica errores ni borra marcas manuales antiguas. `anki_sync` tiene una fila y no
+reclasifica errores ni borra marcas manuales antiguas. `pnpm db:migrate` guarda antes una
+copia verificada en `data/backups/`, y no migra si esa copia falla; no hay migraciones
+inversas, así que volver atrás es restaurar esa copia. A la copia previa no se le exige el
+esquema nuevo —por definición no lo tiene—, pero `pnpm db:backup` sí lo exige entero:
+media migración no la detectan `integrity_check` ni `foreign_key_check`. `anki_sync` tiene una fila y no
 necesita `last_review_id`, porque no descarta registros por antigüedad. El día de los
 repasos se guarda según el calendario local del servidor, consistente con la app.
 

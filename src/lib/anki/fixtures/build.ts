@@ -23,6 +23,18 @@ export function ankiFixture(): AnkiDataset {
   return { ...snapshot, sync: null };
 }
 
+/**
+ * `tag:"..."` de Anki: casa el tag exacto y sus hijos bajo `::`, sin distinguir
+ * mayusculas, sobre el valor ya desescapado. Comparar por subcadena daria por buena
+ * cualquier identidad contra el tag base `errorlog`.
+ */
+function matchesTag(query: string, tags: readonly string[]): boolean {
+  const quoted = /^tag:"((?:[^"\\]|\\.)*)"$/.exec(query.trim());
+  if (quoted === null) throw new Error(`Consulta de tag no simulada: ${query}`);
+  const wanted = quoted[1]!.replace(/\\(.)/g, '$1').toLowerCase();
+  return tags.some((tag) => tag.toLowerCase() === wanted || tag.toLowerCase().startsWith(`${wanted}::`));
+}
+
 /** Simula el contrato HTTP, incluyendo sobres y los resultados de multi. */
 export class FakeAnki {
   calls: AnkiRequest[] = [];
@@ -57,7 +69,7 @@ export class FakeAnki {
       case 'findCards': return this.cards.map((value) => value.cardId);
       case 'findNotes': {
         const query = String(params['query']);
-        return [...this.notes.values()].filter((value) => value.tags.some((tag) => query.includes(tag))).map((value) => value.noteId);
+        return [...this.notes.values()].filter((value) => matchesTag(query, value.tags)).map((value) => value.noteId);
       }
       case 'cardsInfo': return (params['cards'] as number[]).map((id) => this.cards.find((value) => value.cardId === id) ?? {});
       case 'getReviewsOfCards': return Object.fromEntries((params['cards'] as number[]).map((id) => [String(id), this.reviews[String(id)] ?? []]));

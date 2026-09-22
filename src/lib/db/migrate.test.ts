@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import { createDb, type Db } from './client';
 import { loadDataset } from './load';
-import { migrate } from './migrate';
+import { migrate, migrationState } from './migrate';
 import { MIGRATIONS_DIR } from './paths';
 import { seed as seedCurrent } from './seed';
 
@@ -133,4 +133,18 @@ it('exige una transaccion propia y restaura foreign_keys si estaban desactivadas
   db.$client.pragma('foreign_keys = OFF');
   migrate(db);
   expect(db.$client.pragma('foreign_keys', { simple: true })).toBe(0);
+});
+
+it('cuenta lo pendiente con el mismo criterio con el que migra, para decidir la copia previa', () => {
+  const total = readMigrationFiles({ migrationsFolder: MIGRATIONS_DIR }).length;
+  // La base del fixture tiene solo la inicial registrada.
+  expect(migrationState(db)).toEqual({ applied: 1, pending: total - 1 });
+  migrate(db);
+  expect(migrationState(db)).toEqual({ applied: total, pending: 0 });
+
+  // Una base nueva no tiene journal: todo pendiente y nada que copiar.
+  const fresh = createDb(':memory:');
+  try {
+    expect(migrationState(fresh)).toEqual({ applied: 0, pending: total });
+  } finally { fresh.$client.close(); }
 });

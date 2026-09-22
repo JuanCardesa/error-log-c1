@@ -57,6 +57,40 @@ it('solo devuelve la deuda cuando notesInfo confirma que la nota vinculada no ex
   await syncAnki(db, fake.transport, NOW, CONFIG);
   expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null });
 });
+/** Tres errores convertidos: el minimo con el que perderlos todos deja de ser una limpieza. */
+async function convertThree(): Promise<number[]> {
+  for (const id of [2, 3]) {
+    db.insert(errorRow).values({ id, sessionId: 1, prompt: `I ___ it (${String(id)})`, myAnswer: 'did',
+      correctAnswer: 'made', cause: 'CONFUSION', category: 'COLOCACION', confidence: 'DUDABA',
+      ruleNote: 'Contrasta make con do según el sustantivo.' }).run();
+  }
+  const noteIds: number[] = [];
+  for (const id of [1, 2, 3]) noteIds.push(await createAnkiNote(db, id, fake.transport, NOW, CONFIG));
+  await syncAnki(db, fake.transport, NOW, CONFIG);
+  return noteIds;
+}
+
+it('se niega a vaciar el historial cuando Anki no reconoce ninguna nota vinculada', async () => {
+  const noteIds = await convertThree();
+  const before = loadAnkiDataset(db);
+  // Perfil, endpoint y mazo intactos: es otra coleccion restaurada bajo el mismo nombre.
+  for (const noteId of noteIds) fake.notes.delete(noteId);
+  await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CONFIG' });
+  expect([1, 2, 3].map((id) => getError(db, id)?.ankiAdded)).toEqual([true, true, true]);
+  expect([1, 2, 3].map((id) => getError(db, id)?.ankiAddedAt)).not.toContain(null);
+  expect(loadAnkiDataset(db)).toEqual(before);
+});
+
+it('devuelve a la cola las notas borradas de verdad mientras quede alguna reconocible', async () => {
+  const noteIds = await convertThree();
+  fake.notes.delete(noteIds[0]!);
+  fake.notes.delete(noteIds[1]!);
+  await syncAnki(db, fake.transport, NOW, CONFIG);
+  expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null });
+  expect(getError(db, 2)).toMatchObject({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null });
+  expect(getError(db, 3)).toMatchObject({ ankiNoteId: noteIds[2]!, ankiAdded: true });
+});
+
 it('los errores de red y snapshots incompletos no cambian nada en SQLite', async () => {
   await syncAnki(db, fake.transport, NOW, CONFIG);
   const before = loadAnkiDataset(db);

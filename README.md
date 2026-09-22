@@ -66,9 +66,11 @@ pnpm dev
 Abre **http://127.0.0.1:3000**. Tus datos se guardan en `data/errorlog.db`, fuera de Git.
 Para ejecutar la versión compilada: `pnpm build` y después `pnpm start`.
 
-Para actualizar una base existente, detén la app, ejecuta `pnpm db:backup` y después
-`pnpm db:migrate`. Usa este comando también para las migraciones que reconstruyen
+Para actualizar una base existente, detén la app y ejecuta `pnpm db:migrate`. Antes de
+tocar nada guarda una copia verificada en `data/backups/previa-a-migrar-<fecha>.db`; si
+esa copia falla, no migra. Usa este comando también para las migraciones que reconstruyen
 tablas: conserva las relaciones y verifica la integridad antes de confirmar los cambios.
+No hay migraciones inversas: para volver atrás se restaura esa copia con `pnpm db:restore`.
 
 `pnpm db:seed` sigue disponible para cargar ejemplos en una base **vacía y migrada**.
 Si encuentra datos, se detiene sin cambiarlos. Para probar la app, usa `pnpm demo`.

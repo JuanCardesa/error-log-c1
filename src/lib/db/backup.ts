@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 
-import { errorRow, session, writingPiece } from './schema';
+import { ankiCard, ankiNote, ankiReview, ankiSync, errorRow, session, writingPiece } from './schema';
 
 function requireNewDestination(file: string): void {
   for (const suffix of ['', '-wal', '-shm', '-journal']) {
@@ -14,18 +14,37 @@ function requireNewDestination(file: string): void {
   }
 }
 
-function checkDatabase(sqlite: Database.Database): void {
+/** Tablas presentes en todas las versiones del esquema. Identifican la base sin nombrar columnas. */
+const CORE_TABLES = ['session', 'error_row', 'writing_piece'] as const;
+
+export interface BackupOptions {
+  /**
+   * Exigir el esquema de esta version. Una copia previa a migrar, y una copia antigua
+   * que se restaura para migrarla despues, son por definicion de un esquema anterior:
+   * ahi solo cabe comprobar que el fichero es consistente y que es de Error Log.
+   */
+  readonly requireCurrentSchema?: boolean;
+}
+
+function checkDatabase(sqlite: Database.Database, requireCurrentSchema: boolean): void {
   if (sqlite.pragma('integrity_check', { simple: true }) !== 'ok') {
     throw new Error('La copia no supera la comprobacion de integridad de SQLite.');
   }
   if (sqlite.prepare('PRAGMA foreign_key_check').all().length !== 0) {
     throw new Error('La copia contiene referencias a filas inexistentes.');
   }
+  for (const table of CORE_TABLES) sqlite.prepare(`SELECT 1 FROM ${table} LIMIT 0`).all();
+  if (!requireCurrentSchema) return;
   // Comprueba todas las columnas que necesita esta version, sin leer datos personales.
+  // El espejo de Anki entra aqui desde 0002: media migracion no la ve integrity_check.
   const db = drizzle(sqlite);
   db.select().from(session).limit(0).all();
   db.select().from(errorRow).limit(0).all();
   db.select().from(writingPiece).limit(0).all();
+  db.select().from(ankiNote).limit(0).all();
+  db.select().from(ankiCard).limit(0).all();
+  db.select().from(ankiReview).limit(0).all();
+  db.select().from(ankiSync).limit(0).all();
 }
 
 /** Un fichero que no es SQLite falla con «file is not a database»; aqui se dice cual y por que. */
@@ -48,7 +67,7 @@ function openSource(file: string): Database.Database {
 }
 
 /** Copia mediante la API de SQLite: incluye transacciones confirmadas en el WAL. */
-export async function backupDatabase(source: string, destination: string): Promise<string> {
+export async function backupDatabase(source: string, destination: string, options: BackupOptions = {}): Promise<string> {
   const target = resolve(destination);
   requireNewDestination(target);
   const original = openSource(resolve(source));
@@ -63,7 +82,7 @@ export async function backupDatabase(source: string, destination: string): Promi
     try {
       // La copia entregada es un fichero independiente, sin WAL pendiente.
       snapshot.pragma('journal_mode = DELETE');
-      checkDatabase(snapshot);
+      checkDatabase(snapshot, options.requireCurrentSchema ?? true);
     } finally {
       snapshot.close();
     }
@@ -88,7 +107,12 @@ export async function backupDatabase(source: string, destination: string): Promi
   }
 }
 
-/** Restaurar es crear otra base validada; nunca reemplaza una base en uso. */
+/**
+ * Restaurar es crear otra base validada; nunca reemplaza una base en uso.
+ *
+ * No se le exige el esquema de hoy: una copia antigua se restaura y se migra despues,
+ * y exigirlo dejaria inservibles justo las copias que guarda `pnpm db:migrate`.
+ */
 export async function restoreDatabase(backup: string, destination: string): Promise<string> {
-  return backupDatabase(backup, destination);
+  return backupDatabase(backup, destination, { requireCurrentSchema: false });
 }

@@ -33,9 +33,34 @@ export function ensureAnkiScope(db: AnkiDb, config: AnkiConfig, profile: string)
   });
 }
 
-export function linkedAnkiNotes(db: Db): number[] {
+export function linkedAnkiNotes(db: AnkiDb): number[] {
   return db.select({ noteId: errorRow.ankiNoteId }).from(errorRow)
     .where(isNotNull(errorRow.ankiNoteId)).all().flatMap((row) => row.noteId === null ? [] : [row.noteId]);
+}
+
+/**
+ * Minimo de vinculos para desconfiar de una desaparicion total. Con uno o dos, borrar
+ * ambas tarjetas a mano es corriente; a partir de tres, que no quede ninguna es la firma
+ * de otra coleccion bajo el mismo perfil, no la de una limpieza.
+ */
+const MIN_LINKED_TO_GUARD = 3;
+
+/**
+ * Desvincular borra `anki_added_at`, que es la unica marca de cuando se convirtio un
+ * error: no se reconstruye sincronizando otra vez. Restaurar una copia antigua de la
+ * coleccion mantiene el perfil y el mazo, pero renumera cada nota, asi que la lectura
+ * es legitima y vacia el historial entero de una vez. Se exige que quede al menos un
+ * vinculo reconocido para creer que la coleccion es la misma.
+ */
+function assertNotWholesaleUnlink(db: AnkiDb, missingNoteIds: readonly number[]): void {
+  const linked = new Set(linkedAnkiNotes(db));
+  if (linked.size < MIN_LINKED_TO_GUARD) return;
+  if (missingNoteIds.filter((noteId) => linked.has(noteId)).length !== linked.size) return;
+  throw new AnkiError('ANKI_CONFIG',
+    `Anki no reconoce ninguna de las ${String(linked.size)} notas vinculadas a esta base. `
+    + 'Suele significar que el perfil abierto tiene otra coleccion, restaurada o recreada. '
+    + 'No se ha cambiado nada. Si de verdad has borrado todas esas tarjetas, usa «Deshacer» '
+    + 'en la cola de conversion y vuelve a sincronizar.');
 }
 
 export function linkAnkiNote(db: Db, errorId: number, note: AnkiNoteRow, at: string): void {
@@ -50,6 +75,8 @@ export function linkAnkiNote(db: Db, errorId: number, note: AnkiNoteRow, at: str
 export function saveAnkiSnapshot(db: Db, plan: ReturnType<typeof reconcile>, config: AnkiConfig, profile: string, at: string): void {
   db.transaction((tx) => {
     ensureAnkiScope(tx, config, profile);
+    // Dentro de la transaccion: el recuento de vinculos que se comprueba es el que se escribe.
+    assertNotWholesaleUnlink(tx, plan.missingNoteIds);
     for (const noteId of plan.missingNoteIds) {
       tx.update(errorRow).set({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null })
         .where(eq(errorRow.ankiNoteId, noteId)).run();
