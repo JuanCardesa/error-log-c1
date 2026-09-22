@@ -16,7 +16,7 @@ import { q2CategoryRate, q2ToCsv } from './q2CategoryRate';
 import { q3RuoeAccuracy, q3ToCsv } from './q3RuoeAccuracy';
 import { q4FalseCertainties } from './q4FalseCertainties';
 import { q5AnkiDebt } from './q5AnkiDebt';
-import { q6RewriteEfficacy } from './q6RewriteEfficacy';
+import { q6RewriteEfficacy, q6ToCsv } from './q6RewriteEfficacy';
 
 const opts: QueryOptions = { now: NOW, windowDays: 30 };
 
@@ -485,6 +485,18 @@ describe('Q6 · eficacia del rewrite', () => {
     });
 
     expect(q6RewriteEfficacy(data, opts).pairs[0]?.repeatedErrors).toBe(0);
+  });
+
+  it('no confunde separadores de campos con barras dentro de la respuesta o subcategoría', () => {
+    const data = makeDataset({
+      ...writingPair(),
+      errors: [
+        makeError({ sessionId: 1, category: 'LEXICO', subcategory: 'a|b', correctAnswer: 'c' }),
+        makeError({ sessionId: 2, category: 'LEXICO', subcategory: 'a', correctAnswer: 'b|c' }),
+      ],
+    });
+    expect(q6RewriteEfficacy(data, opts)).toMatchObject({ totalOriginalErrors: 1, totalRepeated: 0, pctRepeated: 0 });
+    expect(q6ToCsv(q6RewriteEfficacy(data, opts))).toContain(',1,0,0\r\n');
   });
 
   it('sin pares devuelve agregado nulo', () => {
