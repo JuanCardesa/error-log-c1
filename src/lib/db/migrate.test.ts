@@ -6,7 +6,22 @@ import { createDb, type Db } from './client';
 import { loadDataset } from './load';
 import { migrate } from './migrate';
 import { MIGRATIONS_DIR } from './paths';
-import { seed } from './seed';
+import { seed as seedCurrent } from './seed';
+
+/** Inserta el fixture en el esquema histórico, sin usar columnas de versiones nuevas. */
+function seed(target: Db, now: Date) {
+  const source = createDb(':memory:');
+  try {
+    migrate(source);
+    seedCurrent(source, now);
+    for (const table of ['session', 'error_row', 'writing_piece']) {
+      const columns = target.$client.prepare<[], { name: string }>(`PRAGMA table_info(${table})`).all().map((row) => row.name);
+      const names = columns.map((name) => `"${name}"`).join(',');
+      const insert = target.$client.prepare(`INSERT INTO ${table} (${names}) VALUES (${columns.map(() => '?').join(',')})`);
+      for (const row of source.$client.prepare(`SELECT ${names} FROM ${table} ORDER BY id`).raw().all()) insert.run(...row as unknown[]);
+    }
+  } finally { source.$client.close(); }
+}
 
 let db: Db;
 beforeEach(() => {
@@ -21,7 +36,12 @@ afterEach(() => db.$client.close());
 
 function snapshot() {
   return {
-    data: loadDataset(db),
+    data: {
+      sessions: db.$client.prepare('SELECT * FROM session ORDER BY id').all(),
+      errors: db.$client.prepare<[], Record<string, unknown>>('SELECT * FROM error_row ORDER BY id').all()
+        .map(({ anki_note_id: _newColumn, ...row }) => row),
+      pieces: db.$client.prepare<[], { session_id: number }>('SELECT * FROM writing_piece ORDER BY id').all(),
+    },
     schema: db.$client.prepare('SELECT type, name, sql FROM sqlite_schema ORDER BY name').all(),
     journal: db.$client.prepare('SELECT * FROM __drizzle_migrations').all(),
     sequences: db.$client.prepare('SELECT * FROM sqlite_sequence ORDER BY name').all(),
@@ -39,10 +59,11 @@ it('migra todos los datos historicos, relaciones, indices y secuencias sin recla
   reserveDeletedId();
   const before = snapshot();
   migrate(db);
-  expect(loadDataset(db)).toEqual(before.data);
+  expect(snapshot().data).toEqual(before.data);
+  expect(loadDataset(db).errors.every((row) => row.ankiNoteId === null)).toBe(true);
   expect(snapshot().sequences).toEqual(before.sequences);
   expect(snapshot().schema.filter((row) => (row as { type: string }).type === 'index'))
-    .toEqual(before.schema.filter((row) => (row as { type: string }).type === 'index'));
+    .toEqual(expect.arrayContaining(before.schema.filter((row) => (row as { type: string }).type === 'index')));
   expect(db.$client.pragma('foreign_keys', { simple: true })).toBe(1);
   const firstRun = snapshot();
   migrate(db);
@@ -53,10 +74,10 @@ it('migra todos los datos historicos, relaciones, indices y secuencias sin recla
   expect(Number(created.lastInsertRowid)).toBeGreaterThan(5000);
   const writing = before.data.pieces[0];
   if (writing === undefined) throw new Error('Falta el texto del seed');
-  db.$client.prepare('DELETE FROM session WHERE id = ?').run(writing.sessionId);
+  db.$client.prepare('DELETE FROM session WHERE id = ?').run(writing.session_id);
   const afterDelete = loadDataset(db);
-  expect(afterDelete.errors.some((row) => row.sessionId === writing.sessionId)).toBe(false);
-  expect(afterDelete.pieces.some((row) => row.sessionId === writing.sessionId)).toBe(false);
+  expect(afterDelete.errors.some((row) => row.sessionId === writing.session_id)).toBe(false);
+  expect(afterDelete.pieces.some((row) => row.sessionId === writing.session_id)).toBe(false);
   expect(db.$client.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
 });
 

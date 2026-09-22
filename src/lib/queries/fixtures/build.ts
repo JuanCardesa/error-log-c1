@@ -63,6 +63,7 @@ export function makeError(overrides: Partial<ErrorRow> = {}): ErrorRow {
     ruleNote: 'Regla escrita con mis palabras para poder repasarla luego',
     ankiAdded: false,
     ankiAddedAt: null,
+    ankiNoteId: null,
     secs: 20,
     createdAt: '2026-09-13T10:00:00.000Z',
     ...overrides,

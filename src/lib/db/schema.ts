@@ -105,6 +105,7 @@ export const errorRow = sqliteTable(
     ruleNote: text('rule_note').notNull(),
     ankiAdded: integer('anki_added', { mode: 'boolean' }).notNull().default(false),
     ankiAddedAt: text('anki_added_at'),
+    ankiNoteId: integer('anki_note_id').references((): AnySQLiteColumn => ankiNote.noteId, { onDelete: 'set null' }),
     secs: integer('secs'),
     createdAt: text('created_at')
       .notNull()
@@ -132,6 +133,55 @@ export const errorRow = sqliteTable(
     `),
   ],
 );
+
+export const ankiNote = sqliteTable('anki_note', {
+  noteId: integer('note_id').primaryKey(),
+  model: text('model').notNull(),
+  label: text('label').notNull(),
+  tags: text('tags', { mode: 'json' }).$type<readonly string[]>().notNull(),
+  category: text('category', { enum: CATEGORIES }),
+  firstSeenAt: text('first_seen_at').notNull(),
+  lastSeenAt: text('last_seen_at').notNull(),
+});
+
+export const ankiCard = sqliteTable('anki_card', {
+  cardId: integer('card_id').primaryKey(),
+  noteId: integer('note_id').notNull().references(() => ankiNote.noteId, { onDelete: 'cascade' }),
+  deck: text('deck').notNull(),
+  templateOrd: integer('template_ord').notNull(),
+  lapses: integer('lapses').notNull(),
+  reps: integer('reps').notNull(),
+  queue: integer('queue').notNull(),
+  intervalDays: integer('interval_days').notNull(),
+}, (table) => [index('anki_card_note_idx').on(table.noteId)]);
+
+export const ankiReview = sqliteTable('anki_review', {
+  reviewId: integer('review_id').primaryKey(),
+  cardId: integer('card_id').notNull().references(() => ankiCard.cardId, { onDelete: 'cascade' }),
+  reviewedAt: text('reviewed_at').notNull(),
+  reviewDate: text('review_date').notNull(),
+  ease: integer('ease').notNull(),
+  interval: integer('interval').notNull(),
+  lastInterval: integer('last_interval').notNull(),
+  factor: integer('factor').notNull(),
+  timeMs: integer('time_ms').notNull(),
+  type: integer('type').notNull(),
+}, (table) => [
+  index('anki_review_date_idx').on(table.reviewDate),
+  index('anki_review_card_idx').on(table.cardId),
+  check('anki_review_answer', sql`${table.ease} BETWEEN 1 AND 4 AND ${table.type} BETWEEN 0 AND 3 AND ${table.timeMs} >= 0`),
+]);
+
+export const ankiSync = sqliteTable('anki_sync', {
+  id: integer('id').primaryKey(),
+  namespace: text('namespace').notNull(),
+  profile: text('profile').notNull(),
+  url: text('url').notNull(),
+  sourceDeck: text('source_deck').notNull(),
+  targetDeck: text('target_deck').notNull(),
+  lastSyncedAt: text('last_synced_at'),
+  notesSeen: integer('notes_seen').notNull().default(0),
+}, (table) => [check('anki_sync_singleton', sql`${table.id} = 1`)]);
 
 export const writingPiece = sqliteTable(
   'writing_piece',

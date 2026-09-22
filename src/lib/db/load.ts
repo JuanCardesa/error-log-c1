@@ -1,7 +1,7 @@
-import type { Dataset, ErrorRow, SessionRow, WritingPieceRow } from '../domain/types';
+import type { AnkiDataset, Dataset, ErrorRow, SessionRow, WritingPieceRow } from '../domain/types';
 import { withSessionFormat } from '../domain/session';
 import type { Db } from './client';
-import { errorRow, session, writingPiece } from './schema';
+import { ankiNote, ankiCard, ankiReview, ankiSync, errorRow, session, writingPiece } from './schema';
 
 /**
  * Puente entre la base y las queries puras: lee filas y las entrega como `Dataset`.
@@ -16,4 +16,13 @@ export function loadDataset(db: Db): Dataset {
   const pieces = db.select().from(writingPiece).all() satisfies WritingPieceRow[];
 
   return { sessions, errors, pieces };
+}
+
+export function loadAnkiDataset(db: Db): AnkiDataset {
+  return {
+    notes: db.select().from(ankiNote).all(),
+    cards: db.select().from(ankiCard).all(),
+    reviews: db.select().from(ankiReview).all(),
+    sync: db.select().from(ankiSync).get() ?? null,
+  };
 }
