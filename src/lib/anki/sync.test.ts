@@ -201,6 +201,34 @@ it('avisa de que la tarjeta quedó vieja al corregir un error ya convertido', as
   expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(true);
 });
 
+it.each(['deshacer', 'timeout'])('recuperar una nota tras %s conserva el aviso si el error cambió', async (mode) => {
+  if (mode === 'timeout') {
+    fake.afterAddFails = true;
+    await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow();
+    db.update(errorRow).set({ correctAnswer: 'taken' }).where(eq(errorRow.id, 1)).run();
+  } else {
+    await convertThenEdit();
+    unmarkAnkiAdded(db, 1);
+  }
+  const noteId = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  const namespace = ensureAnkiScope(db, CONFIG, 'Juan').namespace;
+  expect(fake.added).toBe(1);
+  expect(fake.notes.get(noteId)?.fields['Correct']?.value).toBe('made');
+  expect(getError(db, 1)?.correctAnswer).toBe('taken');
+  expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(true);
+  await updateAnkiNote(db, 1, fake.transport, CONFIG);
+  expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(false);
+});
+
+it('una nota recuperada con campos ausentes sigue mostrando que necesita actualización', async () => {
+  const noteId = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  const existing = fake.notes.get(noteId)!;
+  fake.notes.set(noteId, { ...existing, fields: { ErrorLogId: existing.fields['ErrorLogId']! } });
+  unmarkAnkiAdded(db, 1);
+  await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  expect(ankiContentStale(getError(db, 1)!, ensureAnkiScope(db, CONFIG, 'Juan').namespace, CONFIG.targetDeck)).toBe(true);
+});
+
 it('actualizar reescribe los campos en Anki y deja de avisar', async () => {
   const noteId = await convertThenEdit();
   const namespace = ensureAnkiScope(db, CONFIG, 'Juan').namespace;

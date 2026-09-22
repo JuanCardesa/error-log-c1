@@ -136,10 +136,13 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
       throw new AnkiError('ANKI_RESPUESTA_RARA', 'No se ha podido verificar una tarjeta para este error. Vuelve a intentarlo.');
     }
     if (await api.profile() !== profile) throw new AnkiError('ANKI_CONFIG', 'El perfil cambió antes de verificar la nota. Vuelve a intentarlo.');
+    // Recuperar una identidad no implica que sus campos coincidan con el error actual.
+    // La huella describe lo leído, también tras deshacer o reintentar un timeout.
+    const confirmedFields = Object.fromEntries(ERRORLOG_FIELDS.map((name) => [name, confirmed.fields[name]?.value ?? '']));
     linkAnkiNote(db, errorId, {
       noteId, model: confirmed.modelName, label: noteLabel(confirmed), tags: confirmed.tags,
       category: categoryOf(confirmed.tags), firstSeenAt: now.toISOString(), lastSeenAt: now.toISOString(),
-    }, now.toISOString(), contentHash(note.fields));
+    }, now.toISOString(), contentHash(confirmedFields));
     return noteId;
   });
 }
