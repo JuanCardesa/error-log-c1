@@ -36,11 +36,13 @@ export function fakeCollection(now = Date.now()): FakeAnki {
     [21, note({ noteId: 21, cards: [11], tags: ['cat::collocation'], fields: { Front: { value: 'make an effort', order: 0 } } })],
     [22, note({ noteId: 22, cards: [12], tags: ['cat::noun_preposition'], fields: { Front: { value: 'reason for', order: 0 } } })],
   ]);
-  // Dos fallos y dos aciertos, repartidos en dias distintos dentro de la ventana corta.
+  // Dos fallos y dos aciertos en dias distintos de la ventana corta. Los dos fallos son
+  // de clase distinta a proposito: uno es un lapso (tipo 1, carta ya aprendida) y el otro
+  // un «Again» de los pasos de aprendizaje (tipo 0), que no es lo mismo.
   fake.reviews = {
-    '10': [review({ id: now - DAY_MS, ease: 1 }), review({ id: now - 2 * DAY_MS, ease: 3 })],
-    '11': [review({ id: now - 3 * DAY_MS, ease: 1 })],
-    '12': [review({ id: now - 4 * DAY_MS, ease: 3 })],
+    '10': [review({ id: now - DAY_MS, ease: 1, type: 1 }), review({ id: now - 2 * DAY_MS, ease: 3, type: 1 })],
+    '11': [review({ id: now - 3 * DAY_MS, ease: 1, type: 0 })],
+    '12': [review({ id: now - 4 * DAY_MS, ease: 3, type: 1 })],
   };
   return fake;
 }

@@ -23,7 +23,7 @@ test('Q7 está disponible en CSV y en el dump aunque no se haya sincronizado', a
   await expect(page.getByRole('link', { name: /Repasos y fallos en Anki/ })).toBeVisible();
   const response = await request.get('/exportar/q7.csv');
   expect(response.ok()).toBe(true);
-  expect(await response.text()).toContain('categoria,repasos,fallos,cartas_distintas,pct_aciertos');
+  expect(await response.text()).toContain('categoria,repasos,fallos,lapsos,fallos_aprendiendo,cartas_distintas,pct_aciertos');
   const dump = await (await request.get('/exportar/dump.json')).json() as { anki: { reviews: unknown[] }; queries: { q7: { accuracy: number | null } } };
   expect(dump.anki.reviews).toEqual([]);
   expect(dump.queries.q7.accuracy).toBeNull();

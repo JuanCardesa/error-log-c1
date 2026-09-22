@@ -181,7 +181,12 @@ export const ankiSync = sqliteTable('anki_sync', {
   targetDeck: text('target_deck').notNull(),
   lastSyncedAt: text('last_synced_at'),
   notesSeen: integer('notes_seen').notNull().default(0),
-}, (table) => [check('anki_sync_singleton', sql`${table.id} = 1`)]);
+  /** Hora a la que empieza el dia en Anki. Nullable: se sabe tras la primera sincronizacion. */
+  rolloverHour: integer('rollover_hour'),
+}, (table) => [
+  check('anki_sync_singleton', sql`${table.id} = 1`),
+  check('anki_sync_rollover', sql`${table.rolloverHour} IS NULL OR ${table.rolloverHour} BETWEEN 0 AND 23`),
+]);
 
 export const writingPiece = sqliteTable(
   'writing_piece',

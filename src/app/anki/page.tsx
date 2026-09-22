@@ -56,7 +56,8 @@ export default async function AnkiPage({
         <WindowSwitch current={windowDays} basePath="/anki" />
       </header>
 
-      <SyncPanel message={status.message} lastSyncedAt={anki.sync?.lastSyncedAt ?? null} deck={ankiConfig().sourceDeck} />
+      <SyncPanel message={status.message} lastSyncedAt={anki.sync?.lastSyncedAt ?? null}
+        deck={ankiConfig().sourceDeck} rolloverHour={anki.sync?.rolloverHour ?? null} />
       <h2>Cola de conversión</h2>
       <p className={shared.note}>La conversión incluye tarjetas verificadas y marcas manuales. Marcar a mano no comprueba que exista la tarjeta. Deshacer devuelve el error a la cola y conserva la nota en Anki.</p>
 

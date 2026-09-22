@@ -4,6 +4,7 @@ import { unwrap, type AnkiRequest, type Transport } from '../connect';
 import { ERRORLOG_FIELDS } from '../create';
 import type { AnkiDataset } from '../../domain/types';
 import { reconcile } from '../reconcile';
+import { DEFAULT_ROLLOVER_HOUR } from '../schedule';
 
 export const CONFIG = ankiConfig({});
 export const NOW = new Date('2026-09-22T12:00:00Z');
@@ -19,7 +20,7 @@ export function note(overrides: Partial<AnkiNote> = {}): AnkiNote {
 }
 
 export function ankiFixture(): AnkiDataset {
-  const snapshot = reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review()] }, missingNoteIds: [] }, { cards: [], notes: [], reviews: [], sync: null }, NOW);
+  const snapshot = reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review()] }, missingNoteIds: [] }, { cards: [], notes: [], reviews: [], sync: null }, NOW, DEFAULT_ROLLOVER_HOUR);
   return { ...snapshot, sync: null };
 }
 
@@ -46,6 +47,8 @@ export class FakeAnki {
   models: string[] = [];
   fields = ERRORLOG_FIELDS;
   disconnected = false;
+  /** Forma anidada de `getPreferences`; `rolloverFrom` tolera las otras y cae al 4. */
+  rollover = 4;
   failAction: string | null = null;
   added = 0;
   afterAddFails = false;
@@ -66,6 +69,7 @@ export class FakeAnki {
       case 'version': return 6;
       case 'getActiveProfile': return this.profile;
       case 'deckNames': return this.decks;
+      case 'getPreferences': return { scheduling: { rollover: this.rollover }, collapseTime: 1200 };
       case 'findCards': return this.cards.map((value) => value.cardId);
       case 'findNotes': {
         const query = String(params['query']);

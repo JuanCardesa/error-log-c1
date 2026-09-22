@@ -133,6 +133,7 @@ export interface AnkiSyncRow {
   readonly targetDeck: string;
   readonly lastSyncedAt: string | null;
   readonly notesSeen: number;
+  readonly rolloverHour: number | null;
 }
 
 export interface AnkiDataset {

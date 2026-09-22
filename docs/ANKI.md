@@ -38,6 +38,13 @@ los puntos que podían causar pérdidas o duplicados:
 - **Tipos de revisión.** Se aceptan tipos 0–3 con botón 1–4; se excluyen manual (4),
   reprogramado (5) y registros sin respuesta. Intervalos negativos del revlog se guardan
   tal cual: representan segundos, no un número negativo de días.
+- **Lapso frente a fallo aprendiendo.** Un «Again» en una carta ya graduada (tipo 1) es un
+  lapso: la sabías y se te fue, y es lo único comparable con un error de práctica. Un
+  «Again» en los pasos de aprendizaje o reaprendizaje (tipos 0 y 2) es estar montándola
+  todavía, que es lo normal en una tarjeta recién creada. Anki hace la misma distinción:
+  su contador `lapses` solo sube con el tipo 1. Contarlos juntos inflaba los «fallos» justo
+  cuando el log funciona, que es cuando más tarjetas nuevas hay. Se muestran por separado
+  y el cruce con práctica usa solo los lapsos.
 - **Resultados interpretables.** Repasos y cartas distintas tienen contadores separados.
   Las categorías de Anki son aproximaciones derivadas de etiquetas. El cruce con práctica
   muestra cantidades y denominadores separados, sin alterar el motor de decisión.
@@ -64,8 +71,17 @@ copia verificada en `data/backups/`, y no migra si esa copia falla; no hay migra
 inversas, así que volver atrás es restaurar esa copia. A la copia previa no se le exige el
 esquema nuevo —por definición no lo tiene—, pero `pnpm db:backup` sí lo exige entero:
 media migración no la detectan `integrity_check` ni `foreign_key_check`. `anki_sync` tiene una fila y no
-necesita `last_review_id`, porque no descarta registros por antigüedad. El día de los
-repasos se guarda según el calendario local del servidor, consistente con la app.
+necesita `last_review_id`, porque no descarta registros por antigüedad.
+
+El día de un repaso es el **día de Anki**, no el civil. Anki reparte por su «next day
+starts at» —4:00 por defecto—, así que un repaso de la 1:30 pertenece al día anterior:
+fecharlo por medianoche desplazaba un día entero cada vez que se estudia de noche y los
+recuentos no cuadraban con los del propio Anki. La hora sale de `getPreferences` y se
+guarda en `anki_sync.rollover_hour` (migración `0003`) para poder enseñarla en la
+pantalla. Esa respuesta no tiene la misma forma en todas las versiones: se busca donde
+suele estar y, si no aparece nada utilizable o la acción no existe en esa versión de
+AnkiConnect, se usa el 4 documentado en vez de inventar un cero que nadie configuró. Que
+falte `getPreferences` no impide sincronizar; un fallo de conexión sí se propaga.
 
 El tipo de nota nuevo tiene `ErrorLogId`, `Prompt`, `MyAnswer`, `Correct`, `Rule`, `Meta`.
 Solo se muestran los últimos cinco en la tarjeta. Los campos se escapan como texto

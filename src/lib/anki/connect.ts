@@ -18,7 +18,7 @@ export type Transport = (body: AnkiRequest) => Promise<unknown>;
 
 /** Repetirlas no cambia la coleccion. Lo que no este aqui se trata como escritura. */
 const READ_ACTIONS: ReadonlySet<string> = new Set([
-  'version', 'getActiveProfile', 'deckNames', 'modelNames', 'modelFieldNames',
+  'version', 'getActiveProfile', 'deckNames', 'modelNames', 'modelFieldNames', 'getPreferences',
   'findCards', 'findNotes', 'notesInfo', 'cardsInfo', 'getReviewsOfCards', 'multi',
 ]);
 

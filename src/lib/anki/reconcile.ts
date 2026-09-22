@@ -2,7 +2,7 @@ import type { AnkiCard, AnkiNote, AnkiReview } from './api';
 import { AnkiError } from './connect';
 import { categoryOf } from './categories';
 import type { AnkiDataset } from '../domain/types';
-import { toIsoDate } from '../time/dates';
+import { ankiDay } from './schedule';
 
 export interface AnkiSnapshot {
   readonly cards: readonly AnkiCard[];
@@ -22,9 +22,11 @@ export function noteLabel(note: AnkiNote): string {
 export interface AnkiReconciliation extends Omit<AnkiDataset, 'sync'> {
   readonly missingNoteIds: readonly number[];
   readonly newReviews: number;
+  /** El corte con el que se han fechado estos repasos, para poder explicarlo despues. */
+  readonly rolloverHour: number;
 }
 
-export function reconcile(snapshot: AnkiSnapshot, current: AnkiDataset, now: Date): AnkiReconciliation {
+export function reconcile(snapshot: AnkiSnapshot, current: AnkiDataset, now: Date, rolloverHour: number): AnkiReconciliation {
   const oldNotes = new Map(current.notes.map((note) => [note.noteId, note]));
   const cards = snapshot.cards.map((card) => ({
     cardId: card.cardId, noteId: card.note, deck: card.deckName, templateOrd: card.ord,
@@ -46,12 +48,12 @@ export function reconcile(snapshot: AnkiSnapshot, current: AnkiDataset, now: Dat
       seen.add(review.id);
       reviews.push({
         reviewId: review.id, cardId: card.cardId, reviewedAt: new Date(review.id).toISOString(),
-        reviewDate: toIsoDate(new Date(review.id)), ease: review.ease, interval: review.ivl,
+        reviewDate: ankiDay(new Date(review.id), rolloverHour), ease: review.ease, interval: review.ivl,
         lastInterval: review.lastIvl, factor: review.factor, timeMs: review.time, type: review.type,
       });
     }
   }
   const oldIds = new Set(current.reviews.map((review) => review.reviewId));
-  return { notes, cards, reviews, missingNoteIds: snapshot.missingNoteIds,
+  return { notes, cards, reviews, missingNoteIds: snapshot.missingNoteIds, rolloverHour,
     newReviews: reviews.filter((review) => !oldIds.has(review.reviewId)).length };
 }

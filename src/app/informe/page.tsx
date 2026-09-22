@@ -55,7 +55,9 @@ export default async function InformePage({
 
       <section className={shared.panel} aria-labelledby="anki-comparison-heading">
         <h2 id="anki-comparison-heading">Práctica y repaso en Anki</h2>
-        <p className={shared.note}>Errores registrados frente a respuestas «Again» en la misma ventana.
+        <p className={shared.note}>Errores registrados frente a <strong>lapsos</strong> en la misma ventana: un
+          «Again» en una carta ya aprendida, que es lo comparable con un error de práctica. Los «Again» de los
+          pasos de aprendizaje van aparte, porque en una tarjeta recién creada son lo normal.
           Son recuentos con denominadores distintos; no son tasas comparables ni cambian la decisión del informe.
           La categoría de Anki se propone a partir de sus etiquetas.</p>
         {anki.sync?.lastSyncedAt == null ? <p className={shared.empty}>Todavía no has sincronizado Anki. Puedes hacerlo en la pestaña Anki.</p>
@@ -64,9 +66,9 @@ export default async function InformePage({
             {comparison.length === 0 ? <p>Sin actividad en esta ventana.</p> : <div className={shared.tableWrap}>
               <table className={shared.table}>
                 <caption className="sr-only">Errores de práctica y fallos en Anki por categoría</caption>
-                <thead><tr><th scope="col">Categoría</th><th scope="col">Errores de práctica</th><th scope="col">Fallos en Anki</th><th scope="col">Repasos en Anki</th></tr></thead>
+                <thead><tr><th scope="col">Categoría</th><th scope="col">Errores de práctica</th><th scope="col">Lapsos en Anki</th><th scope="col">Fallos aprendiendo</th><th scope="col">Repasos en Anki</th></tr></thead>
                 <tbody>{comparison.map((row) => <tr key={row.category ?? 'SIN_MAPEAR'}>
-                  <td>{row.category ?? 'Sin categoría asignada'}</td><td>{row.practiceErrors}</td><td>{row.ankiFailures}</td><td>{row.ankiReviews}</td>
+                  <td>{row.category ?? 'Sin categoría asignada'}</td><td>{row.practiceErrors}</td><td>{row.ankiLapses}</td><td>{row.ankiLearningFailures}</td><td>{row.ankiReviews}</td>
                 </tr>)}</tbody>
               </table>
             </div>}

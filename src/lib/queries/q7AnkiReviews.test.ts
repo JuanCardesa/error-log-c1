@@ -51,8 +51,8 @@ it('cruza cantidades con denominadores separados, incluyendo Writing y práctica
     errors: [makeError({ sessionId: 1, category: 'PHRASAL_VERB' }), makeError({ sessionId: 1, category: 'PHRASAL_VERB' }), makeError({ sessionId: 2, category: 'REGISTRO' })],
   });
   expect(compareAnkiPractice(practice, ankiFixture(), options)).toEqual([
-    { category: 'PHRASAL_VERB', practiceErrors: 2, ankiFailures: 1, ankiReviews: 1 },
-    { category: 'REGISTRO', practiceErrors: 1, ankiFailures: 0, ankiReviews: 0 },
+    { category: 'PHRASAL_VERB', practiceErrors: 2, ankiLapses: 1, ankiLearningFailures: 0, ankiReviews: 1 },
+    { category: 'REGISTRO', practiceErrors: 1, ankiLapses: 0, ankiLearningFailures: 0, ankiReviews: 0 },
   ]);
   expect(compareAnkiPractice(makeDataset(), ankiFixture(), options)[0]?.practiceErrors).toBe(0);
 });
@@ -61,6 +61,6 @@ it('exporta el historial sin perder campos y CSV sin inventar una tasa vacía', 
   const dump = toJsonDump(practice, options, anki);
   expect(dump.anki).toEqual(anki);
   expect(dump.queries.q7.failures).toBe(1);
-  expect(toCsvExport('q7', practice, options, anki)).toContain('PHRASAL_VERB,1,1,1,0');
+  expect(toCsvExport('q7', practice, options, anki)).toContain('PHRASAL_VERB,1,1,1,0,1,0');
   expect(q7ToCsv(q7AnkiReviews(EMPTY_ANKI_DATASET, options)).trim().split('\r\n')).toHaveLength(1);
 });

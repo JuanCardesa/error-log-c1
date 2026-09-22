@@ -46,12 +46,16 @@ test('sincroniza, refleja los repasos y no los duplica al repetir', async ({ pag
   await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
   await expect(panel.getByRole('status')).toContainText('Sincronizado: 4 repasos nuevos; 4 en el historial.');
 
-  // Los cuatro repasos del doble: dos fallos, dos aciertos, tres cartas distintas.
+  // Cuatro repasos: un lapso, un «Again» aprendiendo, dos aciertos, tres cartas distintas.
   const reviews = page.getByRole('region', { name: 'Repaso en Anki' });
-  await expect(reviews.getByRole('term').filter({ hasText: 'Repasos' }).locator('+ dd')).toHaveText('4');
-  await expect(reviews.getByRole('term').filter({ hasText: 'Fallos' }).locator('+ dd')).toHaveText('2');
-  await expect(reviews.getByRole('term').filter({ hasText: 'Cartas distintas' }).locator('+ dd')).toHaveText('3');
+  const stat = (name: string) => reviews.getByRole('term').filter({ hasText: new RegExp(`^${name}$`) }).locator('+ dd');
+  await expect(stat('Repasos')).toHaveText('4');
+  await expect(stat('Lapsos')).toHaveText('1');
+  await expect(stat('Fallos aprendiendo')).toHaveText('1');
+  await expect(stat('Cartas distintas')).toHaveText('3');
   await expect(reviews.getByText('deal with')).toBeVisible();
+  // El corte de día sale de la colección, y se dice cuál se ha usado.
+  await expect(panel.getByText('Día de Anki: empieza a las 4:00', { exact: false })).toBeVisible();
 
   // Repetir sin estudiar no inventa repasos nuevos ni duplica el historial.
   await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
@@ -88,17 +92,17 @@ test('lo sincronizado sale en el CSV de Q7 y en el volcado JSON', async ({ page,
   const csv = await request.get('/exportar/q7.csv');
   expect(csv.ok()).toBe(true);
   const text = await csv.text();
-  expect(text).toContain('categoria,repasos,fallos,cartas_distintas,pct_aciertos');
+  expect(text).toContain('categoria,repasos,fallos,lapsos,fallos_aprendiendo,cartas_distintas,pct_aciertos');
   expect(text).toContain('PHRASAL_VERB');
   expect(text).toContain('COLOCACION');
 
   const dump = await (await request.get('/exportar/dump.json')).json() as {
     anki: { reviews: unknown[]; notes: unknown[] };
-    queries: { q7: { reviews: number; failures: number; accuracy: number | null } };
+    queries: { q7: { reviews: number; failures: number; lapses: number; learningFailures: number; accuracy: number | null } };
   };
   expect(dump.anki.reviews).toHaveLength(4);
   expect(dump.anki.notes).toHaveLength(3);
-  expect(dump.queries.q7).toMatchObject({ reviews: 4, failures: 2, accuracy: 50 });
+  expect(dump.queries.q7).toMatchObject({ reviews: 4, failures: 2, lapses: 1, learningFailures: 1, accuracy: 50 });
 });
 
 test('el informe cruza los fallos de Anki con los errores de práctica', async ({ page }) => {
@@ -109,6 +113,7 @@ test('el informe cruza los fallos de Anki con los errores de práctica', async (
   await page.goto('/informe');
   await expect(page.getByText('Todavía no has sincronizado Anki.', { exact: false })).toBeHidden();
   const table = page.getByRole('table', { name: /Errores de práctica y fallos en Anki/ });
+  await expect(table.getByRole('columnheader', { name: 'Lapsos en Anki' })).toBeVisible();
   await expect(table.getByRole('row').filter({ hasText: 'PHRASAL_VERB' })).toBeVisible();
 });
 
