@@ -177,23 +177,127 @@ export function parseImportedBatch(source: string, today = toIsoDate(new Date())
 
 export const IMPORT_TEMPLATE = 'Item\tEnunciado\tMi respuesta\tCorrecta\tCategoria\tRegla\n4\tThey called ___ the meeting.\tof\toff\tPHRASAL_VERB\tCall off significa cancelar; se escribe con doble f.';
 
-export const IMPORT_PROMPT = `Convierte las correcciones de ingles que pegue o adjunte como fotos o capturas de pantalla en errores para mi Error Log C1.
-Las imagenes pueden incluir el ejercicio, mis respuestas, anotaciones del profesor y el solucionario. Procesa una sola sesion de practica por tanda.
-Para leer las imagenes:
+export const IMPORT_PROMPT = `Convierte las correcciones de ingles que pegue o adjunte como fotos o capturas de pantalla en una sesion de practica para mi Error Log C1, incluyendo tanto los datos de la sesion como los errores cometidos.
+
+Las imagenes pueden incluir el ejercicio, mis respuestas, anotaciones del profesor y el solucionario. Procesa una sola sesion de practica por tanda. Todos los errores incluidos en "errors" deben pertenecer a esa misma sesion.
+
+DATOS DE LA SESION
+
+La salida debe incluir un objeto "session" con estas claves:
+
+- date: fecha de la sesion en formato YYYY-MM-DD.
+- kind: tipo de practica, por ejemplo DRILL cuando sean ejercicios individuales o de un libro.
+- paper: paper del Cambridge C1 si corresponde. Si no corresponde o no consta, usa null.
+- part: parte concreta del paper si corresponde. Si no corresponde o no consta, usa null.
+- source: origen de la practica, por ejemplo LIBRO cuando proceda de un libro.
+- sourceRef: referencia concreta de la fuente, pagina, unidad, test o identificador si consta. Si no consta, usa null.
+- itemsTotal: numero total de ejercicios o items realizados en esa sesion.
+- itemsCorrect: numero total de items correctos.
+- timed: true solo si consta que la practica se hizo con tiempo o bajo limite de tiempo; en caso contrario, false si se ha indicado expresamente que no fue cronometrada.
+
+Reglas para los datos de la sesion:
+- Conserva exactamente los datos de sesion que yo proporcione.
+- No inventes una pagina, unidad, paper, part, sourceRef ni ningun otro dato que no aparezca.
+- No deduzcas paper o part solo por el tipo de ejercicio si no se ha indicado claramente.
+- No inventes itemsTotal ni itemsCorrect a partir de una imagen parcial.
+- Calcula itemsCorrect a partir de itemsTotal y los errores SOLO cuando este claro que se han proporcionado todos los ejercicios de la sesion y todos los errores cometidos.
+- Si yo proporciono explicitamente itemsTotal o itemsCorrect, conserva esos valores y no los modifiques por tu cuenta.
+- No inventes datos sobre tiempo de realizacion.
+- Si falta un dato opcional de la sesion, usa null cuando corresponda.
+- No mezcles ejercicios pertenecientes a sesiones diferentes.
+
+LECTURA DE LOS EJERCICIOS Y CORRECCIONES
+
 - Relaciona cada respuesta con su numero de ejercicio y su enunciado. Conserva huecos, puntuacion y ortografia; no corrijas mi respuesta al transcribirla.
-- Distingue el texto impreso, mi respuesta y la correccion. Usa el solucionario o una correccion visible para correctAnswer; no presentes una solucion que hayas deducido como si viniera del solucionario.
-- Incluye solo los errores que yo señale, que esten marcados como incorrectos o que puedas identificar comparando mi respuesta legible con una correccion fiable. No conviertas todos los ejercicios de la foto en errores.
+- Distingue el texto impreso, mi respuesta y la correccion.
+- Usa el solucionario o una correccion visible para correctAnswer; no presentes una solucion que hayas deducido como si viniera del solucionario.
+- Incluye solo los errores que yo señale, que esten marcados como incorrectos o que puedas identificar comparando mi respuesta legible con una correccion fiable.
+- No conviertas todos los ejercicios de la foto en errores.
 - Si un dato no se lee con claridad, dejalo como "" para revisarlo. No rellenes palabras borrosas por intuicion ni uses textos como "ilegible" o "pendiente" en su lugar.
 - Si no puedes identificar que ejercicios he fallado, pide mis respuestas, el solucionario o una captura mas clara antes de generar el bloque.
-- Si varias capturas se solapan, incluye cada error una sola vez. Comprueba que no mezclas numeros de ejercicios de paginas distintas.
-Cuando tengas informacion suficiente, devuelve solo un array JSON, sin explicaciones externas, con un objeto por error y estas claves:
-itemRef, prompt, myAnswer, correctAnswer, category, ruleNote, subcategory.
-Todos los valores son texto. Conserva el enunciado, mi respuesta y la correccion tal como aparecen. Si no consta mi respuesta o el numero de item, usa "". No inventes respuestas ni errores. Si falta una correccion fiable, deja correctAnswer vacio para que yo lo complete.
-category debe ser una de: ${CATEGORIES.join(', ')}.
-ruleNote: explica en español, de forma breve y util, la regla que evita repetir el error (minimo 15 caracteres, distinta de la respuesta). Si no puedes justificarla, dejala vacia para que yo la complete. subcategory es opcional y puede ser "".
-Incluye cause y confidence SOLO si yo las he indicado: cause admite ${CAUSES.join(', ')}; confidence admite ${CONFIDENCES.join(', ')}. No deduzcas mi estado mental por una respuesta incorrecta. Si faltan, el formulario propondra DESCONOCIMIENTO y DUDABA y yo los revisare.
-No marques tarjetas como añadidas ni inventes datos sobre tiempo.
-Agrupa como maximo ${String(MAX_IMPORT_ROWS)} errores. No incluyas ejemplos: procesa solo mis correcciones.
+- Si varias capturas se solapan, incluye cada error una sola vez.
+- Comprueba que no mezclas numeros de ejercicios de paginas, actividades o sesiones distintas.
+- Dos actividades distintas pueden tener el mismo numero de ejercicio. En ese caso, conserva el itemRef que aparece en cada actividad y utiliza el prompt completo para diferenciarlas.
 
-Mis correcciones (texto o imagenes adjuntas):
+ERRORES
+
+Cada objeto dentro de "errors" debe contener estas claves:
+
+itemRef, prompt, myAnswer, correctAnswer, category, ruleNote, subcategory.
+
+Todos los valores de cada error son texto.
+
+- itemRef: numero, letra o identificador del ejercicio tal como aparece.
+- prompt: conserva el enunciado necesario para entender el error. Incluye las opciones o instrucciones cuando sean relevantes para interpretar la respuesta.
+- myAnswer: conserva exactamente mi respuesta, incluida su ortografia original.
+- correctAnswer: conserva exactamente la correccion fiable mostrada en el solucionario o correccion.
+- category: clasifica el error usando exclusivamente una de estas categorias: ${CATEGORIES.join(', ')}.
+- ruleNote: explica en español, de forma breve, concreta y util, la regla, colocacion, estructura o criterio que me ayudara a no repetir el error. Debe tener al menos 15 caracteres y no limitarse a repetir correctAnswer.
+- subcategory: clasificacion mas especifica del error cuando sea util. Puede ser "".
+
+Si no consta mi respuesta o el numero de item, usa "".
+No inventes respuestas ni errores.
+Si falta una correccion fiable, deja correctAnswer como "" para que yo lo complete.
+Si no puedes justificar con seguridad una regla util para ruleNote, dejala como "".
+
+CAUSE Y CONFIDENCE
+
+Incluye cause y confidence en un error SOLO si yo los he indicado expresamente para ese error.
+
+cause admite exclusivamente:
+${CAUSES.join(', ')}.
+
+confidence admite exclusivamente:
+${CONFIDENCES.join(', ')}.
+
+No deduzcas mi estado mental por una respuesta incorrecta.
+No deduzcas cause ni confidence basandote en el tipo de fallo.
+Si faltan, no incluyas esas claves; el formulario propondra DESCONOCIMIENTO y DUDABA y yo los revisare.
+
+FORMATO DE SALIDA
+
+Cuando tengas informacion suficiente, devuelve exclusivamente JSON valido, sin Markdown, sin bloques de codigo y sin explicaciones antes o despues.
+
+La raiz debe ser SIEMPRE un objeto con exactamente esta estructura general:
+
+{
+  "session": {
+    "date": "YYYY-MM-DD",
+    "kind": "...",
+    "paper": null,
+    "part": null,
+    "source": "...",
+    "sourceRef": null,
+    "itemsTotal": 0,
+    "itemsCorrect": 0,
+    "timed": false
+  },
+  "errors": [
+    {
+      "itemRef": "",
+      "prompt": "",
+      "myAnswer": "",
+      "correctAnswer": "",
+      "category": "",
+      "ruleNote": "",
+      "subcategory": ""
+    }
+  ]
+}
+
+Respeta los tipos JSON:
+- date, kind y source son strings.
+- paper, part y sourceRef pueden ser string o null.
+- itemsTotal e itemsCorrect son numeros, no strings.
+- timed es booleano, no string.
+- errors es un array.
+- Los campos internos de cada error son strings, salvo las claves opcionales cause y confidence, que tambien son strings.
+
+No devuelvas solamente el array "errors": la sesion debe incluirse siempre.
+No marques tarjetas como añadidas.
+No inventes identificadores internos ni datos sobre tiempo.
+Agrupa como maximo ${String(MAX_IMPORT_ROWS)} errores dentro de una misma sesion.
+No incluyas ejemplos inventados ni ejercicios correctos dentro de "errors": procesa solo mi sesion y mis correcciones.
+
+Datos de la sesion y correcciones (texto o imagenes adjuntas):
 `;
