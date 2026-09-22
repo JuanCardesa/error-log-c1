@@ -40,6 +40,15 @@ describe('configuración y transporte local', () => {
     expect(ankiConfig({ ERRORLOG_E2E: '1' }).statusTtlMs).toBe(0);
     expect(ankiConfig({ ERRORLOG_E2E: '1', ERRORLOG_ANKI_FAKE_URL: 'http://127.0.0.1:8769/' }).statusTtlMs).toBe(0);
   });
+  it('acepta ajustar el lote y el presupuesto, y rechaza valores imposibles', () => {
+    expect(ankiConfig({})).toMatchObject({ batchSize: 250, syncBudgetMs: 180_000 });
+    expect(ankiConfig({ ANKI_BATCH_SIZE: '500', ANKI_SYNC_BUDGET_MS: '60000' }))
+      .toMatchObject({ batchSize: 500, syncBudgetMs: 60_000 });
+    expect(ankiConfig({ ANKI_BATCH_SIZE: '' }).batchSize).toBe(250);
+    for (const value of ['0', '-1', '2.5', 'muchas', '99999']) {
+      expect(() => ankiConfig({ ANKI_BATCH_SIZE: value })).toThrow('ANKI_BATCH_SIZE');
+    }
+  });
   it('permite declarar a mano el corte de día, que AnkiConnect no expone', () => {
     expect(ankiConfig({}).rolloverHour).toBeUndefined();
     expect(ankiConfig({ ANKI_ROLLOVER_HOUR: '' }).rolloverHour).toBeUndefined();

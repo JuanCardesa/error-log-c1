@@ -9,7 +9,37 @@ export interface AnkiConfig {
   readonly rolloverHour?: number;
   /** Cuanto vale el estado de conexion antes de volver a preguntar. Cero en las pruebas. */
   readonly statusTtlMs: number;
+  /** Cartas por peticion al leer la coleccion. */
+  readonly batchSize: number;
+  /** Tope de tiempo para una sincronizacion entera. */
+  readonly syncBudgetMs: number;
   readonly disabled: boolean;
+}
+
+/**
+ * Medido recorriendo una coleccion de 3000 cartas: con lotes de 100 son 4260 ms, con 250
+ * son 2579, con 500 son 2535 y con 1000 son 2387. Cada peticion paga unos 30 ms fijos del
+ * bucle de Qt de AnkiConnect, asi que los lotes pequenos se van en esa espera; a partir de
+ * 250 la curva se aplana y lo unico que crece es la memoria por respuesta, que ya son
+ * 2,87 MB por lote porque `cardsInfo` devuelve pregunta y respuesta renderizadas.
+ */
+const BATCH_SIZE = 250;
+
+/**
+ * Tope para la sincronizacion entera. Con la coleccion medida son 2,6 s y con 10 000
+ * cartas rondarian 8,6 s, asi que tres minutos solo se alcanzan si Anki no responde:
+ * antes que dejar la pantalla girando sin final, se corta y se dice por que.
+ */
+const SYNC_BUDGET_MS = 180_000;
+
+function positiveInt(env: Readonly<Record<string, string | undefined>>, name: string, fallback: number, max: number): number {
+  const raw = env[name]?.trim();
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1 || value > max) {
+    throw new Error(`${name} debe ser un entero entre 1 y ${String(max)}.`);
+  }
+  return value;
 }
 
 /**
@@ -53,6 +83,8 @@ export function ankiConfig(env: Readonly<Record<string, string | undefined>> = p
     apiKey: env['ANKI_CONNECT_API_KEY'],
     ...(rollover !== undefined && rollover !== '' ? { rolloverHour: Number(rollover) } : {}),
     statusTtlMs: demo || e2e ? 0 : STATUS_TTL_MS,
+    batchSize: positiveInt(env, 'ANKI_BATCH_SIZE', BATCH_SIZE, 2000),
+    syncBudgetMs: positiveInt(env, 'ANKI_SYNC_BUDGET_MS', SYNC_BUDGET_MS, 3_600_000),
     // Sin doble inyectado, la demo y los e2e no leen ni escriben ninguna colección.
     disabled: (demo || e2e) && fakeUrl === undefined,
   };

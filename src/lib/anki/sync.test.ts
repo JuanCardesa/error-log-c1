@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { createDb, type Db } from '../db/client';
 import { migrate } from '../db/migrate';
@@ -28,6 +28,7 @@ it('sincroniza por lotes, incluye submazos y cartas nuevas, y no crea mazos al l
   expect(db.$client.prepare('PRAGMA foreign_key_check').all()).toEqual([]);
   expect(db.$client.pragma('integrity_check', { simple: true })).toBe('ok');
   expect(batches([1, 2, 3], 2)).toEqual([[1, 2], [3]]);
+  expect(fake.calls.filter((call) => call.action === 'multi')).toHaveLength(1);
 });
 it('fecha los repasos con el corte de día de Anki, no con la medianoche civil', async () => {
   // 00:30 local: con corte a las 4 pertenece al día anterior; con corte a 0, al mismo.
@@ -222,6 +223,35 @@ it('distingue el desfase de una restauración del ruido de reloj', () => {
   expect(notePredatesError(at - 60_000, created)).toBe(false);
   expect(notePredatesError(at - 86_400_000, created)).toBe(true);
   expect(notePredatesError(at, 'fecha rara')).toBe(false);
+});
+
+it('trocea la lectura con el tamaño de lote configurado', async () => {
+  fake.cards = Array.from({ length: 7 }, (_, i) => card({ cardId: 10 + i, note: 20 }));
+  fake.reviews = {};
+  await syncAnki(db, fake.transport, NOW, { ...CONFIG, batchSize: 3 });
+  const lotes = fake.calls.filter((call) => call.action === 'multi')
+    .map((call) => ((call.params['actions'] as { params: { cards: number[] } }[])[0]!).params.cards.length);
+  expect(lotes).toEqual([3, 3, 1]);
+  expect(loadAnkiDataset(db).cards).toHaveLength(7);
+});
+
+it('se rinde con explicación si la lectura entera se pasa de tiempo, sin guardar nada', async () => {
+  await syncAnki(db, fake.transport, NOW, CONFIG);
+  const before = loadAnkiDataset(db);
+  fake.cards = [card(), card({ cardId: 11, note: 20 })];
+
+  // Reloj que avanza un minuto por consulta: el presupuesto se agota entre lotes, que es
+  // donde se comprueba. Con tiempos reales el doble responde antes de que avance el reloj.
+  let clock = Date.now();
+  const spy = vi.spyOn(Date, 'now').mockImplementation(() => (clock += 60_000));
+  try {
+    const failed = syncAnki(db, fake.transport, NOW, { ...CONFIG, batchSize: 1, syncBudgetMs: 30_000 });
+    await expect(failed).rejects.toMatchObject({ code: 'ANKI_LENTO' });
+    await expect(failed).rejects.toThrow('ANKI_SYNC_BUDGET_MS');
+  } finally { spy.mockRestore(); }
+
+  // El corte ocurre antes de escribir: el espejo se queda como estaba.
+  expect(loadAnkiDataset(db)).toEqual(before);
 });
 
 it('los errores de red y snapshots incompletos no cambian nada en SQLite', async () => {

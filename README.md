@@ -218,6 +218,8 @@ Configuración opcional del servidor (variables de entorno):
 | `ANKI_TARGET_DECK` | `<mazo origen>::Error Log` |
 | `ANKI_CONNECT_API_KEY` | sin clave; configúrala si tu AnkiConnect la requiere |
 | `ANKI_ROLLOVER_HOUR` | sin declarar; se supone `4` |
+| `ANKI_BATCH_SIZE` | `250` cartas por petición |
+| `ANKI_SYNC_BUDGET_MS` | `180000`, tope de una sincronización entera |
 
 `ANKI_ROLLOVER_HOUR` es la hora a la que empieza el día en tu colección («next day starts
 at» en las preferencias de Anki). Los repasos se agrupan por ese corte, no por medianoche:

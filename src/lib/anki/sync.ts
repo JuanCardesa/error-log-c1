@@ -32,7 +32,7 @@ export async function withAnkiLock<T>(db: Db, operation: () => Promise<T>): Prom
   finally { if (locks.get(db) === current) locks.delete(db); }
 }
 
-export function batches<T>(values: readonly T[], size = 250): T[][] {
+export function batches<T>(values: readonly T[], size: number): T[][] {
   const result: T[][] = [];
   for (let i = 0; i < values.length; i += size) result.push(values.slice(i, i + size));
   return result;
@@ -85,9 +85,24 @@ export async function syncAnki(db: Db, transport?: Transport, now = new Date(), 
     const rollover = await readRollover(api, config);
     // Incluir nuevas: una carta restablecida puede seguir teniendo historial.
     const ids = [...new Set(await api.findCards(`(${searchTerm('deck', config.sourceDeck)} OR ${searchTerm('deck', config.targetDeck)})`))];
+    /**
+     * Tope para la lectura entera, no solo por peticion. El plazo por lote acota cada
+     * llamada, pero una coleccion que responde despacio en todas podia dejar la pantalla
+     * girando sin final a la vista. Se comprueba entre lotes: no interrumpe una peticion
+     * en vuelo, pero el peor caso deja de ser indefinido.
+     */
+    const deadline = Date.now() + config.syncBudgetMs;
+    const outOfTime = (): boolean => Date.now() > deadline;
+    const giveUp = (): never => {
+      throw new AnkiError('ANKI_LENTO',
+        `La sincronización lleva más de ${String(Math.round(config.syncBudgetMs / 1000))} s y se ha detenido sin guardar nada. `
+        + 'Comprueba que Anki responde y vuelve a intentarlo; si tu colección es muy grande, sube ANKI_SYNC_BUDGET_MS.');
+    };
+
     const cards: AnkiCard[] = [];
     const reviews: Record<string, AnkiReview[]> = {};
-    for (const batch of batches(ids)) {
+    for (const batch of batches(ids, config.batchSize)) {
+      if (outOfTime()) giveUp();
       const snapshot = await api.cardSnapshot(batch);
       cards.push(...snapshot.cards);
       Object.assign(reviews, snapshot.reviews);
@@ -96,7 +111,8 @@ export async function syncAnki(db: Db, transport?: Transport, now = new Date(), 
     const noteIds = [...new Set([...cards.map((card) => card.note), ...linkedAnkiNotes(db)])];
     const notes: AnkiNote[] = [];
     const missingNoteIds: number[] = [];
-    for (const batch of batches(noteIds)) {
+    for (const batch of batches(noteIds, config.batchSize)) {
+      if (outOfTime()) giveUp();
       const found = await api.notesInfo(batch);
       found.forEach((note, index) => {
         if (note === null) missingNoteIds.push(batch[index]!);

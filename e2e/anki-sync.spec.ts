@@ -44,7 +44,9 @@ test('sincroniza, refleja los repasos y no los duplica al repetir', async ({ pag
 
   const panel = page.getByRole('region', { name: 'Conexión con Anki' });
   await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
-  await expect(panel.getByRole('status')).toContainText('Sincronizado: 4 repasos nuevos; 4 en el historial.');
+  await expect(panel.getByRole('status')).toContainText('Sincronizado: 4 repasos nuevos; 4 en el historial,');
+  // El aviso dice de cuanto se ha leido, para que el resultado sea proporcional.
+  await expect(panel.getByRole('status')).toContainText('de 3 cartas y 3 notas leídas');
 
   // Cuatro repasos: un lapso, un «Again» aprendiendo, dos aciertos, tres cartas distintas.
   const reviews = page.getByRole('region', { name: 'Repaso en Anki' });
@@ -59,7 +61,7 @@ test('sincroniza, refleja los repasos y no los duplica al repetir', async ({ pag
 
   // Repetir sin estudiar no inventa repasos nuevos ni duplica el historial.
   await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
-  await expect(panel.getByRole('status')).toContainText('Sincronizado: 0 repasos nuevos; 4 en el historial.');
+  await expect(panel.getByRole('status')).toContainText('Sincronizado: 0 repasos nuevos; 4 en el historial,');
 });
 
 test('un fallo de Anki se explica y el reintento posterior funciona', async ({ page, request }) => {

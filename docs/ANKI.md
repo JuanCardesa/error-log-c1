@@ -145,6 +145,22 @@ que hace la sincronización son 215 ms por lote de 250, así que la colección e
 unos 2,6 s y 10 000 cartas rondarían 8,6 s. El plazo de 60 s para lotes es holgura, no
 una necesidad: el riesgo real no era el tiempo sino el volumen.
 
+Recorriendo esa colección entera: con lotes de 100 son 4260 ms, con 250 son 2579, con
+500 son 2535 y con 1000 son 2387. Cada petición paga unos 30 ms fijos del bucle de Qt de
+AnkiConnect, así que los lotes pequeños se van en esa espera y a partir de 250 la curva
+se aplana; lo único que sigue creciendo es la memoria por respuesta. Por eso el tamaño
+por defecto se queda en 250, ahora con la medida detrás, y se puede ajustar con
+`ANKI_BATCH_SIZE` para colecciones muy distintas.
+
+**No hay barra de progreso ni botón de cancelar, y es a propósito.** La sincronización
+completa de esta colección son 2,6 s, y 10 000 cartas rondarían 8,6 s: para eso basta el
+botón en «Sincronizando…». Lo que sí hacía falta era acotar el caso patológico, cuando
+Anki no responde y cada lote agota su plazo y sus reintentos. `ANKI_SYNC_BUDGET_MS`
+—tres minutos por defecto— corta la lectura entre lotes y explica por qué, en vez de
+dejar la pantalla girando sin final a la vista. No interrumpe una petición en vuelo, pero
+el peor caso deja de ser indefinido. El aviso final dice cuántas cartas y notas se han
+leído, para que el resultado sea proporcional a lo que hay.
+
 Con 3000 cartas y 30 000 repasos, `reconcile` tarda 88 ms y guardar el espejo 1188 ms;
 antes de insertar por lotes eran 2768 ms. El recorrido que comprobaba la nota de cada
 carta era cuadrático y ahora usa un conjunto.

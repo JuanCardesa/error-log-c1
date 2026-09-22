@@ -19,7 +19,8 @@ export async function syncAnkiAction() {
   try {
     const result = await syncAnki(getDb());
     refreshAnki();
-    return { ok: true, message: `Sincronizado: ${String(result.newReviews)} repasos nuevos; ${String(result.reviews)} en el historial.` };
+    return { ok: true, message: `Sincronizado: ${String(result.newReviews)} repasos nuevos; `
+      + `${String(result.reviews)} en el historial, de ${String(result.cards)} cartas y ${String(result.notes)} notas leídas.` };
   } catch (error) { return { ok: false, message: ankiMessage(error) }; }
 }
 
