@@ -118,6 +118,35 @@ it('devuelve a la cola las notas borradas de verdad mientras quede alguna recono
   expect(getError(db, 3)).toMatchObject({ ankiNoteId: noteIds[2]!, ankiAdded: true });
 });
 
+it('reencuentra la nota por su campo cuando el tag de identidad se ha perdido', async () => {
+  const nid = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  const created = fake.notes.get(nid)!;
+  const identity = created.fields['ErrorLogId']!.value;
+
+  // «Borrar tags no usados», un renombrado o una edición a mano dejan la nota sin el tag.
+  fake.notes.set(nid, { ...created, tags: created.tags.filter((tag) => tag !== identity) });
+  unmarkAnkiAdded(db, 1);
+  expect(getError(db, 1)?.ankiNoteId).toBeNull();
+
+  // Sin la búsqueda por campo esto acababa en «duplicada» y sin forma de salir.
+  expect(await createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).toBe(nid);
+  expect(getError(db, 1)).toMatchObject({ ankiNoteId: nid, ankiAdded: true });
+  expect(fake.added).toBe(1);
+  const query = String(fake.calls.filter((call) => call.action === 'findNotes').at(-1)?.params['query']);
+  expect(query).toContain(`tag:"${identity}"`);
+  expect(query).toContain(`"ErrorLogId:${identity}"`);
+});
+
+it('la identidad no confunde a dos errores con prefijo común', async () => {
+  db.insert(errorRow).values({ id: 12, sessionId: 1, prompt: 'otro', myAnswer: 'x', correctAnswer: 'y',
+    cause: 'CONFUSION', category: 'COLOCACION', confidence: 'DUDABA',
+    ruleNote: 'Contrasta make con do según el sustantivo.' }).run();
+  const first = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  const second = await createAnkiNote(db, 12, fake.transport, NOW, CONFIG);
+  expect(second).not.toBe(first);
+  expect(fake.added).toBe(2);
+});
+
 it('los errores de red y snapshots incompletos no cambian nada en SQLite', async () => {
   await syncAnki(db, fake.transport, NOW, CONFIG);
   const before = loadAnkiDataset(db);

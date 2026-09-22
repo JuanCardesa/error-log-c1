@@ -74,6 +74,17 @@ export function ankiApi(transport: Transport) {
 }
 export type AnkiApi = ReturnType<typeof ankiApi>;
 
+const escapeSearch = (value: string): string =>
+  value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\*/g, '\\*').replace(/_/g, '\\_');
+
 export function searchTerm(kind: 'deck' | 'tag', value: string): string {
-  return `${kind}:"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\*/g, '\\*').replace(/_/g, '\\_')}"`;
+  return `${kind}:"${escapeSearch(value)}"`;
+}
+
+/**
+ * Búsqueda por campo. Verificado contra una colección real: la forma `"Campo:valor"`
+ * empareja, y los dos puntos del valor son literales dentro de las comillas.
+ */
+export function fieldTerm(field: string, value: string): string {
+  return `"${field}:${escapeSearch(value)}"`;
 }

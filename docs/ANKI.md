@@ -19,6 +19,12 @@ los puntos que podían causar pérdidas o duplicados:
   `ErrorLogId` y un tag identifican el error independientemente de su enunciado. Evita
   confundir dos errores con el mismo texto y permite recuperar una nota tras un timeout.
   Se comprueba el esquema de un tipo de nota ya existente y nunca se sobrescribe.
+  **Se busca por las dos vías**, tag y campo. Solo por el tag quedaba un estado sin
+  salida: si el tag se perdía —«borrar tags no usados», un renombrado, una edición a
+  mano— no se encontraba la nota, y `addNote` la rechazaba por duplicada precisamente
+  porque el primer campo es esa misma identidad. Ni crear ni vincular. El campo no se
+  puede perder sin editar la nota. La forma `"Campo:valor"` está verificada contra una
+  colección real: empareja, y los dos puntos del valor son literales entre comillas.
 - **Un vínculo de referencia.** `error_row.anki_note_id` referencia `anki_note`; no se
   duplica el enlace en `anki_note.error_id`. Una nota puede servir a más de un error.
   `ON DELETE SET NULL` se añadió a mano al SQL generado: Drizzle no lo emitió para el

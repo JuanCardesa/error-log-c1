@@ -3,7 +3,7 @@ import { ensureAnkiScope, linkAnkiNote } from '../db/ankiRepo';
 import { getError } from '../db/repo';
 import { generatesCard } from '../domain/enums';
 import type { ErrorRow } from '../domain/types';
-import { ankiApi, searchTerm } from './api';
+import { ankiApi, fieldTerm, searchTerm } from './api';
 import { ankiConfig, type AnkiConfig } from './config';
 import { AnkiError, httpTransport, withRetry, type Transport } from './connect';
 import { categoryOf } from './categories';
@@ -11,7 +11,20 @@ import { noteLabel } from './reconcile';
 import { withAnkiLock } from './sync';
 
 export const ERRORLOG_MODEL = 'Error Log C1';
-export const ERRORLOG_FIELDS = ['ErrorLogId', 'Prompt', 'MyAnswer', 'Correct', 'Rule', 'Meta'];
+export const ERRORLOG_ID_FIELD = 'ErrorLogId';
+export const ERRORLOG_FIELDS = [ERRORLOG_ID_FIELD, 'Prompt', 'MyAnswer', 'Correct', 'Rule', 'Meta'];
+
+/**
+ * La identidad vive en un tag y en el primer campo; se busca por las dos vias.
+ *
+ * Solo por el tag quedaba un estado sin salida: si el tag se pierde —renombrar tags,
+ * «borrar tags no usados», una edicion a mano—, no se encuentra la nota, y `addNote` la
+ * rechaza por duplicada precisamente porque el primer campo es esa misma identidad. Ni
+ * crear ni vincular, sin forma de salir. El campo no se puede perder sin editar la nota.
+ */
+export function identityQuery(identity: string): string {
+  return `(${searchTerm('tag', identity)} OR ${fieldTerm(ERRORLOG_ID_FIELD, identity)})`;
+}
 
 export function escapeAnkiHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -41,7 +54,7 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
     const profile = await api.profile();
     const state = ensureAnkiScope(db, config, profile);
     const note = noteForError(error, state.namespace, config.targetDeck);
-    const matches = await api.findNotes(searchTerm('tag', note.fields.ErrorLogId));
+    const matches = await api.findNotes(identityQuery(note.fields.ErrorLogId));
     if (matches.length > 1) throw new AnkiError('ANKI_ERROR', 'Hay varias notas con la identidad de este error. Revísalas en Anki antes de continuar.');
     let noteId = matches[0];
     if (noteId === undefined) {
