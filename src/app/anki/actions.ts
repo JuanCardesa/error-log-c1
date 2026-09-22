@@ -43,17 +43,21 @@ export async function updateAnkiAction(id: number) {
 }
 
 /** Sella la conversion. La fecha la pone el servidor: es un hecho, no un dato de entrada. */
-export async function markAddedAction(id: number): Promise<void> {
-  if (!Number.isSafeInteger(id) || id <= 0) return;
+export async function markAddedAction(id: number) {
+  if (!Number.isSafeInteger(id) || id <= 0) return { ok: false, message: 'Identificador de error inválido.' };
   const error = getError(getDb(), id);
-  if (error === null || !generatesCard(error.cause)) return;
+  if (error === null || !generatesCard(error.cause)) {
+    return { ok: false, message: 'Ese error no existe o su causa no genera tarjeta.' };
+  }
   markAnkiAdded(getDb(), id, new Date().toISOString());
   refreshAnki();
+  return { ok: true, message: 'Marcada a mano. No se ha comprobado que la tarjeta exista en Anki.' };
 }
 
 /** Deshacer, por si se marca de mas. Limpia tambien la fecha: hay un CHECK que lo exige. */
-export async function undoAddedAction(id: number): Promise<void> {
-  if (!Number.isSafeInteger(id) || id <= 0) return;
+export async function undoAddedAction(id: number) {
+  if (!Number.isSafeInteger(id) || id <= 0) return { ok: false, message: 'Identificador de error inválido.' };
   unmarkAnkiAdded(getDb(), id);
   refreshAnki();
+  return { ok: true, message: 'Devuelto a la cola. La nota sigue en Anki.' };
 }

@@ -17,10 +17,10 @@ async function control(request: APIRequestContext, body: { failAction?: string |
 function clearMirror(): void {
   const db = createDb(E2E_DB);
   try {
-    // Solo las conversiones verificadas salen de estos tests. Las marcas a mano de otros
-    // specs no llevan nota vinculada y se quedan como estaban.
+    // Conversiones verificadas y marcas a mano: ambas salen de estos tests, y el espejo
+    // entero. `report.spec.ts` marca a mano tambien, pero corre despues y parte de cero.
     db.$client.exec(`
-      UPDATE error_row SET anki_added = 0, anki_added_at = NULL WHERE anki_note_id IS NOT NULL;
+      UPDATE error_row SET anki_added = 0, anki_added_at = NULL, anki_content_hash = NULL;
       DELETE FROM anki_review; DELETE FROM anki_card; DELETE FROM anki_note; DELETE FROM anki_sync;
     `);
   } finally {
@@ -76,6 +76,15 @@ test('un fallo de Anki se explica y el reintento posterior funciona', async ({ p
   await expect(panel.getByRole('status')).toContainText('4 repasos nuevos');
 });
 
+test('marcar a mano avisa de lo que no comprueba, y el aviso no se pierde', async ({ page }) => {
+  await page.goto('/anki');
+  await page.getByRole('button', { name: 'Marcar a mano' }).first().click();
+  // El error deja la cola y aun asi se ve lo que ha pasado, y lo que no se ha comprobado.
+  await expect(page.getByText('No se ha comprobado que la tarjeta exista en Anki.', { exact: false })).toBeVisible();
+  const done = page.getByRole('region', { name: 'Convertidas recientemente' });
+  await expect(done.getByText('Marcada a mano').first()).toBeVisible();
+});
+
 test('Anki cerrado se explica sin fingir que no hay fallos', async ({ page, request }) => {
   await control(request, { disconnected: true });
   await page.goto('/anki');
@@ -122,9 +131,9 @@ test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', a
   const pending = page.getByRole('definition').nth(1);
   const before = Number(await pending.innerText());
 
-  // Se comprueba el resultado, no el aviso: al salir el error de la cola, la
-  // revalidacion desmonta el `QueueItem` y con el su mensaje de exito.
   await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
+  // El aviso vive por encima de la cola: sobrevive a que el error salga de ella.
+  await expect(page.getByText('Tarjeta verificada en Anki.')).toBeVisible();
   const done = page.getByRole('region', { name: 'Convertidas recientemente' });
   await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
   await expect(pending).toHaveText(String(before - 1));
@@ -132,6 +141,7 @@ test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', a
   // Deshacer devuelve el error a la cola y conserva la nota en Anki; volver a crearla
   // debe reencontrarla por su identidad en vez de anadir otra.
   await done.getByRole('button', { name: 'Deshacer' }).first().click();
+  await expect(page.getByText('Devuelto a la cola. La nota sigue en Anki.')).toBeVisible();
   await expect(pending).toHaveText(String(before));
   await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
   await expect(pending).toHaveText(String(before - 1));
@@ -157,7 +167,7 @@ test('corregir un error convertido avisa de que la tarjeta quedó vieja y deja a
   await expect(done.getByText('el texto ha cambiado desde entonces').first()).toBeVisible();
 
   await done.getByRole('button', { name: 'Actualizar en Anki' }).first().click();
-  await expect(done.getByText('Tarjeta actualizada en Anki.')).toBeVisible();
+  await expect(page.getByText('Tarjeta actualizada en Anki.')).toBeVisible();
   await page.reload();
   await expect(done.getByText('el texto ha cambiado desde entonces')).toHaveCount(0);
   await expect(done.getByText('Verificada en Anki').first()).toBeVisible();

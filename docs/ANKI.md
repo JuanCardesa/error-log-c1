@@ -64,6 +64,12 @@ los puntos que podían causar pérdidas o duplicados:
   muestra cantidades y denominadores separados, sin alterar el motor de decisión.
 - **Marca manual explícita.** Continúa contando para la regla de conversión, por
   compatibilidad. No se afirma que esa regla mida exclusivamente tarjetas verificadas.
+  Al marcarla se recuerda que no se ha comprobado que la tarjeta exista.
+- **El aviso sobrevive a la acción.** Convertir un error lo saca de la cola y
+  `revalidatePath` vuelve a pintar la lista, así que un mensaje guardado dentro del
+  `QueueItem` se desmontaba con él y la confirmación no llegaba a verse nunca. Crear,
+  actualizar, marcar a mano y deshacer informan por un contexto que vive por encima de
+  lo que cambia.
 - **Datos de prueba aislados.** Demo/e2e no pueden contactar Anki personal. Los tests
   de conexión inyectan respuestas, con SQLite real para transacciones y relaciones.
   Los e2e hablan con un doble propio por HTTP (`e2e/fakeAnki.ts`, puerto 8769), el mismo

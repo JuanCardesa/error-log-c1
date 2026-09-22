@@ -9,6 +9,7 @@ import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
+import { ConversionFeedback, ConversionNotice } from './ConversionFeedback';
 import { QueueItem, UndoButton, UpdateButton } from './QueueItem';
 import styles from './anki.module.css';
 import { SyncPanel } from './SyncPanel';
@@ -65,8 +66,11 @@ export default async function AnkiPage({
       <SyncPanel message={status.message} lastSyncedAt={anki.sync?.lastSyncedAt ?? null}
         deck={ankiConfig().sourceDeck} rolloverHour={anki.sync?.rolloverHour ?? null}
         rolloverSource={anki.sync?.rolloverSource ?? null} />
+      <ConversionFeedback>
       <h2>Cola de conversión</h2>
       <p className={shared.note}>La conversión incluye tarjetas verificadas y marcas manuales. Marcar a mano no comprueba que exista la tarjeta. Deshacer devuelve el error a la cola y conserva la nota en Anki. Si corriges un error ya convertido, su tarjeta no se reescribe sola: se avisa y puedes actualizarla.</p>
+
+      <ConversionNotice />
 
       <dl className={styles.summary}>
         <div>
@@ -123,6 +127,7 @@ export default async function AnkiPage({
           </ul>
         </section>
       )}
+      </ConversionFeedback>
       <ReviewFailures result={reviews} windowDays={windowDays} synced={anki.sync?.lastSyncedAt != null} />
     </div>
   );
