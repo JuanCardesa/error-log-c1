@@ -1,4 +1,5 @@
-import type { Dataset, QueryOptions } from '../domain/types';
+import { EMPTY_ANKI_DATASET, type AnkiDataset, type Dataset, type QueryOptions } from '../domain/types';
+import { q7AnkiReviews, q7ToCsv } from '../queries/q7AnkiReviews';
 import { q1CauseSplit, q1ToCsv } from '../queries/q1CauseSplit';
 import { q2CategoryRate, q2ToCsv } from '../queries/q2CategoryRate';
 import { q3RuoeAccuracy, q3ToCsv } from '../queries/q3RuoeAccuracy';
@@ -14,7 +15,7 @@ import { runRules } from '../rules';
  * La restauracion implementada usa las copias SQLite de pnpm db:backup.
  */
 
-export const CSV_EXPORTS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'] as const;
+export const CSV_EXPORTS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'] as const;
 export type CsvExport = (typeof CSV_EXPORTS)[number];
 
 export function isCsvExport(value: string): value is CsvExport {
@@ -28,12 +29,14 @@ export const CSV_LABELS: Readonly<Record<CsvExport, string>> = {
   q4: 'Falsas certezas',
   q5: 'Deuda de Anki',
   q6: 'Eficacia del rewrite',
+  q7: 'Repasos y fallos en Anki',
 };
 
 export function toCsvExport(
   which: CsvExport,
   data: Dataset,
   options: QueryOptions,
+  anki: AnkiDataset = EMPTY_ANKI_DATASET,
 ): string {
   switch (which) {
     case 'q1':
@@ -49,6 +52,8 @@ export function toCsvExport(
       return q5ToCsv(q5AnkiDebt(data, options));
     case 'q6':
       return q6ToCsv(q6RewriteEfficacy(data, options));
+    case 'q7':
+      return q7ToCsv(q7AnkiReviews(anki, options));
   }
 }
 
@@ -56,6 +61,7 @@ export interface JsonDump {
   readonly exportedAt: string;
   readonly windowDays: number;
   readonly rows: Dataset;
+  readonly anki: AnkiDataset;
   readonly queries: {
     readonly q1: ReturnType<typeof q1CauseSplit>;
     readonly q2: ReturnType<typeof q2CategoryRate>;
@@ -63,16 +69,18 @@ export interface JsonDump {
     readonly q4: ReturnType<typeof q4FalseCertainties>;
     readonly q5: ReturnType<typeof q5AnkiDebt>;
     readonly q6: ReturnType<typeof q6RewriteEfficacy>;
+    readonly q7: ReturnType<typeof q7AnkiReviews>;
   };
   readonly rules: ReturnType<typeof runRules>;
 }
 
-export function toJsonDump(data: Dataset, options: QueryOptions): JsonDump {
+export function toJsonDump(data: Dataset, options: QueryOptions, anki: AnkiDataset = EMPTY_ANKI_DATASET): JsonDump {
   return {
     exportedAt: options.now.toISOString(),
     windowDays: options.windowDays,
     // Las filas crudas son el respaldo: sin ellas el volcado no reconstruye nada.
     rows: data,
+    anki,
     queries: {
       q1: q1CauseSplit(data, options),
       q2: q2CategoryRate(data, options),
@@ -80,6 +88,7 @@ export function toJsonDump(data: Dataset, options: QueryOptions): JsonDump {
       q4: q4FalseCertainties(data, { now: options.now }),
       q5: q5AnkiDebt(data, options),
       q6: q6RewriteEfficacy(data, options),
+      q7: q7AnkiReviews(anki, options),
     },
     rules: runRules(data, options),
   };

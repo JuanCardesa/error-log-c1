@@ -50,10 +50,11 @@ beforeEach(() => {
 });
 
 describe('exportacion a CSV', () => {
-  it('reconoce solo las seis queries', () => {
-    expect([...CSV_EXPORTS]).toEqual(['q1', 'q2', 'q3', 'q4', 'q5', 'q6']);
+  it('reconoce las siete queries', () => {
+    expect([...CSV_EXPORTS]).toEqual(['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7']);
     expect(isCsvExport('q1')).toBe(true);
-    expect(isCsvExport('q7')).toBe(false);
+    expect(isCsvExport('q7')).toBe(true);
+    expect(isCsvExport('q8')).toBe(false);
     expect(isCsvExport('../secreto')).toBe(false);
   });
 
@@ -91,10 +92,10 @@ describe('volcado JSON', () => {
     expect(dump.rows.pieces).toHaveLength(1);
   });
 
-  it('incluye las seis queries y el informe de reglas', () => {
+  it('incluye las siete queries y el informe de reglas', () => {
     const dump = toJsonDump(sample(), opts);
 
-    expect(Object.keys(dump.queries)).toEqual(['q1', 'q2', 'q3', 'q4', 'q5', 'q6']);
+    expect(Object.keys(dump.queries)).toEqual(['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7']);
     expect(dump.rules.rules).toHaveLength(7);
   });
 
