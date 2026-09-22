@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ankiConfig } from './config';
-import { AnkiError, ankiMessage, httpTransport, unwrap } from './connect';
+import { ANKI_TIMEOUT_MS, AnkiError, ankiMessage, httpTransport, timeoutFor, unwrap, withRetry, type AnkiRequest, type Transport } from './connect';
 import { ankiApi, searchTerm } from './api';
 import { FakeAnki, CONFIG } from './fixtures/build';
 
@@ -50,6 +50,90 @@ describe('configuración y transporte local', () => {
   it('escapa nombres de mazo en búsquedas', () => {
     expect(searchTerm('deck', 'A"B\\C_*')).toBe('deck:"A\\"B\\\\C\\_\\*"');
   });
+});
+
+describe('plazos y reintentos', () => {
+  const read = (action: string): AnkiRequest => ({ action, version: 6, params: {} });
+  const multi = (...actions: string[]): AnkiRequest =>
+    ({ action: 'multi', version: 6, params: { actions: actions.map(read) } });
+
+  it('da a cada acción el plazo que le corresponde', () => {
+    expect(timeoutFor('version')).toBe(ANKI_TIMEOUT_MS.quick);
+    expect(timeoutFor('getActiveProfile')).toBe(ANKI_TIMEOUT_MS.quick);
+    expect(timeoutFor('cardsInfo')).toBe(ANKI_TIMEOUT_MS.batch);
+    expect(timeoutFor('multi')).toBe(ANKI_TIMEOUT_MS.batch);
+    expect(timeoutFor('notesInfo')).toBe(ANKI_TIMEOUT_MS.batch);
+    expect(timeoutFor('addNote')).toBe(ANKI_TIMEOUT_MS.write);
+    // Una accion desconocida se trata como escritura: no se reintenta ni se apura.
+    expect(timeoutFor('deleteNotes')).toBe(ANKI_TIMEOUT_MS.write);
+  });
+
+  it('un lote lento se manda con el plazo largo, no con el del saludo', async () => {
+    // Un Response solo se lee una vez: cada llamada necesita el suyo.
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(() => Promise.resolve(Response.json({ result: [], error: null })));
+    const spy = vi.spyOn(AbortSignal, 'timeout');
+    try {
+      await httpTransport(CONFIG, fetcher)(multi('cardsInfo'));
+      await httpTransport(CONFIG, fetcher)(read('version'));
+      expect(spy.mock.calls).toEqual([[ANKI_TIMEOUT_MS.batch], [ANKI_TIMEOUT_MS.quick]]);
+    } finally { spy.mockRestore(); }
+  });
+
+  it('distingue expirar de no poder conectar', async () => {
+    const fetcher = vi.fn<typeof fetch>();
+    fetcher.mockRejectedValueOnce(Object.assign(new Error('abortado'), { name: 'TimeoutError' }));
+    await expect(httpTransport(CONFIG, fetcher)(read('version'))).rejects.toMatchObject({ code: 'ANKI_LENTO' });
+    fetcher.mockRejectedValueOnce(new TypeError('fetch failed'));
+    await expect(httpTransport(CONFIG, fetcher)(read('version'))).rejects.toMatchObject({ code: 'ANKI_CERRADO' });
+    // undici envuelve el abort en `cause`: sigue siendo haber expirado.
+    fetcher.mockRejectedValueOnce(new TypeError('fetch failed', { cause: Object.assign(new Error('x'), { name: 'TimeoutError' }) }));
+    await expect(httpTransport(CONFIG, fetcher)(read('version'))).rejects.toMatchObject({ code: 'ANKI_LENTO' });
+  });
+
+  it('espera de verdad cuando no se le inyecta un reloj', async () => {
+    const inner = vi.fn<Transport>()
+      .mockRejectedValueOnce(new AnkiError('ANKI_LENTO', 'lento'))
+      .mockResolvedValueOnce({ result: 6, error: null });
+    expect(await withRetry(inner, { delayMs: 0 })(read('findCards'))).toEqual({ result: 6, error: null });
+    expect(inner).toHaveBeenCalledTimes(2);
+  });
+
+  it('reintenta una lectura que expiró y devuelve el resultado del segundo intento', async () => {
+    const slept: number[] = [];
+    const inner = vi.fn<Transport>()
+      .mockRejectedValueOnce(new AnkiError('ANKI_LENTO', 'lento'))
+      .mockResolvedValueOnce({ result: [1], error: null });
+    const result = await withRetry(inner, { sleep: async (ms) => { slept.push(ms); } })(multi('cardsInfo'));
+    expect(result).toEqual({ result: [1], error: null });
+    expect(inner).toHaveBeenCalledTimes(2);
+    expect(slept).toEqual([500]);
+  });
+
+  it('espera cada vez más y se rinde con el último error', async () => {
+    const slept: number[] = [];
+    const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError('ANKI_LENTO', 'lento'));
+    await expect(withRetry(inner, { sleep: async (ms) => { slept.push(ms); } })(read('notesInfo')))
+      .rejects.toMatchObject({ code: 'ANKI_LENTO' });
+    expect(inner).toHaveBeenCalledTimes(3);
+    expect(slept).toEqual([500, 1000]);
+  });
+
+  it.each([
+    ['una escritura', read('addNote')],
+    ['un multi con una escritura dentro', multi('cardsInfo', 'addNote')],
+    ['un multi vacío', multi()],
+  ])('no reintenta %s aunque expire', async (_label, body) => {
+    const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError('ANKI_LENTO', 'lento'));
+    await expect(withRetry(inner, { sleep: async () => undefined })(body)).rejects.toThrow('lento');
+    expect(inner).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['ANKI_CERRADO', 'ANKI_ERROR', 'ANKI_RESPUESTA_RARA', 'ANKI_CONFIG'] as const)(
+    'no hace esperar al usuario cuando el fallo no mejora repitiéndolo (%s)', async (code) => {
+      const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError(code, 'fallo'));
+      await expect(withRetry(inner, { sleep: async () => undefined })(read('notesInfo'))).rejects.toThrow('fallo');
+      expect(inner).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe('validación del contrato AnkiConnect', () => {

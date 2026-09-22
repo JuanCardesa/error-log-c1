@@ -3,7 +3,7 @@ import { assertAnkiScope, getAnkiSync, linkedAnkiNotes, saveAnkiSnapshot } from 
 import { loadAnkiDataset } from '../db/load';
 import { ankiApi, searchTerm, type AnkiNote, type AnkiCard, type AnkiReview } from './api';
 import { ankiConfig, type AnkiConfig } from './config';
-import { AnkiError, ankiMessage, httpTransport, type Transport } from './connect';
+import { AnkiError, ankiMessage, httpTransport, withRetry, type Transport } from './connect';
 import { reconcile } from './reconcile';
 
 const locks = new WeakMap<Db, Promise<unknown>>();
@@ -22,6 +22,7 @@ export function batches<T>(values: readonly T[], size = 250): T[][] {
   return result;
 }
 
+/** Sin reintentos: se ejecuta al pintar la pagina y aqui esperar solo retrasa el aviso. */
 export async function ankiStatus(db: Db, config = ankiConfig(), transport = httpTransport(config)) {
   try {
     const api = ankiApi(transport);
@@ -34,7 +35,7 @@ export async function ankiStatus(db: Db, config = ankiConfig(), transport = http
 
 export async function syncAnki(db: Db, transport?: Transport, now = new Date(), config: AnkiConfig = ankiConfig()) {
   return withAnkiLock(db, async () => {
-    const api = ankiApi(transport ?? httpTransport(config));
+    const api = ankiApi(transport ?? withRetry(httpTransport(config)));
     await api.version();
     const profile = await api.profile();
     assertAnkiScope(getAnkiSync(db), config, profile);

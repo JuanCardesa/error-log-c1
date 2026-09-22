@@ -67,8 +67,17 @@ antes de enviarlos a Anki. No se leen ni copian audio ni campos de la colección
 
 La configuración es local, sin CORS adicional ni ampliación de direcciones de escucha.
 Si existe clave de AnkiConnect, se manda desde el servidor, incluso en cada subacción
-de `multi`; no se registra ni llega al navegador. Las llamadas tienen timeout de 5 s
-y no siguen redirecciones. Solo la acción de crear realiza escrituras en Anki.
+de `multi`; no se registra ni llega al navegador. Las llamadas no siguen redirecciones.
+Solo la acción de crear realiza escrituras en Anki.
+
+El plazo depende de la acción: 5 s para el saludo, 15 s para escribir y 60 s para los
+lotes. `cardsInfo` renderiza la pregunta y la respuesta de cada carta, así que un plazo
+único obligaba a elegir entre abortar lotes legítimos y dejar colgado el saludo. Solo se
+reintenta —dos veces, esperando 0,5 s y 1 s— una **lectura** que expiró: repetir una
+escritura es como se acaba con dos notas, y que Anki esté cerrado no mejora esperando.
+Agotar los reintentos de un lote aborta la sincronización entera sin guardar nada, así
+que el peor caso está acotado en unos tres minutos. El tamaño de lote sigue en 250 y
+está sin medir contra una colección real: es lo primero que hay que ajustar con datos.
 
 ## Verificación real pendiente
 

@@ -5,7 +5,7 @@ import { generatesCard } from '../domain/enums';
 import type { ErrorRow } from '../domain/types';
 import { ankiApi, searchTerm } from './api';
 import { ankiConfig, type AnkiConfig } from './config';
-import { AnkiError, httpTransport, type Transport } from './connect';
+import { AnkiError, httpTransport, withRetry, type Transport } from './connect';
 import { categoryOf } from './categories';
 import { noteLabel } from './reconcile';
 import { withAnkiLock } from './sync';
@@ -36,7 +36,7 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
   return withAnkiLock(db, async () => {
     const error = getError(db, errorId);
     if (error === null || !generatesCard(error.cause)) throw new AnkiError('ANKI_CONFIG', 'Ese error no existe o su causa no genera tarjeta.');
-    const api = ankiApi(transport ?? httpTransport(config));
+    const api = ankiApi(transport ?? withRetry(httpTransport(config)));
     await api.version();
     const profile = await api.profile();
     const state = ensureAnkiScope(db, config, profile);
