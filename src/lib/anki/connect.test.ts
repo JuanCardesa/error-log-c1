@@ -12,6 +12,25 @@ describe('configuración y transporte local', () => {
     expect(ankiConfig({ ERRORLOG_DEMO: '1' }).disabled).toBe(true);
     expect(ankiConfig({ ERRORLOG_E2E: '1' }).disabled).toBe(true);
   });
+  describe('el doble de los e2e no puede alcanzar la colección personal', () => {
+    const FAKE = 'http://127.0.0.1:8769/';
+    it('habilita Anki solo con un doble inyectado, y solo en e2e', () => {
+      expect(ankiConfig({ ERRORLOG_E2E: '1', ERRORLOG_ANKI_FAKE_URL: FAKE }))
+        .toMatchObject({ url: FAKE, disabled: false });
+      // La demo no habla con Anki ni aunque le pasen un doble.
+      expect(ankiConfig({ ERRORLOG_DEMO: '1', ERRORLOG_E2E: '1', ERRORLOG_ANKI_FAKE_URL: FAKE }).disabled).toBe(true);
+      expect(ankiConfig({ ERRORLOG_DEMO: '1', ERRORLOG_ANKI_FAKE_URL: FAKE }).disabled).toBe(true);
+    });
+    it('en e2e ignora ANKI_CONNECT_URL: el doble es el único destino posible', () => {
+      expect(ankiConfig({ ERRORLOG_E2E: '1', ERRORLOG_ANKI_FAKE_URL: FAKE, ANKI_CONNECT_URL: 'http://127.0.0.1:8765' }).url).toBe(FAKE);
+    });
+    it('fuera de los e2e el doble no existe: no puede desviar la app real', () => {
+      expect(ankiConfig({ ERRORLOG_ANKI_FAKE_URL: FAKE })).toMatchObject({ url: 'http://127.0.0.1:8765/', disabled: false });
+    });
+    it.each(['http://127.0.0.1:8765', 'http://localhost'])('rechaza un doble en el puerto real (%s)', (url) => {
+      expect(() => ankiConfig({ ERRORLOG_E2E: '1', ERRORLOG_ANKI_FAKE_URL: url })).toThrow('8765');
+    });
+  });
   it.each(['ftp://localhost', 'http://example.com', 'http://user:pass@localhost', 'http://localhost?key=1', 'http://localhost#x'])('rechaza destinos no locales o ambiguos (%s)', (url) => {
     expect(() => ankiConfig({ ANKI_CONNECT_URL: url })).toThrow();
   });

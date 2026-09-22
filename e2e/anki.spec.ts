@@ -1,14 +1,13 @@
 import { expect, test } from '@playwright/test';
 
-test('Anki no disponible: aviso claro, repasos vacíos y creación deshabilitada', async ({ page }, testInfo) => {
+// Anki sin sincronizar todavía. Lo que ocurre con Anki respondiendo, cerrado o fallando
+// está en anki-sync.spec.ts, contra el doble que arranca Playwright.
+test('sin sincronizar: explica cómo conectar y no presenta el vacío como cero fallos', async ({ page }, testInfo) => {
   await page.goto('/anki');
   await expect(page.getByRole('heading', { name: 'Anki', exact: true })).toBeVisible();
-  await expect(page.getByText('Anki está desactivado en la demo y en las pruebas.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Crear en Anki' }).first()).toBeDisabled();
   await expect(page.getByRole('heading', { name: 'Repaso en Anki' })).toBeVisible();
   await expect(page.getByText('Todavía no hay datos importados.', { exact: false })).toBeVisible();
-  await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByRole('alert')).toContainText('Anki está desactivado');
+  await expect(page.getByText('todavía no se ha sincronizado')).toBeVisible();
   await page.getByText('Cómo conectar Anki', { exact: true }).click();
   await expect(page.getByRole('link', { name: 'AnkiConnect (2055492159)' })).toBeVisible();
   await page.getByRole('link', { name: '60 d' }).click();

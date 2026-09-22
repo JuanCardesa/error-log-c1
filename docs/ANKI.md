@@ -45,6 +45,12 @@ los puntos que podían causar pérdidas o duplicados:
   compatibilidad. No se afirma que esa regla mida exclusivamente tarjetas verificadas.
 - **Datos de prueba aislados.** Demo/e2e no pueden contactar Anki personal. Los tests
   de conexión inyectan respuestas, con SQLite real para transacciones y relaciones.
+  Los e2e hablan con un doble propio por HTTP (`e2e/fakeAnki.ts`, puerto 8769), el mismo
+  `FakeAnki` que valida los tests unitarios: un solo doble del contrato para los dos
+  niveles. Con `ERRORLOG_E2E`, `ankiConfig` **ignora** `ANKI_CONNECT_URL` y solo acepta
+  la URL inyectada en `ERRORLOG_ANKI_FAKE_URL`, que además tiene prohibido el puerto
+  8765; sin esa variable, Anki sigue desactivado. Fuera de los e2e la variable no existe,
+  así que tampoco puede desviar la app real. La demo nunca habla con Anki.
 
 ## Modelo y funcionamiento
 
@@ -81,16 +87,13 @@ está sin medir contra una colección real: es lo primero que hay que ajustar co
 
 ## Verificación real pendiente
 
-La implementación supera 448 pruebas unitarias/integración, con cobertura global
-superior al 90 %, además de `typecheck`, `lint`, compilación de Next.js y 12 pruebas
-de navegador de Anki, informe y exportación. Se revisaron las capturas de escritorio
-y móvil. La migración sobre la base personal conserva las filas previas, con
-`integrity_check = ok` y sin errores en `foreign_key_check`.
-
-En este entorno Windows, el proceso que gestiona el servidor de Playwright quedó
-esperando al cerrar. Las 12 pruebas se completaron también con salida 0 contra ese
-mismo servidor de pruebas, gestionado aparte; luego se detuvo el proceso. No afecta
-al funcionamiento de la app ni implica acceso de los tests a la colección personal.
+La implementación supera 470 pruebas unitarias/integración, con cobertura global
+superior al 90 %, además de `typecheck`, `lint`, compilación de Next.js y 44 pruebas
+de navegador. Seis de ellas recorren contra el doble los flujos que antes no se veían
+en navegador: sincronizar, repetir sin repasos nuevos, un fallo de Anki y su reintento,
+Anki cerrado, crear una tarjeta sin duplicarla y exportar lo sincronizado. Se revisaron
+las capturas de escritorio y móvil. La migración sobre la base personal conserva las
+filas previas, con `integrity_check = ok` y sin errores en `foreign_key_check`.
 
 AnkiConnect no estaba instalado al revisar este plan (solo figuraba Colorful Tags).
 Las cifras sobre las 58 cartas, los 20 tags y las fechas de repaso proceden del plan
