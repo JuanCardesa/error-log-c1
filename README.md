@@ -217,6 +217,13 @@ Configuración opcional del servidor (variables de entorno):
 | `ANKI_SOURCE_DECK` | `English B2 to C1 Practice` |
 | `ANKI_TARGET_DECK` | `<mazo origen>::Error Log` |
 | `ANKI_CONNECT_API_KEY` | sin clave; configúrala si tu AnkiConnect la requiere |
+| `ANKI_ROLLOVER_HOUR` | sin declarar; se supone `4` |
+
+`ANKI_ROLLOVER_HOUR` es la hora a la que empieza el día en tu colección («next day starts
+at» en las preferencias de Anki). Los repasos se agrupan por ese corte, no por medianoche:
+uno de la 1:30 pertenece al día anterior. AnkiConnect no expone ese dato —comprobado
+contra una instalación real—, así que si tu colección no usa el 4 por defecto, decláralo
+aquí. La pantalla de Anki dice siempre si la hora que está usando la sabe o la supone.
 
 La primera sincronización o creación vincula esta base al perfil, dirección y mazos
 configurados. Un cambio de perfil/configuración se rechaza para no mezclar colecciones

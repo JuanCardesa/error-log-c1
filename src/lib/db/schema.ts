@@ -183,6 +183,8 @@ export const ankiSync = sqliteTable('anki_sync', {
   notesSeen: integer('notes_seen').notNull().default(0),
   /** Hora a la que empieza el dia en Anki. Nullable: se sabe tras la primera sincronizacion. */
   rolloverHour: integer('rollover_hour'),
+  /** De donde salio esa hora: leida, declarada a mano o supuesta. Cambia lo que se afirma. */
+  rolloverSource: text('rollover_source', { enum: ['anki', 'config', 'default'] }),
 }, (table) => [
   check('anki_sync_singleton', sql`${table.id} = 1`),
   check('anki_sync_rollover', sql`${table.rolloverHour} IS NULL OR ${table.rolloverHour} BETWEEN 0 AND 23`),

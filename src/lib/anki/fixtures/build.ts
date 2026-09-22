@@ -6,6 +6,8 @@ import type { AnkiDataset } from '../../domain/types';
 import { reconcile } from '../reconcile';
 import { DEFAULT_ROLLOVER_HOUR } from '../schedule';
 
+export const ROLLOVER = { hour: DEFAULT_ROLLOVER_HOUR, source: 'default' } as const;
+
 export const CONFIG = ankiConfig({});
 export const NOW = new Date('2026-09-22T12:00:00Z');
 export const REVIEW = NOW.getTime() - 3600000;
@@ -20,7 +22,7 @@ export function note(overrides: Partial<AnkiNote> = {}): AnkiNote {
 }
 
 export function ankiFixture(): AnkiDataset {
-  const snapshot = reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review()] }, missingNoteIds: [] }, { cards: [], notes: [], reviews: [], sync: null }, NOW, DEFAULT_ROLLOVER_HOUR);
+  const snapshot = reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review()] }, missingNoteIds: [] }, { cards: [], notes: [], reviews: [], sync: null }, NOW, ROLLOVER);
   return { ...snapshot, sync: null };
 }
 

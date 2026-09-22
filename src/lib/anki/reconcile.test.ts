@@ -5,13 +5,13 @@ import { card, note, review, NOW, REVIEW, ankiFixture } from './fixtures/build';
 import { ankiDay } from './schedule';
 
 /** Corte a medianoche: estos casos miran otra cosa y asi la fecha es la civil. */
-const ROLLOVER = 0;
+const ROLLOVER = { hour: 0, source: 'config' } as const;
 
 it('conserva intervalos negativos y agrupa varios cloze en una misma nota', () => {
   const plan = reconcile({ cards: [card(), card({ cardId: 11, ord: 1 })], notes: [note()], reviews: { '10': [review()], '11': [review({ id: REVIEW + 1, ease: 3 })] }, missingNoteIds: [] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER);
   expect(plan.cards).toHaveLength(2);
   expect(plan.notes).toHaveLength(1);
-  expect(plan.reviews[0]).toMatchObject({ interval: -60, reviewDate: ankiDay(new Date(REVIEW), ROLLOVER) });
+  expect(plan.reviews[0]).toMatchObject({ interval: -60, reviewDate: ankiDay(new Date(REVIEW), ROLLOVER.hour) });
 });
 it('ignora manual, rescheduled y entradas sin botón real', () => {
   const plan = reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review({ type: 4 }), review({ type: 5 }), review({ ease: 0 }), review({ ease: 5 }), review({ type: -1 })] }, missingNoteIds: [] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER);

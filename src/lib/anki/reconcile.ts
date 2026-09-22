@@ -2,7 +2,7 @@ import type { AnkiCard, AnkiNote, AnkiReview } from './api';
 import { AnkiError } from './connect';
 import { categoryOf } from './categories';
 import type { AnkiDataset } from '../domain/types';
-import { ankiDay } from './schedule';
+import { ankiDay, type Rollover } from './schedule';
 
 export interface AnkiSnapshot {
   readonly cards: readonly AnkiCard[];
@@ -22,11 +22,11 @@ export function noteLabel(note: AnkiNote): string {
 export interface AnkiReconciliation extends Omit<AnkiDataset, 'sync'> {
   readonly missingNoteIds: readonly number[];
   readonly newReviews: number;
-  /** El corte con el que se han fechado estos repasos, para poder explicarlo despues. */
-  readonly rolloverHour: number;
+  /** El corte con el que se han fechado estos repasos, y de donde salio. */
+  readonly rollover: Rollover;
 }
 
-export function reconcile(snapshot: AnkiSnapshot, current: AnkiDataset, now: Date, rolloverHour: number): AnkiReconciliation {
+export function reconcile(snapshot: AnkiSnapshot, current: AnkiDataset, now: Date, rollover: Rollover): AnkiReconciliation {
   const oldNotes = new Map(current.notes.map((note) => [note.noteId, note]));
   const cards = snapshot.cards.map((card) => ({
     cardId: card.cardId, noteId: card.note, deck: card.deckName, templateOrd: card.ord,
@@ -48,12 +48,12 @@ export function reconcile(snapshot: AnkiSnapshot, current: AnkiDataset, now: Dat
       seen.add(review.id);
       reviews.push({
         reviewId: review.id, cardId: card.cardId, reviewedAt: new Date(review.id).toISOString(),
-        reviewDate: ankiDay(new Date(review.id), rolloverHour), ease: review.ease, interval: review.ivl,
+        reviewDate: ankiDay(new Date(review.id), rollover.hour), ease: review.ease, interval: review.ivl,
         lastInterval: review.lastIvl, factor: review.factor, timeMs: review.time, type: review.type,
       });
     }
   }
   const oldIds = new Set(current.reviews.map((review) => review.reviewId));
-  return { notes, cards, reviews, missingNoteIds: snapshot.missingNoteIds, rolloverHour,
+  return { notes, cards, reviews, missingNoteIds: snapshot.missingNoteIds, rollover,
     newReviews: reviews.filter((review) => !oldIds.has(review.reviewId)).length };
 }

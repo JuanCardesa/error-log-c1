@@ -1,8 +1,12 @@
+import { isRolloverHour } from './schedule';
+
 export interface AnkiConfig {
   readonly url: string;
   readonly sourceDeck: string;
   readonly targetDeck: string;
   readonly apiKey?: string;
+  /** Corte de dia declarado a mano. AnkiConnect no expone el de la coleccion. */
+  readonly rolloverHour?: number;
   readonly disabled: boolean;
 }
 
@@ -27,12 +31,17 @@ export function ankiConfig(env: Readonly<Record<string, string | undefined>> = p
   if (fakeUrl !== undefined && (url.port === ANKI_CONNECT_PORT || url.port === '')) {
     throw new Error(`El doble de AnkiConnect no puede escuchar en el puerto ${ANKI_CONNECT_PORT}.`);
   }
+  const rollover = env['ANKI_ROLLOVER_HOUR']?.trim();
+  if (rollover !== undefined && rollover !== '' && !isRolloverHour(Number(rollover))) {
+    throw new Error('ANKI_ROLLOVER_HOUR debe ser una hora entera entre 0 y 23.');
+  }
   const sourceDeck = env['ANKI_SOURCE_DECK']?.trim() || 'English B2 to C1 Practice';
   return {
     url: url.href,
     sourceDeck,
     targetDeck: env['ANKI_TARGET_DECK']?.trim() || `${sourceDeck}::Error Log`,
     apiKey: env['ANKI_CONNECT_API_KEY'],
+    ...(rollover !== undefined && rollover !== '' ? { rolloverHour: Number(rollover) } : {}),
     // Sin doble inyectado, la demo y los e2e no leen ni escriben ninguna colección.
     disabled: (demo || e2e) && fakeUrl === undefined,
   };

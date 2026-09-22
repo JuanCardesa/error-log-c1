@@ -76,12 +76,17 @@ necesita `last_review_id`, porque no descarta registros por antigüedad.
 El día de un repaso es el **día de Anki**, no el civil. Anki reparte por su «next day
 starts at» —4:00 por defecto—, así que un repaso de la 1:30 pertenece al día anterior:
 fecharlo por medianoche desplazaba un día entero cada vez que se estudia de noche y los
-recuentos no cuadraban con los del propio Anki. La hora sale de `getPreferences` y se
-guarda en `anki_sync.rollover_hour` (migración `0003`) para poder enseñarla en la
-pantalla. Esa respuesta no tiene la misma forma en todas las versiones: se busca donde
-suele estar y, si no aparece nada utilizable o la acción no existe en esa versión de
-AnkiConnect, se usa el 4 documentado en vez de inventar un cero que nadie configuró. Que
-falte `getPreferences` no impide sincronizar; un fallo de conexión sí se propaga.
+recuentos no cuadraban con los del propio Anki.
+
+**AnkiConnect no expone ese dato.** Comprobado contra la instalación real: `apiReflect`
+declara 121 acciones, `getPreferences` responde «unsupported action» y `getDeckConfig`
+son opciones de mazo. Así que la hora se declara a mano en `ANKI_ROLLOVER_HOUR`, y si no
+se declara se **supone** el 4 por defecto de Anki en vez de inventar un cero que nadie
+configuró. Se sigue intentando leerla por si una versión futura la añade; que la acción
+no exista no impide sincronizar, pero un fallo de conexión sí se propaga, que no es lo
+mismo. `anki_sync` guarda la hora y **de dónde salió** (`rollover_hour`, `rollover_source`;
+migraciones `0003` y `0004`), porque la pantalla no debe presentar una suposición con el
+mismo aire que un dato leído: cuando es supuesta, dice cómo corregirla.
 
 El tipo de nota nuevo tiene `ErrorLogId`, `Prompt`, `MyAnswer`, `Correct`, `Rule`, `Meta`.
 Solo se muestran los últimos cinco en la tarjeta. Los campos se escapan como texto

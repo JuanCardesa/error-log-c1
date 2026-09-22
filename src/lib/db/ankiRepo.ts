@@ -91,7 +91,8 @@ export function saveAnkiSnapshot(db: Db, plan: ReturnType<typeof reconcile>, con
     for (const card of plan.cards) tx.insert(ankiCard).values(card).run();
     for (const review of plan.reviews) tx.insert(ankiReview).values(review).run();
     for (const noteId of plan.missingNoteIds) tx.delete(ankiNote).where(eq(ankiNote.noteId, noteId)).run();
-    tx.update(ankiSync).set({ lastSyncedAt: at, notesSeen: plan.notes.length, rolloverHour: plan.rolloverHour })
+    tx.update(ankiSync).set({ lastSyncedAt: at, notesSeen: plan.notes.length,
+      rolloverHour: plan.rollover.hour, rolloverSource: plan.rollover.source })
       .where(eq(ankiSync.id, 1)).run();
   });
 }

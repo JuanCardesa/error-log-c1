@@ -34,6 +34,15 @@ describe('configuración y transporte local', () => {
   it.each(['ftp://localhost', 'http://example.com', 'http://user:pass@localhost', 'http://localhost?key=1', 'http://localhost#x'])('rechaza destinos no locales o ambiguos (%s)', (url) => {
     expect(() => ankiConfig({ ANKI_CONNECT_URL: url })).toThrow();
   });
+  it('permite declarar a mano el corte de día, que AnkiConnect no expone', () => {
+    expect(ankiConfig({}).rolloverHour).toBeUndefined();
+    expect(ankiConfig({ ANKI_ROLLOVER_HOUR: '' }).rolloverHour).toBeUndefined();
+    expect(ankiConfig({ ANKI_ROLLOVER_HOUR: '0' }).rolloverHour).toBe(0);
+    expect(ankiConfig({ ANKI_ROLLOVER_HOUR: '23' }).rolloverHour).toBe(23);
+  });
+  it.each(['24', '-1', '4.5', 'cuatro'])('rechaza un corte de día imposible (%s)', (hour) => {
+    expect(() => ankiConfig({ ANKI_ROLLOVER_HOUR: hour })).toThrow('ANKI_ROLLOVER_HOUR');
+  });
   it('envía versión, clave, no-store y timeout; no sigue redirects', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ result: 6, error: null }));
     const transport = httpTransport({ ...CONFIG, apiKey: 'secret' }, fetcher);

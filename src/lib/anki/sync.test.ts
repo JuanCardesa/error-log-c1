@@ -8,7 +8,7 @@ import { getError, unmarkAnkiAdded, updateError, deleteError } from '../db/repo'
 import { ankiNote, ankiReview, errorRow, session } from '../db/schema';
 import { createAnkiNote, escapeAnkiHtml } from './create';
 import { ankiStatus, batches, syncAnki, withAnkiLock } from './sync';
-import { CONFIG, NOW, REVIEW, FakeAnki, ankiFixture, review, card, note } from './fixtures/build';
+import { CONFIG, NOW, REVIEW, ROLLOVER, FakeAnki, ankiFixture, review, card, note } from './fixtures/build';
 
 let db: Db;
 let fake: FakeAnki;
@@ -21,7 +21,7 @@ afterEach(() => db.$client.close());
 
 it('sincroniza por lotes, incluye submazos y cartas nuevas, y no crea mazos al leer', async () => {
   const result = await syncAnki(db, fake.transport, NOW, CONFIG);
-  expect(result).toEqual({ reviews: 1, newReviews: 1, notes: 1, cards: 1, rolloverHour: 4 });
+  expect(result).toEqual({ reviews: 1, newReviews: 1, notes: 1, cards: 1, rollover: { hour: 4, source: 'anki' } });
   expect(fake.calls.find((call) => call.action === 'findCards')?.params['query']).not.toContain('is:new');
   expect(fake.calls.some((call) => /^(create|add|delete)/.test(call.action))).toBe(false);
   expect(loadAnkiDataset(db)).toMatchObject({ sync: { profile: 'Juan', lastSyncedAt: NOW.toISOString() } });
@@ -34,17 +34,26 @@ it('fecha los repasos con el corte de día de Anki, no con la medianoche civil',
   const lateNight = new Date(2026, 8, 22, 0, 30).getTime();
   fake.reviews['10'] = [review({ id: lateNight })];
   await syncAnki(db, fake.transport, NOW, CONFIG);
-  expect(loadAnkiDataset(db)).toMatchObject({ reviews: [{ reviewDate: '2026-09-21' }], sync: { rolloverHour: 4 } });
+  expect(loadAnkiDataset(db)).toMatchObject({ reviews: [{ reviewDate: '2026-09-21' }], sync: { rolloverHour: 4, rolloverSource: 'anki' } });
 
   fake.rollover = 0;
   await syncAnki(db, fake.transport, NOW, CONFIG);
-  expect(loadAnkiDataset(db)).toMatchObject({ reviews: [{ reviewDate: '2026-09-22' }], sync: { rolloverHour: 0 } });
+  expect(loadAnkiDataset(db)).toMatchObject({ reviews: [{ reviewDate: '2026-09-22' }], sync: { rolloverHour: 0, rolloverSource: 'anki' } });
+
+  // Lo declarado a mano gana sobre lo que diga la colección.
+  await syncAnki(db, fake.transport, NOW, { ...CONFIG, rolloverHour: 9 });
+  expect(loadAnkiDataset(db)).toMatchObject({ sync: { rolloverHour: 9, rolloverSource: 'config' } });
 });
 
 it('una versión de AnkiConnect sin getPreferences no impide sincronizar', async () => {
+  // Es el caso real: la instalación verificada responde «unsupported action».
   fake.failAction = 'getPreferences';
-  expect((await syncAnki(db, fake.transport, NOW, CONFIG)).rolloverHour).toBe(4);
-  expect(loadAnkiDataset(db).sync?.rolloverHour).toBe(4);
+  expect((await syncAnki(db, fake.transport, NOW, CONFIG)).rollover).toEqual({ hour: 4, source: 'default' });
+  expect(loadAnkiDataset(db).sync).toMatchObject({ rolloverHour: 4, rolloverSource: 'default' });
+
+  // Y con la hora declarada a mano, esa misma versión sí usa el corte correcto.
+  await syncAnki(db, fake.transport, NOW, { ...CONFIG, rolloverHour: 2 });
+  expect(loadAnkiDataset(db).sync).toMatchObject({ rolloverHour: 2, rolloverSource: 'config' });
 });
 
 it('no duplica repasos y admite backfill más antiguo y deshacer en Anki', async () => {
@@ -145,13 +154,13 @@ it('muestra estado útil con Anki abierto y cerrado', async () => {
 });
 it('revierte todo el snapshot si falla un CHECK al escribir', () => {
   const initial = ankiFixture();
-  const broken = { ...initial, reviews: [{ ...initial.reviews[0]!, ease: 0 }], missingNoteIds: [], newReviews: 1, rolloverHour: 4 };
+  const broken = { ...initial, reviews: [{ ...initial.reviews[0]!, ease: 0 }], missingNoteIds: [], newReviews: 1, rollover: ROLLOVER };
   expect(() => saveAnkiSnapshot(db, broken, CONFIG, 'Juan', NOW.toISOString())).toThrow();
   expect(loadAnkiDataset(db)).toEqual({ notes: [], cards: [], reviews: [], sync: null });
 });
 it('aplica SET NULL al vínculo y cascada al espejo, sin borrar el error', () => {
   const data = ankiFixture();
-  saveAnkiSnapshot(db, { ...data, missingNoteIds: [], newReviews: 1, rolloverHour: 4 }, CONFIG, 'Juan', NOW.toISOString());
+  saveAnkiSnapshot(db, { ...data, missingNoteIds: [], newReviews: 1, rollover: ROLLOVER }, CONFIG, 'Juan', NOW.toISOString());
   linkAnkiNote(db, 1, data.notes[0]!, NOW.toISOString());
   db.delete(ankiNote).where(eq(ankiNote.noteId, 20)).run();
   expect(getError(db, 1)?.ankiNoteId).toBeNull();
