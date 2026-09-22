@@ -57,6 +57,7 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 | `rule_note` | texto | **obligatorio** |
 | `anki_added` | bool | |
 | `anki_added_at` | timestamp, nullable | |
+| `anki_note_id` | FK → anki_note.note_id, nullable | vínculo verificado; NULL en marcas manuales |
 | `secs` | int | segundos que costó registrarlo |
 | `created_at` | timestamp | |
 
@@ -77,6 +78,32 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 | `band_communicative` | int 0–5, nullable | |
 | `band_organisation` | int 0–5, nullable | |
 | `band_language` | int 0–5, nullable | |
+
+### Espejo de Anki (2026-09-22)
+
+| tabla | campos y relaciones |
+| --- | --- |
+| `anki_note` | `note_id` PK de Anki, `model`, `label` de texto, `tags` JSON, `category` nullable, `first_seen_at`, `last_seen_at` |
+| `anki_card` | `card_id` PK, `note_id` FK → anki_note (CASCADE), `deck`, `template_ord`, `lapses`, `reps`, `queue`, `interval_days` |
+| `anki_review` | `review_id` PK (epoch ms), `card_id` FK → anki_card (CASCADE), `reviewed_at` ISO, `review_date` civil local, `ease`, `interval`, `last_interval`, `factor`, `time_ms`, `type` |
+| `anki_sync` | fila única `id=1`, `namespace` UUID de esta base, `profile`, `url`, `source_deck`, `target_deck`, `last_synced_at` nullable, `notes_seen` |
+
+`error_row.anki_note_id` es el único vínculo con el error, con `ON DELETE SET NULL`.
+Una sincronización confirma por ID las notas vinculadas, incluso fuera del mazo origen;
+si una ya no existe, limpia también `anki_added` y `anki_added_at`. Moverla no devuelve
+la deuda. Una marca manual queda con `anki_note_id = NULL` y se muestra sin verificar.
+
+Cada snapshot completo validado se aplica en una transacción. Repetirlo es idempotente;
+se incluyen repasos importados antiguos y se retiran del espejo los repasos deshechos y
+las cartas que ya no pertenecen al alcance. No se borran notas de la colección de Anki.
+Perfil y mazos quedan fijados por base para impedir mezclas accidentales. Los datos de
+Anki se exportan también en el dump JSON, separados del `Dataset` original.
+
+La creación usa el tipo propio **Error Log C1** con `ErrorLogId`, `Prompt`, `MyAnswer`,
+`Correct`, `Rule`, `Meta`. La identidad estable permite recuperar un reintento tras un
+timeout; no se usa el enunciado como identidad. Solo se marca una conversión verificada
+si Anki devuelve una nota con al menos una tarjeta. Las notas anteriores y sus modelos
+se conservan; no se actualizan automáticamente al editar después el error en la app.
 
 ### Reglas invariantes (en Zod **y** en constraints de la DB)
 
@@ -132,7 +159,7 @@ problema no es de estudio.
 
 ---
 
-## 4. Las seis queries (todas en el MVP)
+## 4. Consultas (Q1–Q6 del MVP y Q7 de Anki)
 
 Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura en
 `/src/lib/queries/` con test unitario y fixtures deterministas.
@@ -147,10 +174,20 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
   **Resuelto (P2, 2026-09-14):** Q4 usa 30 días fijos, no la ventana conmutable — igual que
   la regla 2, cuyo umbral absoluto de 5 está calibrado para 30 días.
 - **Q5 · Deuda de Anki** — `pct_convertidos = anki_added / errores que generan tarjeta`.
-  Umbral 80%.
+  Umbral 80%. Incluye las marcas manuales explícitas y las creaciones verificadas;
+  no representa exclusivamente notas verificadas. El motor conserva su contrato.
 - **Q6 · Eficacia del rewrite** — de los errores del texto original, cuántos reaparecen en
   su rewrite. Umbral 50%. Empareja por `rewrite_of` y compara
   `(category, subcategory, correct_answer)`.
+- **Q7 · Repaso en Anki** — número de repasos y cartas distintas, fallos `ease=1`,
+  aciertos `ease=2/3/4`, porcentaje nullable si no hay repasos, y notas falladas por
+  categoría principal. Solo tipos 0–3 (aprendizaje, repaso, reaprendizaje y filtrado);
+  manual y reprogramado quedan fuera. Ventana 30/60 por fecha civil local, no por el
+  cambio de día del planificador de Anki. Tags sin mapeo forman un grupo propio.
+
+El cruce entre Q7 y los errores de práctica presenta recuentos y denominadores
+separados, sin equiparar sus tasas ni añadir una octava regla. La falta de sincronización
+se distingue de una ventana sincronizada sin repasos.
 
 Cada query exporta también a **CSV** (comillas escapadas correctamente).
 
@@ -257,7 +294,8 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
    sin una part ficticia. Elegir el tipo `WRITING` sigue exigiendo paper `WRITING`.
 2. **Informe** — Q1, Q2, Q5 y la tabla de reglas de decisión con el `DO NOW` destacado.
 3. **RUOE** — Q3.
-4. **Anki** — cola de pendientes con botón «añadida» que sella `anki_added_at`.
+4. **Anki** — cola de pendientes con creación verificada mediante AnkiConnect, marca
+   manual explícita y consulta de repasos/fallos por categoría (Q7).
 5. **Falsas certezas** — Q4.
 6. **Writing** — alta y edición de `writing_piece` con las cuatro bandas, y Q6.
 7. **Exportar** — un CSV por query, más un dump completo en JSON.
