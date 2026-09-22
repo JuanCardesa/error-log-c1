@@ -29,6 +29,14 @@ los puntos que podían causar pérdidas o duplicados:
   duplica el enlace en `anki_note.error_id`. Una nota puede servir a más de un error.
   `ON DELETE SET NULL` se añadió a mano al SQL generado: Drizzle no lo emitió para el
   `ALTER TABLE`. La sincronización devuelve la deuda antes de retirar la nota del espejo.
+- **Identidades que no se reutilizan.** `error_row.id` es AUTOINCREMENT, así que no se
+  repite dentro de una base; pero restaurar una copia anterior devuelve el contador atrás
+  y el namespace viaja en la copia, de modo que un error nuevo puede heredar la identidad
+  de otro que ya tiene tarjeta. Se detecta por la fecha: los identificadores de nota de
+  Anki son el instante de creación en milisegundos, igual que los del revlog, así que una
+  nota **anterior** al error que dice identificar no puede ser suya. Con más de cinco
+  minutos de desfase —margen para el ruido de reloj— no se vincula ni se escribe nada, y
+  se explica que la base parece restaurada.
 - **Perfil y alcance fijados.** El estado conserva perfil, URL y ambos mazos; se
   rechazan cambios de alcance. El perfil se vuelve a verificar antes de guardar.
   Cambiar de colección requiere otra base. Renombrar/restaurar otra colección bajo el

@@ -6,7 +6,7 @@ import { loadAnkiDataset } from '../db/load';
 import { ensureAnkiScope, linkAnkiNote, saveAnkiSnapshot } from '../db/ankiRepo';
 import { getError, unmarkAnkiAdded, updateError, deleteError } from '../db/repo';
 import { ankiNote, ankiReview, errorRow, session } from '../db/schema';
-import { ankiContentStale, createAnkiNote, escapeAnkiHtml, updateAnkiNote } from './create';
+import { ankiContentStale, createAnkiNote, escapeAnkiHtml, notePredatesError, updateAnkiNote } from './create';
 import { ankiStatus, batches, syncAnki, withAnkiLock } from './sync';
 import { CONFIG, NOW, REVIEW, ROLLOVER, FakeAnki, ankiFixture, review, card, note } from './fixtures/build';
 
@@ -194,6 +194,34 @@ it('deshacer olvida la huella: no se avisa de una tarjeta que ya no se reclama',
   unmarkAnkiAdded(db, 1);
   expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiContentHash: null });
   expect(ankiContentStale(getError(db, 1)!, ensureAnkiScope(db, CONFIG, 'Juan').namespace, CONFIG.targetDeck)).toBe(false);
+});
+
+it('no vincula una nota anterior al error: los ids se reutilizan al restaurar', async () => {
+  const noteId = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+
+  // Restaurar una copia anterior devuelve el contador de ids atrás: el error 1 de ahora
+  // es otro error, creado después de aquella nota, pero con la misma identidad.
+  db.update(errorRow).set({
+    createdAt: new Date(noteId + 86_400_000).toISOString(),
+    prompt: 'un error completamente distinto',
+    ankiNoteId: null, ankiAdded: false, ankiAddedAt: null, ankiContentHash: null,
+  }).where(eq(errorRow.id, 1)).run();
+
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CONFIG' });
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('restaurado');
+  // Ni vincula ni escribe: la tarjeta del otro error se queda intacta.
+  expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiAdded: false });
+  expect(fake.notes.get(noteId)?.fields['Prompt']?.value).toBe('I ___ it');
+  expect(fake.added).toBe(1);
+});
+
+it('distingue el desfase de una restauración del ruido de reloj', () => {
+  const created = '2026-09-22T12:00:00.000Z';
+  const at = Date.parse(created);
+  expect(notePredatesError(at + 1000, created)).toBe(false);
+  expect(notePredatesError(at - 60_000, created)).toBe(false);
+  expect(notePredatesError(at - 86_400_000, created)).toBe(true);
+  expect(notePredatesError(at, 'fecha rara')).toBe(false);
 });
 
 it('los errores de red y snapshots incompletos no cambian nada en SQLite', async () => {

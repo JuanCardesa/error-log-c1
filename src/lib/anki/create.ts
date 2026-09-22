@@ -46,6 +46,27 @@ export function contentHash(fields: Readonly<Record<string, string>>): string {
   return createHash('sha256').update(JSON.stringify(pairs)).digest('hex').slice(0, 32);
 }
 
+/**
+ * Margen para no confundir un reloj con un viaje en el tiempo. Una nota se crea segundos
+ * despues de su error; si es cinco minutos anterior, no es jitter, es otra epoca.
+ */
+const RESTORE_GRACE_MS = 300_000;
+
+/**
+ * Una nota que lleva la identidad de este error pero es anterior al propio error.
+ *
+ * Los identificadores de nota de Anki son la marca de tiempo de su creacion en ms, igual
+ * que los del revlog. Si la nota existia antes que el error, no puede ser suya: es la de
+ * otro error que tuvo ese id antes de restaurar una copia anterior de esta base. Los ids
+ * son AUTOINCREMENT, asi que no se reutilizan dentro de una base, pero una copia antigua
+ * vuelve atras el contador y el namespace viaja con ella. Vincularla apuntaria a la
+ * tarjeta de otro error, y actualizarla la sobrescribiria.
+ */
+export function notePredatesError(noteId: number, createdAt: string): boolean {
+  const created = Date.parse(createdAt);
+  return Number.isFinite(created) && noteId < created - RESTORE_GRACE_MS;
+}
+
 /** Si la tarjeta de Anki ya no dice lo que dice el error. */
 export function ankiContentStale(error: ErrorRow, namespace: string, deck: string): boolean {
   if (error.ankiNoteId === null || error.ankiContentHash === null) return false;
@@ -78,6 +99,13 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
     const matches = await api.findNotes(identityQuery(note.fields.ErrorLogId));
     if (matches.length > 1) throw new AnkiError('ANKI_ERROR', 'Hay varias notas con la identidad de este error. Revísalas en Anki antes de continuar.');
     let noteId = matches[0];
+    if (noteId !== undefined && notePredatesError(noteId, error.createdAt)) {
+      throw new AnkiError('ANKI_CONFIG',
+        `La nota que lleva la identidad de este error se creó el ${new Date(noteId).toLocaleDateString('es-ES')}, `
+        + 'antes que el propio error. Suele significar que esta base se ha restaurado de una copia anterior y los '
+        + 'identificadores se han reutilizado: esa tarjeta es de otro error. No se ha vinculado ni modificado nada. '
+        + 'Revísala en Anki, o usa otra base con DB_FILE_OVERRIDE para esta colección.');
+    }
     if (noteId === undefined) {
       if (!(await api.modelNames()).includes(ERRORLOG_MODEL)) {
         await api.createModel({

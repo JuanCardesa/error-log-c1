@@ -114,7 +114,8 @@ export class FakeAnki {
       }
       case 'addNote': {
         const input = params['note'] as { fields: Record<string, string>; tags: string[]; modelName: string };
-        const nid = 100 + this.added++;
+        // Como en Anki: el id de nota es el instante de creacion en milisegundos.
+        const nid = Date.now() + this.added++;
         this.notes.set(nid, {
           noteId: nid, cards: [nid + 100], modelName: input.modelName, tags: input.tags,
           fields: Object.fromEntries(Object.entries(input.fields).map(([name, value], order) => [name, { value, order }])),
