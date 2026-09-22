@@ -51,6 +51,9 @@ export interface ErrorRow {
   readonly ruleNote: string;
   readonly ankiAdded: boolean;
   readonly ankiAddedAt: string | null;
+  /** Nulo cuando se marcó a mano. El vínculo se comprueba al sincronizar. */
+  readonly ankiNoteId: number | null;
+  readonly ankiContentHash: string | null;
   /** Segundos que costo registrarlo. El spec original fija el objetivo en <30 s. */
   readonly secs: number | null;
   readonly createdAt: string;
@@ -87,3 +90,59 @@ export interface QueryOptions {
   readonly now: Date;
   readonly windowDays: number;
 }
+
+export interface AnkiNoteRow {
+  readonly noteId: number;
+  readonly model: string;
+  readonly label: string;
+  readonly tags: readonly string[];
+  readonly category: Category | null;
+  readonly firstSeenAt: string;
+  readonly lastSeenAt: string;
+}
+
+export interface AnkiCardRow {
+  readonly cardId: number;
+  readonly noteId: number;
+  readonly deck: string;
+  readonly templateOrd: number;
+  readonly lapses: number;
+  readonly reps: number;
+  readonly queue: number;
+  readonly intervalDays: number;
+}
+
+export interface AnkiReviewRow {
+  readonly reviewId: number;
+  readonly cardId: number;
+  readonly reviewedAt: string;
+  readonly reviewDate: string;
+  readonly ease: number;
+  readonly interval: number;
+  readonly lastInterval: number;
+  readonly factor: number;
+  readonly timeMs: number;
+  readonly type: number;
+}
+
+export interface AnkiSyncRow {
+  readonly id: number;
+  readonly namespace: string;
+  readonly profile: string;
+  readonly url: string;
+  readonly sourceDeck: string;
+  readonly targetDeck: string;
+  readonly lastSyncedAt: string | null;
+  readonly notesSeen: number;
+  readonly rolloverHour: number | null;
+  readonly rolloverSource: 'anki' | 'config' | 'default' | null;
+}
+
+export interface AnkiDataset {
+  readonly notes: readonly AnkiNoteRow[];
+  readonly cards: readonly AnkiCardRow[];
+  readonly reviews: readonly AnkiReviewRow[];
+  readonly sync: AnkiSyncRow | null;
+}
+
+export const EMPTY_ANKI_DATASET: AnkiDataset = { notes: [], cards: [], reviews: [], sync: null };

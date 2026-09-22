@@ -8,3 +8,6 @@ export const DB_FILE: string =
   process.env['DB_FILE_OVERRIDE'] ?? resolve(process.cwd(), 'data', 'errorlog.db');
 
 export const MIGRATIONS_DIR: string = resolve(process.cwd(), 'drizzle');
+
+/** Destino de las copias: las de `pnpm db:backup` y las previas a una migracion. */
+export const BACKUPS_DIR: string = resolve(process.cwd(), 'data', 'backups');

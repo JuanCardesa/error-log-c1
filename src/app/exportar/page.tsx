@@ -51,7 +51,7 @@ export default async function ExportarPage({
           <li className={styles.item}>
             <a className={styles.row} href={`/exportar/dump.json${query}`} download>
               <span className={styles.key}>JSON</span>
-              <span>Filas crudas, las seis consultas y el informe de reglas</span>
+              <span>Filas crudas, historial de Anki, las siete consultas y el informe de reglas</span>
               <span className={styles.file}>errorlog-dump.json</span>
             </a>
           </li>

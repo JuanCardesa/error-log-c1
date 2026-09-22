@@ -1,0 +1,1 @@
+ALTER TABLE `error_row` ADD `anki_content_hash` text;

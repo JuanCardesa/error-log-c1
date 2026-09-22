@@ -4,7 +4,8 @@ import { useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
 import type { ErrorRow } from '@/lib/domain/types';
-import { markAddedAction, undoAddedAction } from './actions';
+import { createAnkiAction, markAddedAction, undoAddedAction, updateAnkiAction } from './actions';
+import { useConversionFeedback } from './ConversionFeedback';
 import styles from './anki.module.css';
 
 /**
@@ -13,8 +14,9 @@ import styles from './anki.module.css';
  * La `CONFUSION` se muestra como par mi-respuesta / correcta a proposito: el spec pide
  * tarjeta **de contraste** para esa causa, no una tarjeta suelta.
  */
-export function QueueItem({ error, date }: { readonly error: ErrorRow; readonly date: string }) {
+export function QueueItem({ error, date, available }: { readonly error: ErrorRow; readonly date: string; readonly available: boolean }) {
   const [pending, startTransition] = useTransition();
+  const report = useConversionFeedback();
   const meta = CAUSE_META[error.cause];
 
   return (
@@ -41,34 +43,59 @@ export function QueueItem({ error, date }: { readonly error: ErrorRow; readonly 
         <p className={styles.rule}>{error.ruleNote}</p>
       </div>
 
+      <div className={styles.controls}>
       <button
         type="button"
         className={styles.add}
-        disabled={pending}
-        onClick={() => {
-          startTransition(async () => {
-            await markAddedAction(error.id);
-          });
-        }}
+        disabled={pending || !available}
+        aria-describedby={!available ? 'anki-status' : undefined}
+        title={!available ? 'Abre Anki y pulsa Sincronizar para habilitar la creación.' : undefined}
+        onClick={() => { startTransition(async () => { report(await createAnkiAction(error.id)); }); }}
       >
-        {pending ? 'Sellando…' : 'Añadida'}
+        {pending ? 'Creando…' : 'Crear en Anki'}
       </button>
+      <button type="button" className={styles.manual} disabled={pending}
+        onClick={() => { startTransition(async () => { report(await markAddedAction(error.id)); }); }}>
+        Marcar a mano
+      </button>
+      </div>
     </li>
+  );
+}
+
+/** Solo aparece cuando la tarjeta existe y su texto ya no coincide con el error. */
+export function UpdateButton({ id, available, stale }: {
+  readonly id: number; readonly available: boolean; readonly stale: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const report = useConversionFeedback();
+  if (!stale) return null;
+
+  return (
+    <button
+      type="button"
+      className={styles.manual}
+      disabled={pending || !available}
+      title={available ? 'Reescribe la tarjeta con el texto actual del error.' : 'Abre Anki para poder actualizarla.'}
+      onClick={() => { startTransition(async () => { report(await updateAnkiAction(id)); }); }}
+    >
+      {pending ? 'Actualizando…' : 'Actualizar en Anki'}
+    </button>
   );
 }
 
 export function UndoButton({ id }: { readonly id: number }) {
   const [pending, startTransition] = useTransition();
+  const report = useConversionFeedback();
 
   return (
     <button
       type="button"
       className={styles.undo}
+      title="Devuelve el error a la cola. La nota de Anki se conserva."
       disabled={pending}
       onClick={() => {
-        startTransition(async () => {
-          await undoAddedAction(id);
-        });
+        startTransition(async () => { report(await undoAddedAction(id)); });
       }}
     >
       Deshacer

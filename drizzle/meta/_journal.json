@@ -15,6 +15,34 @@
       "when": 1789728405189,
       "tag": "0001_session_without_exam",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790068482970,
+      "tag": "0002_anki_sync",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790073978331,
+      "tag": "0003_gigantic_microchip",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790074642586,
+      "tag": "0004_sad_eddie_brock",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790075819010,
+      "tag": "0005_easy_lionheart",
+      "breakpoints": true
     }
   ]
 }

@@ -121,7 +121,7 @@ export function getError(db: Db, id: number): ErrorRow | null {
 }
 
 export function updateError(db: Db, id: number, input: ErrorInput): boolean {
-  return db.update(errorRow).set(input).where(eq(errorRow.id, id)).run().changes > 0;
+  return db.update(errorRow).set({ ...input, ...(!input.ankiAdded ? { ankiNoteId: null, ankiContentHash: null } : {}) }).where(eq(errorRow.id, id)).run().changes > 0;
 }
 
 export function deleteError(db: Db, id: number): void {
@@ -135,7 +135,7 @@ export function markAnkiAdded(db: Db, id: number, at: string): void {
 }
 
 export function unmarkAnkiAdded(db: Db, id: number): void {
-  db.update(errorRow).set({ ankiAdded: false, ankiAddedAt: null }).where(eq(errorRow.id, id)).run();
+  db.update(errorRow).set({ ankiAdded: false, ankiAddedAt: null, ankiNoteId: null, ankiContentHash: null }).where(eq(errorRow.id, id)).run();
 }
 
 /**

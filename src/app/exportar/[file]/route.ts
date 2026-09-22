@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db/client';
-import { loadDataset } from '@/lib/db/load';
+import { loadAnkiDataset, loadDataset } from '@/lib/db/load';
 import { isCsvExport, toCsvExport, toJsonDump } from '@/lib/export/dump';
 import { parseWindow } from '../../_shared/window';
 
@@ -20,22 +20,23 @@ export async function GET(
   const windowDays = parseWindow(new URL(request.url).searchParams.get('w') ?? undefined);
 
   const data = loadDataset(getDb());
+  const anki = loadAnkiDataset(getDb());
   const options = { now: new Date(), windowDays };
 
   if (file === 'dump.json') {
-    return Response.json(toJsonDump(data, options), {
+    return Response.json(toJsonDump(data, options, anki), {
       headers: { 'content-disposition': 'attachment; filename="errorlog-dump.json"' },
     });
   }
 
-  const match = /^(q[1-6])\.csv$/.exec(file);
+  const match = /^(q[1-7])\.csv$/.exec(file);
   const which = match?.[1];
   if (which === undefined || !isCsvExport(which)) {
     return new Response('No existe ese fichero.', { status: 404 });
   }
 
   // La marca UTF-8 debe estar en el cuerpo, no basta con declarar el charset.
-  return new Response(`\uFEFF${toCsvExport(which, data, options)}`, {
+  return new Response(`\uFEFF${toCsvExport(which, data, options, anki)}`, {
     headers: {
       'content-type': 'text/csv; charset=utf-8',
       'content-disposition': `attachment; filename="errorlog-${which}.csv"`,

@@ -1,12 +1,19 @@
 import { getDb } from '@/lib/db/client';
-import { loadDataset } from '@/lib/db/load';
+import { loadAnkiDataset, loadDataset } from '@/lib/db/load';
+import { ankiConfig } from '@/lib/anki/config';
+import { ankiStatus } from '@/lib/anki/sync';
+import { ankiContentStale } from '@/lib/anki/create';
+import { q7AnkiReviews } from '@/lib/queries/q7AnkiReviews';
 import { ANKI_TARGET_PCT } from '@/lib/domain/thresholds';
 import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
-import { QueueItem, UndoButton } from './QueueItem';
+import { ConversionFeedback, ConversionNotice } from './ConversionFeedback';
+import { QueueItem, UndoButton, UpdateButton } from './QueueItem';
 import styles from './anki.module.css';
+import { SyncPanel } from './SyncPanel';
+import { ReviewFailures } from './ReviewFailures';
 
 /**
  * Cola de conversion a Anki.
@@ -28,6 +35,14 @@ export default async function AnkiPage({
 
   const data = loadDataset(getDb());
   const q5 = q5AnkiDebt(data, { now: new Date(), windowDays });
+  const anki = loadAnkiDataset(getDb());
+  const status = await ankiStatus(getDb());
+  const reviews = q7AnkiReviews(anki, { now: new Date(), windowDays });
+
+  // La huella se compara con el contenido de ahora: detecta la edición sin preguntar a Anki.
+  const namespace = anki.sync?.namespace ?? null;
+  const stale = new Set(namespace === null ? []
+    : data.errors.filter((error) => ankiContentStale(error, namespace, ankiConfig().targetDeck)).map((error) => error.id));
 
   const dateOf = new Map(data.sessions.map((session) => [session.id, session.date]));
   const converted = data.errors
@@ -47,6 +62,15 @@ export default async function AnkiPage({
         </div>
         <WindowSwitch current={windowDays} basePath="/anki" />
       </header>
+
+      <SyncPanel message={status.message} lastSyncedAt={anki.sync?.lastSyncedAt ?? null}
+        deck={ankiConfig().sourceDeck} rolloverHour={anki.sync?.rolloverHour ?? null}
+        rolloverSource={anki.sync?.rolloverSource ?? null} />
+      <ConversionFeedback>
+      <h2>Cola de conversión</h2>
+      <p className={shared.note}>La conversión incluye tarjetas verificadas y marcas manuales. Marcar a mano no comprueba que exista la tarjeta. Deshacer devuelve el error a la cola y conserva la nota en Anki. Si corriges un error ya convertido, su tarjeta no se reescribe sola: se avisa y puedes actualizarla.</p>
+
+      <ConversionNotice />
 
       <dl className={styles.summary}>
         <div>
@@ -76,6 +100,7 @@ export default async function AnkiPage({
               key={error.id}
               error={error}
               date={dateOf.get(error.sessionId) ?? ''}
+              available={status.available}
             />
           ))}
         </ul>
@@ -90,7 +115,11 @@ export default async function AnkiPage({
                 <span className="data">{(error.ankiAddedAt ?? '').slice(0, 10)}</span>
                 <span className="data">{error.correctAnswer}</span>
                 <span className={shared.note}>{error.category}</span>
-                <span style={{ marginLeft: 'auto' }}>
+                <span className={shared.note}>{error.ankiNoteId === null ? 'Marcada a mano'
+                  : stale.has(error.id) ? 'Verificada · el texto ha cambiado desde entonces'
+                  : 'Verificada en Anki'}</span>
+                <span style={{ marginLeft: 'auto', display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                  <UpdateButton id={error.id} available={status.available} stale={stale.has(error.id)} />
                   <UndoButton id={error.id} />
                 </span>
               </li>
@@ -98,6 +127,8 @@ export default async function AnkiPage({
           </ul>
         </section>
       )}
+      </ConversionFeedback>
+      <ReviewFailures result={reviews} windowDays={windowDays} synced={anki.sync?.lastSyncedAt != null} />
     </div>
   );
 }

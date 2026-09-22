@@ -111,6 +111,36 @@ describe('copias y restauracion', () => {
     expect(readdirSync(scratch)).toEqual(['unrelated.db']);
   });
 
+  it('copiar exige el espejo de Anki completo; restaurar acepta el esquema anterior', async () => {
+    // Media migracion: trae anki_note pero le falta anki_review. integrity_check no lo ve.
+    const broken = join(scratch, 'media.db');
+    const half = open(broken);
+    migrate(half, { migrationsFolder: MIGRATIONS_DIR });
+    half.$client.pragma('foreign_keys = OFF');
+    half.$client.exec('DROP TABLE anki_review');
+    await expect(backupDatabase(broken, join(scratch, 'roto.db'))).rejects.toThrow('no such table');
+    expect(existsSync(join(scratch, 'roto.db'))).toBe(false);
+
+    // Copia anterior al espejo: es la que guarda db:migrate, y hay que poder volver a ella.
+    const legacy = join(scratch, 'anterior.db');
+    const old = open(legacy);
+    migrate(old, { migrationsFolder: MIGRATIONS_DIR });
+    old.$client.pragma('foreign_keys = OFF');
+    for (const table of ['anki_review', 'anki_card', 'anki_note', 'anki_sync']) old.$client.exec(`DROP TABLE ${table}`);
+    old.$client.exec('ALTER TABLE error_row DROP COLUMN anki_note_id');
+    old.$client.exec('ALTER TABLE error_row DROP COLUMN anki_content_hash');
+    old.$client.exec(`DELETE FROM __drizzle_migrations WHERE created_at NOT IN
+      (SELECT created_at FROM __drizzle_migrations ORDER BY created_at LIMIT 2)`);
+    const restored = join(scratch, 'restaurada.db');
+    await restoreDatabase(legacy, restored);
+    // Volver a migrarla la deja al dia: es el ciclo que sostiene la copia previa.
+    const migrated = open(restored);
+    migrate(migrated, { migrationsFolder: MIGRATIONS_DIR });
+    expect(loadDataset(migrated).errors).toEqual([]);
+    expect(migrated.$client.prepare("SELECT name FROM sqlite_master WHERE name LIKE 'anki%' AND type = 'table'").all())
+      .toHaveLength(4);
+  });
+
   it('rechaza un fichero que no es SQLite sin dejar un destino incompleto', async () => {
     const source = join(scratch, 'invalid.db');
     writeFileSync(source, 'esto no es SQLite');

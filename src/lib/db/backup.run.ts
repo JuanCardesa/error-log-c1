@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join } from 'node:path';
 
 import { backupDatabase } from './backup';
-import { DB_FILE } from './paths';
+import { BACKUPS_DIR, DB_FILE } from './paths';
 
 try {
   const args = process.argv.slice(2);
@@ -15,7 +15,7 @@ try {
     );
   }
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const target = args[0] ?? resolve('data', 'backups', `errorlog-${stamp}.db`);
+  const target = args[0] ?? join(BACKUPS_DIR, `errorlog-${stamp}.db`);
   const file = await backupDatabase(DB_FILE, target);
   console.log(`Copia verificada: ${file}`);
   console.log('Guarda tambien una copia fuera de este equipo.');

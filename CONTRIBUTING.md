@@ -60,7 +60,7 @@ con la app abierta. Usa la API de backup de SQLite mediante los comandos siguien
 
 ```bash
 pnpm db:generate   # nueva migración a partir del schema
-pnpm db:migrate    # aplicarlas
+pnpm db:migrate    # aplicarlas; copia previa automatica si la base ya tenia datos
 pnpm db:seed       # solo sobre una base vacia; nunca borra filas
 pnpm demo          # ejemplos en una base nueva y separada, puerto 3001
 pnpm db:backup     # copia consistente y verificada en data/backups/
