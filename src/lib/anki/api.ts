@@ -57,7 +57,13 @@ export function ankiApi(transport: Transport) {
         { action: 'cardsInfo', version: 6, params: { cards } },
         { action: 'getReviewsOfCards', version: 6, params: { cards } },
       ] }));
-      const info = parseAnki(z.array(cardSchema), unwrap(rows[0]));
+      const raw = parseAnki(z.array(z.unknown()), unwrap(rows[0]));
+      // cardsInfo devuelve {} por cada carta que ya no existe. Pasarlo por el esquema
+      // daria «actualiza el complemento», que manda a arreglar lo que no esta roto.
+      if (raw.some((row) => row !== null && typeof row === 'object' && Object.keys(row).length === 0)) {
+        throw new AnkiError('ANKI_RESPUESTA_RARA', 'Alguna carta dejó de existir durante la lectura. Vuelve a sincronizar.');
+      }
+      const info = parseAnki(z.array(cardSchema), raw);
       const reviews = parseAnki(z.record(z.string(), z.array(reviewSchema)), unwrap(rows[1]));
       if (info.length !== cards.length || info.some((card, i) => card.cardId !== cards[i])
         || Object.keys(reviews).length !== cards.length || cards.some((card) => reviews[String(card)] === undefined)) {

@@ -7,8 +7,18 @@ export interface AnkiConfig {
   readonly apiKey?: string;
   /** Corte de dia declarado a mano. AnkiConnect no expone el de la coleccion. */
   readonly rolloverHour?: number;
+  /** Cuanto vale el estado de conexion antes de volver a preguntar. Cero en las pruebas. */
+  readonly statusTtlMs: number;
   readonly disabled: boolean;
 }
+
+/**
+ * Preguntar el estado cuesta unos 67 ms medidos: AnkiConnect atiende en el bucle de Qt y
+ * cada llamada paga esa espera. Guardarlo unos segundos evita pagarlo en cada render de
+ * una pagina que es `force-dynamic`. En demo y e2e vale cero: ahi el estado se cambia a
+ * proposito de un test a otro y una ventana de gracia haria los resultados no repetibles.
+ */
+const STATUS_TTL_MS = 5_000;
 
 /** Puerto por defecto del complemento real. El doble tiene prohibido usarlo. */
 const ANKI_CONNECT_PORT = '8765';
@@ -42,6 +52,7 @@ export function ankiConfig(env: Readonly<Record<string, string | undefined>> = p
     targetDeck: env['ANKI_TARGET_DECK']?.trim() || `${sourceDeck}::Error Log`,
     apiKey: env['ANKI_CONNECT_API_KEY'],
     ...(rollover !== undefined && rollover !== '' ? { rolloverHour: Number(rollover) } : {}),
+    statusTtlMs: demo || e2e ? 0 : STATUS_TTL_MS,
     // Sin doble inyectado, la demo y los e2e no leen ni escriben ninguna colección.
     disabled: (demo || e2e) && fakeUrl === undefined,
   };

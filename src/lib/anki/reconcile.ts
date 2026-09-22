@@ -39,8 +39,11 @@ export function reconcile(snapshot: AnkiSnapshot, current: AnkiDataset, now: Dat
   }));
   const reviews: AnkiDataset['reviews'][number][] = [];
   const seen = new Set<number>();
+  // Por conjunto, no por busqueda lineal: con 8000 cartas el recorrido anidado costaba
+  // 134 ms y crecia al cuadrado. La clave ajena del espejo exige que la nota este.
+  const known = new Set(notes.map((note) => note.noteId));
   for (const card of cards) {
-    if (!notes.some((note) => note.noteId === card.noteId)) throw new AnkiError('ANKI_RESPUESTA_RARA', 'Falta la nota de una tarjeta; repite la sincronización.');
+    if (!known.has(card.noteId)) throw new AnkiError('ANKI_RESPUESTA_RARA', 'Falta la nota de una tarjeta; repite la sincronización.');
     for (const review of snapshot.reviews[String(card.cardId)] ?? []) {
       // 4 = manual; 5 = reprogramación. Solo 1..4 son botones de un repaso real.
       if (review.type < 0 || review.type > 3 || review.ease < 1 || review.ease > 4) continue;

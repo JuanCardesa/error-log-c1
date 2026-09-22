@@ -38,18 +38,43 @@ export function batches<T>(values: readonly T[], size = 250): T[][] {
   return result;
 }
 
+export interface AnkiStatus {
+  readonly available: boolean;
+  readonly message: string;
+}
+
+/**
+ * El estado se guarda un rato por conexion; cuanto, lo dice la configuracion.
+ *
+ * `/anki` es `force-dynamic`, asi que cada visita preguntaba dos veces a Anki: 67 ms
+ * medidos por render. A cambio, cerrar Anki tarda esa ventana en notarse, asi que las
+ * acciones que hablan con Anki la invalidan y en las pruebas vale cero.
+ */
+const statusCache = new WeakMap<Db, { at: number; status: AnkiStatus }>();
+
+export function forgetAnkiStatus(db: Db): void {
+  statusCache.delete(db);
+}
+
 /** Sin reintentos: se ejecuta al pintar la pagina y aqui esperar solo retrasa el aviso. */
-export async function ankiStatus(db: Db, config = ankiConfig(), transport = httpTransport(config)) {
-  try {
-    const api = ankiApi(transport);
-    await api.version();
-    const profile = await api.profile();
-    assertAnkiScope(getAnkiSync(db), config, profile);
-    return { available: true, message: `Anki conectado · perfil ${profile}` };
-  } catch (error) { return { available: false, message: ankiMessage(error) }; }
+export async function ankiStatus(db: Db, config = ankiConfig(), transport = httpTransport(config), now = Date.now()): Promise<AnkiStatus> {
+  const cached = statusCache.get(db);
+  if (cached !== undefined && now - cached.at < config.statusTtlMs) return cached.status;
+  const status = await (async (): Promise<AnkiStatus> => {
+    try {
+      const api = ankiApi(transport);
+      await api.version();
+      const profile = await api.profile();
+      assertAnkiScope(getAnkiSync(db), config, profile);
+      return { available: true, message: `Anki conectado · perfil ${profile}` };
+    } catch (error) { return { available: false, message: ankiMessage(error) }; }
+  })();
+  statusCache.set(db, { at: now, status });
+  return status;
 }
 
 export async function syncAnki(db: Db, transport?: Transport, now = new Date(), config: AnkiConfig = ankiConfig()) {
+  forgetAnkiStatus(db);
   return withAnkiLock(db, async () => {
     const api = ankiApi(transport ?? withRetry(httpTransport(config)));
     await api.version();

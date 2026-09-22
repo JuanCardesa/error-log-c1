@@ -10,7 +10,7 @@ import { ankiConfig, type AnkiConfig } from './config';
 import { AnkiError, httpTransport, withRetry, type Transport } from './connect';
 import { categoryOf } from './categories';
 import { noteLabel } from './reconcile';
-import { withAnkiLock } from './sync';
+import { forgetAnkiStatus, withAnkiLock } from './sync';
 
 export const ERRORLOG_MODEL = 'Error Log C1';
 export const ERRORLOG_ID_FIELD = 'ErrorLogId';
@@ -88,6 +88,7 @@ export function noteForError(error: ErrorRow, namespace: string, deck: string) {
 }
 
 export async function createAnkiNote(db: Db, errorId: number, transport?: Transport, now = new Date(), config: AnkiConfig = ankiConfig()) {
+  forgetAnkiStatus(db);
   return withAnkiLock(db, async () => {
     const error = getError(db, errorId);
     if (error === null || !generatesCard(error.cause)) throw new AnkiError('ANKI_CONFIG', 'Ese error no existe o su causa no genera tarjeta.');
@@ -142,6 +143,7 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
  * etiqueta en Anki se queda como estaba. No se borra ni se mueve nada.
  */
 export async function updateAnkiNote(db: Db, errorId: number, transport?: Transport, config: AnkiConfig = ankiConfig()) {
+  forgetAnkiStatus(db);
   return withAnkiLock(db, async () => {
     const error = getError(db, errorId);
     if (error === null || error.ankiNoteId === null) {

@@ -34,6 +34,12 @@ describe('configuración y transporte local', () => {
   it.each(['ftp://localhost', 'http://example.com', 'http://user:pass@localhost', 'http://localhost?key=1', 'http://localhost#x'])('rechaza destinos no locales o ambiguos (%s)', (url) => {
     expect(() => ankiConfig({ ANKI_CONNECT_URL: url })).toThrow();
   });
+  it('no guarda el estado de conexión en demo ni en pruebas: ahí se cambia a propósito', () => {
+    expect(ankiConfig({}).statusTtlMs).toBeGreaterThan(0);
+    expect(ankiConfig({ ERRORLOG_DEMO: '1' }).statusTtlMs).toBe(0);
+    expect(ankiConfig({ ERRORLOG_E2E: '1' }).statusTtlMs).toBe(0);
+    expect(ankiConfig({ ERRORLOG_E2E: '1', ERRORLOG_ANKI_FAKE_URL: 'http://127.0.0.1:8769/' }).statusTtlMs).toBe(0);
+  });
   it('permite declarar a mano el corte de día, que AnkiConnect no expone', () => {
     expect(ankiConfig({}).rolloverHour).toBeUndefined();
     expect(ankiConfig({ ANKI_ROLLOVER_HOUR: '' }).rolloverHour).toBeUndefined();

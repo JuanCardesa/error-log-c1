@@ -132,7 +132,8 @@ export function unwrap(response: unknown): unknown {
     || !('result' in response) || !('error' in response)) {
     throw new AnkiError('ANKI_RESPUESTA_RARA', 'Respuesta incompleta de AnkiConnect. No se ha guardado.');
   }
-  if (typeof response.error === 'string') throw new AnkiError('ANKI_ERROR', response.error);
+  // Se cita como ajeno: es el texto de AnkiConnect, no un mensaje escrito para esta app.
+  if (typeof response.error === 'string') throw new AnkiError('ANKI_ERROR', `AnkiConnect responde: ${response.error}`);
   if (response.error !== null) throw new AnkiError('ANKI_RESPUESTA_RARA', 'Error de AnkiConnect con formato desconocido.');
   return response.result;
 }

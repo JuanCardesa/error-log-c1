@@ -76,6 +76,19 @@ export function setAnkiContentHash(db: AnkiDb, errorId: number, contentHash: str
   db.update(errorRow).set({ ankiContentHash: contentHash }).where(eq(errorRow.id, errorId)).run();
 }
 
+/**
+ * Filas por sentencia. SQLite limita las variables enlazadas por consulta, y estas tablas
+ * tienen hasta diez columnas: 200 filas dejan margen de sobra y evitan una sentencia por
+ * repaso, que con historiales largos era el grueso del trabajo de guardar.
+ */
+const INSERT_CHUNK = 200;
+
+function chunked<T>(values: readonly T[]): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < values.length; i += INSERT_CHUNK) result.push(values.slice(i, i + INSERT_CHUNK));
+  return result;
+}
+
 /** Solo toca el espejo local. Nunca borra ni modifica notas de Anki. */
 export function saveAnkiSnapshot(db: Db, plan: ReturnType<typeof reconcile>, config: AnkiConfig, profile: string, at: string): void {
   db.transaction((tx) => {
@@ -93,8 +106,8 @@ export function saveAnkiSnapshot(db: Db, plan: ReturnType<typeof reconcile>, con
     // que llegaron de una importación. La sustitución es atómica y solo del caché.
     tx.delete(ankiReview).run();
     tx.delete(ankiCard).run();
-    for (const card of plan.cards) tx.insert(ankiCard).values(card).run();
-    for (const review of plan.reviews) tx.insert(ankiReview).values(review).run();
+    for (const rows of chunked(plan.cards)) tx.insert(ankiCard).values(rows).run();
+    for (const rows of chunked(plan.reviews)) tx.insert(ankiReview).values(rows).run();
     for (const noteId of plan.missingNoteIds) tx.delete(ankiNote).where(eq(ankiNote.noteId, noteId)).run();
     tx.update(ankiSync).set({ lastSyncedAt: at, notesSeen: plan.notes.length,
       rolloverHour: plan.rollover.hour, rolloverSource: plan.rollover.source })

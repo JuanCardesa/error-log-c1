@@ -136,6 +136,29 @@ Agotar los reintentos de un lote aborta la sincronización entera sin guardar na
 que el peor caso está acotado en unos tres minutos. El tamaño de lote sigue en 250 y
 está sin medir contra una colección real: es lo primero que hay que ajustar con datos.
 
+## Escala medida
+
+Contra la colección real (3000 cartas): `cardsInfo` de 250 cartas tarda 190 ms pero
+devuelve **2,87 MB**, unos 11,5 KB por carta, casi todo pregunta y respuesta ya
+renderizadas que esta app no usa —`cardSchema` se queda con nueve campos—. El `multi`
+que hace la sincronización son 215 ms por lote de 250, así que la colección entera son
+unos 2,6 s y 10 000 cartas rondarían 8,6 s. El plazo de 60 s para lotes es holgura, no
+una necesidad: el riesgo real no era el tiempo sino el volumen.
+
+Con 3000 cartas y 30 000 repasos, `reconcile` tarda 88 ms y guardar el espejo 1188 ms;
+antes de insertar por lotes eran 2768 ms. El recorrido que comprobaba la nota de cada
+carta era cuadrático y ahora usa un conjunto.
+
+Preguntar el estado de conexión cuesta 67 ms medidos —AnkiConnect atiende en el bucle de
+Qt y cada llamada paga esa espera—, y `/anki` es `force-dynamic`, así que se pagaba en
+cada render. Se guarda unos segundos por conexión; a cambio, cerrar Anki tarda esa
+ventana en notarse, de modo que crear, actualizar y sincronizar la invalidan. En demo y
+e2e vale cero: ahí el estado se cambia a propósito de un test a otro.
+
+Notas que salen del mazo conservan su fila en `anki_note` sin cartas. Es deliberado
+—preserva `first_seen_at` si vuelven— y no crece sin límite: el tope es el número de
+notas que alguna vez entraron en el mazo.
+
 ## Verificación real pendiente
 
 La implementación supera 470 pruebas unitarias/integración, con cobertura global

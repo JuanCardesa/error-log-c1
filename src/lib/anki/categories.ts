@@ -1,5 +1,11 @@
 import { CATEGORIES, type Category } from '../domain/enums';
 
+/**
+ * Orden de desempate para una nota con varias etiquetas `cat::`. `LEXICO` aparece dos
+ * veces a proposito, no por descuido: un par confundible pesa mas que una expresion fija,
+ * pero un sustantivo suelto pesa menos que un marcador del discurso. Fundir los dos
+ * escalones cambiaria la clasificacion de las notas que llevan ambas etiquetas.
+ */
 const PRIORITY: readonly [Category, readonly string[]][] = [
   ['PHRASAL_VERB', ['phrasal_verb']],
   ['COLOCACION', ['collocation', 'verb_noun', 'adverb_adjective']],

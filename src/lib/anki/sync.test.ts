@@ -254,9 +254,35 @@ it('comprueba el mazo y que el perfil no cambió durante la lectura', async () =
   expect(loadAnkiDataset(db).sync).toBeNull();
 });
 it('muestra estado útil con Anki abierto y cerrado', async () => {
-  expect(await ankiStatus(db, CONFIG, fake.transport)).toMatchObject({ available: true });
+  const t0 = Date.now();
+  expect(await ankiStatus(db, CONFIG, fake.transport, t0)).toMatchObject({ available: true });
   fake.disconnected = true;
-  expect(await ankiStatus(db, CONFIG, fake.transport)).toMatchObject({ available: false, message: expect.stringContaining('Abre Anki') });
+  expect(await ankiStatus(db, CONFIG, fake.transport, t0 + 10_000)).toMatchObject({ available: false, message: expect.stringContaining('Abre Anki') });
+});
+
+it('no vuelve a preguntar a Anki en cada render, pero no tapa un cambio real', async () => {
+  const t0 = Date.now();
+  await ankiStatus(db, CONFIG, fake.transport, t0);
+  const asked = fake.calls.length;
+
+  // Dentro de la ventana no se pregunta otra vez: es el caso de navegar por la pantalla.
+  await ankiStatus(db, CONFIG, fake.transport, t0 + 1000);
+  expect(fake.calls.length).toBe(asked);
+
+  // Pasada la ventana, sí.
+  await ankiStatus(db, CONFIG, fake.transport, t0 + 6000);
+  expect(fake.calls.length).toBeGreaterThan(asked);
+});
+
+it('hablar con Anki invalida el estado guardado: abrirlo se nota al momento', async () => {
+  const t0 = Date.now();
+  fake.disconnected = true;
+  expect(await ankiStatus(db, CONFIG, fake.transport, t0)).toMatchObject({ available: false });
+
+  // Se abre Anki y se pulsa Sincronizar: el aviso no puede seguir diciendo que está cerrado.
+  fake.disconnected = false;
+  await syncAnki(db, fake.transport, NOW, CONFIG);
+  expect(await ankiStatus(db, CONFIG, fake.transport, t0 + 1000)).toMatchObject({ available: true });
 });
 it('revierte todo el snapshot si falla un CHECK al escribir', () => {
   const initial = ankiFixture();
