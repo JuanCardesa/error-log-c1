@@ -128,6 +128,7 @@ describe('copias y restauracion', () => {
     old.$client.pragma('foreign_keys = OFF');
     for (const table of ['anki_review', 'anki_card', 'anki_note', 'anki_sync']) old.$client.exec(`DROP TABLE ${table}`);
     old.$client.exec('ALTER TABLE error_row DROP COLUMN anki_note_id');
+    old.$client.exec('ALTER TABLE error_row DROP COLUMN anki_content_hash');
     old.$client.exec(`DELETE FROM __drizzle_migrations WHERE created_at NOT IN
       (SELECT created_at FROM __drizzle_migrations ORDER BY created_at LIMIT 2)`);
     const restored = join(scratch, 'restaurada.db');

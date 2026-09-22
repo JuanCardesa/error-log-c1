@@ -70,6 +70,7 @@ export function ankiApi(transport: Transport) {
     async createModel(params: Record<string, unknown>) { await call('createModel', params); },
     async createDeck(deck: string) { return parseAnki(id, await call('createDeck', { deck })); },
     async addNote(note: Record<string, unknown>) { return parseAnki(id, await call('addNote', { note })); },
+    async updateNoteFields(note: Record<string, unknown>) { await call('updateNoteFields', { note }); },
   };
 }
 export type AnkiApi = ReturnType<typeof ankiApi>;

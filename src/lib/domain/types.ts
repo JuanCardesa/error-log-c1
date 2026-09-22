@@ -53,6 +53,7 @@ export interface ErrorRow {
   readonly ankiAddedAt: string | null;
   /** Nulo cuando se marcó a mano. El vínculo se comprueba al sincronizar. */
   readonly ankiNoteId: number | null;
+  readonly ankiContentHash: string | null;
   /** Segundos que costo registrarlo. El spec original fija el objetivo en <30 s. */
   readonly secs: number | null;
   readonly createdAt: string;

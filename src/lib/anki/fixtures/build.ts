@@ -101,6 +101,17 @@ export class FakeAnki {
       case 'modelFieldNames': return this.fields;
       case 'createModel': this.models.push(String(params['modelName'])); return {};
       case 'createDeck': return 30;
+      case 'updateNoteFields': {
+        const input = params['note'] as { id: number; fields: Record<string, string> };
+        const existing = this.notes.get(input.id);
+        // AnkiConnect falla si la nota no existe; no la crea por el camino.
+        if (existing === undefined) throw new Error('note was not found');
+        this.notes.set(input.id, {
+          ...existing,
+          fields: Object.fromEntries(Object.entries(input.fields).map(([name, value], order) => [name, { value, order }])),
+        });
+        return null;
+      }
       case 'addNote': {
         const input = params['note'] as { fields: Record<string, string>; tags: string[]; modelName: string };
         const nid = 100 + this.added++;

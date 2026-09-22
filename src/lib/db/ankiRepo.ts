@@ -63,12 +63,17 @@ function assertNotWholesaleUnlink(db: AnkiDb, missingNoteIds: readonly number[])
     + 'en la cola de conversion y vuelve a sincronizar.');
 }
 
-export function linkAnkiNote(db: Db, errorId: number, note: AnkiNoteRow, at: string): void {
+export function linkAnkiNote(db: Db, errorId: number, note: AnkiNoteRow, at: string, contentHash: string): void {
   db.transaction((tx) => {
     tx.insert(ankiNote).values(note).onConflictDoUpdate({ target: ankiNote.noteId, set: note }).run();
-    tx.update(errorRow).set({ ankiNoteId: note.noteId, ankiAdded: true, ankiAddedAt: at })
+    tx.update(errorRow).set({ ankiNoteId: note.noteId, ankiAdded: true, ankiAddedAt: at, ankiContentHash: contentHash })
       .where(eq(errorRow.id, errorId)).run();
   });
+}
+
+/** Sella el contenido ya enviado. Solo despues de que Anki confirme la escritura. */
+export function setAnkiContentHash(db: AnkiDb, errorId: number, contentHash: string): void {
+  db.update(errorRow).set({ ankiContentHash: contentHash }).where(eq(errorRow.id, errorId)).run();
 }
 
 /** Solo toca el espejo local. Nunca borra ni modifica notas de Anki. */
@@ -78,7 +83,7 @@ export function saveAnkiSnapshot(db: Db, plan: ReturnType<typeof reconcile>, con
     // Dentro de la transaccion: el recuento de vinculos que se comprueba es el que se escribe.
     assertNotWholesaleUnlink(tx, plan.missingNoteIds);
     for (const noteId of plan.missingNoteIds) {
-      tx.update(errorRow).set({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null })
+      tx.update(errorRow).set({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null, ankiContentHash: null })
         .where(eq(errorRow.ankiNoteId, noteId)).run();
     }
     for (const note of plan.notes) {

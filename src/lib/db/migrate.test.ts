@@ -39,7 +39,8 @@ function snapshot() {
     data: {
       sessions: db.$client.prepare('SELECT * FROM session ORDER BY id').all(),
       errors: db.$client.prepare<[], Record<string, unknown>>('SELECT * FROM error_row ORDER BY id').all()
-        .map(({ anki_note_id: _newColumn, ...row }) => row),
+        // Columnas que no existen en el esquema historico del fixture.
+        .map(({ anki_note_id: _link, anki_content_hash: _hash, ...row }) => row),
       pieces: db.$client.prepare<[], { session_id: number }>('SELECT * FROM writing_piece ORDER BY id').all(),
     },
     schema: db.$client.prepare('SELECT type, name, sql FROM sqlite_schema ORDER BY name').all(),

@@ -6,7 +6,7 @@ import { loadAnkiDataset } from '../db/load';
 import { ensureAnkiScope, linkAnkiNote, saveAnkiSnapshot } from '../db/ankiRepo';
 import { getError, unmarkAnkiAdded, updateError, deleteError } from '../db/repo';
 import { ankiNote, ankiReview, errorRow, session } from '../db/schema';
-import { createAnkiNote, escapeAnkiHtml } from './create';
+import { ankiContentStale, createAnkiNote, escapeAnkiHtml, updateAnkiNote } from './create';
 import { ankiStatus, batches, syncAnki, withAnkiLock } from './sync';
 import { CONFIG, NOW, REVIEW, ROLLOVER, FakeAnki, ankiFixture, review, card, note } from './fixtures/build';
 
@@ -147,6 +147,55 @@ it('la identidad no confunde a dos errores con prefijo común', async () => {
   expect(fake.added).toBe(2);
 });
 
+/** El error 1, ya convertido, con su enunciado corregido después. */
+async function convertThenEdit(): Promise<number> {
+  const noteId = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
+  const before = getError(db, 1)!;
+  expect(ankiContentStale(before, ensureAnkiScope(db, CONFIG, 'Juan').namespace, CONFIG.targetDeck)).toBe(false);
+  db.update(errorRow).set({ correctAnswer: 'taken' }).where(eq(errorRow.id, 1)).run();
+  return noteId;
+}
+
+it('avisa de que la tarjeta quedó vieja al corregir un error ya convertido', async () => {
+  await convertThenEdit();
+  const namespace = ensureAnkiScope(db, CONFIG, 'Juan').namespace;
+  // El vínculo sigue, pero la tarjeta ya no dice lo que dice el error.
+  expect(getError(db, 1)?.ankiAdded).toBe(true);
+  expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(true);
+});
+
+it('actualizar reescribe los campos en Anki y deja de avisar', async () => {
+  const noteId = await convertThenEdit();
+  const namespace = ensureAnkiScope(db, CONFIG, 'Juan').namespace;
+  const duringUpdate = fake.calls.length;
+  expect(await updateAnkiNote(db, 1, fake.transport, CONFIG)).toBe(noteId);
+  expect(fake.notes.get(noteId)?.fields['Correct']?.value).toBe('taken');
+  expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(false);
+  // Actualizar no crea una segunda nota, ni mazos, ni tipos de nota, ni borra nada.
+  expect(fake.added).toBe(1);
+  expect(fake.calls.slice(duringUpdate).map((call) => call.action).filter((action) => /^(create|add|delete)/.test(action))).toEqual([]);
+});
+
+it('no actualiza si la escritura falla ni si la nota ya no es de este error', async () => {
+  const noteId = await convertThenEdit();
+  const namespace = ensureAnkiScope(db, CONFIG, 'Juan').namespace;
+  fake.failAction = 'updateNoteFields';
+  await expect(updateAnkiNote(db, 1, fake.transport, CONFIG)).rejects.toThrow('Fallo simulado');
+  expect(ankiContentStale(getError(db, 1)!, namespace, CONFIG.targetDeck)).toBe(true);
+
+  fake.failAction = null;
+  const stolen = fake.notes.get(noteId)!;
+  fake.notes.set(noteId, { ...stolen, fields: { ...stolen.fields, ErrorLogId: { value: 'errorlog::otra::9', order: 0 } } });
+  await expect(updateAnkiNote(db, 1, fake.transport, CONFIG)).rejects.toThrow('ya no corresponde');
+});
+
+it('deshacer olvida la huella: no se avisa de una tarjeta que ya no se reclama', async () => {
+  await convertThenEdit();
+  unmarkAnkiAdded(db, 1);
+  expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiContentHash: null });
+  expect(ankiContentStale(getError(db, 1)!, ensureAnkiScope(db, CONFIG, 'Juan').namespace, CONFIG.targetDeck)).toBe(false);
+});
+
 it('los errores de red y snapshots incompletos no cambian nada en SQLite', async () => {
   await syncAnki(db, fake.transport, NOW, CONFIG);
   const before = loadAnkiDataset(db);
@@ -190,7 +239,7 @@ it('revierte todo el snapshot si falla un CHECK al escribir', () => {
 it('aplica SET NULL al vínculo y cascada al espejo, sin borrar el error', () => {
   const data = ankiFixture();
   saveAnkiSnapshot(db, { ...data, missingNoteIds: [], newReviews: 1, rollover: ROLLOVER }, CONFIG, 'Juan', NOW.toISOString());
-  linkAnkiNote(db, 1, data.notes[0]!, NOW.toISOString());
+  linkAnkiNote(db, 1, data.notes[0]!, NOW.toISOString(), 'huella');
   db.delete(ankiNote).where(eq(ankiNote.noteId, 20)).run();
   expect(getError(db, 1)?.ankiNoteId).toBeNull();
   expect(loadAnkiDataset(db).cards).toEqual([]);

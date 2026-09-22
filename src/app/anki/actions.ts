@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
 import { getError, markAnkiAdded, unmarkAnkiAdded } from '@/lib/db/repo';
 import { generatesCard } from '@/lib/domain/enums';
-import { createAnkiNote } from '@/lib/anki/create';
+import { createAnkiNote, updateAnkiNote } from '@/lib/anki/create';
 import { syncAnki } from '@/lib/anki/sync';
 import { ankiMessage } from '@/lib/anki/connect';
 
@@ -29,6 +29,16 @@ export async function createAnkiAction(id: number) {
     await createAnkiNote(getDb(), id);
     refreshAnki();
     return { ok: true, message: 'Tarjeta verificada en Anki.' };
+  } catch (error) { return { ok: false, message: ankiMessage(error) }; }
+}
+
+/** Reescribe la tarjeta con el texto actual del error. Es la unica escritura ademas de crear. */
+export async function updateAnkiAction(id: number) {
+  if (!Number.isSafeInteger(id) || id <= 0) return { ok: false, message: 'Identificador de error inválido.' };
+  try {
+    await updateAnkiNote(getDb(), id);
+    refreshAnki();
+    return { ok: true, message: 'Tarjeta actualizada en Anki.' };
   } catch (error) { return { ok: false, message: ankiMessage(error) }; }
 }
 

@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
 import type { ErrorRow } from '@/lib/domain/types';
-import { createAnkiAction, markAddedAction, undoAddedAction } from './actions';
+import { createAnkiAction, markAddedAction, undoAddedAction, updateAnkiAction } from './actions';
+import shared from '../_shared/report.module.css';
 import styles from './anki.module.css';
 
 /**
@@ -65,6 +66,40 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
       {message !== '' && <p role="status">{message}</p>}
       </div>
     </li>
+  );
+}
+
+/**
+ * El boton solo sale si la tarjeta quedo vieja, pero el componente se monta siempre.
+ *
+ * Al actualizar, `revalidatePath` vuelve a pintar la lista y el error deja de estar
+ * desfasado: si el componente fuese condicional, se desmontaria con su mensaje dentro y
+ * el aviso de exito no llegaria a verse nunca.
+ */
+export function UpdateButton({ id, available, stale }: {
+  readonly id: number; readonly available: boolean; readonly stale: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [message, setMessage] = useState('');
+  if (!stale && message === '') return null;
+
+  return (
+    <>
+      {stale && (
+        <button
+          type="button"
+          className={styles.manual}
+          disabled={pending || !available}
+          title={available ? 'Reescribe la tarjeta con el texto actual del error.' : 'Abre Anki para poder actualizarla.'}
+          onClick={() => {
+            startTransition(async () => { setMessage((await updateAnkiAction(id)).message); });
+          }}
+        >
+          {pending ? 'Actualizando…' : 'Actualizar en Anki'}
+        </button>
+      )}
+      {message !== '' && <span role="status" className={shared.note}>{message}</span>}
+    </>
   );
 }
 

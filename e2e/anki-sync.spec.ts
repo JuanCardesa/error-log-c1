@@ -139,3 +139,26 @@ test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', a
   const dump = await (await request.get('/exportar/dump.json')).json() as { anki: { notes: { model: string }[] } };
   expect(dump.anki.notes.filter((row) => row.model === 'Error Log C1')).toHaveLength(1);
 });
+
+test('corregir un error convertido avisa de que la tarjeta quedó vieja y deja arreglarla', async ({ page }) => {
+  await page.goto('/anki');
+  await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
+  const done = page.getByRole('region', { name: 'Convertidas recientemente' });
+  await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
+
+  // Se corrige el texto del error ya convertido, desde donde se corrige de verdad.
+  const converted = createDb(E2E_DB);
+  try {
+    converted.$client.exec(`UPDATE error_row SET correct_answer = 'texto corregido'
+      WHERE anki_note_id IS NOT NULL`);
+  } finally { converted.$client.close(); }
+
+  await page.reload();
+  await expect(done.getByText('el texto ha cambiado desde entonces').first()).toBeVisible();
+
+  await done.getByRole('button', { name: 'Actualizar en Anki' }).first().click();
+  await expect(done.getByText('Tarjeta actualizada en Anki.')).toBeVisible();
+  await page.reload();
+  await expect(done.getByText('el texto ha cambiado desde entonces')).toHaveCount(0);
+  await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
+});

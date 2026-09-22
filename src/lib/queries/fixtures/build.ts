@@ -51,6 +51,7 @@ export function makeError(overrides: Partial<ErrorRow> = {}): ErrorRow {
   return {
     id: overrides.id ?? autoId(),
     sessionId: 1,
+    ankiContentHash: null,
     itemRef: null,
     prompt: 'The speaker says the survey was carried out by ______',
     myAnswer: 'volunters',

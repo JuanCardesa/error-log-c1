@@ -106,6 +106,8 @@ export const errorRow = sqliteTable(
     ankiAdded: integer('anki_added', { mode: 'boolean' }).notNull().default(false),
     ankiAddedAt: text('anki_added_at'),
     ankiNoteId: integer('anki_note_id').references((): AnySQLiteColumn => ankiNote.noteId, { onDelete: 'set null' }),
+    /** Huella del contenido que se envio a Anki. Distinta de la actual = la tarjeta quedo vieja. */
+    ankiContentHash: text('anki_content_hash'),
     secs: integer('secs'),
     createdAt: text('created_at')
       .notNull()

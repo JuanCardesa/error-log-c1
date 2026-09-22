@@ -1,5 +1,7 @@
+import { createHash } from 'node:crypto';
+
 import type { Db } from '../db/client';
-import { ensureAnkiScope, linkAnkiNote } from '../db/ankiRepo';
+import { ensureAnkiScope, linkAnkiNote, setAnkiContentHash } from '../db/ankiRepo';
 import { getError } from '../db/repo';
 import { generatesCard } from '../domain/enums';
 import type { ErrorRow } from '../domain/types';
@@ -29,6 +31,25 @@ export function identityQuery(identity: string): string {
 export function escapeAnkiHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/\r?\n/g, '<br>');
+}
+
+/**
+ * Huella de lo que se envio a Anki, para poder decir si la tarjeta se quedo vieja.
+ *
+ * Editar un error no reescribe su nota: la app decia «Verificada en Anki» de una tarjeta
+ * que ya no coincidia con el error. Se excluye `ErrorLogId`, que no cambia nunca, y se
+ * ordenan las claves para que la huella no dependa del orden de construccion.
+ */
+export function contentHash(fields: Readonly<Record<string, string>>): string {
+  const pairs = Object.keys(fields).filter((name) => name !== ERRORLOG_ID_FIELD).sort()
+    .map((name) => [name, fields[name] ?? '']);
+  return createHash('sha256').update(JSON.stringify(pairs)).digest('hex').slice(0, 32);
+}
+
+/** Si la tarjeta de Anki ya no dice lo que dice el error. */
+export function ankiContentStale(error: ErrorRow, namespace: string, deck: string): boolean {
+  if (error.ankiNoteId === null || error.ankiContentHash === null) return false;
+  return contentHash(noteForError(error, namespace, deck).fields) !== error.ankiContentHash;
 }
 
 export function noteForError(error: ErrorRow, namespace: string, deck: string) {
@@ -80,7 +101,42 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
     linkAnkiNote(db, errorId, {
       noteId, model: confirmed.modelName, label: noteLabel(confirmed), tags: confirmed.tags,
       category: categoryOf(confirmed.tags), firstSeenAt: now.toISOString(), lastSeenAt: now.toISOString(),
-    }, now.toISOString());
+    }, now.toISOString(), contentHash(note.fields));
     return noteId;
+  });
+}
+
+/**
+ * Reescribe los campos de la nota ya vinculada con el texto actual del error.
+ *
+ * Es la unica escritura en Anki ademas de crear, y solo ocurre si se pide. No toca tags
+ * ni mazo: si la categoria del error cambia, la clasificacion local es la que manda y la
+ * etiqueta en Anki se queda como estaba. No se borra ni se mueve nada.
+ */
+export async function updateAnkiNote(db: Db, errorId: number, transport?: Transport, config: AnkiConfig = ankiConfig()) {
+  return withAnkiLock(db, async () => {
+    const error = getError(db, errorId);
+    if (error === null || error.ankiNoteId === null) {
+      throw new AnkiError('ANKI_CONFIG', 'Ese error no tiene una tarjeta verificada que actualizar.');
+    }
+    const api = ankiApi(transport ?? withRetry(httpTransport(config)));
+    await api.version();
+    const profile = await api.profile();
+    const state = ensureAnkiScope(db, config, profile);
+    const note = noteForError(error, state.namespace, config.targetDeck);
+    // La nota tiene que seguir siendo la de este error: no se pisa el trabajo de otra.
+    const [current] = await api.notesInfo([error.ankiNoteId]);
+    if (!current || current.fields[ERRORLOG_ID_FIELD]?.value !== note.fields.ErrorLogId) {
+      throw new AnkiError('ANKI_CONFIG', 'Esa nota ya no corresponde a este error. Sincroniza y vuelve a intentarlo.');
+    }
+    await api.updateNoteFields({ id: error.ankiNoteId, fields: note.fields });
+    if (await api.profile() !== profile) {
+      throw new AnkiError('ANKI_CONFIG', 'El perfil cambió durante la escritura. Vuelve a intentarlo con el perfil original.');
+    }
+    // Solo se sella tras confirmar: si no cuajo, el aviso de «texto cambiado» sigue ahi.
+    const [confirmed] = await api.notesInfo([error.ankiNoteId]);
+    if (!confirmed) throw new AnkiError('ANKI_RESPUESTA_RARA', 'No se ha podido verificar la actualización. Vuelve a intentarlo.');
+    setAnkiContentHash(db, errorId, contentHash(note.fields));
+    return error.ankiNoteId;
   });
 }

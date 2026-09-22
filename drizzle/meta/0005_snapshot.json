@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "52d51ed6-336d-4693-a8b7-cd8b16ed353b",
-  "prevId": "a0d0395e-fb1a-4209-9dec-1aadaddf4fcf",
+  "id": "985d5eec-3a32-4371-9ba0-b5dc438e52fa",
+  "prevId": "52d51ed6-336d-4693-a8b7-cd8b16ed353b",
   "tables": {
     "anki_card": {
       "name": "anki_card",
@@ -461,6 +461,13 @@
         "anki_note_id": {
           "name": "anki_note_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "anki_content_hash": {
+          "name": "anki_content_hash",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

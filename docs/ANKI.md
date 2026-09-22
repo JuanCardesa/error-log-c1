@@ -101,7 +101,17 @@ antes de enviarlos a Anki. No se leen ni copian audio ni campos de la colección
 La configuración es local, sin CORS adicional ni ampliación de direcciones de escucha.
 Si existe clave de AnkiConnect, se manda desde el servidor, incluso en cada subacción
 de `multi`; no se registra ni llega al navegador. Las llamadas no siguen redirecciones.
-Solo la acción de crear realiza escrituras en Anki.
+
+Solo dos acciones escriben en Anki, y ninguna ocurre sola: **crear** una tarjeta y
+**actualizarla**. Editar un error no reescribe su nota —la app decía «Verificada en
+Anki» de una tarjeta que ya no coincidía—, así que se guarda una huella del contenido
+enviado (`error_row.anki_content_hash`, migración `0005`) y la pantalla avisa cuando el
+texto actual ya no cuadra. Actualizar usa `updateNoteFields`: reescribe los campos de esa
+nota y nada más. No toca tags, mazo ni programación, así que si cambias la categoría del
+error, la clasificación local es la que manda y la etiqueta en Anki se queda como estaba.
+Antes de escribir se comprueba que la nota siga siendo la de ese error, y la huella solo
+se sella cuando Anki confirma; si la escritura falla, el aviso sigue ahí. Deshacer olvida
+la huella: no se avisa de una tarjeta que ya no se reclama.
 
 El plazo depende de la acción: 5 s para el saludo, 15 s para escribir y 60 s para los
 lotes. `cardsInfo` renderiza la pregunta y la respuesta de cada carta, así que un plazo
