@@ -1,11 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, trayStats,
+  addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, normalizeTray, trayStats,
 } from '../src/core/tray.js';
 
 const entry = (mark, activityKey = 'act-1', row = {}) => ({
   mark, activityKey, gapId: `gap-${mark}`, row: { itemRef: mark, myAnswer: 'mia', correctAnswer: '', ruleNote: '', ...row },
+});
+
+describe('bandeja persistida', () => {
+  it.each([null, {}, 'bad', 3])('descarta un contenedor inválido: %j', (value) => {
+    expect(normalizeTray(value)).toEqual([]);
+  });
+
+  it('conserva filas actuales y antiguas sin alterar su contenido', () => {
+    const current = entry('a', 'act-1', { prompt: 'Guardado' });
+    const legacy = { mark: 'b', activityKey: 'act-2', row: { prompt: 'Anterior', myAnswer: null } };
+    const corrupted = [null, [], {}, { ...current, row: null }, { ...current, row: [] },
+      { ...current, row: { prompt: 42 } }, { ...current, row: { prompt: 'Texto', correctAnswer: {} } },
+      { ...current, mark: 1 }, { ...current, activityKey: null }, { ...current, gapId: [] }];
+    const stored = [...corrupted, current, legacy];
+    expect(normalizeTray(stored)).toEqual([current, legacy]);
+    expect(stored).toHaveLength(corrupted.length + 2);
+    expect(normalizeTray(stored)[0]).toBe(current);
+  });
 });
 
 describe('acumular fallos de varias actividades', () => {

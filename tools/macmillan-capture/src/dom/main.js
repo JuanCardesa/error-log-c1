@@ -9,7 +9,7 @@
 import { discoverVerdicts } from '../core/signals.js';
 import { summarize, tidy } from '../core/items.js';
 import { fingerprint, MAX_EXPORT_LENGTH, rowFingerprint, toImportEntries, toJson } from '../core/exportable.js';
-import { addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, trayStats } from '../core/tray.js';
+import { addToTray, confirmAnswers, describeTray, markDone, MAX_TRAY, normalizeTray, trayStats } from '../core/tray.js';
 import { emptyStudy, normalizeStudy, recordStudy, studySession } from '../core/study.js';
 import { readStudyContext, viewerContextKey } from './context.js';
 import { describe } from '../core/report.js';
@@ -84,7 +84,7 @@ export function start(doc) {
     baseline: new Map(),
     registry: createRegistry(),
     verdicts: new Map(),
-    tray: loadList(TRAY_KEY, []),
+    tray: normalizeTray(load(TRAY_KEY, [])),
     done: new Set(loadList(DONE_KEY, [])),
     study: normalizeStudy(load(STUDY_KEY, null)),
     studyDone: loadMarks(STUDY_DONE_KEY, {}),
@@ -410,7 +410,7 @@ export function start(doc) {
   // Los reproductores y el visor comparten origen. Antes de escribir se recoge lo
   // último que haya guardado otro marco, para no pisar su bandeja con una copia vieja.
   function syncShared() {
-    state.tray = loadList(TRAY_KEY, state.tray);
+    state.tray = normalizeTray(load(TRAY_KEY, state.tray));
     state.done = new Set(loadList(DONE_KEY, [...state.done]));
     state.study = normalizeStudy(load(STUDY_KEY, state.study));
     state.studyDone = loadMarks(STUDY_DONE_KEY, state.studyDone);
