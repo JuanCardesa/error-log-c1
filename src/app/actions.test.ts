@@ -263,7 +263,7 @@ describe('guardar Writing con datos cambiados en otra pestaña', () => {
     input.delete('id');
     const result = await saveWritingPieceAction(EMPTY_STATE, input);
     expect(result.ok).toBe(false);
-    expect(result.fieldErrors['sessionId']?.[0]).toContain('ya no esta disponible');
+    expect(result.fieldErrors['sessionId']?.[0]).toContain('ya no está disponible');
   });
 
   it('no convierte una edicion con identificador invalido en una creacion', async () => {

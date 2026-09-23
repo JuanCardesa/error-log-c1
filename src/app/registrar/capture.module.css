@@ -14,17 +14,10 @@
   flex-wrap: wrap;
 }
 
-.hint {
-  margin: var(--sp-2) 0 var(--sp-5);
-  color: var(--ink-soft);
-  font-size: var(--fs-sm);
-}
-
 .variantSwitch {
   display: flex;
   border: 1px solid var(--rule-strong);
   border-radius: var(--radius);
-  overflow: hidden;
 }
 
 .variantOn,
@@ -34,6 +27,21 @@
   background: transparent;
   cursor: pointer;
   font-size: var(--fs-sm);
+}
+
+/* Sin `overflow: hidden` en el grupo, que recortaria el foco: los extremos se redondean. */
+.variantSwitch > :first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.variantSwitch > :last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.variantOn:focus-visible,
+.variantOff:focus-visible {
+  position: relative;
+  z-index: 1;
 }
 
 .variantOn {
@@ -51,22 +59,13 @@
 
 /* ── Campos ───────────────────────────────────────────────────────────────── */
 
-.label {
-  display: block;
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  margin-bottom: var(--sp-1);
-}
-
-.label abbr {
-  color: var(--danger);
-  text-decoration: none;
-}
-
 .grid label {
   display: block;
+  min-width: 0;
+}
+
+/* Campos con la etiqueta aparte (causa, categoria...): tampoco pueden desbordar su columna. */
+.grid > div {
   min-width: 0;
 }
 
@@ -74,29 +73,6 @@
 .grid select,
 .grid textarea {
   width: 100%;
-}
-
-.fieldError {
-  margin: var(--sp-2) 0 0;
-  color: var(--danger);
-  font-size: var(--fs-sm);
-}
-
-.help {
-  display: block;
-  color: var(--ink-faint);
-  font-size: var(--fs-xs);
-}
-
-.check {
-  display: flex !important;
-  align-items: center;
-  gap: var(--sp-3);
-  white-space: nowrap;
-}
-
-.check input {
-  width: auto !important;
 }
 
 .fFlags {
@@ -112,47 +88,26 @@
   gap: var(--sp-3);
 }
 
-.primary {
-  padding: var(--sp-3) var(--sp-6);
-  border: 1px solid var(--ink);
-  border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--surface);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.primary:hover:not(:disabled) {
-  background: #000;
-}
-
-.primary:disabled {
-  opacity: 0.55;
-  cursor: progress;
-}
-
-/* Chips de causa: color por lado, azul study / rojo exec (§6). */
-.chipStudy,
-.chipExec {
-  display: inline-block;
+/* El chip de lado va bajo el select de causa. */
+.causeChip {
   margin-top: var(--sp-2);
-  padding: 0 var(--sp-3);
-  border-radius: 999px;
-  font-family: var(--font-data);
+}
+
+/* Etiqueta y, a su lado, la marca de valor heredado del error anterior. */
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-1);
+}
+
+.labelRow > label {
+  margin-bottom: 0;
+}
+
+.carried {
   font-size: var(--fs-xs);
-  white-space: nowrap;
-}
-
-.chipStudy {
-  background: var(--study-bg);
-  border: 1px solid var(--study-rule);
-  color: var(--study);
-}
-
-.chipExec {
-  background: var(--exec-bg);
-  border: 1px solid var(--exec-rule);
-  color: var(--exec);
+  color: var(--queued);
 }
 
 /* ── Formulario de captura: denso y en una columna cuando no cabe ─────────── */
@@ -160,12 +115,13 @@
 .grid {
   display: grid;
   gap: var(--sp-4);
-  grid-template-columns: 5rem minmax(14rem, 2fr) minmax(8rem, 1fr) minmax(8rem, 1fr);
+  /* Item es estrecho; Causa ocupa dos columnas para que su valor se lea entero. */
+  grid-template-columns: 5rem minmax(9rem, 1fr) minmax(12rem, 2fr) minmax(8rem, 1fr) minmax(8rem, 1fr);
   grid-template-areas:
-    'item    prompt      mine       correct'
-    'cause   category    subcat     conf'
-    'rule    rule        rule       rule'
-    'flags   flags       flags      submit';
+    'item    prompt   prompt     mine     correct'
+    'cause   cause    category   subcat   conf'
+    'rule    rule     rule       rule     rule'
+    'flags   flags    flags      flags    submit';
   align-items: start;
 }
 
@@ -210,10 +166,51 @@
   font-size: var(--fs-sm);
 }
 
+/* La revision deja a la vista lo que suele faltar en una tanda pegada. */
+.review {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: minmax(8rem, 1fr) minmax(9rem, 1fr) minmax(12rem, 1.4fr) minmax(8rem, 0.8fr);
+  grid-template-areas:
+    'correct cause category conf'
+    'rule rule rule rule';
+  align-items: start;
+}
+
+.review .fCorrect { grid-area: correct; }
+.review .fCause { grid-area: cause; }
+.review .fCategory { grid-area: category; }
+.review .fConfidence { grid-area: conf; }
+.review .fRule { grid-area: rule; }
+
+.reviewMore { margin-top: var(--sp-4); }
+.reviewMore > summary { cursor: pointer; color: var(--ink-soft); font-size: var(--fs-sm); }
+
+.reviewMoreGrid {
+  display: grid;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  grid-template-columns: 5rem minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    'item prompt mine subcat'
+    'flags flags flags flags';
+  align-items: start;
+}
+
+.reviewMoreGrid .fItem { grid-area: item; }
+.reviewMoreGrid .fPrompt { grid-area: prompt; }
+.reviewMoreGrid .fMine { grid-area: mine; }
+.reviewMoreGrid .fSubcategory { grid-area: subcat; }
+.reviewMoreGrid .fFlags { grid-area: flags; }
+
+.review label, .review > div, .reviewMoreGrid label, .reviewMoreGrid > div { display: block; min-width: 0; }
+.review input, .review select, .review textarea,
+.reviewMoreGrid input, .reviewMoreGrid select, .reviewMoreGrid textarea { width: 100%; }
+
 /* ── Estrecho: todo a una columna ─────────────────────────────────────────── */
 
 @media (max-width: 760px) {
-  .grid {
+  .grid, .review, .reviewMoreGrid {
     grid-template-columns: 1fr;
     grid-template-areas: none;
   }
@@ -228,7 +225,17 @@
   .grid .fConfidence,
   .grid .fRule,
   .grid .fFlags,
-  .grid .fSubmit {
+  .grid .fSubmit,
+  .review .fCorrect,
+  .review .fCause,
+  .review .fCategory,
+  .review .fConfidence,
+  .review .fRule,
+  .reviewMoreGrid .fItem,
+  .reviewMoreGrid .fPrompt,
+  .reviewMoreGrid .fMine,
+  .reviewMoreGrid .fSubcategory,
+  .reviewMoreGrid .fFlags {
     grid-area: auto;
     grid-column: 1;
   }

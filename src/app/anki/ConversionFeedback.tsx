@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * Aviso de las acciones de conversion, fuera de los componentes que las disparan.
@@ -39,7 +39,7 @@ export function ConversionNotice() {
   const { result } = useContext(FeedbackContext);
   if (result === null) return null;
   return (
-    <p role={result.ok ? 'status' : 'alert'} className={result.ok ? shared.note : shared.empty}>
+    <p role={result.ok ? 'status' : 'alert'} className={result.ok ? ui.noticeOk : ui.noticeError}>
       {result.message}
     </p>
   );

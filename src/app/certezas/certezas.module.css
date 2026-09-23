@@ -9,9 +9,8 @@
 .item {
   padding: var(--sp-5);
   background: var(--surface);
-  /* Borde rojo: es una creencia falsa instalada, no una laguna. */
-  border: 1px solid var(--exec-rule);
-  border-left: 3px solid var(--exec);
+  /* Toda la vista son falsas certezas: no hace falta marcarlas una a una. */
+  border: 1px solid var(--rule-strong);
   border-radius: var(--radius);
 }
 
@@ -43,6 +42,11 @@
 }
 
 .count {
-  font-family: var(--font-data);
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.count .data {
   font-size: var(--fs-xl);
+  color: var(--ink);
 }

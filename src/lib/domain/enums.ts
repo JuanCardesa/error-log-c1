@@ -85,38 +85,38 @@ export const CAUSE_META: Readonly<Record<Cause, CauseMeta>> = {
   DESCONOCIMIENTO: {
     side: 'study',
     generatesCard: true,
-    meaning: 'No lo sabia, no podia saberlo',
-    remedy: 'Tarjeta Anki y nada mas',
+    meaning: 'No lo sabía, no podía saberlo',
+    remedy: 'Tarjeta Anki y nada más',
   },
   CONFUSION: {
     side: 'study',
     generatesCard: true,
-    meaning: 'Lo sabia, elegi mal entre dos',
+    meaning: 'Lo sabía, elegí mal entre dos',
     remedy: 'Tarjeta de contraste con el par confundido',
   },
   DESPISTE: {
     side: 'exec',
     generatesCard: false,
-    meaning: 'Lo sabia. No lei / no relei / no comprobe',
-    remedy: 'No se estudia. Cambia el protocolo de revision',
+    meaning: 'Lo sabía. No leí / no releí / no comprobé',
+    remedy: 'No se estudia. Cambia el protocolo de revisión',
   },
   FORMATO: {
     side: 'exec',
     generatesCard: false,
-    meaning: 'Rompi una norma de la tarea',
+    meaning: 'Rompí una norma de la tarea',
     remedy: 'Releer instrucciones del paper, checklist',
   },
   TIEMPO: {
     side: 'exec',
     generatesCard: false,
-    meaning: 'Se acabo el tiempo o fui con prisa',
-    remedy: 'Gestion del tiempo, no contenido',
+    meaning: 'Se acabó el tiempo o fui con prisa',
+    remedy: 'Gestión del tiempo, no contenido',
   },
   ORTOGRAFIA: {
     side: 'study',
     generatesCard: true,
-    meaning: 'Sabia la palabra, la escribi mal',
-    remedy: 'Tarjeta de spelling. Critico en Listening P2',
+    meaning: 'Sabía la palabra, la escribí mal',
+    remedy: 'Tarjeta de spelling. Crítico en Listening P2',
   },
 };
 

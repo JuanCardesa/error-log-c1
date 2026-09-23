@@ -42,17 +42,18 @@ test('round-trip del userscript real: varias actividades, vista previa editable 
   await preview(page, json);
   const header = page.getByRole('group', { name: 'Cabecera propuesta' });
   await expect(header.getByRole('combobox', { name: 'Paper', exact: true })).toHaveValue('');
-  await expect(header.getByLabel('Items *')).toHaveValue('4');
+  await expect(header.getByLabel('Ítems *')).toHaveValue('4');
   await header.getByLabel('Tipo').selectOption('CLASE');
   await header.getByLabel('Minutos').fill('17');
   await header.getByLabel('Cronometrada').check();
   const error = page.getByRole('group', { name: 'Error 1', exact: true });
   await expect(error.getByLabel('Correcta *')).toHaveValue('');
   await error.getByLabel('Correcta *').fill('compliment');
-  await error.getByLabel('Categoria *').fill('COLOCACION');
+  await error.getByLabel('Categoría *').selectOption('COLOCACION');
   await error.getByLabel('Regla, con tus palabras *').fill('Pay a compliment se usa para hacer un cumplido.');
   await page.getByRole('button', { name: 'Crear sesión y guardar 1 error', exact: true }).click();
   await expect(page).toHaveURL(/registrar\?s=\d+/);
+  await expect(page.getByRole('status').filter({ hasText: 'Sesión creada con 1 error' })).toBeFocused();
   const id = Number(new URL(page.url()).searchParams.get('s'));
   expect(withDb(countSessions)).toBe(before + 1);
   expect(withDb((db) => getSession(db, id))).toMatchObject({ kind: 'CLASE', durationMin: 17, timed: true, itemsTotal: 4, itemsCorrect: 3, paper: null, part: null, status: 'OPEN' });
@@ -84,6 +85,7 @@ test('ofrece añadir a una abierta sin reemplazar su cabecera ni sumar los recue
   await expect(page.getByRole('status').filter({ hasText: 'no se suman automáticamente' })).toBeVisible();
   await page.getByRole('button', { name: 'Guardar 1 error', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`registrar\\?s=${id}$`));
+  await expect(page.getByRole('status').filter({ hasText: '1 error guardado.' })).toBeVisible();
   expect(withDb(countSessions)).toBe(before);
   expect(withDb((db) => getSession(db, id))).toEqual(header);
   expect(withDb((db) => listErrors(db, id))).toHaveLength(1);
@@ -99,4 +101,15 @@ test('un bloque con solo errors indica que hay que abrir una sesión', async ({ 
   await preview(page, { errors: [row] });
   await expect(page.getByRole('alert').filter({ hasText: 'Este bloque solo trae errores' })).toContainText('Abre una sesión y usa «Pegar varios errores»');
   await expect(page.getByRole('group', { name: 'Cabecera propuesta' })).toHaveCount(0);
+});
+
+test('confirma una tanda sin errores y no repite el aviso al recargar', async ({ page }) => {
+  await preview(page, { session, errors: [] });
+  await page.getByRole('button', { name: 'Crear sesión y guardar 0 errores' }).click();
+  const notice = page.getByRole('status').filter({ hasText: 'Sesión creada con 0 errores' });
+  await expect(notice).toBeFocused();
+  await expect(page).toHaveURL(/registrar\?s=\d+$/);
+  await page.reload();
+  await expect(notice).toHaveCount(0);
+  await expect(page.getByLabel('Ítem', { exact: true })).toBeFocused();
 });

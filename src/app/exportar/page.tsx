@@ -1,6 +1,7 @@
 import { CSV_EXPORTS, CSV_LABELS } from '@/lib/export/dump';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import styles from './exportar.module.css';
 
@@ -26,8 +27,8 @@ export default async function ExportarPage({
         <div>
           <h1>Exportar</h1>
           <p className={shared.lede}>
-            Las consultas que son una tabla, en CSV listo para una hoja de calculo. La
-            ventana activa es de {windowDays} dias.
+            Las consultas que son una tabla, en CSV listo para una hoja de cálculo. La
+            ventana activa es de {windowDays} días.
           </p>
         </div>
         <WindowSwitch current={windowDays} basePath="/exportar" />
@@ -39,6 +40,7 @@ export default async function ExportarPage({
             <a className={styles.row} href={`/exportar/${key}.csv${query}`} download>
               <span>{CSV_LABELS[key]}</span>
               <span className={styles.file}>errorlog-{key}.csv</span>
+              <span className={styles.download}>Descargar</span>
             </a>
           </li>
         ))}
@@ -46,20 +48,21 @@ export default async function ExportarPage({
 
       <section className={styles.dump} aria-labelledby="dump-heading">
         <h2 id="dump-heading">Volcado completo</h2>
-        <ul className={styles.list} style={{ marginTop: 'var(--sp-4)' }}>
+        <ul className={`${styles.list} ${styles.dumpList}`}>
           <li className={styles.item}>
             <a className={styles.row} href="/exportar/dump.json" download>
               <span>Tus filas y el historial de Anki, completos y sin recortar por ventana</span>
               <span className={styles.file}>errorlog-dump.json</span>
+              <span className={styles.download}>Descargar</span>
             </a>
           </li>
         </ul>
-        <p className={styles.note}>
-          Las falsas certezas usan siempre 30 dias, porque su umbral esta calibrado a esa ventana.
+        <p className={`${ui.note} ${styles.noteGap}`}>
+          Las falsas certezas usan siempre 30 días, porque su umbral está calibrado a esa ventana.
           El JSON lleva tus datos tal cual, sin cifras calculadas: esas salen de los CSV o de la
           propia app. No se puede restaurar desde esta pantalla.
           Para una copia recuperable, ejecuta <code>pnpm db:backup</code>.
-          Las instrucciones para recuperarla estan en el README.
+          Las instrucciones para recuperarla están en el README.
         </p>
       </section>
     </div>

@@ -5,10 +5,12 @@ import { useActionState, useEffect, useRef } from 'react';
 
 import { SessionFields } from './SessionFields';
 import type { SessionRow } from '@/lib/domain/types';
+import type { ImportedSession } from '@/lib/import/errors';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { createSessionAction, updateSessionAction } from './actions';
 import { EMPTY_STATE } from './formState';
 import styles from './session.module.css';
+import ui from '../_shared/ui.module.css';
 
 /** Alta y edición comparten campos y validación. */
 
@@ -17,9 +19,13 @@ interface Props {
   /** Sesion a corregir. `null` para abrir una nueva. */
   readonly editing?: SessionRow | null;
   readonly onDone?: () => void;
+  /** Solo al abrir una nueva: valores de partida (p. ej. Writing al venir de /writing). */
+  readonly preset?: Partial<ImportedSession>;
+  /** Solo al abrir una nueva: a donde ir tras crearla, en vez de entrar en ella. */
+  readonly returnTo?: string;
 }
 
-export function SessionForm({ today, editing = null, onDone }: Props) {
+export function SessionForm({ today, editing = null, onDone, preset, returnTo }: Props) {
   const isEdit = editing !== null;
   const { formRef, onReset } = usePreservedForm();
   const [state, formAction, pending] = useActionState(
@@ -29,6 +35,11 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
 
   const router = useRouter();
   const handled = useRef<number | undefined>(undefined);
+
+  // Rechazada: el foco va al primer campo que el servidor ha marcado.
+  useEffect(() => {
+    if (!state.ok) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [state, formRef]);
 
   useEffect(() => {
     if (!state.ok || state.createdId === undefined) return;
@@ -41,18 +52,18 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
     }
     // Se abre una sesion para volcar errores en ella: entrar es el siguiente paso, no
     // buscarla luego en la lista.
-    router.push(`/registrar?s=${String(state.createdId)}`);
-  }, [state, router, isEdit, onDone]);
+    router.push(returnTo ?? `/registrar?s=${String(state.createdId)}`);
+  }, [state, router, isEdit, onDone, returnTo]);
 
   return (
-    <section className={styles.panel} aria-labelledby="session-heading">
+    <section className={ui.panel} aria-labelledby="session-heading">
       <h2 id="session-heading">
-        {isEdit ? `Corregir sesion #${String(editing.id)}` : 'Nueva sesion'}
+        {isEdit ? `Corregir sesión #${String(editing.id)}` : 'Nueva sesión'}
       </h2>
-      <p className={styles.hint}>
+      <p className={ui.hint}>
         {isEdit
-          ? 'Corregir la cabecera no toca los errores ya registrados. Pasa por la misma validacion que el alta.'
-          : 'Una sesion es el denominador. Registrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
+          ? 'Corregir la cabecera no toca los errores ya registrados. Pasa por la misma validación que el alta.'
+          : 'Una sesión es el denominador. Regístrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
       </p>
 
       <form ref={formRef} action={formAction} onReset={onReset} className={styles.form}>
@@ -63,14 +74,14 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
           </>
         )}
 
-        <SessionFields today={today} defaults={editing ?? undefined} fieldErrors={state.fieldErrors} idPrefix="s" />
+        <SessionFields today={today} defaults={editing ?? preset} fieldErrors={state.fieldErrors} idPrefix="s" />
 
         <div className={styles.actions}>
-          <button type="submit" className={styles.primary} disabled={pending}>
-            {pending ? 'Guardando…' : isEdit ? 'Guardar cabecera' : 'Abrir sesion'}
+          <button type="submit" className={`${ui.primary} ${styles.submit}`} disabled={pending} aria-busy={pending}>
+            {pending ? 'Guardando…' : isEdit ? 'Guardar cabecera' : 'Abrir sesión'}
           </button>
           {isEdit && (
-            <button type="button" className={styles.secondary} onClick={onDone}>
+            <button type="button" className={ui.secondary} onClick={onDone}>
               Cancelar
             </button>
           )}
@@ -79,7 +90,7 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
 
       {state.message !== null && (
         <p
-          className={state.ok ? styles.ok : styles.formError}
+          className={state.ok ? ui.noticeOk : ui.noticeError}
           role={state.ok ? 'status' : 'alert'}
         >
           {state.message}

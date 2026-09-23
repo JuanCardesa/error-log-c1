@@ -55,14 +55,32 @@
 }
 
 .tierHigh {
-  background: #dcefe2;
+  background: var(--tier-high);
 }
 .tierMid {
-  background: #eaf0d9;
+  background: var(--tier-mid);
 }
 .tierLow {
-  background: #faeed2;
+  background: var(--tier-low);
 }
 .tierBad {
-  background: #f8dcd8;
+  background: var(--tier-bad);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  margin: var(--sp-4) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: var(--sp-2);
+  vertical-align: -1px;
+  border: 1px solid var(--rule);
 }

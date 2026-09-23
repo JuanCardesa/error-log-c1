@@ -1,9 +1,6 @@
-.panel {
+/* Separacion del formulario (o de su aviso vacio) con la tabla de textos. */
+.block {
   margin-bottom: var(--sp-6);
-  padding: var(--sp-5);
-  background: var(--surface);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
 }
 
 .form {
@@ -24,27 +21,10 @@
   width: 100%;
 }
 
-.label {
-  display: block;
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  margin-bottom: var(--sp-1);
-  padding: 0;
-}
-
-.check {
-  display: flex !important;
-  align-items: center;
-  gap: var(--sp-3);
+/* La casilla se alinea con la base de los campos vecinos, no con su etiqueta. */
+.checkCell {
   align-self: end;
   padding-bottom: var(--sp-3);
-  white-space: nowrap;
-}
-
-.check input {
-  width: auto !important;
 }
 
 .bands,
@@ -74,46 +54,19 @@
   grid-column: 1 / -1;
 }
 
-.primary {
-  padding: var(--sp-3) var(--sp-6);
-  border: 1px solid var(--ink);
-  border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--surface);
-  cursor: pointer;
+.tableGap {
+  margin-top: var(--sp-4);
 }
 
-.primary:hover:not(:disabled) {
-  background: #000;
+.emptyText {
+  margin: 0;
 }
 
-.primary:disabled {
-  opacity: 0.55;
-  cursor: progress;
-}
-
-.fieldError {
-  margin: var(--sp-2) 0 0;
-  color: var(--danger);
-  font-size: var(--fs-sm);
-}
-
-.ok {
-  margin: var(--sp-4) 0 0;
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--radius);
-  background: var(--ok-bg);
-  border: 1px solid var(--ok);
-  color: var(--ok);
-  font-size: var(--fs-sm);
-}
-
-.empty {
-  padding: var(--sp-6);
-  border: 1px dashed var(--rule-strong);
-  border-radius: var(--radius);
-  color: var(--ink-soft);
-  max-width: 64ch;
+/* Enlace con aspecto de boton: lleva a abrir la sesion que falta. */
+.emptyAction {
+  display: inline-block;
+  margin-top: var(--sp-4);
+  text-decoration: none;
 }
 
 .bandsCell {
@@ -121,19 +74,21 @@
   white-space: nowrap;
 }
 
+/* Neutra: que un texto sea reescritura no es ni bueno ni malo. */
 .rewriteTag {
   display: inline-block;
   padding: 0 var(--sp-3);
-  border-radius: 999px;
-  background: var(--study-bg);
-  border: 1px solid var(--study-rule);
-  color: var(--study);
+  border-radius: var(--radius-pill);
+  background: var(--watch-bg);
+  border: 1px solid var(--watch);
+  color: var(--watch);
   font-family: var(--font-data);
   font-size: var(--fs-xs);
 }
 
+/* Por encima del umbral: pendiente de accion (ocre), no un error de ejecucion (rojo). */
 .repeatBad {
-  color: var(--exec);
+  color: var(--queued);
   font-weight: 600;
 }
 

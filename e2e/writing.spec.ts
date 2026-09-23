@@ -15,18 +15,19 @@ function readPieces() {
 
 test('conserva Writing cuando otra pestaña ocupa la sesion', async ({ page, context }) => {
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
-  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+  await page.getByRole('button', { name: 'Abrir sesión' }).click();
   await expect(page).toHaveURL(/s=\d+/);
   const sessionId = new URL(page.url()).searchParams.get('s');
   if (sessionId === null) throw new Error('Falta la sesion recien creada');
   await page.goto('/writing');
-  await page.getByRole('combobox', { name: 'Sesion', exact: true }).selectOption(sessionId);
+  await page.getByRole('combobox', { name: 'Sesión', exact: true }).selectOption(sessionId);
   await page.getByLabel('Palabras', { exact: true }).fill('271');
   const other = await context.newPage();
   try {
     await other.goto('/writing');
-    await other.getByRole('combobox', { name: 'Sesion', exact: true }).selectOption(sessionId);
+    await other.getByRole('combobox', { name: 'Sesión', exact: true }).selectOption(sessionId);
     await other.getByLabel('Palabras', { exact: true }).fill('230');
     await other.getByRole('button', { name: 'Guardar texto', exact: true }).click();
     await expect(other.getByText(/No hay sesiones de Writing libres/)).toBeVisible();
@@ -43,21 +44,22 @@ test('prepara un formulario vacio tras guardar un nuevo texto', async ({ page })
   const before = readPieces();
   for (let index = 0; index < 2; index += 1) {
     await page.goto('/registrar');
+    await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
     await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
-    await page.getByRole('button', { name: 'Abrir sesion' }).click();
+    await page.getByRole('button', { name: 'Abrir sesión' }).click();
     await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeVisible();
   }
 
   await page.getByRole('navigation').getByRole('link', { name: 'Writing', exact: true }).click();
   await page.getByLabel('Palabras', { exact: true }).fill('250');
-  await page.getByRole('combobox', { name: 'Genero', exact: true }).selectOption('REVIEW');
+  await page.getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
   await page.getByLabel('Cronometrado', { exact: true }).check();
   await page.getByLabel('Es la reescritura de otro texto').check();
   await expect(page.getByRole('combobox', { name: 'Original', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Guardar texto', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Texto guardado.');
   await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('');
-  await expect(page.getByRole('combobox', { name: 'Genero', exact: true })).toHaveValue('ESSAY');
+  await expect(page.getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('ESSAY');
   await expect(page.getByLabel('Cronometrado', { exact: true })).not.toBeChecked();
   await expect(page.getByLabel('Es la reescritura de otro texto')).not.toBeChecked();
   await expect(page.getByRole('combobox', { name: 'Original', exact: true })).toHaveCount(0);
@@ -83,7 +85,7 @@ test('conserva los cambios de Writing al rechazar un ciclo y permite corregirlo'
 
   await page.goto(`/writing?edit=${String(original.id)}`);
   await page.getByLabel('Palabras', { exact: true }).fill('299');
-  await page.getByRole('combobox', { name: 'Genero', exact: true }).selectOption('REVIEW');
+  await page.getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
   await page.getByRole('combobox', { name: 'Corrector', exact: true }).selectOption('IA');
   await page.getByLabel('Cronometrado', { exact: true }).uncheck();
   await page.getByLabel('Language', { exact: true }).fill('4');
@@ -92,7 +94,7 @@ test('conserva los cambios de Writing al rechazar un ciclo y permite corregirlo'
   await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
   await expect(page.getByText('Ese enlace crearia un ciclo de reescrituras', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('299');
-  await expect(page.getByRole('combobox', { name: 'Genero', exact: true })).toHaveValue('REVIEW');
+  await expect(page.getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('REVIEW');
   await expect(page.getByRole('combobox', { name: 'Corrector', exact: true })).toHaveValue('IA');
   await expect(page.getByLabel('Cronometrado', { exact: true })).not.toBeChecked();
   await expect(page.getByLabel('Language', { exact: true })).toHaveValue('4');
@@ -104,7 +106,7 @@ test('conserva los cambios de Writing al rechazar un ciclo y permite corregirlo'
   await expect(page.getByRole('status')).toHaveText('Texto actualizado.');
   await page.reload();
   await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('299');
-  await expect(page.getByRole('combobox', { name: 'Genero', exact: true })).toHaveValue('REVIEW');
+  await expect(page.getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('REVIEW');
   expect(readPieces().find((piece) => piece.id === original.id)).toEqual({
     ...original, wordCount: 299, genre: 'REVIEW', corrector: 'IA', timed: false, bandLanguage: 4,
   });
@@ -130,7 +132,7 @@ test('cambiar de texto carga sus datos y conserva la relacion de reescritura al 
   // Una carga completa de pagina ocultaria el fallo de reutilizacion del formulario.
   await page.getByLabel('Palabras', { exact: true }).fill('111');
   await page.getByLabel('Minutos', { exact: true }).fill('99');
-  await page.getByRole('combobox', { name: 'Genero', exact: true }).selectOption('REVIEW');
+  await page.getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
   await page.getByRole('combobox', { name: 'Corrector', exact: true }).selectOption('IA');
   await page.getByLabel('Language', { exact: true }).fill('0');
   await page.getByLabel('Cronometrado', { exact: true }).uncheck();
@@ -139,7 +141,7 @@ test('cambiar de texto carga sus datos y conserva la relacion de reescritura al 
   await expect(page.getByRole('heading', { name: `Editar texto #${String(rewrite.id)}` })).toBeVisible();
   await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue(String(rewrite.wordCount));
   await expect(page.getByLabel('Minutos', { exact: true })).toHaveValue(String(rewrite.minutes));
-  await expect(page.getByRole('combobox', { name: 'Genero', exact: true })).toHaveValue(rewrite.genre);
+  await expect(page.getByRole('combobox', { name: 'Género', exact: true })).toHaveValue(rewrite.genre);
   await expect(page.getByRole('combobox', { name: 'Corrector', exact: true })).toHaveValue(rewrite.corrector ?? '');
   await expect(page.getByLabel('Language', { exact: true })).toHaveValue(String(rewrite.bandLanguage));
   await expect(page.getByLabel('Cronometrado', { exact: true })).toBeChecked({ checked: rewrite.timed });
@@ -161,4 +163,16 @@ test('cambiar de texto carga sus datos y conserva la relacion de reescritura al 
   await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
   await expect(page.getByRole('status')).toHaveText('Texto actualizado.');
   expect(readPieces()).toEqual(before);
+});
+
+test('desde Writing se abre una sesion de Writing y se vuelve con ella lista', async ({ page }) => {
+  // El enlace del aviso de «sin sesiones libres» lleva aqui.
+  await page.goto('/registrar?nueva=writing');
+  await expect(page.getByRole('button', { name: 'Nueva sesión a mano' })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('combobox', { name: 'Tipo', exact: true })).toHaveValue('WRITING');
+  await expect(page.getByRole('combobox', { name: 'Paper', exact: true })).toHaveValue('WRITING');
+  await page.getByRole('button', { name: 'Abrir sesión' }).click();
+
+  await expect(page).toHaveURL(/\/writing$/);
+  await expect(page.getByRole('heading', { name: 'Nuevo texto' })).toBeVisible();
 });

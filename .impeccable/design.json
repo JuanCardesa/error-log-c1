@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-23T23:30:00+02:00",
+  "title": "Design System: Error Log C1",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Tinta"
+      },
+      "study-blue": {
+        "role": "secondary",
+        "displayName": "Azul de estudio"
+      },
+      "exec-red": {
+        "role": "tertiary",
+        "displayName": "Rojo de ejecución"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Papel"
+      },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "Hoja"
+      },
+      "sheet-sunken": {
+        "role": "neutral",
+        "displayName": "Hoja hundida"
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Tinta suave"
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "Tinta tenue"
+      },
+      "rule-field": {
+        "role": "neutral",
+        "displayName": "Borde de campo"
+      },
+      "queued-ochre": {
+        "role": "neutral",
+        "displayName": "Ocre pendiente"
+      },
+      "ok-green": {
+        "role": "neutral",
+        "displayName": "Verde bien"
+      }
+    },
+    "shadows": [
+      {
+        "name": "none",
+        "value": "none",
+        "purpose": "Sistema plano. El foco es un outline de 2 px en --accent, no una sombra."
+      }
+    ],
+    "motion": [
+      {
+        "name": "skip-link",
+        "value": "top 120ms ease",
+        "purpose": "Aparición del enlace de salto al contenido."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "620px"
+      },
+      {
+        "name": "forms",
+        "value": "760px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal de un formulario o de una tarjeta de la cola.",
+      "html": "<button class=\"ds-btn-primary\">Guardar y seguir</button>",
+      "css": ".ds-btn-primary { padding: var(--sp-3) var(--sp-5); border: 1px solid var(--ink); border-radius: var(--radius); background: var(--ink); color: var(--surface); font: inherit; cursor: pointer; white-space: nowrap; } .ds-btn-primary:hover { background: #000; } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acciones de apoyo, cancelar, leer (Sincronizar).",
+      "html": "<button class=\"ds-btn-quiet\">Editar</button>",
+      "css": ".ds-btn-quiet { padding: var(--sp-2) var(--sp-4); border: 1px solid var(--rule-strong); border-radius: var(--radius); background: var(--surface); font: inherit; font-size: var(--fs-sm); cursor: pointer; } .ds-btn-quiet:hover { background: var(--surface-sunken); } .ds-btn-quiet:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo con etiqueta de 11 px en mayúsculas encima.",
+      "html": "<label class=\"ds-field\"><span>Correcta</span><input value=\"on\"></label>",
+      "css": ".ds-field span { display: block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); margin-bottom: var(--sp-1); } .ds-field input { padding: var(--sp-3) var(--sp-4); border: 1px solid var(--rule-field); border-radius: var(--radius); background: var(--surface); font-family: var(--font-data); } .ds-field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Cause Chip",
+      "kind": "chip",
+      "refersTo": "chip-study",
+      "description": "Causa del error, coloreada por lado: azul estudio, rojo ejecución.",
+      "html": "<span class=\"ds-chip ds-chip-study\">CONFUSION</span> <span class=\"ds-chip ds-chip-exec\">DESPISTE</span>",
+      "css": ".ds-chip { display: inline-block; padding: 0 var(--sp-3); border-radius: 999px; font-family: var(--font-data); font-size: var(--fs-xs); } .ds-chip-study { background: var(--study-bg); border: 1px solid var(--study-rule); color: var(--study); } .ds-chip-exec { background: var(--exec-bg); border: 1px solid var(--exec-rule); color: var(--exec); }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "description": "Barra superior en dos grupos; la pagina actual va marcada.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\">Registrar</a><a href=\"#\">Informe</a><a href=\"#\">Anki</a><span></span><a class=\"ds-more\" href=\"#\">RUOE</a><a class=\"ds-more\" href=\"#\">Exportar</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: baseline; gap: var(--sp-2); } .ds-nav a { padding: var(--sp-2) var(--sp-4); border-radius: var(--radius); color: var(--ink-soft); text-decoration: none; } .ds-nav a:hover { background: var(--surface-sunken); color: var(--ink); } .ds-nav span { width: 1px; align-self: stretch; background: var(--rule); margin: 0 var(--sp-4); } .ds-nav .ds-more { font-size: var(--fs-sm); color: var(--ink-faint); } .ds-nav a[aria-current='page'] { background: var(--surface-sunken); color: var(--ink); font-weight: 600; }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Contenedor de sección: hoja con filete marcado.",
+      "html": "<section class=\"ds-panel\"><h2>Q1 · Reparto de causas</h2><p>Estudio 62% · ejecución 38%</p></section>",
+      "css": ".ds-panel { padding: var(--sp-5); background: var(--surface); border: 1px solid var(--rule-strong); border-radius: var(--radius); } .ds-panel h2 { margin: 0 0 var(--sp-3); font-size: var(--fs-lg); font-weight: 600; } .ds-panel p { margin: 0; color: var(--ink-faint); font-size: var(--fs-sm); }"
+    },
+    {
+      "name": "Anki Queue Card",
+      "kind": "custom",
+      "description": "Error pendiente de convertir: par tachado → correcta y la regla.",
+      "html": "<article class=\"ds-queue\"><p class=\"ds-pair\"><s>even though of</s> → <strong>despite</strong></p><p class=\"ds-rule\">despite + sustantivo, even though + oración.</p><button>Crear en Anki</button></article>",
+      "css": ".ds-queue { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-4); padding: var(--sp-5); background: var(--surface); border: 1px solid var(--rule-strong); border-radius: var(--radius); } .ds-pair { grid-column: 1; margin: 0; font-family: var(--font-data); font-size: var(--fs-lg); } .ds-pair s { color: var(--exec); } .ds-rule { grid-column: 1; margin: 0; color: var(--ink-soft); } .ds-queue button { grid-column: 2; grid-row: 1; padding: var(--sp-3) var(--sp-5); background: var(--ink); color: var(--surface); border: 1px solid var(--ink); border-radius: var(--radius); font: inherit; }"
+    },
+    {
+      "name": "State Chip",
+      "kind": "chip",
+      "refersTo": "state-good",
+      "description": "Estado frente a un umbral: bien (verde) o pendiente (ocre). Azul y rojo son de la causa.",
+      "html": "<span class=\"ds-state ds-good\">cumplido</span> <span class=\"ds-state ds-warn\">por debajo</span>",
+      "css": ".ds-state { display: inline-block; padding: 0 var(--sp-3); border: 1px solid; border-radius: 999px; font-size: var(--fs-xs); } .ds-good { background: var(--ok-bg); color: var(--ok); } .ds-warn { background: var(--queued-bg); color: var(--queued); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El cuaderno corregido",
+    "overview": "Una hoja de ejercicios después de pasar por el profesor: papel claro, tinta negra para lo escrito, azul y rojo para las correcciones. Todo lo visual sirve a volcar una tanda deprisa y a leer datos en columna. El color es semántico en dos escalas separadas: el lado de la causa (azul estudio, rojo ejecución) y el estado frente a un umbral (verde bien, ocre pendiente).",
+    "keyCharacteristics": [
+      "Papel hueso con hojas algo más claras encima; la profundidad sale solo del tono y el borde.",
+      "Monoespaciada tabular para todo dato comparable; texto legible para toda etiqueta.",
+      "Azul y rojo reservados al lado de la causa; los umbrales usan la escala de estados.",
+      "Negro de tinta para la acción primaria; sin color de marca.",
+      "Esquinas casi rectas (3 px); píldoras para chips y estados.",
+      "Todo texto de lectura pasa AA; el foco es un contorno azul de 2 px."
+    ],
+    "rules": [
+      {
+        "name": "The Two Pens Rule",
+        "body": "Azul y rojo pertenecen a la causa: estudio y ejecución. Un umbral cumplido o no cumplido usa la escala de estados, nunca las plumas.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readable Ink Rule",
+        "body": "Ningún texto que haya que leer baja de 4,5:1. Un control inactivo que tenga que explicarse no se atenúa con opacidad: pasa a tinta tenue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Column Rule",
+        "body": "Si un valor se compara en vertical, va en monoespaciada tabular y, si es número, a la derecha. Una etiqueta de taxonomía es una palabra y va en la sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Spoken Label Rule",
+        "body": "Ningún valor interno se muestra en crudo; las etiquetas viven en src/app/_shared/labels.ts y lo guardado sigue siendo el enum.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "Nada flota. Lo que tiene que destacar cambia de tono o de borde, no de altura.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do usar monoespaciada tabular para fechas, cifras y respuestas, y la sans para etiquetas.",
+      "Do mostrar cada valor de taxonomía con su etiqueta de labels.ts.",
+      "Do usar la escala de estados para umbrales y disponibilidad.",
+      "Do expresar profundidad con tono y filete, nunca con sombra.",
+      "Do escribir «—» donde no hay datos.",
+      "Do dar a cada vista su orden por uso: lo diario, primero; lo demás, plegado o a un clic.",
+      "Do usar las primitivas de ui.module.css antes de crear una clase nueva."
+    ],
+    "donts": [
+      "Don't escribir colores, radios o tamaños literales en los módulos: todo sale de :root.",
+      "Don't usar azul o rojo para decir bien o mal frente a un umbral.",
+      "Don't mostrar un valor interno en mayúsculas en la interfaz.",
+      "Don't usar overflow: hidden en un contenedor de controles: recorta el foco.",
+      "Don't usar bordes laterales de color, sombras ni window.confirm.",
+      "Don't añadir un color de marca a la acción primaria."
+    ]
+  }
+}

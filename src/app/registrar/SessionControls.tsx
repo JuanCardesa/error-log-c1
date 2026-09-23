@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 
 import type { SessionRow } from '@/lib/domain/types';
 import { deleteSessionAction, setSessionStatusAction } from './actions';
 import styles from './list.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * Cerrar, reabrir y borrar una sesion. Cerrar no es destructivo —solo deja de aceptar
@@ -23,11 +24,27 @@ export function SessionControls({ session, errorCount }: Props) {
 
   const closed = session.status === 'CLOSED';
 
+  const askRef = useRef<HTMLButtonElement>(null);
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+
+  // Al pedir confirmacion, el foco va a Cancelar; al cancelar, vuelve a «Borrar sesion…».
+  useEffect(() => {
+    if (confirming) keepRef.current?.focus();
+    else if (wasConfirming.current) askRef.current?.focus();
+    wasConfirming.current = confirming;
+  }, [confirming]);
+
   return (
-    <div className={styles.controls}>
+    <div
+      className={styles.controls}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && confirming) setConfirming(false);
+      }}
+    >
       <button
         type="button"
-        className={styles.quiet}
+        className={`${ui.secondary} ${ui.small}`}
         disabled={pending}
         onClick={() => {
           startTransition(async () => {
@@ -35,17 +52,17 @@ export function SessionControls({ session, errorCount }: Props) {
           });
         }}
       >
-        {closed ? 'Reabrir sesion' : 'Cerrar sesion'}
+        {closed ? 'Reabrir sesión' : 'Cerrar sesión'}
       </button>
 
       {confirming ? (
         <>
           <span className={styles.warn}>
-            Se borran tambien sus {errorCount} error{errorCount === 1 ? '' : 'es'}.
+            Se borran también sus {errorCount} error{errorCount === 1 ? '' : 'es'}.
           </span>
           <button
             type="button"
-            className={styles.danger}
+            className={`${ui.danger} ${ui.small}`}
             disabled={pending}
             onClick={() => {
               startTransition(async () => {
@@ -56,8 +73,9 @@ export function SessionControls({ session, errorCount }: Props) {
             Borrar de todos modos
           </button>
           <button
+            ref={keepRef}
             type="button"
-            className={styles.quiet}
+            className={`${ui.secondary} ${ui.small}`}
             onClick={() => {
               setConfirming(false);
             }}
@@ -67,13 +85,14 @@ export function SessionControls({ session, errorCount }: Props) {
         </>
       ) : (
         <button
+          ref={askRef}
           type="button"
-          className={styles.quiet}
+          className={`${ui.secondary} ${ui.small}`}
           onClick={() => {
             setConfirming(true);
           }}
         >
-          Borrar sesion…
+          Borrar sesión…
         </button>
       )}
     </div>

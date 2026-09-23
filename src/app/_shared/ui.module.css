@@ -1,0 +1,290 @@
+/*
+ * Primitivas de interfaz compartidas: botones, chips, campos, avisos, paneles y tablas.
+ *
+ * Cada una se define aqui una sola vez. Antes vivian copiadas en cada modulo y las copias
+ * ya no coincidian (rellenos, anchos, cursores). Las primitivas no llevan margen exterior:
+ * el espacio alrededor lo decide cada vista, que es donde de verdad difiere.
+ */
+
+/* ── Botones ──────────────────────────────────────────────────────────────── */
+
+/* Primario: la accion que avanza la tarea. Uno por formulario o por tarjeta. */
+.primary,
+.secondary,
+.danger {
+  padding: var(--sp-3) var(--sp-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--ink-hover);
+}
+
+/* Secundario: acciones de apoyo, cancelar, cambiar de estado. */
+.secondary {
+  border-color: var(--rule-strong);
+  background: var(--surface);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--surface-sunken);
+}
+
+/* Peligro: solo en el segundo paso de un borrado, nunca como primera pulsacion. */
+.danger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--on-color);
+}
+
+.danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+/* Tamaño compacto para acciones dentro de filas y cabeceras. */
+.small {
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-sm);
+}
+
+.primary:disabled,
+.secondary:disabled,
+.danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/*
+ * Deshabilitado pero enfocable (aria-disabled): el motivo tiene que poder leerse con el
+ * teclado. Sin opacidad, para que el texto siga pasando AA.
+ */
+.primary[aria-disabled='true'],
+.secondary[aria-disabled='true'],
+.primary[aria-disabled='true']:hover,
+.secondary[aria-disabled='true']:hover {
+  border-color: var(--rule-strong);
+  background: var(--surface);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
+/* Mientras la accion esta en curso: esperar, no prohibido. */
+.primary[aria-busy='true'],
+.secondary[aria-busy='true'],
+.danger[aria-busy='true'] {
+  cursor: progress;
+}
+
+/* ── Chips de causa: color por lado, azul estudio / rojo ejecucion ────────── */
+
+.chipStudy,
+.chipExec {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border: 1px solid;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-data);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.chipStudy {
+  background: var(--study-bg);
+  border-color: var(--study-rule);
+  color: var(--study);
+}
+
+.chipExec {
+  background: var(--exec-bg);
+  border-color: var(--exec-rule);
+  color: var(--exec);
+}
+
+/* Estado frente a un umbral: bien o pendiente de accion. Azul y rojo son de la causa. */
+.stateGood,
+.stateWarn {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border: 1px solid;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.stateGood {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.stateWarn {
+  background: var(--queued-bg);
+  color: var(--queued);
+}
+
+/* ── Campos ───────────────────────────────────────────────────────────────── */
+
+.label {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.label abbr {
+  color: var(--danger);
+  text-decoration: none;
+}
+
+/* Ayuda fija bajo un campo. */
+.help {
+  display: block;
+  margin-top: var(--sp-1);
+  color: var(--ink-faint);
+  font-size: var(--fs-xs);
+}
+
+/* Mensaje de error de un campo. Un valor largo sin espacios no puede ensanchar la pagina. */
+.fieldError {
+  margin: var(--sp-2) 0 0;
+  color: var(--danger);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Cada mensaje de un campo en su linea: concatenados se leian como una frase rota. */
+.fieldError > span {
+  display: block;
+}
+
+.check {
+  display: flex !important;
+  align-items: center;
+  gap: var(--sp-3);
+  white-space: nowrap;
+}
+
+.check input {
+  width: auto !important;
+}
+
+/* ── Texto de apoyo y avisos ──────────────────────────────────────────────── */
+
+/* Pista bajo un titulo de formulario. */
+.hint {
+  margin: var(--sp-2) 0 var(--sp-5);
+  max-width: 70ch;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+/* Nota secundaria junto a un dato o un titulo. */
+.note {
+  margin: 0;
+  max-width: 70ch;
+  color: var(--ink-faint);
+  font-size: var(--fs-sm);
+}
+
+/* Resultado de una accion: exito o error, con su propio fondo. */
+.noticeOk,
+.noticeError {
+  margin: var(--sp-4) 0 0;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
+  overflow-wrap: anywhere;
+}
+
+.noticeOk {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.noticeError {
+  background: var(--exec-bg);
+  border-color: var(--exec-rule);
+  color: var(--exec);
+}
+
+/* Estado vacio: sin datos todavia. Discontinuo, para que no parezca un dato. */
+.empty {
+  margin: 0;
+  padding: var(--sp-5);
+  max-width: 64ch;
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+}
+
+/* ── Contenedores ─────────────────────────────────────────────────────────── */
+
+.panel {
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+}
+
+/* ── Tablas de datos ──────────────────────────────────────────────────────── */
+
+.tableWrap {
+  overflow-x: auto;
+  /* Bloque contenedor: sin esto, un hijo absoluto (.sr-only) escapa del scroll. */
+  position: relative;
+}
+
+/* Tabla suelta sobre el papel: lleva su propio marco. Dentro de un panel, no. */
+.framed {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.table th {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  font-weight: 600;
+  background: var(--surface-sunken);
+  white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Cifras: a la derecha y tabulares, para compararlas en vertical. */
+.num {
+  text-align: right !important;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

@@ -3,6 +3,7 @@ import { loadDataset } from '@/lib/db/load';
 import { q3RuoeAccuracy } from '@/lib/queries/q3RuoeAccuracy';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import styles from './ruoe.module.css';
 
@@ -40,7 +41,7 @@ export default async function RuoePage({
         <div>
           <h1>RUOE</h1>
           <p className={shared.lede}>
-            Precision por part y semana ISO en los ultimos {windowDays} dias. Es la vista
+            Precisión por part y semana ISO en los últimos {windowDays} días. Es la vista
             que dice si semanas de drills de una part han servido de algo.
           </p>
         </div>
@@ -48,14 +49,14 @@ export default async function RuoePage({
       </header>
 
       {q3.rows.length === 0 ? (
-        <p className={shared.empty}>
-          Sin sesiones de RUOE con items en la ventana. Prueba a ampliarla a 60 dias.
+        <p className={ui.empty}>
+          Sin sesiones de RUOE con ítems en la ventana. Prueba a ampliarla a 60 días.
         </p>
       ) : (
-        <div className={shared.tableWrap}>
+        <div className={ui.tableWrap}>
           <table className={styles.matrix}>
             <caption className="sr-only">
-              Precision por part y semana. Las celdas vacias no tienen datos.
+              Precisión por part y semana. Las celdas vacías no tienen datos.
             </caption>
             <thead>
               <tr>
@@ -96,6 +97,17 @@ export default async function RuoePage({
             </tbody>
           </table>
         </div>
+      )}
+
+      {q3.rows.length > 0 && (
+        // Los colores solo acompañan al numero; aqui se dice que significa cada uno.
+        <p className={styles.legend}>
+          <span><span className={`${styles.swatch} ${styles.tierHigh}`} /> 85 % o más</span>
+          <span><span className={`${styles.swatch} ${styles.tierMid}`} /> 70–84 %</span>
+          <span><span className={`${styles.swatch} ${styles.tierLow}`} /> 50–69 %</span>
+          <span><span className={`${styles.swatch} ${styles.tierBad}`} /> menos del 50 %</span>
+          <span><span className={`${styles.swatch} ${styles.blank}`} /> sin práctica esa semana</span>
+        </p>
       )}
     </div>
   );

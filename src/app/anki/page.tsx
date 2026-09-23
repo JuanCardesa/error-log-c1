@@ -1,4 +1,5 @@
 import { getDb } from '@/lib/db/client';
+import type { ErrorRow } from '@/lib/domain/types';
 import { loadAnkiDataset, loadDataset } from '@/lib/db/load';
 import { ankiConfig, type AnkiConfig } from '@/lib/anki/config';
 import { ankiStatus } from '@/lib/anki/sync';
@@ -8,7 +9,9 @@ import { ANKI_TARGET_PCT } from '@/lib/domain/thresholds';
 import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
+import { categoryLabel } from '../_shared/labels';
 import { ConversionFeedback, ConversionNotice } from './ConversionFeedback';
 import { QueueItem, UndoButton, UpdateButton } from './QueueItem';
 import styles from './anki.module.css';
@@ -63,6 +66,8 @@ export default async function AnkiPage({
     .filter((error) => error.ankiAdded && error.ankiAddedAt !== null)
     .sort((a, b) => (b.ankiAddedAt ?? '').localeCompare(a.ankiAddedAt ?? ''))
     .filter((error, index) => index < RECENT_CONVERSIONS || stale.has(error.id));
+  const verified = converted.filter((error) => error.ankiNoteId !== null);
+  const legacy = converted.filter((error) => error.ankiNoteId === null);
 
   return (
     <div>
@@ -71,20 +76,20 @@ export default async function AnkiPage({
           <h1>Anki</h1>
           <p className={shared.lede}>
             La cola trae todo lo pendiente cuya causa genera tarjeta, sin caducar. Las cifras
-            son de los ultimos {windowDays} dias: por debajo del {ANKI_TARGET_PCT}% convertido,
-            el log no cierra el circulo.
+            son de los últimos {windowDays} días: por debajo del {ANKI_TARGET_PCT}% convertido,
+            el log no cierra el círculo.
           </p>
         </div>
         <WindowSwitch current={windowDays} basePath="/anki" />
       </header>
 
-      <SyncPanel message={status.message} lastSyncedAt={anki.sync?.lastSyncedAt ?? null}
+      <SyncPanel available={status.available} message={status.message} lastSyncedAt={anki.sync?.lastSyncedAt ?? null}
         deck={config?.sourceDeck ?? anki.sync?.sourceDeck ?? '—'} rolloverHour={anki.sync?.rolloverHour ?? null}
         rolloverSource={anki.sync?.rolloverSource ?? null} />
       <ConversionFeedback>
       <h2>Cola de conversión</h2>
       {/* Solo lo que cambia el resultado de pulsar: lo demas lo dice cada boton. */}
-      <p className={shared.note}>Deshacer devuelve el error a la cola y conserva la nota en Anki.</p>
+      <p className={ui.note}>Deshacer devuelve el error a la cola y conserva la nota en Anki.</p>
 
       <ConversionNotice />
 
@@ -104,12 +109,19 @@ export default async function AnkiPage({
       </dl>
 
       {q5.queue.length === 0 ? (
-        <p className={shared.empty}>
+        <p className={ui.empty}>
           {q5.eligible === 0
-            ? 'Ningun error de la ventana genera tarjeta.'
-            : 'Cola vacia: todo lo que genera tarjeta ya esta convertido.'}
+            ? 'Ningún error de la ventana genera tarjeta.'
+            : 'Cola vacía: todo lo que genera tarjeta ya está convertido.'}
         </p>
       ) : (
+        <>
+        {!status.available && (
+          <p id="anki-unavailable" className={styles.unavailable}>
+            Anki no está disponible: puedes revisar la cola, pero para crear tarjetas abre Anki
+            y pulsa «Sincronizar» arriba.
+          </p>
+        )}
         <ul className={styles.queue}>
           {q5.queue.map((error) => (
             <QueueItem
@@ -120,32 +132,59 @@ export default async function AnkiPage({
             />
           ))}
         </ul>
+        </>
       )}
 
       {converted.length > 0 && (
         <section className={styles.done} aria-labelledby="done-heading">
           <h2 id="done-heading">Convertidas</h2>
-          <p className={shared.note}>Las ultimas, y cualquiera cuyo texto haya cambiado desde que se convirtio.</p>
-          <ul className={styles.doneList}>
-            {converted.map((error) => (
-              <li key={error.id} className={styles.doneItem}>
-                <span className="data">{(error.ankiAddedAt ?? '').slice(0, 10)}</span>
-                <span className="data">{error.correctAnswer}</span>
-                <span className={shared.note}>{error.category}</span>
-                <span className={shared.note}>{error.ankiNoteId === null ? 'Marcada a mano (version anterior)'
-                  : stale.has(error.id) ? 'Verificada · el texto ha cambiado desde entonces'
-                  : 'Verificada en Anki'}</span>
-                <span style={{ marginLeft: 'auto', display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-                  <UpdateButton id={error.id} available={status.available} stale={stale.has(error.id)} />
-                  <UndoButton id={error.id} />
-                </span>
-              </li>
-            ))}
-          </ul>
+          <p className={ui.note}>Las últimas, y cualquiera cuyo texto haya cambiado desde que se convirtió.</p>
+          {verified.length > 0 && (
+            <ul className={styles.doneList}>
+              {verified.map((error) => (
+                <DoneItem key={error.id} error={error} available={status.available} stale={stale.has(error.id)}
+                  state={stale.has(error.id) ? 'Verificada · el texto ha cambiado desde entonces' : 'Verificada en Anki'} />
+              ))}
+            </ul>
+          )}
+          {/* Anteriores a la verificacion: se dice una vez para todas, no en cada fila. */}
+          {legacy.length > 0 && (
+            <>
+              <p className={`${ui.note} ${styles.legacyNote}`}>
+                Marcadas a mano en una versión anterior, sin nota vinculada que verificar en Anki:
+              </p>
+              <ul className={styles.doneList}>
+                {legacy.map((error) => (
+                  <DoneItem key={error.id} error={error} available={status.available} stale={false} state={null} />
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       )}
       </ConversionFeedback>
       <ReviewFailures result={reviews} windowDays={windowDays} synced={anki.sync?.lastSyncedAt != null} />
     </div>
+  );
+}
+
+/** Una convertida: cuando, que, de que categoria, su estado y lo que se puede hacer. */
+function DoneItem({ error, available, stale, state }: {
+  readonly error: ErrorRow;
+  readonly available: boolean;
+  readonly stale: boolean;
+  readonly state: string | null;
+}) {
+  return (
+    <li className={styles.doneItem}>
+      <span className="data">{(error.ankiAddedAt ?? '').slice(0, 10)}</span>
+      <span className="data">{error.correctAnswer}</span>
+      <span className={ui.note}>{categoryLabel(error.category)}</span>
+      {state !== null && <span className={ui.note}>{state}</span>}
+      <span className={styles.doneActions}>
+        <UpdateButton id={error.id} available={available} stale={stale} />
+        <UndoButton id={error.id} />
+      </span>
+    </li>
   );
 }

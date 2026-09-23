@@ -3,6 +3,7 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
 import { createDb } from '../src/lib/db/client';
 import { FAKE_ANKI_PROFILE, FAKE_ANKI_URL } from './fakeAnki';
 import { E2E_DB } from './globalSetup';
+import { categoryLabel } from '../src/app/_shared/labels';
 
 /**
  * Los flujos que solo se ven con Anki respondiendo: sincronizar, reintentar tras un
@@ -89,6 +90,15 @@ test('Anki cerrado se explica sin fingir que no hay fallos', async ({ page, requ
   await expect(page.getByText('No se puede conectar', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Crear en Anki' }).first()).toBeDisabled();
   await expect(page.getByText('Todavía no hay datos importados.', { exact: false })).toBeVisible();
+
+  // Un estado y un aviso para toda la cola; el boton sigue alcanzable y dice por que no va.
+  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByText('No disponible', { exact: true })).toBeVisible();
+  await expect(page.locator('#anki-unavailable')).toContainText('abre Anki');
+  await expect(page.getByRole('button', { name: 'Crear en Anki' }).first())
+    .toHaveAccessibleDescription(/Anki no está disponible/);
+  // Sin sincronizar, las cifras de repaso no son ceros.
+  const reviews = page.getByRole('region', { name: 'Repaso en Anki' });
+  await expect(reviews.getByRole('term').filter({ hasText: /^Repasos$/ }).locator('+ dd')).toHaveText('—');
 });
 
 test('lo sincronizado sale en el CSV de Q7 y en el volcado JSON', async ({ page, request }) => {
@@ -230,19 +240,19 @@ test('corregir la categoria de un error convertido reagrupa su fallo en el repas
 
   const reviews = page.getByRole('region', { name: 'Repaso en Anki' });
   const heading = (name: string) => reviews.getByRole('heading', { level: 3 }).filter({ hasText: name });
-  await expect(heading(linked?.category ?? '')).toBeVisible();
+  await expect(heading(categoryLabel(linked?.category ?? ''))).toBeVisible();
 
   // Se corrige la categoria del error vinculado, desde Registrar.
   await page.goto(`/registrar?s=${String(linked?.sessionId ?? 0)}`);
   const row = page.getByRole('row').filter({ hasText: linked?.correctAnswer ?? '' }).first();
   await row.getByRole('button', { name: 'Editar', exact: true }).click();
   const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
-  await editForm.getByLabel('Categoria *').fill('REGISTRO');
+  await editForm.getByLabel('Categoría *').selectOption('REGISTRO');
   await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
-  await expect(page.getByRole('cell', { name: 'REGISTRO', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Registro', exact: true })).toBeVisible();
 
   // El fallo pasa a contarse bajo la categoria corregida, sin tocar los tags de Anki.
   await page.goto('/anki');
-  await expect(heading('REGISTRO')).toBeVisible();
-  await expect(heading(linked?.category ?? '')).toHaveCount(0);
+  await expect(heading('Registro')).toBeVisible();
+  await expect(heading(categoryLabel(linked?.category ?? ''))).toHaveCount(0);
 });

@@ -1,3 +1,5 @@
+.savedNotice { margin: 0 0 var(--sp-5); max-width: 70ch; }
+
 .page {
   display: block;
 }
@@ -58,7 +60,7 @@
 .badgeClosed {
   display: inline-block;
   padding: 0 var(--sp-3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: var(--font-data);
   font-size: var(--fs-xs);
 }
@@ -83,6 +85,39 @@
   color: var(--ink-soft);
 }
 
+/* Entrada: sesiones abiertas, tanda de Macmillan y sesion a mano, por orden de uso. */
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+/* Revisar una tanda es una sola tarea: lo demas se aparta hasta que termine. */
+.page:has([data-reviewing]) .idleOnly {
+  display: none;
+}
+
+.openBlock .sessions {
+  margin-top: var(--sp-3);
+}
+
+.action {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.manualHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-4);
+}
+
+.manualBody {
+  margin-top: var(--sp-4);
+}
+
 .recent {
   margin-top: var(--sp-7);
 }
@@ -93,8 +128,24 @@
   padding: 0;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  overflow: hidden;
   background: var(--surface);
+}
+
+/* Filas pegadas entre si: el foco va por dentro para no montarse en la vecina. */
+.sessionLink:focus-visible {
+  outline-offset: -2px;
+}
+
+.sessions li:first-child .sessionLink {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.sessions li:last-child .sessionLink {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.sessions li:only-child .sessionLink {
+  border-radius: var(--radius);
 }
 
 .sessions li + li .sessionLink {
@@ -133,5 +184,10 @@
   .sessionLink {
     grid-template-columns: 1fr auto;
     gap: var(--sp-2) var(--sp-4);
+  }
+
+  /* En dos filas, el estado queda bajo el formato: a la derecha y a su tamaño. */
+  .sessionLink > :last-child {
+    justify-self: end;
   }
 }

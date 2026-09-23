@@ -120,7 +120,7 @@ function readTable(text: string): string[][] {
 export interface ImportedBatch { session: ImportedSession | null; errors: ImportDraft[] }
 
 export function parseImportedBatch(source: string, today = toIsoDate(new Date())): ImportedBatch {
-  if (source.length > MAX_IMPORT_LENGTH) throw new Error('El texto es demasiado largo. Divide la importacion en tandas mas pequeñas.');
+  if (source.length > MAX_IMPORT_LENGTH) throw new Error('El texto es demasiado largo. Divide la importación en tandas más pequeñas.');
   const text = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').replace(/^\n+|\n+$/g, '')
     .replace(/^\s*```(?:json|tsv)?[^\S\n]*\n/i, '').replace(/\n```\s*$/, '');
   if (text.trim() === '') throw new Error('Pega primero tus errores.');
@@ -128,7 +128,7 @@ export function parseImportedBatch(source: string, today = toIsoDate(new Date())
   let session: ImportedSession | null = null;
   if (text.trimStart().startsWith('[') || text.trimStart().startsWith('{')) {
     try { data = JSON.parse(text); }
-    catch { throw new Error('El bloque esta incompleto o no es JSON valido. Copia la respuesta completa de la IA.'); }
+    catch { throw new Error('El bloque está incompleto o no es JSON válido. Copia la respuesta completa de la IA.'); }
     if (data !== null && typeof data === 'object' && !Array.isArray(data) && ('errors' in data || 'session' in data)) {
       if ('errors' in data && !('session' in data)) data = data.errors;
       else {
@@ -139,7 +139,7 @@ export function parseImportedBatch(source: string, today = toIsoDate(new Date())
       }
     } else if (!Array.isArray(data)) data = [data];
   } else {
-    if (!text.includes('\t')) throw new Error('Para texto libre, usa «Copiar instrucciones para la IA» y pega aqui su respuesta. Tambien puedes pegar filas de una hoja de calculo.');
+    if (!text.includes('\t')) throw new Error('Para texto libre, usa «Copiar instrucciones para la IA» y pega aquí su respuesta. También puedes pegar filas de una hoja de calculo.');
     const rows = readTable(text);
     const first = rows[0] ?? [];
     const mapped = first.map((cell) => headers[normalize(cell).toLowerCase().replace(/[\s_]/g, '')]);

@@ -1,12 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import { useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
 import type { ErrorRow } from '@/lib/domain/types';
 import { createAnkiAction, undoAddedAction, updateAnkiAction } from './actions';
+import { CAUSE_LABELS, categoryLabel } from '../_shared/labels';
 import { useConversionFeedback } from './ConversionFeedback';
 import styles from './anki.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * Una tarjeta pendiente. El boton sella `anki_added_at` con la hora del servidor.
@@ -23,11 +26,15 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
     <li className={`${styles.card} ${pending ? styles.going : ''}`}>
       <div>
         <div className={styles.meta}>
-          <span className="data">{date}</span>
-          <span className={meta.side === 'study' ? styles.chipStudy : styles.chipExec}>
-            {error.cause}
+          {/* A su sesion: corregir una errata antes de crear la tarjeta. */}
+          <Link className="data" href={`/registrar?s=${String(error.sessionId)}`}>
+            {date}
+            <span className="sr-only"> · abrir su sesión</span>
+          </Link>
+          <span className={meta.side === 'study' ? ui.chipStudy : ui.chipExec}>
+            {CAUSE_LABELS[error.cause]}
           </span>
-          <span className="data">{error.category}</span>
+          <span>{categoryLabel(error.category)}</span>
           {error.subcategory !== null && <span className="data">· {error.subcategory}</span>}
           {error.confidence === 'SEGURO' && <strong>falsa certeza</strong>}
         </div>
@@ -44,13 +51,19 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
       </div>
 
       <div className={styles.controls}>
+      {/* Sin Anki, el boton sigue enfocable (aria-disabled) para que el motivo llegue
+          tambien por teclado; el aviso de encima de la cola dice que hacer. */}
       <button
         type="button"
-        className={styles.add}
-        disabled={pending || !available}
-        aria-describedby={!available ? 'anki-status' : undefined}
-        title={!available ? 'Abre Anki y pulsa Sincronizar para habilitar la creación.' : undefined}
-        onClick={() => { startTransition(async () => { report(await createAnkiAction(error.id)); }); }}
+        className={available ? ui.primary : ui.secondary}
+        disabled={pending}
+        aria-disabled={!available || undefined}
+        aria-busy={pending}
+        aria-describedby={!available ? 'anki-unavailable' : undefined}
+        onClick={() => {
+          if (!available) return;
+          startTransition(async () => { report(await createAnkiAction(error.id)); });
+        }}
       >
         {pending ? 'Creando…' : 'Crear en Anki'}
       </button>
@@ -70,10 +83,16 @@ export function UpdateButton({ id, available, stale }: {
   return (
     <button
       type="button"
-      className={styles.manual}
-      disabled={pending || !available}
+      className={`${ui.secondary} ${ui.small}`}
+      disabled={pending}
+      aria-disabled={!available || undefined}
+      aria-busy={pending}
+      aria-describedby={!available ? 'anki-status' : undefined}
       title={available ? 'Reescribe la tarjeta con el texto actual del error.' : 'Abre Anki para poder actualizarla.'}
-      onClick={() => { startTransition(async () => { report(await updateAnkiAction(id)); }); }}
+      onClick={() => {
+        if (!available) return;
+        startTransition(async () => { report(await updateAnkiAction(id)); });
+      }}
     >
       {pending ? 'Actualizando…' : 'Actualizar en Anki'}
     </button>
@@ -87,9 +106,10 @@ export function UndoButton({ id }: { readonly id: number }) {
   return (
     <button
       type="button"
-      className={styles.undo}
+      className={`${ui.secondary} ${ui.small}`}
       title="Devuelve el error a la cola. La nota de Anki se conserva."
       disabled={pending}
+      aria-busy={pending}
       onClick={() => {
         startTransition(async () => { report(await undoAddedAction(id)); });
       }}

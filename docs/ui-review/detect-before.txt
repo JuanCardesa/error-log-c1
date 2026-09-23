@@ -1,0 +1,6 @@
+
+C:\Users\Juan\Desktop\Proyects\error-log\src\app\certezas\certezas.module.css (imported by page.tsx)
+  line 14: [side-tab] border-left: 3px solid var(--exec)
+    → Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.
+
+1 anti-pattern found.

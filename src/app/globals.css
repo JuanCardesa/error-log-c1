@@ -20,11 +20,14 @@
   --surface-sunken: #ebe7db;
   --rule: #d9d2c2;
   --rule-strong: #b9b09b;
+  /* Borde de campo: a diferencia de los filetes, es lo unico que delimita un campo sobre
+     la hoja, y por eso pide 3:1 (WCAG 1.4.11). */
+  --rule-field: #8b8270;
 
-  /* Tinta */
+  /* Tinta. Las tres pasan 4,5:1 sobre papel, hoja y hoja hundida. */
   --ink: #1b1915;
   --ink-soft: #5b564b;
-  --ink-faint: #8b8474;
+  --ink-faint: #6d6757;
 
   /* Lados de la causa */
   --study: #1d4ed8;
@@ -37,7 +40,7 @@
   /* Estados del motor de reglas */
   --do-now: #b4231d;
   --do-now-bg: #fbe7e5;
-  --queued: #8a6d1f;
+  --queued: #7a5f17;
   --queued-bg: #faf0d6;
   --watch: #6b6352;
   --watch-bg: #efebe0;
@@ -47,6 +50,16 @@
   --accent: #1d4ed8;
   --danger: #b4231d;
 
+  /* Acciones: el hover del primario oscurece la tinta; el texto sobre color lleno. */
+  --ink-hover: #000;
+  --on-color: #fff;
+
+  /* Tramos de precision de RUOE, del verde al rojo. Solo fondo: el numero manda. */
+  --tier-high: #dcefe2;
+  --tier-mid: #eaf0d9;
+  --tier-low: #faeed2;
+  --tier-bad: #f8dcd8;
+
   /* Tipografia */
   --font-ui: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-data: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas, monospace;
@@ -55,6 +68,9 @@
   --fs-base: 13px;
   --fs-lg: 15px;
   --fs-xl: 19px;
+  /* Titulos: un salto claro sobre el cuerpo; la jerarquia no puede vivir solo del peso. */
+  --fs-h1: 22px;
+  --fs-h2: 16px;
 
   /* Densidad: alta a proposito. Es una herramienta de volcado de datos. */
   --sp-1: 2px;
@@ -66,7 +82,7 @@
   --sp-7: 28px;
 
   --radius: 3px;
-  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  --radius-pill: 999px;
 }
 
 * {
@@ -97,10 +113,12 @@ h3 {
 }
 
 h1 {
-  font-size: var(--fs-xl);
+  font-size: var(--fs-h1);
+  line-height: 1.25;
 }
 h2 {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-h2);
+  line-height: 1.3;
 }
 h3 {
   font-size: var(--fs-base);
@@ -123,6 +141,17 @@ kbd {
   font-size: var(--fs-xs);
 }
 
+a {
+  color: var(--ink);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+::selection {
+  background: var(--study-bg);
+  color: var(--ink);
+}
+
 input,
 select,
 textarea,
@@ -132,22 +161,38 @@ button {
 }
 
 input,
+textarea {
+  caret-color: var(--accent);
+}
+
+input,
 select,
 textarea {
   padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--rule-strong);
+  border: 1px solid var(--rule-field);
   border-radius: var(--radius);
   background: var(--surface);
 }
 
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-button:focus-visible,
-a:focus-visible,
-[tabindex]:focus-visible {
-  outline: none;
-  box-shadow: var(--focus);
+::placeholder {
+  color: var(--ink-faint);
+  opacity: 1;
+}
+
+/* El error se ve en el propio campo, no solo en el mensaje de debajo. */
+[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+/*
+ * Foco con `outline` y no con sombra: el modo de alto contraste de Windows borra las
+ * sombras pero respeta el contorno. Vale para todo lo enfocable, `summary` incluido.
+ * Un contenedor con `overflow: hidden` lo recorta: los grupos de botones redondean sus
+ * extremos en vez de recortar.
+ */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 input:disabled,

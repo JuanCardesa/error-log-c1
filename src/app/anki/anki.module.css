@@ -55,40 +55,6 @@
   max-width: 70ch;
 }
 
-.add,
-.undo {
-  padding: var(--sp-3) var(--sp-5);
-  border-radius: var(--radius);
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: var(--fs-sm);
-}
-
-.add {
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: var(--surface);
-}
-
-.add:hover:not(:disabled) {
-  background: #000;
-}
-
-.undo {
-  border: 1px solid var(--rule-strong);
-  background: var(--surface);
-}
-
-.undo:hover:not(:disabled) {
-  background: var(--surface-sunken);
-}
-
-.add:disabled,
-.undo:disabled {
-  opacity: 0.55;
-  cursor: progress;
-}
-
 .summary {
   display: flex;
   flex-wrap: wrap;
@@ -114,7 +80,7 @@
 }
 
 .done {
-  margin-top: var(--sp-6);
+  margin: var(--sp-6) 0;
 }
 
 .doneList {
@@ -126,20 +92,11 @@
 
 .doneItem {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-4);
   align-items: baseline;
   padding: var(--sp-2) 0;
   border-bottom: 1px solid var(--rule);
-}
-
-.chipStudy,
-.chipExec {
-  display: inline-block;
-  padding: 0 var(--sp-3);
-  border-radius: 999px;
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
-  white-space: nowrap;
 }
 
 .sync {
@@ -156,27 +113,79 @@
 
 .sync h2 { margin-top: 0; }
 .sync p { max-width: 75ch; }
+/* Datos de la conexion: juntos bajo el estado, sin el margen de parrafo. */
+.info > p { margin: var(--sp-2) 0 0; }
 .controls { display: grid; gap: var(--sp-2); max-width: 22ch; }
-.hint { color: var(--ink-soft); font-size: var(--fs-sm); }
-.manual { border: 0; background: none; text-decoration: underline; cursor: pointer; padding: var(--sp-2); }
-.manual:disabled { cursor: progress; }
 .failures ul { list-style: none; padding: 0; }
 .failures li { display: flex; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-3) 0; border-bottom: 1px solid var(--rule); }
 .failures strong { white-space: nowrap; }
-@media (max-width: 600px) {
+@media (max-width: 620px) {
   .card { grid-template-columns: 1fr; }
   .controls { max-width: none; }
-  .doneItem { flex-wrap: wrap; }
 }
 
-.chipStudy {
-  background: var(--study-bg);
-  border: 1px solid var(--study-rule);
-  color: var(--study);
+/* Acciones de una convertida, empujadas al final de la fila. */
+.doneActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
 }
 
-.chipExec {
-  background: var(--exec-bg);
-  border: 1px solid var(--exec-rule);
-  color: var(--exec);
+/* Estado de la conexion, junto al titulo: se lee antes que el mensaje largo. */
+.syncHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.stateOn,
+.stateOff {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border: 1px solid;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+}
+
+.stateOn {
+  color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.stateOff {
+  color: var(--queued);
+  background: var(--queued-bg);
+}
+
+/* Un solo aviso para toda la cola cuando Anki no responde, en vez de un boton gris por fila. */
+.unavailable {
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  max-width: 70ch;
+  border: 1px solid var(--queued);
+  border-radius: var(--radius);
+  background: var(--queued-bg);
+  color: var(--queued);
+  font-size: var(--fs-sm);
+}
+
+.explain {
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+
+.explain > summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+.explain > p {
+  margin-top: var(--sp-3);
+}
+
+/* Dentro de .done para ganar al margen cero de ui.note, sea cual sea el orden de carga. */
+.done .legacyNote {
+  margin-top: var(--sp-5);
 }

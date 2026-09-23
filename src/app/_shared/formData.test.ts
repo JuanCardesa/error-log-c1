@@ -58,6 +58,19 @@ describe('agrupacion de errores de Zod', () => {
     expect(fieldErrors['part']).toHaveLength(1);
   });
 
+  it('traduce el mensaje por defecto de un valor fuera de lista', () => {
+    const parsed = z.object({ category: z.enum(['LEXICO', 'REGISTRO']) }).safeParse({ category: 'foo' });
+    if (parsed.success) throw new Error('un valor fuera de lista deberia fallar');
+    expect(collectIssues(parsed.error)['category']).toEqual(['Elige una opción de la lista.']);
+  });
+
+  it('conserva el mensaje propio de un enum', () => {
+    const schema = z.object({ category: z.enum(['LEXICO'], { error: 'Categoria desconocida.' }) });
+    const parsed = schema.safeParse({ category: 'foo' });
+    if (parsed.success) throw new Error('un valor fuera de lista deberia fallar');
+    expect(collectIssues(parsed.error)['category']).toEqual(['Categoria desconocida.']);
+  });
+
   it('manda los errores sin campo al cajon _', () => {
     const refined = z.object({ a: z.number() }).refine(() => false, 'Incoherente.');
     const parsed = refined.safeParse({ a: 1 });
