@@ -7,6 +7,7 @@ import type { ErrorRow } from '@/lib/domain/types';
 import { createAnkiAction, undoAddedAction, updateAnkiAction } from './actions';
 import { useConversionFeedback } from './ConversionFeedback';
 import styles from './anki.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * Una tarjeta pendiente. El boton sella `anki_added_at` con la hora del servidor.
@@ -24,7 +25,7 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
       <div>
         <div className={styles.meta}>
           <span className="data">{date}</span>
-          <span className={meta.side === 'study' ? styles.chipStudy : styles.chipExec}>
+          <span className={meta.side === 'study' ? ui.chipStudy : ui.chipExec}>
             {error.cause}
           </span>
           <span className="data">{error.category}</span>
@@ -46,8 +47,9 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
       <div className={styles.controls}>
       <button
         type="button"
-        className={styles.add}
+        className={ui.primary}
         disabled={pending || !available}
+        aria-busy={pending}
         aria-describedby={!available ? 'anki-status' : undefined}
         title={!available ? 'Abre Anki y pulsa Sincronizar para habilitar la creación.' : undefined}
         onClick={() => { startTransition(async () => { report(await createAnkiAction(error.id)); }); }}
@@ -70,8 +72,9 @@ export function UpdateButton({ id, available, stale }: {
   return (
     <button
       type="button"
-      className={styles.manual}
+      className={`${ui.secondary} ${ui.small}`}
       disabled={pending || !available}
+      aria-busy={pending}
       title={available ? 'Reescribe la tarjeta con el texto actual del error.' : 'Abre Anki para poder actualizarla.'}
       onClick={() => { startTransition(async () => { report(await updateAnkiAction(id)); }); }}
     >
@@ -87,9 +90,10 @@ export function UndoButton({ id }: { readonly id: number }) {
   return (
     <button
       type="button"
-      className={styles.undo}
+      className={`${ui.secondary} ${ui.small}`}
       title="Devuelve el error a la cola. La nota de Anki se conserva."
       disabled={pending}
+      aria-busy={pending}
       onClick={() => {
         startTransition(async () => { report(await undoAddedAction(id)); });
       }}

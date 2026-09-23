@@ -8,6 +8,7 @@ import { ANKI_TARGET_PCT } from '@/lib/domain/thresholds';
 import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import { ConversionFeedback, ConversionNotice } from './ConversionFeedback';
 import { QueueItem, UndoButton, UpdateButton } from './QueueItem';
@@ -84,7 +85,7 @@ export default async function AnkiPage({
       <ConversionFeedback>
       <h2>Cola de conversión</h2>
       {/* Solo lo que cambia el resultado de pulsar: lo demas lo dice cada boton. */}
-      <p className={shared.note}>Deshacer devuelve el error a la cola y conserva la nota en Anki.</p>
+      <p className={ui.note}>Deshacer devuelve el error a la cola y conserva la nota en Anki.</p>
 
       <ConversionNotice />
 
@@ -104,7 +105,7 @@ export default async function AnkiPage({
       </dl>
 
       {q5.queue.length === 0 ? (
-        <p className={shared.empty}>
+        <p className={ui.empty}>
           {q5.eligible === 0
             ? 'Ningun error de la ventana genera tarjeta.'
             : 'Cola vacia: todo lo que genera tarjeta ya esta convertido.'}
@@ -125,17 +126,17 @@ export default async function AnkiPage({
       {converted.length > 0 && (
         <section className={styles.done} aria-labelledby="done-heading">
           <h2 id="done-heading">Convertidas</h2>
-          <p className={shared.note}>Las ultimas, y cualquiera cuyo texto haya cambiado desde que se convirtio.</p>
+          <p className={ui.note}>Las ultimas, y cualquiera cuyo texto haya cambiado desde que se convirtio.</p>
           <ul className={styles.doneList}>
             {converted.map((error) => (
               <li key={error.id} className={styles.doneItem}>
                 <span className="data">{(error.ankiAddedAt ?? '').slice(0, 10)}</span>
                 <span className="data">{error.correctAnswer}</span>
-                <span className={shared.note}>{error.category}</span>
-                <span className={shared.note}>{error.ankiNoteId === null ? 'Marcada a mano (version anterior)'
+                <span className={ui.note}>{error.category}</span>
+                <span className={ui.note}>{error.ankiNoteId === null ? 'Marcada a mano (version anterior)'
                   : stale.has(error.id) ? 'Verificada · el texto ha cambiado desde entonces'
                   : 'Verificada en Anki'}</span>
-                <span style={{ marginLeft: 'auto', display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                <span className={styles.doneActions}>
                   <UpdateButton id={error.id} available={status.available} stale={stale.has(error.id)} />
                   <UndoButton id={error.id} />
                 </span>

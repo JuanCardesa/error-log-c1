@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { syncAnkiAction } from './actions';
 import styles from './anki.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * La hora del corte se afirma segun de donde venga. AnkiConnect no la expone hoy
@@ -23,14 +24,14 @@ export function SyncPanel({ message, lastSyncedAt, deck, rolloverHour, rolloverS
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   return (
     <section className={styles.sync} aria-labelledby="sync-heading">
-      <div>
+      <div className={styles.info}>
         <h2 id="sync-heading">Conexión con Anki</h2>
         <p id="anki-status">{message}</p>
-        <p className={styles.hint}>Mazo: {deck} y sus submazos.</p>
-        {rolloverHour !== null && rolloverSource !== null && <p className={styles.hint}>
+        <p className={ui.note}>Mazo: {deck} y sus submazos.</p>
+        {rolloverHour !== null && rolloverSource !== null && <p className={ui.note}>
           {ROLLOVER_NOTE[rolloverSource](`${String(rolloverHour)}:00`)}
         </p>}
-        <p className={styles.hint}>Última sincronización: {lastSyncedAt === null ? 'todavía no se ha sincronizado' : <time dateTime={lastSyncedAt}>{new Date(lastSyncedAt).toLocaleString('es-ES')}</time>}</p>
+        <p className={ui.note}>Última sincronización: {lastSyncedAt === null ? 'todavía no se ha sincronizado' : <time dateTime={lastSyncedAt}>{new Date(lastSyncedAt).toLocaleString('es-ES')}</time>}</p>
         <details>
           <summary>Cómo conectar Anki</summary>
           <p>En Anki: Herramientas → Complementos → Descargar complementos. Instala{' '}
@@ -39,7 +40,7 @@ export function SyncPanel({ message, lastSyncedAt, deck, rolloverHour, rolloverS
         </details>
       </div>
       <div>
-        <button type="button" className={styles.add} disabled={pending}
+        <button type="button" className={ui.secondary} disabled={pending} aria-busy={pending}
           onClick={() => startTransition(async () => { setResult(await syncAnkiAction()); })}>
           {pending ? 'Sincronizando…' : 'Sincronizar'}
         </button>

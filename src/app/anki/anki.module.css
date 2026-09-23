@@ -55,40 +55,6 @@
   max-width: 70ch;
 }
 
-.add,
-.undo {
-  padding: var(--sp-3) var(--sp-5);
-  border-radius: var(--radius);
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: var(--fs-sm);
-}
-
-.add {
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: var(--surface);
-}
-
-.add:hover:not(:disabled) {
-  background: var(--ink-hover);
-}
-
-.undo {
-  border: 1px solid var(--rule-strong);
-  background: var(--surface);
-}
-
-.undo:hover:not(:disabled) {
-  background: var(--surface-sunken);
-}
-
-.add:disabled,
-.undo:disabled {
-  opacity: 0.55;
-  cursor: progress;
-}
-
 .summary {
   display: flex;
   flex-wrap: wrap;
@@ -126,20 +92,11 @@
 
 .doneItem {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-4);
   align-items: baseline;
   padding: var(--sp-2) 0;
   border-bottom: 1px solid var(--rule);
-}
-
-.chipStudy,
-.chipExec {
-  display: inline-block;
-  padding: 0 var(--sp-3);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
-  white-space: nowrap;
 }
 
 .sync {
@@ -156,27 +113,21 @@
 
 .sync h2 { margin-top: 0; }
 .sync p { max-width: 75ch; }
+/* Datos de la conexion: juntos bajo el estado, sin el margen de parrafo. */
+.info > p { margin: var(--sp-2) 0 0; }
 .controls { display: grid; gap: var(--sp-2); max-width: 22ch; }
-.hint { color: var(--ink-soft); font-size: var(--fs-sm); }
-.manual { border: 0; background: none; text-decoration: underline; cursor: pointer; padding: var(--sp-2); }
-.manual:disabled { cursor: progress; }
 .failures ul { list-style: none; padding: 0; }
 .failures li { display: flex; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-3) 0; border-bottom: 1px solid var(--rule); }
 .failures strong { white-space: nowrap; }
 @media (max-width: 600px) {
   .card { grid-template-columns: 1fr; }
   .controls { max-width: none; }
-  .doneItem { flex-wrap: wrap; }
 }
 
-.chipStudy {
-  background: var(--study-bg);
-  border: 1px solid var(--study-rule);
-  color: var(--study);
-}
-
-.chipExec {
-  background: var(--exec-bg);
-  border: 1px solid var(--exec-rule);
-  color: var(--exec);
+/* Acciones de una convertida, empujadas al final de la fila. */
+.doneActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-left: auto;
 }
