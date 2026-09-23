@@ -116,18 +116,6 @@ test('lo sincronizado sale en el CSV de Q7 y en el volcado JSON', async ({ page,
   expect(dump.queries.q7).toMatchObject({ reviews: 4, failures: 2, lapses: 1, learningFailures: 1, accuracy: 50 });
 });
 
-test('el informe cruza los fallos de Anki con los errores de práctica', async ({ page }) => {
-  await page.goto('/anki');
-  await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByRole('status')).toContainText('4 repasos nuevos');
-
-  await page.goto('/informe');
-  await expect(page.getByText('Todavía no has sincronizado Anki.', { exact: false })).toBeHidden();
-  const table = page.getByRole('table', { name: /Errores de práctica y fallos en Anki/ });
-  await expect(table.getByRole('columnheader', { name: 'Lapsos en Anki' })).toBeVisible();
-  await expect(table.getByRole('row').filter({ hasText: 'PHRASAL_VERB' })).toBeVisible();
-});
-
 test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', async ({ page, request }) => {
   await page.goto('/anki');
   const pending = page.getByRole('definition').nth(1);

@@ -64,8 +64,8 @@ alcance. Conserva metadatos de notas vistas para reconocerlas si vuelven.
 
 Q7 muestra repasos, cartas distintas y fallos: `Again` es fallo; `Hard`, `Good` y `Easy`
 son aciertos. Se separan los lapsos de repaso (tipo 1) y los fallos restantes. Se excluyen
-registros manuales, reprogramaciones y respuestas inválidas. La comparación con práctica
-usa lapsos, con denominadores separados, y no altera las siete reglas del informe.
+registros manuales, reprogramaciones y respuestas inválidas. Q7 se lee en la pestaña Anki
+y no altera las siete reglas del informe.
 
 Las etiquetas se asignan a una categoría principal mediante el mapeo de
 `src/lib/anki/categories.ts`. Q7 tiene CSV; el JSON exporta el espejo y sus resultados.

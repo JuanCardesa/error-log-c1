@@ -184,9 +184,9 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
   corte horario configurado o el valor predeterminado de 4:00. Los lapsos (Again de
   tipo 1) se separan de los demás fallos. Tags sin mapeo forman un grupo propio.
 
-El cruce entre Q7 y los errores de práctica presenta recuentos y denominadores
-separados, sin equiparar sus tasas ni añadir una octava regla. La falta de sincronización
-se distingue de una ventana sincronizada sin repasos.
+Q7 no alimenta ninguna regla ni se cruza con los errores de práctica: sus denominadores
+no son equiparables. La falta de sincronización se distingue de una ventana sincronizada
+sin repasos.
 
 Cada query exporta también a **CSV** (comillas escapadas correctamente).
 

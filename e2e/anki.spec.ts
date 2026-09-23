@@ -28,11 +28,3 @@ test('Q7 está disponible en CSV y en el dump aunque no se haya sincronizado', a
   expect(dump.anki.reviews).toEqual([]);
   expect(dump.queries.q7.accuracy).toBeNull();
 });
-
-test('el informe no presenta falta de sincronización como cero fallos', async ({ page }) => {
-  await page.goto('/informe');
-  await expect(page.getByRole('heading', { name: 'Práctica y repaso en Anki' })).toBeVisible();
-  await expect(page.getByText('Todavía no has sincronizado Anki.', { exact: false })).toBeVisible();
-  await page.getByText('Ver las siete reglas y sus cifras').click();
-  await expect(page.getByRole('table', { name: /siete reglas/ }).locator('tbody tr')).toHaveCount(7);
-});

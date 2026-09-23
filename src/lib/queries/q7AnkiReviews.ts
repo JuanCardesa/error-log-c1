@@ -1,8 +1,8 @@
 import type { Category } from '../domain/enums';
-import { EMPTY_ANKI_DATASET, type AnkiDataset, type Dataset, type QueryOptions } from '../domain/types';
+import { EMPTY_ANKI_DATASET, type AnkiDataset, type QueryOptions } from '../domain/types';
 import { toCsv } from '../csv/csv';
 import { inWindow } from '../time/dates';
-import { percentage, sliceWindow } from './window';
+import { percentage } from './window';
 
 /**
  * Un «Again» no siempre es el mismo hecho.
@@ -61,22 +61,6 @@ export function q7AnkiReviews(data: AnkiDataset = EMPTY_ANKI_DATASET, options: Q
       notes: [...group.notes.values()].sort((a, b) => b.failures - a.failures || a.noteId - b.noteId),
     })).sort((a, b) => b.failures - a.failures || (a.category ?? '').localeCompare(b.category ?? '')),
   };
-}
-
-export function compareAnkiPractice(data: Dataset, anki: AnkiDataset, options: QueryOptions) {
-  const counts = new Map<Category | null, number>();
-  for (const error of sliceWindow(data, options.now, options.windowDays).errors) {
-    counts.set(error.category, (counts.get(error.category) ?? 0) + 1);
-  }
-  // Se cruzan lapsos, no todos los «Again»: un error de práctica es algo que creías
-  // saber, y eso es lo que mide un lapso, no un paso de aprendizaje de una carta nueva.
-  const reviews = new Map(q7AnkiReviews(anki, options).groups.map((group) => [group.category, group]));
-  return [...new Set([...counts.keys(), ...reviews.keys()])].map((category) => ({
-    category, practiceErrors: counts.get(category) ?? 0,
-    ankiLapses: reviews.get(category)?.lapses ?? 0,
-    ankiLearningFailures: reviews.get(category)?.learningFailures ?? 0,
-    ankiReviews: reviews.get(category)?.reviews ?? 0,
-  })).sort((a, b) => b.ankiLapses - a.ankiLapses || b.practiceErrors - a.practiceErrors);
 }
 
 export function q7ToCsv(result: ReturnType<typeof q7AnkiReviews>): string {

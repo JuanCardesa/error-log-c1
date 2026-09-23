@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
-import { compareAnkiPractice, q7AnkiReviews, q7ToCsv } from './q7AnkiReviews';
+import { q7AnkiReviews, q7ToCsv } from './q7AnkiReviews';
 import { EMPTY_ANKI_DATASET } from '../domain/types';
 import { ankiFixture, NOW } from '../anki/fixtures/build';
-import { makeDataset, makeError, makeSession } from './fixtures/build';
+import { makeDataset } from './fixtures/build';
 import { toCsvExport, toJsonDump } from '../export/dump';
 
 const options = { now: NOW, windowDays: 30 };
@@ -44,17 +44,6 @@ it('no cuenta referencias huérfanas y desempata categorías de forma determinis
   };
   expect(q7AnkiReviews(snapshot, options).reviews).toBe(2);
   expect(q7AnkiReviews(snapshot, options).groups.map((group) => group.category)).toEqual([null, 'PHRASAL_VERB']);
-});
-it('cruza cantidades con denominadores separados, incluyendo Writing y práctica libre', () => {
-  const practice = makeDataset({
-    sessions: [makeSession({ id: 1, date: '2026-09-22', paper: null, part: null }), makeSession({ id: 2, date: '2026-09-22', paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null })],
-    errors: [makeError({ sessionId: 1, category: 'PHRASAL_VERB' }), makeError({ sessionId: 1, category: 'PHRASAL_VERB' }), makeError({ sessionId: 2, category: 'REGISTRO' })],
-  });
-  expect(compareAnkiPractice(practice, ankiFixture(), options)).toEqual([
-    { category: 'PHRASAL_VERB', practiceErrors: 2, ankiLapses: 1, ankiLearningFailures: 0, ankiReviews: 1 },
-    { category: 'REGISTRO', practiceErrors: 1, ankiLapses: 0, ankiLearningFailures: 0, ankiReviews: 0 },
-  ]);
-  expect(compareAnkiPractice(makeDataset(), ankiFixture(), options)[0]?.practiceErrors).toBe(0);
 });
 it('exporta el historial sin perder campos y CSV sin inventar una tasa vacía', () => {
   const anki = ankiFixture(); const practice = makeDataset();
