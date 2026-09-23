@@ -27,13 +27,27 @@ export function isValidId(value: number | null): value is number {
   return value !== null && Number.isSafeInteger(value) && value > 0;
 }
 
+/**
+ * El mensaje por defecto de Zod para un valor fuera de lista esta en ingles y enumera
+ * todas las opciones («Invalid option: expected one of …»). Se sustituye solo ese; un
+ * esquema con mensaje propio lo conserva.
+ */
+const INVALID_OPTION = 'Elige una opción de la lista.';
+
+function readableMessage(issue: z.core.$ZodIssue): string {
+  return issue.code === 'invalid_value' && issue.message.startsWith('Invalid option')
+    ? INVALID_OPTION
+    : issue.message;
+}
+
 export function collectIssues(error: z.ZodError): Record<string, string[]> {
   const fieldErrors: Record<string, string[]> = {};
   for (const issue of error.issues) {
     const key = issue.path.length > 0 ? issue.path.join('.') : '_';
+    const message = readableMessage(issue);
     const bucket = fieldErrors[key];
-    if (bucket === undefined) fieldErrors[key] = [issue.message];
-    else bucket.push(issue.message);
+    if (bucket === undefined) fieldErrors[key] = [message];
+    else bucket.push(message);
   }
   return fieldErrors;
 }
