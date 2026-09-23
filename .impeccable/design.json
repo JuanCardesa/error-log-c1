@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-23T17:00:00+02:00",
+  "title": "Design System: Error Log C1",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "primary", "displayName": "Tinta" },
+      "study-blue": { "role": "secondary", "displayName": "Azul de estudio" },
+      "exec-red": { "role": "tertiary", "displayName": "Rojo de ejecución" },
+      "paper": { "role": "neutral", "displayName": "Papel" },
+      "sheet": { "role": "neutral", "displayName": "Hoja" },
+      "sheet-sunken": { "role": "neutral", "displayName": "Hoja hundida" },
+      "ink-soft": { "role": "neutral", "displayName": "Tinta suave" },
+      "ink-faint": { "role": "neutral", "displayName": "Tinta tenue" }
+    },
+    "shadows": [
+      { "name": "focus-ring", "value": "0 0 0 2px var(--bg), 0 0 0 4px var(--accent)", "purpose": "Anillo de foco visible; única sombra del sistema." }
+    ],
+    "motion": [
+      { "name": "skip-link", "value": "top 120ms ease", "purpose": "Aparición del enlace de salto al contenido." }
+    ],
+    "breakpoints": [
+      { "name": "anki-card", "value": "600px" },
+      { "name": "session-list", "value": "620px" },
+      { "name": "forms", "value": "760px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal de un formulario o de una tarjeta de la cola.",
+      "html": "<button class=\"ds-btn-primary\">Guardar y seguir</button>",
+      "css": ".ds-btn-primary { padding: var(--sp-3) var(--sp-6); border: 1px solid var(--ink); border-radius: var(--radius); background: var(--ink); color: var(--surface); font: inherit; cursor: pointer; white-space: nowrap; } .ds-btn-primary:hover { background: #000; } .ds-btn-primary:focus-visible { outline: none; box-shadow: var(--focus); }"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acciones secundarias: editar, cerrar sesión, cancelar.",
+      "html": "<button class=\"ds-btn-quiet\">Editar</button>",
+      "css": ".ds-btn-quiet { padding: var(--sp-2) var(--sp-4); border: 1px solid var(--rule-strong); border-radius: var(--radius); background: var(--surface); font: inherit; font-size: var(--fs-sm); cursor: pointer; } .ds-btn-quiet:hover { background: var(--surface-sunken); } .ds-btn-quiet:focus-visible { outline: none; box-shadow: var(--focus); }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo con etiqueta de 11 px en mayúsculas encima.",
+      "html": "<label class=\"ds-field\"><span>Correcta</span><input value=\"on\"></label>",
+      "css": ".ds-field span { display: block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); margin-bottom: var(--sp-1); } .ds-field input { padding: var(--sp-3) var(--sp-4); border: 1px solid var(--rule-strong); border-radius: var(--radius); background: var(--surface); font-family: var(--font-data); } .ds-field input:focus-visible { outline: none; box-shadow: var(--focus); }"
+    },
+    {
+      "name": "Cause Chip",
+      "kind": "chip",
+      "refersTo": "chip-study",
+      "description": "Causa del error, coloreada por lado: azul estudio, rojo ejecución.",
+      "html": "<span class=\"ds-chip ds-chip-study\">CONFUSION</span> <span class=\"ds-chip ds-chip-exec\">DESPISTE</span>",
+      "css": ".ds-chip { display: inline-block; padding: 0 var(--sp-3); border-radius: 999px; font-family: var(--font-data); font-size: var(--fs-xs); } .ds-chip-study { background: var(--study-bg); border: 1px solid var(--study-rule); color: var(--study); } .ds-chip-exec { background: var(--exec-bg); border: 1px solid var(--exec-rule); color: var(--exec); }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "description": "Barra superior en dos grupos: uso diario y detalle.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\">Registrar</a><a href=\"#\">Informe</a><a href=\"#\">Anki</a><span></span><a class=\"ds-more\" href=\"#\">RUOE</a><a class=\"ds-more\" href=\"#\">Exportar</a></nav>",
+      "css": ".ds-nav { display: flex; align-items: baseline; gap: var(--sp-2); } .ds-nav a { padding: var(--sp-2) var(--sp-4); border-radius: var(--radius); color: var(--ink-soft); text-decoration: none; } .ds-nav a:hover { background: var(--surface-sunken); color: var(--ink); } .ds-nav span { width: 1px; align-self: stretch; background: var(--rule); margin: 0 var(--sp-4); } .ds-nav .ds-more { font-size: var(--fs-sm); color: var(--ink-faint); }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Contenedor de sección: hoja con filete marcado.",
+      "html": "<section class=\"ds-panel\"><h2>Q1 · Reparto de causas</h2><p>Estudio 62% · ejecución 38%</p></section>",
+      "css": ".ds-panel { padding: var(--sp-5); background: var(--surface); border: 1px solid var(--rule-strong); border-radius: var(--radius); } .ds-panel h2 { margin: 0 0 var(--sp-3); font-size: var(--fs-lg); font-weight: 600; } .ds-panel p { margin: 0; color: var(--ink-faint); font-size: var(--fs-sm); }"
+    },
+    {
+      "name": "Anki Queue Card",
+      "kind": "custom",
+      "description": "Error pendiente de convertir: par tachado → correcta y la regla.",
+      "html": "<article class=\"ds-queue\"><p class=\"ds-pair\"><s>even though of</s> → <strong>despite</strong></p><p class=\"ds-rule\">despite + sustantivo, even though + oración.</p><button>Crear en Anki</button></article>",
+      "css": ".ds-queue { display: grid; grid-template-columns: 1fr auto; gap: var(--sp-4); padding: var(--sp-5); background: var(--surface); border: 1px solid var(--rule-strong); border-radius: var(--radius); } .ds-pair { grid-column: 1; margin: 0; font-family: var(--font-data); font-size: var(--fs-lg); } .ds-pair s { color: var(--exec); } .ds-rule { grid-column: 1; margin: 0; color: var(--ink-soft); } .ds-queue button { grid-column: 2; grid-row: 1; padding: var(--sp-3) var(--sp-5); background: var(--ink); color: var(--surface); border: 1px solid var(--ink); border-radius: var(--radius); font: inherit; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El cuaderno corregido",
+    "overview": "Una hoja de ejercicios después de pasar por el profesor: papel claro, tinta negra para lo escrito, azul y rojo para las correcciones. Todo lo visual sirve a leer datos en columna y a volcar una tanda deprisa. No hay imágenes, ni ilustraciones, ni sombras, ni movimiento más allá de una transición de foco.",
+    "keyCharacteristics": [
+      "Papel hueso con hojas algo más claras encima; profundidad solo por tono y borde.",
+      "Monoespaciada tabular para todo dato comparable.",
+      "Azul estudio / rojo ejecución como única codificación cromática de la causa.",
+      "Negro de tinta para la acción primaria; sin color de marca.",
+      "Esquinas casi rectas (3 px) y píldoras para chips y etiquetas de estado."
+    ],
+    "rules": [
+      { "name": "The Two Pens Rule", "body": "Azul y rojo pertenecen a la causa: estudio y ejecución. Cualquier otro uso compite con esa lectura.", "section": "colors" },
+      { "name": "The Column Rule", "body": "Si un valor se va a comparar en vertical, va en monoespaciada tabular y alineado a la derecha cuando es número.", "section": "typography" },
+      { "name": "The Flat Sheet Rule", "body": "Nada flota. Si algo necesita destacar, cambia de tono o de borde, no de altura.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usar monoespaciada tabular para fechas, cifras, respuestas y categorías.",
+      "Do reservar azul y rojo para el lado de la causa.",
+      "Do expresar profundidad con tono y filete, nunca con sombra.",
+      "Do dejar las celdas sin datos vacías y diferenciadas, no a cero."
+    ],
+    "donts": [
+      "Don't escribir colores o tamaños literales en los módulos: todo sale de :root en src/app/globals.css.",
+      "Don't usar la tinta tenue para texto que haya que leer: no llega a AA.",
+      "Don't añadir un color de marca a la acción primaria."
+    ]
+  }
+}
