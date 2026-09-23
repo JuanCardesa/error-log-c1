@@ -9,7 +9,7 @@ import { ErrorFields } from './ErrorFields';
 import { EMPTY_STATE } from './formState';
 import { importErrorsAction, importSessionAction } from './importActions';
 import { SessionFields } from './SessionFields';
-import { MISSING_LABELS, missingFields, readRow, snapshotFromDraft, type MissingField, type RowSnapshot } from './reviewRows';
+import { MISSING_LABELS, buildImportPayload, missingFields, readRow, snapshotFromDraft, type MissingField, type RowSnapshot } from './reviewRows';
 import headerStyles from './session.module.css';
 import styles from './bulk.module.css';
 import { KIND_LABELS } from '../_shared/labels';
@@ -25,7 +25,8 @@ const EMPTY_SNAPSHOT: RowSnapshot = { itemRef: '', prompt: '', myAnswer: '', cor
 function RowStatus({ missing, rejected }: { readonly missing: readonly MissingField[]; readonly rejected: boolean }) {
   if (rejected) return <span className={styles.statusRejected}>Rechazado: revisa los campos marcados</span>;
   if (missing.length > 0) return <span className={styles.statusPending}>Falta: {missing.map((field) => MISSING_LABELS[field]).join(', ')}</span>;
-  return <span className={styles.statusDone}>Completo</span>;
+  // Listo para enviar, no «validado»: las reglas de negocio las comprueba el servidor.
+  return <span className={styles.statusDone}>Listo para enviar</span>;
 }
 
 export function BulkImport({ session, subcategorySuggestions }: Props) {
@@ -139,7 +140,8 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
   const [openRows, setOpenRows] = useState<ReadonlySet<number>>(new Set());
   const [blocked, setBlocked] = useState(false);
   const incompleteRows = rows.filter(({ id }) => missingFields(snapshots.get(id) ?? EMPTY_SNAPSHOT).length > 0);
-  if (blocked && incompleteRows.length === 0) setBlocked(false);
+  // El aviso de envio bloqueado se deriva: sin filas incompletas no hay nada que avisar.
+  const showBlocked = blocked && incompleteRows.length > 0;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const lastFocusedRow = useRef<number | null>(null);
   const [focusRequest, setFocusRequest] = useState<{ id: number | null; field: string } | null>(null);
@@ -157,7 +159,6 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
     }
   }, EMPTY_STATE);
   const { formRef, onReset } = usePreservedForm();
-  const textFields = ['itemRef', 'prompt', 'myAnswer', 'correctAnswer', 'cause', 'category', 'subcategory', 'confidence', 'ruleNote'] as const;
 
   useEffect(() => { headingRef.current?.focus(); }, []);
 
@@ -200,6 +201,8 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
       setSnapshots((current) => new Map(current).set(id, snapshot));
     }
     setDirty(true);
+    // Tras editar, el contador vuelve a mandar; el aviso reaparece si se intenta guardar.
+    setBlocked(false);
   };
 
   const goToNextPending = () => {
@@ -222,28 +225,9 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
       }} action={(form) => {
       if (incompleteRows.length > 0) { setBlocked(true); goToNextPending(); return; }
       setBlocked(false);
-      const values = rows.map(({ id }) => {
-        const prefix = `${String(id)}.`;
-        return {
-          ...Object.fromEntries(textFields.map((field) => [field, form.get(`${prefix}${field}`)])),
-          lateInSession: form.has(`${prefix}lateInSession`),
-        };
-      });
-      setSentIds(rows.map((row) => row.id));
-      const payload = new FormData();
-      if (target !== null) payload.set('sessionId', String(target.id));
-      const importedHeader = proposal ?? envelopeSession;
-      if (importedHeader !== undefined) {
-        const number = (key: string) => form.get(key) === null || form.get(key) === '' ? null : Number(form.get(key));
-        const header = target === null ? {
-          date: form.get('date'), kind: form.get('kind'), paper: form.get('paper') || null,
-          part: number('part'), source: form.get('source'), sourceRef: form.get('sourceRef'),
-          itemsTotal: number('itemsTotal'), itemsCorrect: number('itemsCorrect'), timed: form.has('timed'),
-        } : importedHeader;
-        payload.set('envelope', JSON.stringify({ session: header, errors: values }));
-        if (target === null) payload.set('durationMin', String(form.get('durationMin') ?? ''));
-      } else payload.set('rows', JSON.stringify(values));
-      action(payload);
+      const sent = rows.map((row) => row.id);
+      setSentIds(sent);
+      action(buildImportPayload(form, sent, { targetId: target?.id ?? null, importedHeader: proposal ?? envelopeSession }));
     }}>
       <h3 ref={headingRef} tabIndex={-1}>Revisar {rows.length} {rows.length === 1 ? 'error' : 'errores'}</h3>
       {rows.length === 0 ? <p className={ui.hint}>Esta tanda no contiene errores. La sesión contará igualmente en los informes.</p>
@@ -305,8 +289,8 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
       <div className={styles.bar} onKeyDown={(event) => {
         if (event.key === 'Escape' && confirming) setConfirming(false);
       }}>
-        <p className={`${styles.barStatus}${blocked ? ` ${ui.fieldError}` : ''}`} aria-live="polite">
-          {blocked ? `Completa los errores pendientes antes de guardar. Faltan ${String(incompleteRows.length)} de ${String(rows.length)}.`
+        <p className={`${styles.barStatus}${showBlocked ? ` ${ui.fieldError}` : ''}`} aria-live="polite">
+          {showBlocked ? `Completa los errores pendientes antes de guardar. Faltan ${String(incompleteRows.length)} de ${String(rows.length)}.`
             : incompleteRows.length === 0
               ? rows.length === 0 ? '' : `${rows.length === 1 ? 'El error está completo' : `Los ${String(rows.length)} errores están completos`}.`
               : `Faltan ${String(incompleteRows.length)} de ${String(rows.length)} por completar.`}

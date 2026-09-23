@@ -206,3 +206,25 @@ test('pega una tabla y conserva la tanda si otra pestaña cierra la sesion', asy
     await expect(page.getByRole('status').filter({ hasText: '1 error guardado.' })).toBeVisible();
   } finally { await other.close(); }
 });
+
+test('elegir categoria y causa con el teclado actualiza el estado de la fila al momento', async ({ page }) => {
+  await openImport(page);
+  await page.getByLabel('Errores para importar').fill(JSON.stringify([{ ...rows[0], category: '' }]));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  const row = page.getByRole('group', { name: 'Error 1', exact: true });
+  await expect(row).toContainText('Falta: categoría');
+
+  // Con el teclado, sin abrir el desplegable: el valor cambia y el contador lo ve ya.
+  const category = row.getByLabel('Categoría *');
+  await category.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(category).not.toHaveValue('');
+  await expect(row).toContainText('Listo para enviar');
+  await expect(page.getByText('El error está completo.')).toBeVisible();
+
+  const cause = row.getByRole('combobox', { name: /^Causa/ });
+  await cause.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(cause).toHaveValue('CONFUSION');
+  await expect(row).toContainText('Listo para enviar');
+});
