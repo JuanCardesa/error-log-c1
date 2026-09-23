@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useId, useState } from 'react';
 
 import { CORRECTORS, GENRES } from '@/lib/domain/enums';
 import type { SessionRow, WritingPieceRow } from '@/lib/domain/types';
@@ -46,12 +46,17 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
   const errorsFor = (field: string): string[] => state.fieldErrors[field] ?? [];
   const invalid = (field: string): boolean => errorsFor(field).length > 0;
 
+  // Cada mensaje se enlaza a su campo: sin esto, el lector no sabia de que campo hablaba.
+  const scope = useId();
+  const errorId = (field: string): string => `${scope}-${field}-error`;
+  const describedBy = (field: string): string | undefined => (invalid(field) ? errorId(field) : undefined);
+
   const fieldError = (field: string) => {
     const messages = errorsFor(field);
     if (messages.length === 0) return null;
     return (
-      <p className={ui.fieldError} role="alert">
-        {messages.join(' ')}
+      <p className={ui.fieldError} id={errorId(field)} role="alert">
+        {messages.map((message) => <span key={message}>{message}</span>)}
       </p>
     );
   };
@@ -87,7 +92,7 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
         <label>
           <span className={ui.label}>Sesión</span>
           {editing === null ? (
-            <select name="sessionId" required aria-invalid={invalid('sessionId')}>
+            <select name="sessionId" required aria-invalid={invalid('sessionId')} aria-describedby={describedBy('sessionId')}>
               {availableSessions.map((session) => (
                 <option key={session.id} value={session.id}>
                   {session.date} · P{session.part} · {KIND_LABELS[session.kind]}
@@ -111,6 +116,7 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
             required
             className="data"
             aria-invalid={invalid('date')}
+            aria-describedby={describedBy('date')}
           />
           {fieldError('date')}
         </label>
@@ -179,6 +185,7 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
                   className="data"
                   defaultValue={editing?.[band.name] ?? ''}
                   aria-invalid={invalid(band.name)}
+                  aria-describedby={describedBy(band.name)}
                 />
                 {fieldError(band.name)}
               </label>
@@ -206,6 +213,7 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
                 name="rewriteOf"
                 defaultValue={editing?.rewriteOf ?? ''}
                 aria-invalid={invalid('rewriteOf')}
+                aria-describedby={describedBy('rewriteOf')}
               >
                 <option value="">elige el original</option>
                 {pieces
