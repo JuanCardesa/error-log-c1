@@ -29,7 +29,7 @@ test('cuenta los errores pendientes y no envia hasta completarlos', async ({ pag
   await second.getByLabel('Correcta *').fill('in');
   await expect(page.getByText('Los 2 errores estan completos.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
-  await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeFocused();
 });
 
 test('pulsar Ir al siguiente pendiente abre y enfoca lo que falta', async ({ page }) => {

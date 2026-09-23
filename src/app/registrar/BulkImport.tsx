@@ -32,9 +32,14 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
   const [batch, setBatch] = useState<{ version: number; rows: ImportDraft[]; session: ImportedSession | null } | null>(null);
   const version = useRef(0);
   const [message, setMessage] = useState('');
+  const noticeRef = useRef<HTMLParagraphElement>(null);
   const [problem, setProblem] = useState('');
   const [copyMessage, setCopyMessage] = useState('');
   const instructions = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (message !== '') noticeRef.current?.focus();
+  }, [message]);
 
   const preview = () => {
     try {
@@ -103,7 +108,7 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
           }} />
       )}
       {problem !== '' && <p role="alert" className={ui.fieldError}>{problem}</p>}
-      {message !== '' && <p role="status" className={ui.noticeOk}>{message}</p>}
+      {message !== '' && <p ref={noticeRef} tabIndex={-1} role="status" className={ui.noticeOk}>{message}</p>}
     </div>
   );
 }

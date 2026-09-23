@@ -25,9 +25,10 @@ interface Props {
   readonly session: SessionRow;
   readonly subcategorySuggestions: readonly string[];
   readonly lastCategory: string | null;
+  readonly autoFocusFirstField?: boolean;
 }
 
-export function CaptureForm({ session, subcategorySuggestions, lastCategory }: Props) {
+export function CaptureForm({ session, subcategorySuggestions, lastCategory, autoFocusFirstField = true }: Props) {
   const [state, formAction, pending] = useActionState(addErrorAction, EMPTY_STATE);
   const [variant, setVariant] = useState<Variant>('form');
 
@@ -46,8 +47,8 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
 
   // Una sesion abierta se abre para volcar errores: el cursor empieza en el primer campo.
   useEffect(() => {
-    firstFieldRef.current?.focus();
-  }, []);
+    if (autoFocusFirstField) firstFieldRef.current?.focus();
+  }, [autoFocusFirstField]);
 
   useEffect(() => {
     if (!state.ok) {

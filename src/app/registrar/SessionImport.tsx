@@ -20,8 +20,8 @@ export function SessionImport({ today, openSessions, subcategorySuggestions }: {
     <p>Pega el bloque de «Copiar todo» de Macmillan. Revisa la cabecera y completa cada error antes de guardar.</p>
     {batch?.session ? <ImportReview session={null} proposal={batch.session} today={today}
       openSessions={openSessions} subcategorySuggestions={subcategorySuggestions} drafts={batch.errors}
-      onBack={() => setBatch(null)} onSaved={(_message, id) => {
-        if (id !== undefined) router.push(`/registrar?s=${String(id)}`);
+      onBack={() => setBatch(null)} onSaved={(message, id) => {
+        if (id !== undefined) router.push(`/registrar?s=${String(id)}&aviso=${encodeURIComponent(message)}`);
       }} /> : <>
       <label className={styles.paste}>Sesión y errores para importar
         <textarea rows={7} value={text} onChange={(event) => { setText(event.target.value); setProblem(''); }}

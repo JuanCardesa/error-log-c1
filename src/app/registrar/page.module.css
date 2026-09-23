@@ -1,3 +1,5 @@
+.savedNotice { margin: 0 0 var(--sp-5); max-width: 70ch; }
+
 .page {
   display: block;
 }

@@ -16,6 +16,7 @@ import { ErrorList } from './ErrorList';
 import { SessionForm } from './SessionForm';
 import { SessionPanel } from './SessionPanel';
 import { SessionImport } from './SessionImport';
+import { SavedNotice } from './SavedNotice';
 import styles from './page.module.css';
 
 /**
@@ -113,6 +114,8 @@ export default async function RegistrarPage({ searchParams }: Props) {
 
   const errors = listErrors(db, active.id);
   const subcategories = distinctSubcategories(db);
+  const rawNotice = params['aviso'];
+  const aviso = typeof rawNotice === 'string' ? rawNotice.trim().slice(0, 300) || null : null;
 
   return (
     <div className={styles.page}>
@@ -131,11 +134,13 @@ export default async function RegistrarPage({ searchParams }: Props) {
         <SessionPanel session={active} errorCount={errors.length} today={today} />
       </header>
 
+      {aviso !== null && <SavedNotice message={aviso} sessionId={active.id} />}
       {active.status === 'OPEN' ? (
         <CaptureForm
           session={active}
           subcategorySuggestions={subcategories}
           lastCategory={lastUsedCategory(db)}
+          autoFocusFirstField={aviso === null}
         />
       ) : (
         <p className={styles.closed}>
