@@ -11,7 +11,7 @@ import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
-import { CATEGORY_LABELS } from '../_shared/labels';
+import { categoryLabel } from '../_shared/labels';
 import { ConversionFeedback, ConversionNotice } from './ConversionFeedback';
 import { QueueItem, UndoButton, UpdateButton } from './QueueItem';
 import styles from './anki.module.css';
@@ -179,7 +179,7 @@ function DoneItem({ error, available, stale, state }: {
     <li className={styles.doneItem}>
       <span className="data">{(error.ankiAddedAt ?? '').slice(0, 10)}</span>
       <span className="data">{error.correctAnswer}</span>
-      <span className={ui.note}>{CATEGORY_LABELS[error.category]}</span>
+      <span className={ui.note}>{categoryLabel(error.category)}</span>
       {state !== null && <span className={ui.note}>{state}</span>}
       <span className={styles.doneActions}>
         <UpdateButton id={error.id} available={available} stale={stale} />

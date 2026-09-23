@@ -8,7 +8,10 @@ import ui from '../_shared/ui.module.css';
 
 /** Destaca una sola acción según la prioridad del informe. */
 
-/** La señal en palabras; si el motor añade una regla que la interfaz no conoce, la suya. */
+/**
+ * La señal en palabras. labels.test.ts exige una etiqueta para cada regla del motor, asi
+ * que la señal tecnica solo aparece si alguien se salta ese test.
+ */
 function signalLabel(rule: RuleEvaluation): string {
   return RULE_SIGNAL_LABELS[rule.id] ?? rule.signal;
 }

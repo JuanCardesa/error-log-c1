@@ -122,7 +122,12 @@ export const RULE_SIGNAL_LABELS: Readonly<Record<number, string>> = {
   6: 'Errores del original que se repiten al reescribir',
 };
 
-/** Etiqueta de una categoria que puede venir de fuera (Anki) y no ser del enum. */
+/**
+ * Etiqueta de una categoria que podria no ser del enum (una fila editada a mano, un
+ * espejo de Anki antiguo). Dice que no se reconoce y cual llego: con el codigo solo,
+ * parecia una etiqueta; con un texto generico, dos desconocidas serian indistinguibles.
+ */
 export function categoryLabel(value: string): string {
-  return (CATEGORY_LABELS as Readonly<Record<string, string>>)[value] ?? value;
+  return (CATEGORY_LABELS as Readonly<Record<string, string | undefined>>)[value]
+    ?? `Categoría no reconocida (${value})`;
 }
