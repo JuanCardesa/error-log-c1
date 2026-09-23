@@ -126,7 +126,6 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
     }
   }, EMPTY_STATE);
   const { formRef, onReset } = usePreservedForm();
-  const [startedAt] = useState(() => Date.now());
   const textFields = ['itemRef', 'prompt', 'myAnswer', 'correctAnswer', 'cause', 'category', 'subcategory', 'confidence', 'ruleNote'] as const;
 
   return (
@@ -136,7 +135,6 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
         return {
           ...Object.fromEntries(textFields.map((field) => [field, form.get(`${prefix}${field}`)])),
           lateInSession: form.has(`${prefix}lateInSession`),
-          ankiAdded: form.has(`${prefix}ankiAdded`),
         };
       });
       setSentIds(rows.map((row) => row.id));
@@ -153,7 +151,6 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
         payload.set('envelope', JSON.stringify({ session: header, errors: values }));
         if (target === null) payload.set('durationMin', String(form.get('durationMin') ?? ''));
       } else payload.set('rows', JSON.stringify(values));
-      payload.set('secs', String(Math.max(0, Math.round((Date.now() - startedAt) / 1000))));
       action(payload);
     }}>
       {envelopeSession !== undefined && <p className={capture.hint}>Se añaden los errores a esta sesión. La cabecera del bloque no sustituye la actual ni se suman sus recuentos.</p>}
@@ -185,7 +182,7 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
         <fieldset key={id} disabled={pending} className={styles.row}>
           <legend>Error {index + 1}</legend>
           <div className={`${capture.grid} ${styles.fields}`}>
-            <ErrorFields variant="grid" timed={target?.timed ?? timed} subcategorySuggestions={subcategorySuggestions}
+            <ErrorFields timed={target?.timed ?? timed} subcategorySuggestions={subcategorySuggestions}
               defaults={draft} namePrefix={`${String(id)}.`}
               fieldErrors={errorsForRow(state.fieldErrors, sentIds.indexOf(id))} />
           </div>

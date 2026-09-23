@@ -9,8 +9,7 @@ import styles from './capture.module.css';
  * Los campos de un error, compartidos por el alta y la edicion.
  *
  * Estan aqui y no duplicados en cada formulario para que no puedan divergir: si mañana
- * cambia un enum o una validacion, cambia en un sitio. La misma razon por la que las
- * variantes grid y card comparten componente y solo se diferencian en el grid de CSS.
+ * cambia un enum o una validacion, cambia en un sitio.
  *
  * Los ids van aislados con `useId` porque puede haber varios formularios montados a la
  * vez —el de alta arriba y el de edicion de una fila— y dos `<datalist id="...">`
@@ -27,12 +26,10 @@ export interface ErrorFieldDefaults {
   readonly subcategory?: string | null;
   readonly confidence?: string;
   readonly lateInSession?: boolean;
-  readonly ankiAdded?: boolean;
   readonly ruleNote?: string;
 }
 
 interface Props {
-  readonly variant: 'grid' | 'card';
   /** Si la sesion es cronometrada. `late_in_session` no significa nada sin cronometro. */
   readonly timed: boolean;
   readonly subcategorySuggestions: readonly string[];
@@ -43,7 +40,6 @@ interface Props {
 }
 
 export function ErrorFields({
-  variant,
   timed,
   subcategorySuggestions,
   fieldErrors,
@@ -223,7 +219,7 @@ export function ErrorFields({
         </span>
         <textarea
           name={`${namePrefix}ruleNote`}
-          rows={variant === 'card' ? 4 : 2}
+          rows={2}
           required
           minLength={15}
           defaultValue={defaults?.ruleNote ?? ''}
@@ -251,16 +247,8 @@ export function ErrorFields({
           </span>
         )}
 
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            name={`${namePrefix}ankiAdded`}
-            defaultChecked={defaults?.ankiAdded ?? false}
-            aria-invalid={invalid('ankiAdded')}
-            aria-describedby={describedBy('ankiAdded')}
-          />
-          <span>Ya es tarjeta</span>
-        </label>
+        {/* La conversion se sella desde Anki, no aqui. El aviso sigue haciendo falta:
+            cambiar la causa de un error ya convertido tiene que poder rechazarse. */}
         {fieldError('ankiAdded')}
       </div>
     </>
@@ -278,7 +266,7 @@ function CauseChip({ cause }: { readonly cause: string }) {
       className={meta.side === 'study' ? styles.chipStudy : styles.chipExec}
       title={meta.remedy}
     >
-      {meta.side}
+      {meta.side === 'study' ? 'estudio' : 'ejecucion'}
       {meta.generatesCard ? ' · tarjeta' : ' · sin tarjeta'}
     </span>
   );

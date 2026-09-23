@@ -8,12 +8,7 @@ import { SessionForm } from './SessionForm';
 import styles from './page.module.css';
 import list from './list.module.css';
 
-/**
- * Cabecera de una sesion abierta: los datos, los controles y la correccion en sitio.
- *
- * Corregir una sesion pasada es lo que pide §6 y hasta ahora faltaba: se podia crear,
- * cerrar, reabrir y borrar, pero no arreglar un numero mal tecleado.
- */
+/** Cabecera y edición de una sesión. */
 export function SessionPanel({
   session,
   errorCount,

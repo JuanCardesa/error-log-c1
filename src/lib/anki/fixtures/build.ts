@@ -65,8 +65,6 @@ export class FakeAnki {
   models: string[] = [];
   fields = ERRORLOG_FIELDS;
   disconnected = false;
-  /** Forma anidada de `getPreferences`; `rolloverFrom` tolera las otras y cae al 4. */
-  rollover = 4;
   failAction: string | null = null;
   added = 0;
   afterAddFails = false;
@@ -87,7 +85,6 @@ export class FakeAnki {
       case 'version': return 6;
       case 'getActiveProfile': return this.profile;
       case 'deckNames': return this.decks;
-      case 'getPreferences': return { scheduling: { rollover: this.rollover }, collapseTime: 1200 };
       case 'findCards': return this.cards.map((value) => value.cardId);
       case 'findNotes': {
         const query = String(params['query']);
@@ -120,11 +117,29 @@ export class FakeAnki {
           noteId: nid, cards: [nid + 100], modelName: input.modelName, tags: input.tags,
           fields: Object.fromEntries(Object.entries(input.fields).map(([name, value], order) => [name, { value, order }])),
         });
+        // Crear una nota crea su carta: sin esto el doble decia que la nota tenia carta
+        // pero la carta no aparecia por mazo, y una nota recien creada no podia tener
+        // historial de repasos en ninguna prueba.
+        this.cards = [...this.cards, card({
+          cardId: nid + 100, note: nid, modelName: input.modelName,
+          deckName: String((params['note'] as { deckName?: unknown }).deckName ?? CONFIG.targetDeck),
+          lapses: 0, reps: 0,
+        })];
         if (this.afterAddFails) { this.afterAddFails = false; throw new Error('Respuesta perdida'); }
         return nid;
       }
       default: throw new Error(`Acción no simulada: ${action}`);
     }
+  }
+
+  /**
+   * Borrar una nota en Anki se lleva sus cartas. Usar `notes.delete` a secas deja una
+   * carta huerfana, que es otra cosa: la coleccion cambiando a mitad de una lectura.
+   * Los tests que quieren esa carrera la provocan a proposito y no usan esto.
+   */
+  deleteNote(noteId: number): void {
+    this.notes.delete(noteId);
+    this.cards = this.cards.filter((value) => value.note !== noteId);
   }
 
   async result(action: string, params = {}) { return unwrap(await this.transport({ action, version: 6, params })); }

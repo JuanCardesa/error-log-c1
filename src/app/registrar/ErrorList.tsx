@@ -190,10 +190,10 @@ function EditRow({
         <form ref={formRef} action={formAction} onReset={onReset} className={capture.grid}>
           <input type="hidden" name="id" value={error.id} />
           <input type="hidden" name="sessionId" value={error.sessionId} />
-          <input type="hidden" name="secs" value={error.secs ?? 0} />
+          {/* Referencia y cambio, nada mas: la conversion a Anki y el `secs` de las
+              versiones anteriores los conserva el servidor leyendo la fila. */}
 
           <ErrorFields
-            variant="grid"
             timed={session.timed}
             subcategorySuggestions={subcategorySuggestions}
             fieldErrors={state.fieldErrors}

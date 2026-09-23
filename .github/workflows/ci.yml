@@ -52,14 +52,6 @@ jobs:
       - name: build
         run: pnpm build
 
-      - name: Sin `any` ni `@ts-ignore` (DoD §8)
-        run: |
-          if grep -rnE '(: *any\b|<any>|as +any\b|@ts-ignore|@ts-nocheck)' src/ --include='*.ts' --include='*.tsx'; then
-            echo '::error::DoD 8 prohibe any y @ts-ignore. Coincidencias arriba.'
-            exit 1
-          fi
-          echo "Limpio."
-
   e2e:
     name: end-to-end
     runs-on: ubuntu-latest

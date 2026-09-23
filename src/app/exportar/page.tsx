@@ -26,8 +26,8 @@ export default async function ExportarPage({
         <div>
           <h1>Exportar</h1>
           <p className={shared.lede}>
-            Cada consulta en su CSV, con las comillas escapadas segun RFC 4180. La ventana
-            activa es de {windowDays} dias.
+            Las consultas que son una tabla, en CSV listo para una hoja de calculo. La
+            ventana activa es de {windowDays} dias.
           </p>
         </div>
         <WindowSwitch current={windowDays} basePath="/exportar" />
@@ -37,7 +37,6 @@ export default async function ExportarPage({
         {CSV_EXPORTS.map((key) => (
           <li key={key} className={styles.item}>
             <a className={styles.row} href={`/exportar/${key}.csv${query}`} download>
-              <span className={styles.key}>{key.toUpperCase()}</span>
               <span>{CSV_LABELS[key]}</span>
               <span className={styles.file}>errorlog-{key}.csv</span>
             </a>
@@ -49,16 +48,16 @@ export default async function ExportarPage({
         <h2 id="dump-heading">Volcado completo</h2>
         <ul className={styles.list} style={{ marginTop: 'var(--sp-4)' }}>
           <li className={styles.item}>
-            <a className={styles.row} href={`/exportar/dump.json${query}`} download>
-              <span className={styles.key}>JSON</span>
-              <span>Filas crudas, historial de Anki, las siete consultas y el informe de reglas</span>
+            <a className={styles.row} href="/exportar/dump.json" download>
+              <span>Tus filas y el historial de Anki, completos y sin recortar por ventana</span>
               <span className={styles.file}>errorlog-dump.json</span>
             </a>
           </li>
         </ul>
         <p className={styles.note}>
-          Q4 usa siempre 30 dias porque su umbral esta calibrado a esa ventana.
-          El JSON permite llevarte tus datos, pero no se puede restaurar desde esta pantalla.
+          Las falsas certezas usan siempre 30 dias, porque su umbral esta calibrado a esa ventana.
+          El JSON lleva tus datos tal cual, sin cifras calculadas: esas salen de los CSV o de la
+          propia app. No se puede restaurar desde esta pantalla.
           Para una copia recuperable, ejecuta <code>pnpm db:backup</code>.
           Las instrucciones para recuperarla estan en el README.
         </p>

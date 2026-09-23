@@ -10,7 +10,6 @@ import { sessionInputSchema } from '../validation/schemas';
 import { type Db, createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
 import {
-  countErrors,
   createError,
   createSession,
   deleteError,
@@ -26,7 +25,6 @@ import {
   deleteWritingPiece,
   getWritingPiece,
   listWritingPieces,
-  markAnkiAdded,
   setSessionStatus,
   updateWritingPiece,
   writingSessionsWithoutPiece,
@@ -35,6 +33,7 @@ import {
   updateSession,
 } from './repo';
 import { writingPiece } from './schema';
+import { linkAnkiNote } from './ankiRepo';
 
 let db: Db;
 
@@ -68,9 +67,6 @@ function errorInput(sessionId: number, overrides: Partial<ErrorInput> = {}): Err
     confidence: 'DUDABA',
     lateInSession: false,
     ruleNote: 'sustain a loss es la colocacion formal, suffer es mas general',
-    ankiAdded: false,
-    ankiAddedAt: null,
-    secs: 25,
     ...overrides,
   };
 }
@@ -137,7 +133,7 @@ describe('sesiones', () => {
   it('al borrarla arrastra sus errores', () => {
     const created = createSession(db, sessionInput());
     createError(db, errorInput(created.id));
-    expect(countErrors(db, created.id)).toBe(1);
+    expect(listErrors(db, created.id)).toHaveLength(1);
 
     deleteSession(db, created.id);
     expect(getSession(db, created.id)).toBeNull();
@@ -146,18 +142,16 @@ describe('sesiones', () => {
 });
 
 describe('errores', () => {
-  it('crea, lista y cuenta', () => {
+  it('crea y lista', () => {
     const session = createSession(db, sessionInput());
     createError(db, errorInput(session.id));
     createError(db, errorInput(session.id, { itemRef: '7' }));
 
     expect(listErrors(db, session.id)).toHaveLength(2);
-    expect(countErrors(db, session.id)).toBe(2);
   });
 
-  it('cuenta cero en una sesion sin errores', () => {
+  it('no lista nada en una sesion sin errores', () => {
     const session = createSession(db, sessionInput());
-    expect(countErrors(db, session.id)).toBe(0);
     expect(listErrors(db, session.id)).toEqual([]);
   });
 
@@ -182,20 +176,25 @@ describe('errores', () => {
 });
 
 describe('conversion a tarjeta', () => {
-  it('sella la fecha al marcar y la limpia al desmarcar', () => {
+  it('sella fecha y vinculo al crear la nota, y los limpia al deshacer', () => {
     const session = createSession(db, sessionInput());
     const created = createError(db, errorInput(session.id));
 
-    markAnkiAdded(db, created.id, '2026-09-12T18:00:00.000Z');
+    linkAnkiNote(db, created.id, {
+      noteId: 20, model: 'Error Log C1', label: 'deal with', tags: [], category: null,
+      firstSeenAt: '2026-09-12T18:00:00.000Z', lastSeenAt: '2026-09-12T18:00:00.000Z',
+    }, '2026-09-12T18:00:00.000Z', 'huella');
     const marked = listErrors(db, session.id)[0];
     expect(marked?.ankiAdded).toBe(true);
     expect(marked?.ankiAddedAt).toBe('2026-09-12T18:00:00.000Z');
+    expect(marked?.ankiNoteId).toBe(20);
 
     unmarkAnkiAdded(db, created.id);
     const cleared = listErrors(db, session.id)[0];
     expect(cleared?.ankiAdded).toBe(false);
     // El CHECK de la base exige que no quede fecha huerfana.
     expect(cleared?.ankiAddedAt).toBeNull();
+    expect(cleared?.ankiNoteId).toBeNull();
   });
 });
 

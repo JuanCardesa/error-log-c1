@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseImportedErrors } from '../../../src/lib/import/errors.ts';
+import { parseImportedBatch } from '../../../src/lib/import/errors.ts';
+
+/** El importador devuelve cabecera y filas; aqui solo se pegan filas sueltas. */
+const parseImportedErrors = (text) => parseImportedBatch(text).errors;
 import { itemRefFor, renderPrompt, summarize } from '../src/core/items.js';
 import { rowFingerprint, toImportEntries, toJson } from '../src/core/exportable.js';
 
@@ -162,7 +165,6 @@ describe('contrato real del importador', () => {
       ruleNote: '',
       cause: 'DESCONOCIMIENTO',
       confidence: 'DUDABA',
-      ankiAdded: false,
       lateInSession: false,
     });
   });

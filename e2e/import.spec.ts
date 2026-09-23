@@ -20,7 +20,7 @@ test('pega, revisa, quita una fila y guarda la tanda sin duplicarla al repetirla
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.getByRole('button', { name: 'Copiar instrucciones para la IA' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Instrucciones copiadas' })).toBeVisible();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('No inventes respuestas ni errores');
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('QUE NO DEBES INVENTAR');
 
   await page.getByLabel('Errores para importar').fill(JSON.stringify([...rows, rows[0]]));
   await page.getByRole('button', { name: 'Preparar vista previa' }).click();

@@ -10,16 +10,7 @@ import { createSessionAction, updateSessionAction } from './actions';
 import { EMPTY_STATE } from './formState';
 import styles from './session.module.css';
 
-/**
- * Cabecera de sesion, para abrirla y para corregirla despues.
- *
- * §6.1 pide validarla **antes** de aceptar errores y enseñar el error concreto: hasta
- * que esta no se guarda, no aparece el formulario de captura. Corregir una sesion pasada
- * pasa por la misma validacion, porque las reglas no cambian por ser una correccion.
- *
- * El paper condiciona dos cosas en vivo: cuantas parts hay, y si los items son
- * opcionales. Solo el Writing puede quedarse sin items, porque no se mide por aciertos.
- */
+/** Alta y edición comparten campos y validación. */
 
 interface Props {
   readonly today: string;

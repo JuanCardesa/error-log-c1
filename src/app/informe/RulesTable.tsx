@@ -2,13 +2,7 @@ import { MIN_N } from '@/lib/domain/thresholds';
 import type { RuleEvaluation, RulesReport } from '@/lib/rules';
 import styles from './rules.module.css';
 
-/**
- * La tabla de decision. Es la razon de ser de todo lo anterior: sin ella las queries
- * son decoracion.
- *
- * Solo el `DO NOW` va destacado. Ensenar cinco acciones urgentes a la vez es no haber
- * decidido nada, y por eso el resto quedan explicitamente en cola.
- */
+/** Destaca una sola acción según la prioridad del informe. */
 
 function formatValue(rule: RuleEvaluation): string {
   if (rule.value === null) return '—';
@@ -63,54 +57,59 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
         </p>
       )}
 
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <caption className="sr-only">Estado de las siete reglas de decision</caption>
-          <thead>
-            <tr>
-              <th scope="col">#</th>
-              <th scope="col">Estado</th>
-              <th scope="col">Señal</th>
-              <th scope="col" className={styles.num}>
-                Valor
-              </th>
-              <th scope="col" className={styles.num}>
-                Umbral
-              </th>
-              <th scope="col" className={styles.num}>
-                n
-              </th>
-              <th scope="col">Accion</th>
-            </tr>
-          </thead>
-          <tbody>
-            {report.rules.map((rule) => (
-              <tr key={rule.id} className={rule.status === 'DO NOW' ? styles.rowDoNow : undefined}>
-                <td className="data">{rule.id}</td>
-                <td>
-                  <span className={STATUS_CLASS[rule.status] ?? styles.stNeeds}>
-                    {rule.status}
-                  </span>
-                </td>
-                <td>
-                  {rule.signal}
-                  {rule.detail === null ? '' : ` · ${rule.detail}`}
-                </td>
-                <td className={styles.num}>{formatValue(rule)}</td>
-                <td className={styles.num}>{formatThreshold(rule)}</td>
-                <td className={styles.num}>{rule.sampleSize}</td>
-                <td className={styles.action}>{rule.action}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* La tabla es el respaldo de la decision, no la decision: se abre si se pide. */}
+      <details className={styles.details}>
+        <summary>Ver las siete reglas y sus cifras</summary>
 
-      <p className={styles.legend}>
-        <strong>needs n ≥ {MIN_N}</strong> no es un fallo: con menos de {MIN_N} errores en
-        la ventana un porcentaje es ruido, y actuar sobre ruido cuesta una semana de
-        estudio. <strong>n/a</strong> significa que no hay datos de ese tipo todavia.
-      </p>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <caption className="sr-only">Estado de las siete reglas de decision</caption>
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Señal</th>
+                <th scope="col" className={styles.num}>
+                  Valor
+                </th>
+                <th scope="col" className={styles.num}>
+                  Umbral
+                </th>
+                <th scope="col" className={styles.num}>
+                  n
+                </th>
+                <th scope="col">Accion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.rules.map((rule) => (
+                <tr key={rule.id} className={rule.status === 'DO NOW' ? styles.rowDoNow : undefined}>
+                  <td className="data">{rule.id}</td>
+                  <td>
+                    <span className={STATUS_CLASS[rule.status] ?? styles.stNeeds}>
+                      {rule.status}
+                    </span>
+                  </td>
+                  <td>
+                    {rule.signal}
+                    {rule.detail === null ? '' : ` · ${rule.detail}`}
+                  </td>
+                  <td className={styles.num}>{formatValue(rule)}</td>
+                  <td className={styles.num}>{formatThreshold(rule)}</td>
+                  <td className={styles.num}>{rule.sampleSize}</td>
+                  <td className={styles.action}>{rule.action}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className={styles.legend}>
+          <strong>needs n ≥ {MIN_N}</strong> no es un fallo: con menos de {MIN_N} errores en
+          la ventana un porcentaje es ruido, y actuar sobre ruido cuesta una semana de
+          estudio. <strong>n/a</strong> significa que no hay datos de ese tipo todavia.
+        </p>
+      </details>
     </section>
   );
 }

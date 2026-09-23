@@ -69,6 +69,8 @@ test('recorrido de registro e informe para el README', async ({ page }) => {
   await frame(page, 4, 'Tus errores, guardados', 'La tanda se guarda completa; los duplicados de la misma sesión se omiten.');
 
   await page.goto('/informe');
-  await expect(page.getByRole('table', { name: /siete reglas/ })).toBeVisible();
+  // La captura muestra lo que se ve al abrir: la accion destacada y sus cifras. La tabla
+  // de las siete reglas queda plegada, que es su estado real por defecto.
+  await expect(page.getByText('DO NOW').first()).toBeVisible();
   await frame(page, 5, 'Elige una acción para esta semana', 'El informe prioriza el siguiente paso y muestra la cifra que lo justifica.');
 });

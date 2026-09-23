@@ -75,6 +75,14 @@ export function createError(db: Db, input: ErrorInput): ErrorRow {
   return created;
 }
 
+/**
+ * Identidad de una fila importada: item, enunciado, respuesta y solucion, sin espacios
+ * alrededor. Alta e importacion la comparten para que un mismo pegado no cuele dos veces
+ * en una via y una en la otra.
+ */
+const fingerprint = (row: Pick<ErrorInput, 'itemRef' | 'prompt' | 'myAnswer' | 'correctAnswer'>): string =>
+  JSON.stringify([row.itemRef ?? '', row.prompt, row.myAnswer ?? '', row.correctAnswer].map((value) => value.trim()));
+
 /** Guarda la tanda completa y evita duplicar el mismo error al volver a pegarlo. */
 export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorInput[]) {
   return db.transaction((tx) => {
@@ -82,8 +90,6 @@ export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorIn
     if (target === undefined) return { ok: false, message: 'Esa sesion ya no existe.' } as const;
     if (target.status !== 'OPEN') return { ok: false, message: 'La sesion esta cerrada. Reabrela para importar.' } as const;
 
-    const fingerprint = (row: Pick<ErrorInput, 'itemRef' | 'prompt' | 'myAnswer' | 'correctAnswer'>) =>
-      JSON.stringify([row.itemRef ?? '', row.prompt, row.myAnswer ?? '', row.correctAnswer].map((value) => value.trim()));
     const existing = tx.select().from(errorRow).where(eq(errorRow.sessionId, sessionId)).all();
     const seen = new Set(existing.map(fingerprint));
     let created = 0;
@@ -106,7 +112,7 @@ export function createSessionWithErrors(db: Db, header: SessionInput, inputs: re
     const seen = new Set<string>();
     let created = 0;
     for (const input of inputs) {
-      const key = JSON.stringify([input.itemRef ?? '', input.prompt, input.myAnswer ?? '', input.correctAnswer].map((text) => text.trim()));
+      const key = fingerprint(input);
       if (seen.has(key)) continue;
       tx.insert(errorRow).values({ ...input, sessionId: createdSession.id, lateInSession: header.timed && input.lateInSession }).run();
       seen.add(key);
@@ -120,18 +126,27 @@ export function getError(db: Db, id: number): ErrorRow | null {
   return db.select().from(errorRow).where(eq(errorRow.id, id)).get() ?? null;
 }
 
+/**
+ * Corregir una fila escribe lo que se teclea y nada mas.
+ *
+ * La conversion a Anki —marca, sello, vinculo y huella— no se toca desde aqui: se sella
+ * al crear la nota y se deshace por su via explicita, `unmarkAnkiAdded`. Antes bastaba
+ * con que el formulario no mandara `ankiAdded` para que esta funcion borrara el vinculo
+ * y dejara la tarjeta huerfana en Anki. El `secs` de las versiones anteriores se conserva
+ * por lo mismo: ya no se mide, asi que ninguna edicion puede sobrescribirlo.
+ */
 export function updateError(db: Db, id: number, input: ErrorInput): boolean {
-  return db.update(errorRow).set({ ...input, ...(!input.ankiAdded ? { ankiNoteId: null, ankiContentHash: null } : {}) }).where(eq(errorRow.id, id)).run().changes > 0;
+  const { sessionId, itemRef, prompt, myAnswer, correctAnswer, cause, category,
+    subcategory, confidence, lateInSession, ruleNote } = input;
+  // Enumeradas y no `...input`: lo que se escribe se lee aqui, sin depender de que quien
+  // llame no traiga de mas.
+  return db.update(errorRow).set({ sessionId, itemRef, prompt, myAnswer, correctAnswer,
+    cause, category, subcategory, confidence, lateInSession, ruleNote })
+    .where(eq(errorRow.id, id)).run().changes > 0;
 }
 
 export function deleteError(db: Db, id: number): void {
   db.delete(errorRow).where(eq(errorRow.id, id)).run();
-}
-
-/** Sella la conversion a tarjeta. La fecha es obligatoria: hay un CHECK que lo exige. */
-export function markAnkiAdded(db: Db, id: number, at: string): void {
-  db.update(errorRow).set({ ankiAdded: true, ankiAddedAt: at })
-    .where(and(eq(errorRow.id, id), eq(errorRow.ankiAdded, false))).run();
 }
 
 export function unmarkAnkiAdded(db: Db, id: number): void {
@@ -164,15 +179,6 @@ export function lastUsedCategory(db: Db): string | null {
     .limit(1)
     .get();
   return row?.category ?? null;
-}
-
-export function countErrors(db: Db, sessionId: number): number {
-  const row = db
-    .select({ n: sql<number>`count(*)` })
-    .from(errorRow)
-    .where(eq(errorRow.sessionId, sessionId))
-    .get();
-  return row?.n ?? 0;
 }
 
 export function hasWritingPiece(db: Db, sessionId: number): boolean {

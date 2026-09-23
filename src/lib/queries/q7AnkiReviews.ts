@@ -1,8 +1,8 @@
 import type { Category } from '../domain/enums';
-import { EMPTY_ANKI_DATASET, type AnkiDataset, type Dataset, type QueryOptions } from '../domain/types';
+import type { AnkiDataset, ErrorRow, QueryOptions } from '../domain/types';
 import { toCsv } from '../csv/csv';
 import { inWindow } from '../time/dates';
-import { percentage, sliceWindow } from './window';
+import { percentage } from './window';
 
 /**
  * Un «Again» no siempre es el mismo hecho.
@@ -16,7 +16,36 @@ import { percentage, sliceWindow } from './window';
  */
 const REVIEW_TYPE = 1;
 
-export function q7AnkiReviews(data: AnkiDataset = EMPTY_ANKI_DATASET, options: QueryOptions) {
+/**
+ * Categoria con la que se agrupa una nota.
+ *
+ * Si la nota esta vinculada a un error del log, manda la categoria de ese error: es la
+ * que tu corriges y la que usan las demas vistas. Actualizar una tarjeta reescribe sus
+ * campos pero nunca sus tags —no se tocan etiquetas de tu coleccion—, asi que resolverla
+ * aqui es lo que evita que corregir una categoria deje las estadisticas de repaso
+ * contando bajo la antigua para siempre. Una nota que no es de ningun error del log
+ * conserva su etiqueta: es la unica categoria que tiene.
+ */
+function categoryResolver(errors: readonly ErrorRow[]) {
+  const local = new Map<number, ErrorRow['category']>();
+  for (const error of errors) {
+    if (error.ankiNoteId !== null) local.set(error.ankiNoteId, error.category);
+  }
+  return (note: { noteId: number; category: Category | null }): Category | null =>
+    local.get(note.noteId) ?? note.category;
+}
+
+/**
+ * Las filas locales son obligatorias, y vacias solo si de verdad no hay ninguna: con un
+ * valor por defecto, olvidarse de pasarlas no fallaba, agrupaba por la etiqueta de Anki
+ * y dejaba dos pantallas contando lo mismo bajo categorias distintas.
+ */
+export function q7AnkiReviews(
+  data: AnkiDataset,
+  options: QueryOptions,
+  errors: readonly ErrorRow[],
+) {
+  const categoryOfNote = categoryResolver(errors);
   const notes = new Map(data.notes.map((note) => [note.noteId, note]));
   const cards = new Map(data.cards.map((card) => [card.cardId, card]));
   const groups = new Map<Category | null, { category: Category | null; reviews: number; failures: number; lapses: number; cards: Set<number>; notes: Map<number, { noteId: number; label: string; failures: number }> }>();
@@ -31,10 +60,11 @@ export function q7AnkiReviews(data: AnkiDataset = EMPTY_ANKI_DATASET, options: Q
     if (!note) continue;
     reviews += 1;
     touched.add(review.cardId);
-    let group = groups.get(note.category);
+    const category = categoryOfNote(note);
+    let group = groups.get(category);
     if (group === undefined) {
-      group = { category: note.category, reviews: 0, failures: 0, lapses: 0, cards: new Set(), notes: new Map() };
-      groups.set(note.category, group);
+      group = { category, reviews: 0, failures: 0, lapses: 0, cards: new Set(), notes: new Map() };
+      groups.set(category, group);
     }
     group.reviews += 1;
     group.cards.add(review.cardId);
@@ -61,22 +91,6 @@ export function q7AnkiReviews(data: AnkiDataset = EMPTY_ANKI_DATASET, options: Q
       notes: [...group.notes.values()].sort((a, b) => b.failures - a.failures || a.noteId - b.noteId),
     })).sort((a, b) => b.failures - a.failures || (a.category ?? '').localeCompare(b.category ?? '')),
   };
-}
-
-export function compareAnkiPractice(data: Dataset, anki: AnkiDataset, options: QueryOptions) {
-  const counts = new Map<Category | null, number>();
-  for (const error of sliceWindow(data, options.now, options.windowDays).errors) {
-    counts.set(error.category, (counts.get(error.category) ?? 0) + 1);
-  }
-  // Se cruzan lapsos, no todos los «Again»: un error de práctica es algo que creías
-  // saber, y eso es lo que mide un lapso, no un paso de aprendizaje de una carta nueva.
-  const reviews = new Map(q7AnkiReviews(anki, options).groups.map((group) => [group.category, group]));
-  return [...new Set([...counts.keys(), ...reviews.keys()])].map((category) => ({
-    category, practiceErrors: counts.get(category) ?? 0,
-    ankiLapses: reviews.get(category)?.lapses ?? 0,
-    ankiLearningFailures: reviews.get(category)?.learningFailures ?? 0,
-    ankiReviews: reviews.get(category)?.reviews ?? 0,
-  })).sort((a, b) => b.ankiLapses - a.ankiLapses || b.practiceErrors - a.practiceErrors);
 }
 
 export function q7ToCsv(result: ReturnType<typeof q7AnkiReviews>): string {

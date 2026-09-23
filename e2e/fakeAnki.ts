@@ -51,6 +51,12 @@ export function fakeCollection(now = Date.now()): FakeAnki {
 interface Control {
   readonly failAction?: string | null;
   readonly disconnected?: boolean;
+  /**
+   * Repasos para una carta concreta, incluidas las que el propio test acaba de crear.
+   * Sin esto no hay forma de que una nota vinculada al log tenga historial: las tres
+   * notas del doble no llevan `ErrorLogId`, y las creadas nacen sin repasos.
+   */
+  readonly reviewsFor?: { readonly cardId: number; readonly ease: number; readonly type: number };
 }
 
 async function readJson(request: IncomingMessage): Promise<unknown> {
@@ -84,6 +90,10 @@ export function startFakeAnki(fake: FakeAnki = fakeCollection(), port = FAKE_ANK
           const control = body as Control;
           if (control.failAction !== undefined) fake.failAction = control.failAction;
           if (control.disconnected !== undefined) fake.disconnected = control.disconnected;
+          if (control.reviewsFor !== undefined) {
+            const { cardId, ease, type } = control.reviewsFor;
+            fake.reviews = { ...fake.reviews, [String(cardId)]: [review({ id: Date.now() - DAY_MS, ease, type })] };
+          }
           send(200, { ok: true });
           return;
         }

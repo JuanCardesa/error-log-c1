@@ -1,4 +1,3 @@
-import { toCsv } from '../csv/csv';
 import type { Genre } from '../domain/enums';
 import type { Dataset, ErrorRow, QueryOptions, WritingPieceRow } from '../domain/types';
 import { percentage, sliceWindow } from './window';
@@ -106,18 +105,4 @@ export function q6RewriteEfficacy(data: Dataset, options: QueryOptions): Q6Resul
     pctRepeated:
       totalOriginalErrors === 0 ? null : percentage(totalRepeated, totalOriginalErrors),
   };
-}
-
-export function q6ToCsv(result: Q6Result): string {
-  return toCsv(
-    ['original_id', 'rewrite_id', 'genero', 'errores_original', 'repetidos', 'pct_repetidos'],
-    result.pairs.map((pair) => [
-      pair.originalId,
-      pair.rewriteId,
-      pair.genre,
-      pair.originalErrors,
-      pair.repeatedErrors,
-      pair.pctRepeated,
-    ]),
-  );
 }

@@ -5,22 +5,7 @@ import { ankiApi, searchTerm, type AnkiNote, type AnkiCard, type AnkiReview } fr
 import { ankiConfig, type AnkiConfig } from './config';
 import { AnkiError, ankiMessage, httpTransport, withRetry, type Transport } from './connect';
 import { reconcile } from './reconcile';
-import { resolveRollover, type Rollover } from './schedule';
-
-/**
- * Se intenta leer el corte de la coleccion, aunque hoy ninguna version conocida de
- * AnkiConnect lo expone: responde «unsupported action», que llega aqui como ANKI_ERROR.
- * Que falte no puede impedir sincronizar. Un fallo de conexion si se propaga: no es lo
- * mismo que la accion no exista a que Anki se haya cerrado a mitad.
- */
-async function readRollover(api: ReturnType<typeof ankiApi>, config: AnkiConfig): Promise<Rollover> {
-  try {
-    return resolveRollover(await api.preferences(), config.rolloverHour);
-  } catch (error) {
-    if (error instanceof AnkiError && error.code === 'ANKI_ERROR') return resolveRollover(null, config.rolloverHour);
-    throw error;
-  }
-}
+import { resolveRollover } from './schedule';
 
 const locks = new WeakMap<Db, Promise<unknown>>();
 /** Una operación por conexión local: evita intercalar snapshots y dobles clics. */
@@ -54,18 +39,25 @@ export function forgetAnkiStatus(db: Db): void {
   statusCache.delete(db);
 }
 
-/** Sin reintentos: se ejecuta al pintar la pagina y aqui esperar solo retrasa el aviso. */
-export async function ankiStatus(db: Db, config = ankiConfig(), transport = httpTransport(config), now = Date.now()): Promise<AnkiStatus> {
-  const cached = statusCache.get(db);
-  const state = getAnkiSync(db);
-  const key = JSON.stringify([config.url, config.sourceDeck, config.targetDeck, config.apiKey,
-    config.disabled, config.statusTtlMs, state?.namespace, state?.profile, state?.url, state?.sourceDeck, state?.targetDeck]);
+/**
+ * Sin reintentos: se ejecuta al pintar la pagina y aqui esperar solo retrasa el aviso.
+ *
+ * La configuracion y el transporte se resuelven **dentro** del try. Como argumentos por
+ * defecto se evaluaban antes, y un ajuste invalido tumbaba la vista entera en vez de
+ * aparecer como un estado mas.
+ */
+export async function ankiStatus(db: Db, config?: AnkiConfig, transport?: Transport, now = Date.now()): Promise<AnkiStatus> {
   try {
-    const api = ankiApi(transport);
-    const fresh = cached !== undefined && cached.key === key && now >= cached.at && now - cached.at < config.statusTtlMs;
+    const resolved = config ?? ankiConfig();
+    const cached = statusCache.get(db);
+    const state = getAnkiSync(db);
+    const key = JSON.stringify([resolved.url, resolved.sourceDeck, resolved.targetDeck, resolved.apiKey,
+      resolved.disabled, resolved.statusTtlMs, state?.namespace, state?.profile, state?.url, state?.sourceDeck, state?.targetDeck]);
+    const api = ankiApi(transport ?? httpTransport(resolved));
+    const fresh = cached !== undefined && cached.key === key && now >= cached.at && now - cached.at < resolved.statusTtlMs;
     if (!fresh) await api.version();
     const profile = await api.profile();
-    assertAnkiScope(getAnkiSync(db), config, profile);
+    assertAnkiScope(getAnkiSync(db), resolved, profile);
     if (fresh && cached.profile === profile) return cached.status;
     if (fresh) await api.version();
     const status = { available: true, message: `Anki conectado · perfil ${profile}` };
@@ -105,7 +97,7 @@ export async function syncAnki(db: Db, transport?: Transport, now = new Date(), 
     assertAnkiScope(getAnkiSync(db), config, profile);
     const decks = await api.deckNames();
     if (!decks.includes(config.sourceDeck)) throw new AnkiError('ANKI_CONFIG', `No se encuentra el mazo «${config.sourceDeck}» en el perfil abierto.`);
-    const rollover = await readRollover(api, config);
+    const rollover = resolveRollover(config.rolloverHour);
     // Incluir nuevas: una carta restablecida puede seguir teniendo historial.
     const ids = [...new Set(await api.findCards(`(${searchTerm('deck', config.sourceDeck)} OR ${searchTerm('deck', config.targetDeck)})`))];
     const cards: AnkiCard[] = [];

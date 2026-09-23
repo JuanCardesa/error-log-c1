@@ -9,8 +9,7 @@ import styles from './anki.module.css';
  * —verificado contra una instalacion real—, asi que lo habitual es la suposicion, y
  * entonces hay que decir como corregirla en vez de enseñar una cifra con aire de leida.
  */
-const ROLLOVER_NOTE: Readonly<Record<'anki' | 'config' | 'default', (hour: string) => string>> = {
-  anki: (hour) => `Día de Anki: empieza a las ${hour}, según tu colección. Los recuentos usan ese corte.`,
+const ROLLOVER_NOTE: Readonly<Record<'config' | 'default', (hour: string) => string>> = {
   config: (hour) => `Día de Anki: empieza a las ${hour}, según ANKI_ROLLOVER_HOUR. Los recuentos usan ese corte.`,
   default: (hour) => `Día de Anki: se supone que empieza a las ${hour}, el valor por defecto de Anki. Tu AnkiConnect no expone ese dato; si tu colección usa otra hora, ponla en ANKI_ROLLOVER_HOUR y vuelve a sincronizar.`,
 };
@@ -18,7 +17,7 @@ const ROLLOVER_NOTE: Readonly<Record<'anki' | 'config' | 'default', (hour: strin
 export function SyncPanel({ message, lastSyncedAt, deck, rolloverHour, rolloverSource }: {
   readonly message: string; readonly lastSyncedAt: string | null; readonly deck: string;
   readonly rolloverHour: number | null;
-  readonly rolloverSource: 'anki' | 'config' | 'default' | null;
+  readonly rolloverSource: 'config' | 'default' | null;
 }) {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);

@@ -65,18 +65,14 @@
   text-decoration: none;
 }
 
-.grid label,
-.card label {
+.grid label {
   display: block;
   min-width: 0;
 }
 
 .grid input,
 .grid select,
-.grid textarea,
-.card input,
-.card select,
-.card textarea {
+.grid textarea {
   width: 100%;
 }
 
@@ -159,7 +155,7 @@
   color: var(--exec);
 }
 
-/* ── Variante GRID: densa, para volcar diez errores seguidos ──────────────── */
+/* ── Formulario de captura: denso y en una columna cuando no cabe ─────────── */
 
 .grid {
   display: grid;
@@ -214,43 +210,10 @@
   font-size: var(--fs-sm);
 }
 
-/* ── Variante CARD: un error a la vez, campos grandes ─────────────────────── */
-
-.card {
-  display: grid;
-  gap: var(--sp-5);
-  grid-template-columns: 1fr 1fr;
-  max-width: 46rem;
-}
-
-.card .fPrompt,
-.card .fRule,
-.card .fFlags,
-.card .fSubmit {
-  grid-column: 1 / -1;
-}
-
-.card input,
-.card select,
-.card textarea {
-  padding: var(--sp-4) var(--sp-4);
-  font-size: var(--fs-lg);
-}
-
-.card .fSubmit {
-  justify-content: flex-start;
-}
-
-.card .primary {
-  padding: var(--sp-4) var(--sp-7);
-  font-size: var(--fs-lg);
-}
-
 /* ── Estrecho: todo a una columna ─────────────────────────────────────────── */
 
 @media (max-width: 760px) {
-  .grid,
-  .card {
+  .grid {
     grid-template-columns: 1fr;
     grid-template-areas: none;
   }
@@ -265,11 +228,7 @@
   .grid .fConfidence,
   .grid .fRule,
   .grid .fFlags,
-  .grid .fSubmit,
-  .card .fPrompt,
-  .card .fRule,
-  .card .fFlags,
-  .card .fSubmit {
+  .grid .fSubmit {
     grid-area: auto;
     grid-column: 1;
   }

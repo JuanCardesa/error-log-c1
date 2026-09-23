@@ -1,211 +1,108 @@
-# Integración con Anki: revisión del plan
+# Anki
 
-El diseño de capas, el transporte inyectable y la separación de `AnkiDataset` encajan
-con la aplicación. Se mantienen las siete reglas y los umbrales. Estos ajustes corrigen
-los puntos que podían causar pérdidas o duplicados:
+## Conectar
 
-- **Consultas por etapas.** `findCards` produce los IDs para `cardsInfo` y
-  `getReviewsOfCards` (estas dos van en `multi`); después `notesInfo` recibe los IDs de
-  nota. No se pueden enviar las cuatro consultas dependientes en un único `multi`.
-- **Historial completo por lotes.** No se filtra por `-is:new`: restablecer una carta
-  puede dejarla nueva y conservar su historial. Tampoco se descartan IDs inferiores a
-  una marca de agua global: pueden llegar de una importación posterior.
-- **Espejo atómico.** Se valida todo antes de una transacción. El espejo de cartas y
-  repasos se sustituye en esa transacción, por lo que repetir la lectura no duplica
-  filas y deshacer un repaso en Anki se refleja correctamente. Se conservan los
-  metadatos de notas previamente vistas. Las estadísticas usan solo cartas del mazo
-  origen/destino actual (incluidos submazos). No es un archivo histórico de cartas borradas.
-- **Creación recuperable.** Cada base tiene un UUID persistente. El campo primero
-  `ErrorLogId` y un tag identifican el error independientemente de su enunciado. Evita
-  confundir dos errores con el mismo texto y permite recuperar una nota tras un timeout.
-  Se comprueba el esquema de un tipo de nota ya existente y nunca se sobrescribe.
-  **Se busca por las dos vías**, tag y campo. Solo por el tag quedaba un estado sin
-  salida: si el tag se perdía —«borrar tags no usados», un renombrado, una edición a
-  mano— no se encontraba la nota, y `addNote` la rechazaba por duplicada precisamente
-  porque el primer campo es esa misma identidad. Ni crear ni vincular. El campo no se
-  puede perder sin editar la nota. La forma `"Campo:valor"` está verificada contra una
-  colección real: empareja, y los dos puntos del valor son literales entre comillas.
-- **Un vínculo de referencia.** `error_row.anki_note_id` referencia `anki_note`; no se
-  duplica el enlace en `anki_note.error_id`. El campo `ErrorLogId` identifica un error
-  concreto: la sincronización rechaza vínculos que no coincidan con esa identidad.
-  `ON DELETE SET NULL` se añadió a mano al SQL generado: Drizzle no lo emitió para el
-  `ALTER TABLE`. La sincronización devuelve la deuda antes de retirar la nota del espejo.
-- **Identidades que no se reutilizan.** `error_row.id` es AUTOINCREMENT, así que no se
-  repite dentro de una base; pero restaurar una copia anterior devuelve el contador atrás
-  y el namespace viaja en la copia, de modo que un error nuevo puede heredar la identidad
-  de otro que ya tiene tarjeta. Se detecta por la fecha: los identificadores de nota de
-  Anki son el instante de creación en milisegundos, igual que los del revlog, así que una
-  nota **anterior** al error que dice identificar no puede ser suya. Con más de cinco
-  minutos de desfase —margen para el ruido de reloj— no se vincula ni se escribe nada, y
-  se explica que la base parece restaurada.
-- **Perfil y alcance fijados.** El estado conserva perfil, URL y ambos mazos; se
-  rechazan cambios de alcance. El perfil se vuelve a verificar antes de guardar.
-  Cambiar de colección requiere otra base. Renombrar/restaurar otra colección bajo el
-  mismo nombre de perfil no tiene un identificador de colección garantizado por esta API;
-  no debe reutilizarse esta base para una colección distinta.
-  Además, dentro de la transacción se compara el `ErrorLogId` leído de cada nota
-  vinculada con `errorlog::<namespace>::<error.id>`, también fuera del filtro de mazo.
-  Un campo ausente o distinto aborta todo el guardado aunque otras notas sí coincidan.
-  Es una comprobación de identidad de los vínculos, no un identificador universal de
-  colección: sin vínculos, o con una copia que conserve las mismas identidades, esta API
-  no permite distinguirlas. Para otra colección se usa una base nueva con `DB_FILE_OVERRIDE`.
-- **Borrado frente a traslado.** Las notas vinculadas se consultan por ID también fuera
-  del filtro de mazo. Solo un resultado vacío confirmado devuelve la deuda. Que
-  desaparezcan **todas** a la vez, habiendo tres o más, no se acepta como borrado: el
-  perfil y el mazo coinciden también cuando se restaura otra colección, y desvincular
-  borra `anki_added_at`, que no se reconstruye sincronizando otra vez. La sincronización
-  se detiene sin escribir nada y explica cómo forzarlo con «Deshacer» si de verdad se
-  han borrado esas tarjetas.
-- **Tipos de revisión.** Se aceptan tipos 0–3 con botón 1–4; se excluyen manual (4),
-  reprogramado (5) y registros sin respuesta. Intervalos negativos del revlog se guardan
-  tal cual: representan segundos, no un número negativo de días.
-- **Lapso frente a fallo aprendiendo.** Un «Again» en una carta ya graduada (tipo 1) es un
-  lapso: la sabías y se te fue, y es lo único comparable con un error de práctica. Un
-  «Again» en los pasos de aprendizaje o reaprendizaje (tipos 0 y 2) es estar montándola
-  todavía, que es lo normal en una tarjeta recién creada. Anki hace la misma distinción:
-  su contador `lapses` solo sube con el tipo 1. Contarlos juntos inflaba los «fallos» justo
-  cuando el log funciona, que es cuando más tarjetas nuevas hay. Se muestran por separado
-  y el cruce con práctica usa solo los lapsos.
-- **Resultados interpretables.** Repasos y cartas distintas tienen contadores separados.
-  Las categorías de Anki son aproximaciones derivadas de etiquetas. El cruce con práctica
-  muestra cantidades y denominadores separados, sin alterar el motor de decisión.
-- **Marca manual explícita.** Continúa contando para la regla de conversión, por
-  compatibilidad. No se afirma que esa regla mida exclusivamente tarjetas verificadas.
-  Al marcarla se recuerda que no se ha comprobado que la tarjeta exista.
-- **El aviso sobrevive a la acción.** Convertir un error lo saca de la cola y
-  `revalidatePath` vuelve a pintar la lista, así que un mensaje guardado dentro del
-  `QueueItem` se desmontaba con él y la confirmación no llegaba a verse nunca. Crear,
-  actualizar, marcar a mano y deshacer informan por un contexto que vive por encima de
-  lo que cambia.
-- **Datos de prueba aislados.** Demo/e2e no pueden contactar Anki personal. Los tests
-  de conexión inyectan respuestas, con SQLite real para transacciones y relaciones.
-  Los e2e hablan con un doble propio por HTTP (`e2e/fakeAnki.ts`, puerto 8769), el mismo
-  `FakeAnki` que valida los tests unitarios: un solo doble del contrato para los dos
-  niveles. Con `ERRORLOG_E2E`, `ankiConfig` **ignora** `ANKI_CONNECT_URL` y solo acepta
-  la URL inyectada en `ERRORLOG_ANKI_FAKE_URL`, que además tiene prohibido el puerto
-  8765; sin esa variable, Anki sigue desactivado. Fuera de los e2e la variable no existe,
-  así que tampoco puede desviar la app real. La demo nunca habla con Anki.
+1. En Anki abre Herramientas → Complementos → Descargar complementos e instala
+   [AnkiConnect (2055492159)](https://ankiweb.net/shared/info/2055492159).
+2. Reinicia Anki y deja abierto el perfil de tu colección.
+3. En Error Log abre Anki y pulsa Sincronizar. Con Anki cerrado puedes seguir
+   registrando errores y consultar los datos de la última sincronización.
 
-## Modelo y funcionamiento
+La conexión es local y sale del servidor; la clave no llega al navegador. Demo y e2e
+no pueden acceder a Anki personal. Los e2e usan su propio doble HTTP.
 
-`src/lib/anki/` contiene configuración, API con validación Zod, clasificación, conciliación,
-sincronización y creación. `src/lib/db/ankiRepo.ts` contiene las escrituras del espejo;
-`q7AnkiReviews` y `compareAnkiPractice` son consultas puras. No hay nuevas dependencias.
+## Configuración del servidor
 
-La migración `0002_anki_sync.sql` añade cuatro tablas y una columna nullable. No
-reclasifica errores ni borra marcas manuales antiguas. `pnpm db:migrate` guarda antes una
-copia verificada en `data/backups/`, y no migra si esa copia falla; no hay migraciones
-inversas, así que volver atrás es restaurar esa copia. A la copia previa no se le exige el
-esquema nuevo —por definición no lo tiene—, pero `pnpm db:backup` sí lo exige entero:
-media migración no la detectan `integrity_check` ni `foreign_key_check`. `anki_sync` tiene una fila y no
-necesita `last_review_id`, porque no descarta registros por antigüedad.
+| Variable | Valor predeterminado |
+| --- | --- |
+| `ANKI_CONNECT_URL` | `http://127.0.0.1:8765`; solo direcciones locales |
+| `ANKI_SOURCE_DECK` | `English B2 to C1 Practice` |
+| `ANKI_TARGET_DECK` | `<mazo origen>::Error Log` |
+| `ANKI_CONNECT_API_KEY` | sin clave; dejar sin definir si no se necesita |
+| `ANKI_ROLLOVER_HOUR` | sin declarar; se supone 4 |
+| `ANKI_BATCH_SIZE` | 250 cartas por petición; máximo 2000 |
+| `ANKI_SYNC_BUDGET_MS` | 180000 ms; máximo 3600000 |
 
-El día de un repaso es el **día de Anki**, no el civil. Anki reparte por su «next day
-starts at» —4:00 por defecto—, así que un repaso de la 1:30 pertenece al día anterior:
-fecharlo por medianoche desplazaba un día entero cada vez que se estudia de noche y los
-recuentos no cuadraban con los del propio Anki.
+Los mazos admiten hasta 256 caracteres, la clave 1024 y la URL 2048, sin caracteres
+de control. La URL acepta HTTP/HTTPS local, sin credenciales ni consulta; puertos 1–65535.
+Los nombres y claves declarados no pueden estar vacíos.
 
-**AnkiConnect no expone ese dato.** Comprobado contra la instalación real: `apiReflect`
-declara 121 acciones, `getPreferences` responde «unsupported action» y `getDeckConfig`
-son opciones de mazo. Así que la hora se declara a mano en `ANKI_ROLLOVER_HOUR`, y si no
-se declara se **supone** el 4 por defecto de Anki en vez de inventar un cero que nadie
-configuró. Se sigue intentando leerla por si una versión futura la añade; que la acción
-no exista no impide sincronizar, pero un fallo de conexión sí se propaga, que no es lo
-mismo. `anki_sync` guarda la hora y **de dónde salió** (`rollover_hour`, `rollover_source`;
-migraciones `0003` y `0004`), porque la pantalla no debe presentar una suposición con el
-mismo aire que un dato leído: cuando es supuesta, dice cómo corregirla.
+El corte horario es «next day starts at» en Anki. Un repaso a la 1:30 pertenece al
+día anterior si el corte es 4:00. AnkiConnect no expone ese dato —comprobado contra la
+instalación real: de sus 121 acciones, `getPreferences` responde «unsupported action» y
+`getDeckConfig` son opciones de mazo—, así que no se le pregunta. Declara
+`ANKI_ROLLOVER_HOUR` si usas otro corte; si no, se supone 4:00 y la pantalla dice que es
+una suposición. Los cálculos usan la zona local del servidor.
 
-El tipo de nota nuevo tiene `ErrorLogId`, `Prompt`, `MyAnswer`, `Correct`, `Rule`, `Meta`.
-Solo se muestran los últimos cinco en la tarjeta. Los campos se escapan como texto
-antes de enviarlos a Anki. No se leen ni copian audio ni campos de la colección existente.
+## Crear, actualizar y deshacer
 
-La configuración es local, sin CORS adicional ni ampliación de direcciones de escucha.
-Si existe clave de AnkiConnect, se manda desde el servidor, incluso en cada subacción
-de `multi`; no se registra ni llega al navegador. Las llamadas no siguen redirecciones.
+Crear en Anki usa el tipo propio **Error Log C1** con los campos `ErrorLogId`, `Prompt`,
+`MyAnswer`, `Correct`, `Rule` y `Meta`. Crea el mazo destino si falta. No altera modelos
+anteriores y rechaza un modelo propio que tenga otros campos.
 
-Solo dos acciones escriben en Anki, y ninguna ocurre sola: **crear** una tarjeta y
-**actualizarla**. Editar un error no reescribe su nota —la app decía «Verificada en
-Anki» de una tarjeta que ya no coincidía—, así que se guarda una huella del contenido
-enviado (`error_row.anki_content_hash`, migración `0005`) y la pantalla avisa cuando el
-texto actual ya no cuadra. Actualizar usa `updateNoteFields`: reescribe los campos de esa
-nota y nada más. No toca tags, mazo ni programación, así que si cambias la categoría del
-error, la clasificación local es la que manda y la etiqueta en Anki se queda como estaba.
-Antes de escribir se comprueba que la nota siga siendo la de ese error, y la huella solo
-se sella cuando `notesInfo` confirma exactamente `ErrorLogId`, `Prompt`, `MyAnswer`,
-`Correct`, `Rule` y `Meta`; un éxito sin aplicar todos los campos conserva la huella
-anterior y el aviso. Deshacer olvida
-la huella: no se avisa de una tarjeta que ya no se reclama.
+Cada error se identifica con el UUID de la base y su ID. Se busca por campo y tag
+antes de crear, por lo que repetir tras un tiempo de espera agotado recupera la nota
+existente. Solo se marca la conversión tras verificar la identidad y al menos una tarjeta.
 
-El plazo depende de la acción: 5 s para el saludo, 15 s para escribir y 60 s para los
-lotes. `cardsInfo` renderiza la pregunta y la respuesta de cada carta, así que un plazo
-único obligaba a elegir entre abortar lotes legítimos y dejar colgado el saludo. Solo se
-reintenta —dos veces, esperando 0,5 s y 1 s— una **lectura** que expiró: repetir una
-escritura es como se acaba con dos notas, y que Anki esté cerrado no mejora esperando.
-Agotar los reintentos de un lote aborta la sincronización entera sin guardar nada.
-Además, el presupuesto global limita el conjunto de llamadas y sus esperas.
+Editar un error no reescribe su nota. Una huella del contenido confirmado permite
+avisar de cambios locales y ofrecer Actualizar en Anki. La actualización verifica
+los campos recibidos; no cambia tags, mazo ni programación. Si cambias la categoría de un
+error, sus estadísticas de repaso pasan a contarse bajo la nueva: para una nota vinculada
+manda la categoría local, y las etiquetas de tu colección se quedan como están.
 
-## Escala medida
+La conversión solo se sella tras verificarla; ya no hay marca manual. Las marcas de
+versiones anteriores se conservan, cuentan como convertidas y se señalan como no
+verificadas. Deshacer quita el vínculo local y devuelve el error a la cola sin borrar
+la nota de Anki.
+Volver a crearla recupera su identidad. Borrar un error tampoco borra su nota.
 
-Contra la colección real (3000 cartas): `cardsInfo` de 250 cartas tarda 190 ms pero
-devuelve **2,87 MB**, unos 11,5 KB por carta, casi todo pregunta y respuesta ya
-renderizadas que esta app no usa —`cardSchema` se queda con nueve campos—. El `multi`
-que hace la sincronización son 215 ms por lote de 250, así que la colección entera son
-unos 2,6 s y 10 000 cartas rondarían 8,6 s. El plazo de 60 s para lotes es holgura, no
-una necesidad: el riesgo real no era el tiempo sino el volumen.
+## Sincronización y estadísticas
 
-Recorriendo esa colección entera: con lotes de 100 son 4260 ms, con 250 son 2579, con
-500 son 2535 y con 1000 son 2387. Cada petición paga unos 30 ms fijos del bucle de Qt de
-AnkiConnect, así que los lotes pequeños se van en esa espera y a partir de 250 la curva
-se aplana; lo único que sigue creciendo es la memoria por respuesta. Por eso el tamaño
-por defecto se queda en 250, ahora con la medida detrás, y se puede ajustar con
-`ANKI_BATCH_SIZE` para colecciones muy distintas.
+Se lee el historial completo de las cartas de los mazos origen y destino y sus submazos,
+por lotes. Las notas vinculadas se verifican también fuera de esos mazos: mover no equivale
+a borrar. Las notas borradas confirmadas devuelven sus errores a pendientes.
 
-**No hay barra de progreso ni botón de cancelar, y es a propósito.** La sincronización
-completa de esta colección son 2,6 s, y 10 000 cartas rondarían 8,6 s: para eso basta el
-botón en «Sincronizando…». Lo que sí hacía falta era acotar el caso patológico, cuando
-Anki no responde y cada lote agota su plazo y sus reintentos. `ANKI_SYNC_BUDGET_MS`
-—tres minutos por defecto— empieza al entrar en `syncAnki`, incluida la espera por el
-bloqueo local, el saludo, perfil, mazos, preferencias, `findCards` y los reintentos.
-Al expirar cancela el HTTP en vuelo y rechaza respuestas tardías. Se comprueba el plazo
-antes y después de cada llamada y antes de guardar; si la escritura síncrona en SQLite
-agota el plazo, la transacción se revierte antes del commit. Esa escritura síncrona no
-puede interrumpirse mientras bloquea el hilo. El aviso final dice cuántas cartas y notas
-se han leído.
+El espejo local se sustituye en una transacción. Incluye importaciones antiguas,
+retira repasos deshechos y excluye de las estadísticas cartas borradas o fuera del
+alcance. Conserva metadatos de notas vistas para reconocerlas si vuelven.
 
-Con 3000 cartas y 30 000 repasos, `reconcile` tarda 88 ms y guardar el espejo 1188 ms;
-antes de insertar por lotes eran 2768 ms. El recorrido que comprobaba la nota de cada
-carta era cuadrático y ahora usa un conjunto.
+La fecha de cada repaso se calcula al sincronizar, comparando la hora del reloj local
+con el corte. Los espejos guardados por versiones anteriores a esta la calculaban
+restando el corte al instante absoluto, lo que solo difiere en los días con cambio de
+hora. Sincroniza una vez después de actualizar y esas fechas se recalculan enteras: el
+espejo se sustituye, no se completa.
 
-Preguntar el estado de conexión cuesta 67 ms medidos —AnkiConnect atiende en el bucle de
-Qt y cada llamada paga esa espera—, y `/anki` es `force-dynamic`, así que se pagaba en
-cada render. Se guarda el saludo unos segundos por conexión, URL, mazos, clave, modo
-activado y alcance local. El perfil se consulta incluso dentro del TTL para detectar
-cambios en Anki. Crear, actualizar y sincronizar invalidan la caché; los errores no se
-guardan. En demo y e2e el TTL vale cero.
+Q7 muestra repasos, cartas distintas y fallos: `Again` es fallo; `Hard`, `Good` y `Easy`
+son aciertos. Se separan los lapsos de repaso (tipo 1) y los fallos restantes. Se excluyen
+registros manuales, reprogramaciones y respuestas inválidas. Q7 se lee en la pestaña Anki
+y no altera las siete reglas del informe.
 
-Notas que salen del mazo conservan su fila en `anki_note` sin cartas. Es deliberado
-—preserva `first_seen_at` si vuelven— y no crece sin límite: el tope es el número de
-notas que alguna vez entraron en el mazo.
+Las notas no vinculadas al log se asignan a una categoría principal mediante el mapeo de
+etiquetas de `src/lib/anki/categories.ts`. Q7 tiene CSV; el JSON exporta el espejo, solo
+datos y sin agregaciones.
+Para recuperar toda la app, usa una copia SQLite: [copias y recuperación](../README.md#copias-y-recuperación).
 
-## Verificación real pendiente
+## Protecciones y límites
 
-La implementación supera 470 pruebas unitarias/integración, con cobertura global
-superior al 90 %, además de `typecheck`, `lint`, compilación de Next.js y 44 pruebas
-de navegador. Seis de ellas recorren contra el doble los flujos que antes no se veían
-en navegador: sincronizar, repetir sin repasos nuevos, un fallo de Anki y su reintento,
-Anki cerrado, crear una tarjeta sin duplicarla y exportar lo sincronizado. Se revisaron
-las capturas de escritorio y móvil. La migración sobre la base personal conserva las
-filas previas, con `integrity_check = ok` y sin errores en `foreign_key_check`.
+- La primera creación o sincronización fija perfil, URL y mazos de esta base.
+  Para otra colección usa una base nueva mediante `DB_FILE_OVERRIDE`.
+- La identidad de cada nota vinculada se comprueba antes de guardar. Si desaparecen
+  todas y hay al menos tres vínculos, se aborta. Si realmente las borraste, deshaz
+  sus conversiones antes de volver a sincronizar.
+- Restaurar una base antigua puede reutilizar IDs. Una nota más de cinco minutos
+  anterior al error provoca rechazo. Es una detección heurística, no una identidad
+  universal de colección. Renombrar otra colección con el mismo perfil no basta
+  para identificarla; tampoco se garantiza una escritura atómica por perfil.
+- Las lecturas que expiran se reintentan dos veces. Las escrituras no se reintentan
+  automáticamente. Plazos: 5 s para consultas breves, 15 s para escribir, 60 s por lote.
+  El presupuesto global incluye esperas; si se agota, el espejo no se confirma.
+- No se responden tarjetas ni se modifica el planificador. Las escrituras explícitas
+  crean el modelo, el mazo o la nota necesarios, o actualizan los campos de una nota
+  vinculada.
 
-AnkiConnect no estaba instalado al revisar este plan (solo figuraba Colorful Tags).
-Las cifras sobre las 58 cartas, los 20 tags y las fechas de repaso proceden del plan
-aportado; no son una inspección de la colección realizada en esta implementación.
-
-Tras instalar AnkiConnect, sincronizar debe permitir consultar el historial disponible.
-Repetir la sincronización sin estudiar debe informar cero repasos nuevos. La creación
-debe comprobarse con un error que realmente quieras estudiar. No se responde mal a
-tarjetas reales para generar datos de prueba ni se modifica el planificador para probar.
-
-Fuentes del contrato: [API de AnkiConnect](https://github.com/FooSoft/anki-connect/blob/master/plugin/__init__.py),
-[búsquedas de Anki](https://docs.ankiweb.net/searching.html),
-[tipos de revlog](https://github.com/ankitects/anki/blob/main/proto/anki/stats.proto).
+Las pruebas automatizadas usan dobles de AnkiConnect y SQLite real. No demuestran
+compatibilidad con todas las versiones del complemento. Las cifras y verificaciones
+históricas están en el historial de Git, en la
+[auditoría del 22 de septiembre](AUDIT-2026-09-22.md) y en la
+[revisión del 23](AUDIT-2026-09-23.md), que además recoge los cambios de contrato
+frente a `v1.2`.

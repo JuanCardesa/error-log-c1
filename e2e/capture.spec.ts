@@ -86,79 +86,63 @@ test.describe('registrar una sesion y sus errores', () => {
     await expect(page.getByRole('cell', { name: 'gave up' })).toBeVisible();
   });
 
-  for (const variant of ['Grid', 'Card'] as const) {
-    test(`${variant}: conserva el error rechazado y limpia solo al guardar`, async ({ page }) => {
-      await openSession(page, 'Unidad 8, regla copiada', true);
-      await page.getByRole('button', { name: variant, exact: true }).click();
+  test('conserva el error rechazado y limpia solo al guardar', async ({ page }) => {
+    await openSession(page, 'Unidad 8, regla copiada', true);
 
-      await page.getByLabel('Item', { exact: true }).fill('4');
-      await page.getByLabel('Enunciado *').fill('Prueba de regla copiada');
-      await page.getByLabel('Mi respuesta', { exact: true }).fill('mi intento');
-      await page.getByLabel('Correcta *').fill('una respuesta suficientemente larga');
-      await page.getByLabel('Categoria *').fill('LEXICO');
-      await page.getByLabel('Subcategoria', { exact: true }).fill('contraste');
-      await page.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
-      await page.getByRole('combobox', { name: 'Confianza', exact: true }).selectOption('SEGURO');
-      await page.getByLabel('Al final de la sesion').check();
-      await page.getByLabel('Ya es tarjeta').check();
-      await page
-        .getByLabel('Regla, con tus palabras *')
-        .fill('una respuesta suficientemente larga');
-      await page.getByRole('button', { name: 'Guardar y seguir' }).click();
+    await page.getByLabel('Item', { exact: true }).fill('4');
+    await page.getByLabel('Enunciado *').fill('Prueba de regla copiada');
+    await page.getByLabel('Mi respuesta', { exact: true }).fill('mi intento');
+    await page.getByLabel('Correcta *').fill('una respuesta suficientemente larga');
+    await page.getByLabel('Categoria *').fill('LEXICO');
+    await page.getByLabel('Subcategoria', { exact: true }).fill('contraste');
+    await page.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
+    await page.getByRole('combobox', { name: 'Confianza', exact: true }).selectOption('SEGURO');
+    await page.getByLabel('Al final de la sesion').check();
+    await page
+      .getByLabel('Regla, con tus palabras *')
+      .fill('una respuesta suficientemente larga');
+    await page.getByRole('button', { name: 'Guardar y seguir' }).click();
 
-      // Se apunta al error del campo: el anunciador de rutas de Next tambien es role=alert.
-      await expect(page.locator('[data-field="ruleNote"]')).toContainText(
-        'no puede ser la respuesta correcta',
-      );
-      await expect(page.getByLabel('Item', { exact: true })).toHaveValue('4');
-      await expect(page.getByLabel('Enunciado *')).toHaveValue('Prueba de regla copiada');
-      await expect(page.getByLabel('Mi respuesta', { exact: true })).toHaveValue('mi intento');
-      await expect(page.getByLabel('Correcta *')).toHaveValue('una respuesta suficientemente larga');
-      await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue('una respuesta suficientemente larga');
-      await expect(page.getByLabel('Al final de la sesion')).toBeChecked();
-      await expect(page.getByLabel('Ya es tarjeta')).toBeChecked();
+    // Se apunta al error del campo: el anunciador de rutas de Next tambien es role=alert.
+    await expect(page.locator('[data-field="ruleNote"]')).toContainText(
+      'no puede ser la respuesta correcta',
+    );
+    await expect(page.getByLabel('Item', { exact: true })).toHaveValue('4');
+    await expect(page.getByLabel('Enunciado *')).toHaveValue('Prueba de regla copiada');
+    await expect(page.getByLabel('Mi respuesta', { exact: true })).toHaveValue('mi intento');
+    await expect(page.getByLabel('Correcta *')).toHaveValue('una respuesta suficientemente larga');
+    await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue('una respuesta suficientemente larga');
+    await expect(page.getByLabel('Al final de la sesion')).toBeChecked();
 
-      const rule = 'Regla corregida con una explicacion distinta de la respuesta';
-      await page.getByLabel('Regla, con tus palabras *').fill(rule);
-      await page.getByRole('combobox', { name: /^Causa/ }).selectOption('DESPISTE');
-      await page.getByRole('button', { name: 'Guardar y seguir' }).click();
-      await expect(page.locator('[data-field="ankiAdded"]')).toContainText('no se arregla con una tarjeta');
-      await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue(rule);
-      await expect(page.getByLabel('Ya es tarjeta')).toBeChecked();
+    const rule = 'Regla corregida con una explicacion distinta de la respuesta';
+    await page.getByLabel('Regla, con tus palabras *').fill(rule);
+    await page.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
+    await page.getByRole('button', { name: 'Guardar y seguir' }).click();
+    await expect(page.getByRole('cell', { name: rule, exact: true })).toBeVisible();
+    await expect(page.getByLabel('Enunciado *')).toHaveValue('');
+    await expect(page.getByLabel('Correcta *')).toHaveValue('');
+    await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue('');
+    await expect(page.getByLabel('Al final de la sesion')).not.toBeChecked();
+    await expect(page.getByRole('combobox', { name: /^Causa/ })).toHaveValue('CONFUSION');
+    await expect(page.getByLabel('Categoria *')).toHaveValue('LEXICO');
+    await expect(page.getByLabel('Subcategoria', { exact: true })).toHaveValue('contraste');
+    await expect(page.getByRole('combobox', { name: 'Confianza', exact: true })).toHaveValue('SEGURO');
+    await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
+  });
 
-      await page.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
-      await page.getByRole('button', { name: 'Guardar y seguir' }).click();
-      await expect(page.getByRole('cell', { name: rule, exact: true })).toBeVisible();
-      await expect(page.getByLabel('Enunciado *')).toHaveValue('');
-      await expect(page.getByLabel('Correcta *')).toHaveValue('');
-      await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue('');
-      await expect(page.getByLabel('Al final de la sesion')).not.toBeChecked();
-      await expect(page.getByLabel('Ya es tarjeta')).not.toBeChecked();
-      await expect(page.getByRole('combobox', { name: /^Causa/ })).toHaveValue('CONFUSION');
-      await expect(page.getByLabel('Categoria *')).toHaveValue('LEXICO');
-      await expect(page.getByLabel('Subcategoria', { exact: true })).toHaveValue('contraste');
-      await expect(page.getByRole('combobox', { name: 'Confianza', exact: true })).toHaveValue('SEGURO');
-      await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
-    });
-  }
-
-  test('conmuta entre grid y card sin perder el formulario', async ({ page }) => {
+  test('ir a pegar una tanda y volver no se lleva el formulario', async ({ page }) => {
     await openSession(page, 'Unidad 9, variantes');
 
     await page.getByLabel('Enunciado *').fill('texto que debe sobrevivir');
 
-    await page.getByRole('button', { name: 'Card' }).click();
-    await expect(page.getByRole('button', { name: 'Card' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await expect(page.getByLabel('Enunciado *')).toHaveValue('texto que debe sobrevivir');
+    await page.getByRole('button', { name: 'Pegar varios errores', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Pegar varios errores', exact: true }))
+      .toHaveAttribute('aria-pressed', 'true');
 
-    await page.getByRole('button', { name: 'Grid' }).click();
-    await expect(page.getByRole('button', { name: 'Grid' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    await page.getByRole('button', { name: 'Uno a uno', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Uno a uno', exact: true }))
+      .toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByLabel('Enunciado *')).toHaveValue('texto que debe sobrevivir');
   });
 
   test('conserva el borrador y explica que otra pestaña ha cerrado la sesion', async ({ page }) => {

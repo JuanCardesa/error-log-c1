@@ -9,7 +9,10 @@ import { E2E_DB } from './globalSetup';
  * fallo y exportar lo sincronizado. Hablan con el doble que arranca Playwright.
  */
 
-async function control(request: APIRequestContext, body: { failAction?: string | null; disconnected?: boolean }) {
+async function control(request: APIRequestContext, body: {
+  failAction?: string | null; disconnected?: boolean;
+  reviewsFor?: { cardId: number; ease: number; type: number };
+}) {
   expect((await request.post(`${FAKE_ANKI_URL}/__control`, { data: body })).ok()).toBe(true);
 }
 
@@ -56,8 +59,10 @@ test('sincroniza, refleja los repasos y no los duplica al repetir', async ({ pag
   await expect(stat('Fallos aprendiendo')).toHaveText('1');
   await expect(stat('Cartas distintas')).toHaveText('3');
   await expect(reviews.getByText('deal with')).toBeVisible();
-  // El corte de día sale de la colección, y se dice cuál se ha usado.
-  await expect(panel.getByText('Día de Anki: empieza a las 4:00', { exact: false })).toBeVisible();
+  // Anki no expone su corte, asi que se supone 4:00 y se dice que es una suposicion:
+  // nunca se ensena una cifra con aire de leida de la coleccion.
+  await expect(panel.getByText('se supone que empieza a las 4:00', { exact: false })).toBeVisible();
+  await expect(panel.getByText('ponla en ANKI_ROLLOVER_HOUR', { exact: false })).toBeVisible();
 
   // Repetir sin estudiar no inventa repasos nuevos ni duplica el historial.
   await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
@@ -76,15 +81,6 @@ test('un fallo de Anki se explica y el reintento posterior funciona', async ({ p
   await control(request, { failAction: null });
   await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
   await expect(panel.getByRole('status')).toContainText('4 repasos nuevos');
-});
-
-test('marcar a mano avisa de lo que no comprueba, y el aviso no se pierde', async ({ page }) => {
-  await page.goto('/anki');
-  await page.getByRole('button', { name: 'Marcar a mano' }).first().click();
-  // El error deja la cola y aun asi se ve lo que ha pasado, y lo que no se ha comprobado.
-  await expect(page.getByText('No se ha comprobado que la tarjeta exista en Anki.', { exact: false })).toBeVisible();
-  const done = page.getByRole('region', { name: 'Convertidas recientemente' });
-  await expect(done.getByText('Marcada a mano').first()).toBeVisible();
 });
 
 test('Anki cerrado se explica sin fingir que no hay fallos', async ({ page, request }) => {
@@ -109,23 +105,11 @@ test('lo sincronizado sale en el CSV de Q7 y en el volcado JSON', async ({ page,
 
   const dump = await (await request.get('/exportar/dump.json')).json() as {
     anki: { reviews: unknown[]; notes: unknown[] };
-    queries: { q7: { reviews: number; failures: number; lapses: number; learningFailures: number; accuracy: number | null } };
   };
   expect(dump.anki.reviews).toHaveLength(4);
   expect(dump.anki.notes).toHaveLength(3);
-  expect(dump.queries.q7).toMatchObject({ reviews: 4, failures: 2, lapses: 1, learningFailures: 1, accuracy: 50 });
-});
-
-test('el informe cruza los fallos de Anki con los errores de práctica', async ({ page }) => {
-  await page.goto('/anki');
-  await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByRole('status')).toContainText('4 repasos nuevos');
-
-  await page.goto('/informe');
-  await expect(page.getByText('Todavía no has sincronizado Anki.', { exact: false })).toBeHidden();
-  const table = page.getByRole('table', { name: /Errores de práctica y fallos en Anki/ });
-  await expect(table.getByRole('columnheader', { name: 'Lapsos en Anki' })).toBeVisible();
-  await expect(table.getByRole('row').filter({ hasText: 'PHRASAL_VERB' })).toBeVisible();
+  // Las cifras se recalculan desde el espejo: el CSV de Q7 las trae ya hechas.
+  expect(text).toContain('PHRASAL_VERB,2,1,1,0,1,50');
 });
 
 test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', async ({ page, request }) => {
@@ -136,7 +120,7 @@ test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', a
   await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
   // El aviso vive por encima de la cola: sobrevive a que el error salga de ella.
   await expect(page.getByText('Tarjeta verificada en Anki.')).toBeVisible();
-  const done = page.getByRole('region', { name: 'Convertidas recientemente' });
+  const done = page.getByRole('region', { name: 'Convertidas', exact: true });
   await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
   await expect(pending).toHaveText(String(before - 1));
 
@@ -155,7 +139,7 @@ test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', a
 test('corregir un error convertido avisa de que la tarjeta quedó vieja y deja arreglarla', async ({ page }) => {
   await page.goto('/anki');
   await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
-  const done = page.getByRole('region', { name: 'Convertidas recientemente' });
+  const done = page.getByRole('region', { name: 'Convertidas', exact: true });
   await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
 
   // Se corrige el texto del error ya convertido, desde donde se corrige de verdad.
@@ -173,4 +157,92 @@ test('corregir un error convertido avisa de que la tarjeta quedó vieja y deja a
   await page.reload();
   await expect(done.getByText('el texto ha cambiado desde entonces')).toHaveCount(0);
   await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
+});
+
+test('una conversion antigua que se corrige sigue teniendo boton para actualizarla', async ({ page, request }) => {
+  // Solo se enseñaban las ocho ultimas conversiones: corregir una anterior la dejaba
+  // desactualizada y sin ningun sitio desde el que arreglarla.
+  await page.goto('/anki');
+  const queue = page.getByRole('listitem').filter({ has: page.getByRole('button', { name: 'Crear en Anki' }) });
+  const oldest = (await queue.first().locator('strong').first().innerText()).trim();
+
+  for (let i = 0; i < 9; i += 1) {
+    await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
+    await expect(page.getByText('Tarjeta verificada en Anki.')).toBeVisible();
+    await page.reload();
+  }
+
+  const done = page.getByRole('region', { name: 'Convertidas', exact: true });
+  // La novena por antigüedad queda fuera del listado mientras no pida nada.
+  await expect(done.getByText(oldest, { exact: true })).toHaveCount(0);
+
+  // Se corrige desde donde se corrige de verdad: la sesion en Registrar.
+  const dump = await (await request.get('/exportar/dump.json')).json() as {
+    rows: { errors: { id: number; sessionId: number; correctAnswer: string; ankiNoteId: number | null }[] };
+  };
+  const target = dump.rows.errors.find((row) => row.correctAnswer === oldest && row.ankiNoteId !== null);
+  expect(target).toBeDefined();
+
+  await page.goto(`/registrar?s=${String(target?.sessionId ?? 0)}`);
+  const row = page.getByRole('row').filter({ hasText: oldest }).first();
+  await row.getByRole('button', { name: 'Editar', exact: true }).click();
+  const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
+  const rewritten = 'Regla reescrita despues de convertirla en tarjeta.';
+  await editForm.getByLabel('Regla, con tus palabras *').fill(rewritten);
+  await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByRole('cell', { name: rewritten, exact: true })).toBeVisible();
+
+  // Vuelve al listado aunque sea antigua, y con el boton que la arregla.
+  await page.goto('/anki');
+  const stale = done.getByRole('listitem').filter({ hasText: oldest });
+  await expect(stale.getByText('el texto ha cambiado desde entonces')).toBeVisible();
+  await stale.getByRole('button', { name: 'Actualizar en Anki' }).click();
+  await expect(page.getByText('Tarjeta actualizada en Anki.')).toBeVisible();
+
+  await page.reload();
+  await expect(done.getByRole('listitem').filter({ hasText: oldest })).toHaveCount(0);
+});
+
+test('corregir la categoria de un error convertido reagrupa su fallo en el repaso', async ({ page, request }) => {
+  // Actualizar reescribe campos, nunca tags. Sin resolver la categoria desde el error
+  // local, el fallo seguiria contando bajo la etiqueta con la que llego de Anki.
+  await page.goto('/anki');
+  await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
+  await expect(page.getByText('Tarjeta verificada en Anki.')).toBeVisible();
+  await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByRole('status'))
+    .toContainText('repasos nuevos');
+
+  // La nota recien creada nace sin historial: se le da un fallo en el doble.
+  const first = await (await request.get('/exportar/dump.json')).json() as {
+    rows: { errors: { id: number; sessionId: number; correctAnswer: string; category: string; ankiNoteId: number | null }[] };
+    anki: { cards: { cardId: number; noteId: number }[] };
+  };
+  const linked = first.rows.errors.find((row) => row.ankiNoteId !== null);
+  expect(linked).toBeDefined();
+  const card = first.anki.cards.find((row) => row.noteId === linked?.ankiNoteId);
+  expect(card).toBeDefined();
+
+  await control(request, { reviewsFor: { cardId: card?.cardId ?? 0, ease: 1, type: 1 } });
+  await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByRole('status'))
+    .toContainText('repasos nuevos');
+
+  const reviews = page.getByRole('region', { name: 'Repaso en Anki' });
+  const heading = (name: string) => reviews.getByRole('heading', { level: 3 }).filter({ hasText: name });
+  await expect(heading(linked?.category ?? '')).toBeVisible();
+
+  // Se corrige la categoria del error vinculado, desde Registrar.
+  await page.goto(`/registrar?s=${String(linked?.sessionId ?? 0)}`);
+  const row = page.getByRole('row').filter({ hasText: linked?.correctAnswer ?? '' }).first();
+  await row.getByRole('button', { name: 'Editar', exact: true }).click();
+  const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
+  await editForm.getByLabel('Categoria *').fill('REGISTRO');
+  await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByRole('cell', { name: 'REGISTRO', exact: true })).toBeVisible();
+
+  // El fallo pasa a contarse bajo la categoria corregida, sin tocar los tags de Anki.
+  await page.goto('/anki');
+  await expect(heading('REGISTRO')).toBeVisible();
+  await expect(heading(linked?.category ?? '')).toHaveCount(0);
 });

@@ -24,12 +24,13 @@ export async function GET(
   const options = { now: new Date(), windowDays };
 
   if (file === 'dump.json') {
-    return Response.json(toJsonDump(data, options, anki), {
+    return Response.json(toJsonDump(data, options.now, anki), {
       headers: { 'content-disposition': 'attachment; filename="errorlog-dump.json"' },
     });
   }
 
-  const match = /^(q[1-7])\.csv$/.exec(file);
+  // La lista de exportaciones manda: el patron solo separa el nombre de la extension.
+  const match = /^(q\d+)\.csv$/.exec(file);
   const which = match?.[1];
   if (which === undefined || !isCsvExport(which)) {
     return new Response('No existe ese fichero.', { status: 404 });

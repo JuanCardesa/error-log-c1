@@ -25,13 +25,6 @@
   color: var(--ink-faint);
 }
 
-.prompt {
-  margin: 0 0 var(--sp-3);
-  color: var(--ink-soft);
-  font-size: var(--fs-sm);
-  max-width: 70ch;
-}
-
 .pair {
   font-family: var(--font-data);
   font-size: var(--fs-lg);

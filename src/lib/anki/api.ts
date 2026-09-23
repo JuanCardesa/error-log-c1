@@ -38,8 +38,6 @@ export function ankiApi(transport: Transport) {
     async version() { return parseAnki(int.min(6), await call('version')); },
     async profile() { return parseAnki(z.string().min(1), await call('getActiveProfile')); },
     async deckNames() { return parseAnki(z.array(z.string()), await call('deckNames')); },
-    /** Sin esquema: la forma cambia entre versiones y `rolloverFrom` ya tolera lo que venga. */
-    async preferences() { return await call('getPreferences'); },
     async findCards(query: string) { return parseAnki(z.array(id), await call('findCards', { query })); },
     async findNotes(query: string) { return parseAnki(z.array(id), await call('findNotes', { query })); },
     async notesInfo(notes: readonly number[]): Promise<(AnkiNote | null)[]> {
@@ -79,7 +77,6 @@ export function ankiApi(transport: Transport) {
     async updateNoteFields(note: Record<string, unknown>) { await call('updateNoteFields', { note }); },
   };
 }
-export type AnkiApi = ReturnType<typeof ankiApi>;
 
 const escapeSearch = (value: string): string =>
   value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\*/g, '\\*').replace(/_/g, '\\_');

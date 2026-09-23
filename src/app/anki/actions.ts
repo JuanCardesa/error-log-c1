@@ -3,8 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { getDb } from '@/lib/db/client';
-import { getError, markAnkiAdded, unmarkAnkiAdded } from '@/lib/db/repo';
-import { generatesCard } from '@/lib/domain/enums';
+import { unmarkAnkiAdded } from '@/lib/db/repo';
 import { createAnkiNote, updateAnkiNote } from '@/lib/anki/create';
 import { syncAnki } from '@/lib/anki/sync';
 import { ankiMessage } from '@/lib/anki/connect';
@@ -41,18 +40,6 @@ export async function updateAnkiAction(id: number) {
     refreshAnki();
     return { ok: true, message: 'Tarjeta actualizada en Anki.' };
   } catch (error) { return { ok: false, message: ankiMessage(error) }; }
-}
-
-/** Sella la conversion. La fecha la pone el servidor: es un hecho, no un dato de entrada. */
-export async function markAddedAction(id: number) {
-  if (!Number.isSafeInteger(id) || id <= 0) return { ok: false, message: 'Identificador de error inválido.' };
-  const error = getError(getDb(), id);
-  if (error === null || !generatesCard(error.cause)) {
-    return { ok: false, message: 'Ese error no existe o su causa no genera tarjeta.' };
-  }
-  markAnkiAdded(getDb(), id, new Date().toISOString());
-  refreshAnki();
-  return { ok: true, message: 'Marcada a mano. No se ha comprobado que la tarjeta exista en Anki.' };
 }
 
 /** Deshacer, por si se marca de mas. Limpia tambien la fecha: hay un CHECK que lo exige. */

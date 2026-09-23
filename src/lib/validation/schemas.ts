@@ -123,42 +123,53 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
     .transform((value) => withSessionFormat(value));
 }
 
+const errorFields = z.object({
+  sessionId: z.number().int().positive(),
+  itemRef: optionalText.default(null),
+  prompt: z.string().trim().min(1, 'El enunciado es obligatorio'),
+  myAnswer: optionalText.default(null),
+  correctAnswer: z.string().trim().min(1, 'La respuesta correcta es obligatoria'),
+  cause: z.enum(CAUSES),
+  category: z.enum(CATEGORIES),
+  subcategory: optionalText.default(null),
+  confidence: z.enum(CONFIDENCES),
+  lateInSession: z.boolean().default(false),
+  ruleNote: z
+    .string()
+    .trim()
+    .min(
+      RULE_NOTE_MIN_LENGTH,
+      `La regla necesita al menos ${String(RULE_NOTE_MIN_LENGTH)} caracteres`,
+    ),
+});
+
+/** El campo que hace el trabajo es la regla, no la solucion copiada. */
+function ruleIsNotTheAnswer(
+  value: { readonly ruleNote: string; readonly correctAnswer: string },
+  ctx: z.RefinementCtx,
+): void {
+  if (value.ruleNote.trim().toLowerCase() !== value.correctAnswer.trim().toLowerCase()) return;
+  ctx.addIssue({
+    code: 'custom',
+    path: ['ruleNote'],
+    message: 'La regla no puede ser la respuesta correcta: escribela con tus palabras',
+  });
+}
+
+/**
+ * Un error, tal y como se teclea o se pega. Lo usan el alta, la importacion y la
+ * correccion: si las reglas divergieran, cada via guardaria una cosa distinta.
+ *
+ * Aqui no estan ni el estado de Anki —conversion, sello, vinculo y huella— ni el `secs`
+ * que midieron las versiones anteriores, y no es un olvido. Toda escritura validada
+ * entra por aqui y Zod descarta lo que no declara el esquema, asi que ningun formulario
+ * ni tanda pegada puede sellar una conversion: eso solo lo hace crear la nota en Anki y
+ * verificarla. Las acciones de servidor son POST publicos (docs de Next, «Server Actions
+ * and Mutations»: manda una referencia y el cambio, y relee lo demas de una fuente de
+ * confianza), de modo que un campo ausente tampoco puede significar «borralo».
+ */
 export function errorInputSchema() {
-  return z
-    .object({
-      sessionId: z.number().int().positive(),
-      itemRef: optionalText.default(null),
-      prompt: z.string().trim().min(1, 'El enunciado es obligatorio'),
-      myAnswer: optionalText.default(null),
-      correctAnswer: z.string().trim().min(1, 'La respuesta correcta es obligatoria'),
-      cause: z.enum(CAUSES),
-      category: z.enum(CATEGORIES),
-      subcategory: optionalText.default(null),
-      confidence: z.enum(CONFIDENCES),
-      lateInSession: z.boolean().default(false),
-      ruleNote: z
-        .string()
-        .trim()
-        .min(
-          RULE_NOTE_MIN_LENGTH,
-          `La regla necesita al menos ${String(RULE_NOTE_MIN_LENGTH)} caracteres`,
-        ),
-      ankiAdded: z.boolean().default(false),
-      ankiAddedAt: z.string().nullable().default(null),
-      secs: z.number().int().min(0).nullable().default(null),
-    })
-    .superRefine((value, ctx) => {
-      // El campo que hace el trabajo es la regla, no la solucion copiada.
-      if (
-        value.ruleNote.trim().toLowerCase() === value.correctAnswer.trim().toLowerCase()
-      ) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['ruleNote'],
-          message: 'La regla no puede ser la respuesta correcta: escribela con tus palabras',
-        });
-      }
-    });
+  return errorFields.superRefine(ruleIsNotTheAnswer);
 }
 
 export function writingPieceInputSchema(options: SessionSchemaOptions) {

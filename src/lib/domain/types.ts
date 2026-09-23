@@ -135,7 +135,7 @@ export interface AnkiSyncRow {
   readonly lastSyncedAt: string | null;
   readonly notesSeen: number;
   readonly rolloverHour: number | null;
-  readonly rolloverSource: 'anki' | 'config' | 'default' | null;
+  readonly rolloverSource: 'config' | 'default' | null;
 }
 
 export interface AnkiDataset {

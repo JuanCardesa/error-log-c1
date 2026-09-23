@@ -1,4 +1,4 @@
-import { MIN_N } from '../domain/thresholds';
+import { ANKI_TARGET_PCT, MIN_N, REWRITE_REPEAT_PCT } from '../domain/thresholds';
 import type { RuleMeasurements } from './measurements';
 
 /**
@@ -99,7 +99,7 @@ export const RULE_SPECS: readonly RuleSpec[] = [
     signal: 'pct_convertidos (Q5)',
     action:
       'Salta ejercicios un dia y ponte al dia con las tarjetas. Si no, el log no sirve de nada.',
-    threshold: 80,
+    threshold: ANKI_TARGET_PCT,
     watch: 90,
     unit: 'pct',
     // Se cruza por abajo: convertir poco es lo malo.
@@ -129,7 +129,7 @@ export const RULE_SPECS: readonly RuleSpec[] = [
     id: 6,
     signal: 'El rewrite repite errores del original',
     action: 'No estas leyendo la correccion. Leela antes de reescribir, con el original delante.',
-    threshold: 50,
+    threshold: REWRITE_REPEAT_PCT,
     watch: 35,
     unit: 'pct',
     direction: 'above',
