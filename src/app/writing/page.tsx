@@ -12,6 +12,7 @@ import { q6RewriteEfficacy } from '@/lib/queries/q6RewriteEfficacy';
 import { toIsoDate } from '@/lib/time/dates';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import { PieceForm } from './PieceForm';
 import styles from './writing.module.css';
@@ -64,24 +65,24 @@ export default async function WritingPage({
         today={toIsoDate(new Date())}
       />
 
-      <section className={shared.panel} aria-labelledby="pieces-heading">
+      <section className={`${ui.panel} ${shared.section}`} aria-labelledby="pieces-heading">
         <div className={shared.panelHead}>
           <h2 id="pieces-heading">Textos</h2>
-          <p className={shared.note}>{pieces.length} en total</p>
+          <p className={ui.note}>{pieces.length} en total</p>
         </div>
 
         {pieces.length === 0 ? (
-          <p className={shared.empty}>Todavia no hay textos.</p>
+          <p className={ui.empty}>Todavia no hay textos.</p>
         ) : (
-          <div className={shared.tableWrap}>
-            <table className={shared.table}>
+          <div className={ui.tableWrap}>
+            <table className={ui.table}>
               <caption className="sr-only">Textos de Writing con sus bandas</caption>
               <thead>
                 <tr>
                   <th scope="col">#</th>
                   <th scope="col">Fecha</th>
                   <th scope="col">Genero</th>
-                  <th scope="col" className={shared.num}>
+                  <th scope="col" className={ui.num}>
                     Palabras
                   </th>
                   <th scope="col">Corrector</th>
@@ -100,7 +101,7 @@ export default async function WritingPage({
                       <td className="data">{piece.id}</td>
                       <td className="data">{piece.date}</td>
                       <td className="data">{piece.genre}</td>
-                      <td className={shared.num}>{piece.wordCount ?? '—'}</td>
+                      <td className={ui.num}>{piece.wordCount ?? '—'}</td>
                       <td className="data">{piece.corrector ?? '—'}</td>
                       <td className={styles.bandsCell}>
                         {[
@@ -143,20 +144,20 @@ export default async function WritingPage({
         )}
       </section>
 
-      <section className={shared.panel} aria-labelledby="q6-heading">
+      <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q6-heading">
         <div className={shared.panelHead}>
           <h2 id="q6-heading">Q6 · Eficacia del rewrite</h2>
-          <p className={shared.note}>Umbral {REWRITE_REPEAT_PCT}%</p>
+          <p className={ui.note}>Umbral {REWRITE_REPEAT_PCT}%</p>
         </div>
 
         {q6.pairs.length === 0 ? (
-          <p className={shared.empty}>
+          <p className={ui.empty}>
             Ningun par original/reescritura en la ventana. Q6 no aplica todavia, y la
             regla 6 queda en <span className="data">n/a</span>.
           </p>
         ) : (
           <>
-            <p className={shared.note}>
+            <p className={ui.note}>
               {q6.totalRepeated} de {q6.totalOriginalErrors} errores del original
               reaparecen{' '}
               {q6.pctRepeated !== null && (
@@ -170,21 +171,21 @@ export default async function WritingPage({
               )}
             </p>
 
-            <div className={shared.tableWrap} style={{ marginTop: 'var(--sp-4)' }}>
-              <table className={shared.table}>
+            <div className={`${ui.tableWrap} ${styles.tableGap}`}>
+              <table className={ui.table}>
                 <caption className="sr-only">Pares original y reescritura</caption>
                 <thead>
                   <tr>
                     <th scope="col">Original</th>
                     <th scope="col">Reescritura</th>
                     <th scope="col">Genero</th>
-                    <th scope="col" className={shared.num}>
+                    <th scope="col" className={ui.num}>
                       Errores
                     </th>
-                    <th scope="col" className={shared.num}>
+                    <th scope="col" className={ui.num}>
                       Repetidos
                     </th>
-                    <th scope="col" className={shared.num}>
+                    <th scope="col" className={ui.num}>
                       %
                     </th>
                   </tr>
@@ -195,9 +196,9 @@ export default async function WritingPage({
                       <td className="data">#{pair.originalId}</td>
                       <td className="data">#{pair.rewriteId}</td>
                       <td className="data">{pair.genre}</td>
-                      <td className={shared.num}>{pair.originalErrors}</td>
-                      <td className={shared.num}>{pair.repeatedErrors}</td>
-                      <td className={shared.num}>
+                      <td className={ui.num}>{pair.originalErrors}</td>
+                      <td className={ui.num}>{pair.repeatedErrors}</td>
+                      <td className={ui.num}>
                         {pair.pctRepeated === null ? '—' : `${String(pair.pctRepeated)}%`}
                       </td>
                     </tr>
