@@ -118,11 +118,6 @@ function readTable(text: string): string[][] {
 
 export interface ImportedBatch { session: ImportedSession | null; errors: ImportDraft[] }
 
-// Conserva el retorno histórico para quienes solo añaden errores a una sesión.
-export function parseImportedErrors(source: string): ImportDraft[] {
-  return parseImportedBatch(source).errors;
-}
-
 export function parseImportedBatch(source: string, today = toIsoDate(new Date())): ImportedBatch {
   if (source.length > MAX_IMPORT_LENGTH) throw new Error('El texto es demasiado largo. Divide la importacion en tandas mas pequeñas.');
   const text = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').replace(/^\n+|\n+$/g, '')

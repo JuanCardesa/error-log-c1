@@ -120,17 +120,8 @@ export const CAUSE_META: Readonly<Record<Cause, CauseMeta>> = {
   },
 };
 
-/** Las tres causas que generan deuda de Anki, en el orden de SPEC §3. */
-export const CARD_GENERATING_CAUSES: readonly Cause[] = CAUSES.filter(
-  (cause) => CAUSE_META[cause].generatesCard,
-);
-
 export function generatesCard(cause: Cause): boolean {
   return CAUSE_META[cause].generatesCard;
-}
-
-export function causeSide(cause: Cause): CauseSide {
-  return CAUSE_META[cause].side;
 }
 
 /** Partes validas de un paper, como lista, para poblar selects. */

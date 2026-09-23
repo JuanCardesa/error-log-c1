@@ -10,7 +10,6 @@ import { sessionInputSchema } from '../validation/schemas';
 import { type Db, createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
 import {
-  countErrors,
   createError,
   createSession,
   deleteError,
@@ -137,7 +136,7 @@ describe('sesiones', () => {
   it('al borrarla arrastra sus errores', () => {
     const created = createSession(db, sessionInput());
     createError(db, errorInput(created.id));
-    expect(countErrors(db, created.id)).toBe(1);
+    expect(listErrors(db, created.id)).toHaveLength(1);
 
     deleteSession(db, created.id);
     expect(getSession(db, created.id)).toBeNull();
@@ -146,18 +145,16 @@ describe('sesiones', () => {
 });
 
 describe('errores', () => {
-  it('crea, lista y cuenta', () => {
+  it('crea y lista', () => {
     const session = createSession(db, sessionInput());
     createError(db, errorInput(session.id));
     createError(db, errorInput(session.id, { itemRef: '7' }));
 
     expect(listErrors(db, session.id)).toHaveLength(2);
-    expect(countErrors(db, session.id)).toBe(2);
   });
 
-  it('cuenta cero en una sesion sin errores', () => {
+  it('no lista nada en una sesion sin errores', () => {
     const session = createSession(db, sessionInput());
-    expect(countErrors(db, session.id)).toBe(0);
     expect(listErrors(db, session.id)).toEqual([]);
   });
 

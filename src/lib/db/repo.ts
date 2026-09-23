@@ -166,15 +166,6 @@ export function lastUsedCategory(db: Db): string | null {
   return row?.category ?? null;
 }
 
-export function countErrors(db: Db, sessionId: number): number {
-  const row = db
-    .select({ n: sql<number>`count(*)` })
-    .from(errorRow)
-    .where(eq(errorRow.sessionId, sessionId))
-    .get();
-  return row?.n ?? 0;
-}
-
 export function hasWritingPiece(db: Db, sessionId: number): boolean {
   const row = db
     .select({ id: writingPiece.id })

@@ -6,7 +6,6 @@ import type { z } from 'zod';
 import { getDb } from '@/lib/db/client';
 import {
   createWritingPiece,
-  deleteWritingPiece,
   getSession,
   getWritingPiece,
   hasWritingPiece,
@@ -113,10 +112,4 @@ export async function saveWritingPieceAction(
   }
   if (result.ok) revalidatePath('/', 'layout');
   return result;
-}
-
-export async function deleteWritingPieceAction(id: number): Promise<void> {
-  deleteWritingPiece(getDb(), id);
-  revalidatePath('/writing');
-  revalidatePath('/informe');
 }

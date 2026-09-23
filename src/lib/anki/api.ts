@@ -79,7 +79,6 @@ export function ankiApi(transport: Transport) {
     async updateNoteFields(note: Record<string, unknown>) { await call('updateNoteFields', { note }); },
   };
 }
-export type AnkiApi = ReturnType<typeof ankiApi>;
 
 const escapeSearch = (value: string): string =>
   value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\*/g, '\\*').replace(/_/g, '\\_');

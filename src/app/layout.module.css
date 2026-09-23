@@ -63,12 +63,6 @@
   margin: 0 auto;
 }
 
-.pending {
-  margin-left: auto;
-  font-size: var(--fs-xs);
-  color: var(--ink-faint);
-}
-
 /*
  * Salto al contenido. Invisible hasta que recibe foco: sin el, llegar al contenido con
  * el teclado obliga a tabular por los siete enlaces de navegacion en cada pagina.
