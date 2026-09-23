@@ -6,7 +6,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Error Log C1',
-  description: 'Registro de errores para la preparacion del Cambridge C1 Advanced',
+  description: 'Registro de errores para la preparación del Cambridge C1 Advanced',
 };
 
 /** El uso diario: registrar lo que falla, leer que hacer y convertirlo en tarjetas. */

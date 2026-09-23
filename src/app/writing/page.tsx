@@ -14,6 +14,7 @@ import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
+import { CORRECTOR_LABELS, GENRE_LABELS } from '../_shared/labels';
 import { PieceForm } from './PieceForm';
 import styles from './writing.module.css';
 
@@ -72,7 +73,7 @@ export default async function WritingPage({
         </div>
 
         {pieces.length === 0 ? (
-          <p className={ui.empty}>Todavia no hay textos.</p>
+          <p className={ui.empty}>Todavía no hay textos.</p>
         ) : (
           <div className={ui.tableWrap}>
             <table className={ui.table}>
@@ -81,7 +82,7 @@ export default async function WritingPage({
                 <tr>
                   <th scope="col">#</th>
                   <th scope="col">Fecha</th>
-                  <th scope="col">Genero</th>
+                  <th scope="col">Género</th>
                   <th scope="col" className={ui.num}>
                     Palabras
                   </th>
@@ -100,9 +101,9 @@ export default async function WritingPage({
                     <tr key={piece.id}>
                       <td className="data">{piece.id}</td>
                       <td className="data">{piece.date}</td>
-                      <td className="data">{piece.genre}</td>
+                      <td>{GENRE_LABELS[piece.genre]}</td>
                       <td className={ui.num}>{piece.wordCount ?? '—'}</td>
-                      <td className="data">{piece.corrector ?? '—'}</td>
+                      <td>{piece.corrector === null ? '—' : CORRECTOR_LABELS[piece.corrector]}</td>
                       <td className={styles.bandsCell}>
                         {[
                           piece.bandContent,
@@ -146,14 +147,14 @@ export default async function WritingPage({
 
       <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q6-heading">
         <div className={shared.panelHead}>
-          <h2 id="q6-heading">Q6 · Eficacia del rewrite</h2>
+          <h2 id="q6-heading">Eficacia de la reescritura</h2>
           <p className={ui.note}>Umbral {REWRITE_REPEAT_PCT}%</p>
         </div>
 
         {q6.pairs.length === 0 ? (
           <p className={ui.empty}>
-            Ningun par original/reescritura en la ventana. Q6 no aplica todavia, y la
-            regla 6 queda en <span className="data">n/a</span>.
+            Ningún par original/reescritura en la ventana. Esta cifra todavía no se puede
+            calcular, y la regla 6 queda en «Sin datos».
           </p>
         ) : (
           <>
@@ -178,7 +179,7 @@ export default async function WritingPage({
                   <tr>
                     <th scope="col">Original</th>
                     <th scope="col">Reescritura</th>
-                    <th scope="col">Genero</th>
+                    <th scope="col">Género</th>
                     <th scope="col" className={ui.num}>
                       Errores
                     </th>
@@ -195,7 +196,7 @@ export default async function WritingPage({
                     <tr key={pair.rewriteId}>
                       <td className="data">#{pair.originalId}</td>
                       <td className="data">#{pair.rewriteId}</td>
-                      <td className="data">{pair.genre}</td>
+                      <td>{GENRE_LABELS[pair.genre]}</td>
                       <td className={ui.num}>{pair.originalErrors}</td>
                       <td className={ui.num}>{pair.repeatedErrors}</td>
                       <td className={ui.num}>

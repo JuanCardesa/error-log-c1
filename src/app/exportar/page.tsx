@@ -27,8 +27,8 @@ export default async function ExportarPage({
         <div>
           <h1>Exportar</h1>
           <p className={shared.lede}>
-            Las consultas que son una tabla, en CSV listo para una hoja de calculo. La
-            ventana activa es de {windowDays} dias.
+            Las consultas que son una tabla, en CSV listo para una hoja de cálculo. La
+            ventana activa es de {windowDays} días.
           </p>
         </div>
         <WindowSwitch current={windowDays} basePath="/exportar" />
@@ -56,11 +56,11 @@ export default async function ExportarPage({
           </li>
         </ul>
         <p className={`${ui.note} ${styles.noteGap}`}>
-          Las falsas certezas usan siempre 30 dias, porque su umbral esta calibrado a esa ventana.
+          Las falsas certezas usan siempre 30 días, porque su umbral está calibrado a esa ventana.
           El JSON lleva tus datos tal cual, sin cifras calculadas: esas salen de los CSV o de la
           propia app. No se puede restaurar desde esta pantalla.
           Para una copia recuperable, ejecuta <code>pnpm db:backup</code>.
-          Las instrucciones para recuperarla estan en el README.
+          Las instrucciones para recuperarla están en el README.
         </p>
       </section>
     </div>

@@ -8,6 +8,7 @@ import type { SessionRow, WritingPieceRow } from '@/lib/domain/types';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { EMPTY_STATE } from '../registrar/formState';
 import { saveWritingPieceAction } from './actions';
+import { CORRECTOR_LABELS, GENRE_LABELS, KIND_LABELS } from '../_shared/labels';
 import styles from './writing.module.css';
 import ui from '../_shared/ui.module.css';
 
@@ -61,8 +62,8 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
     return (
       <div className={`${ui.empty} ${styles.block}`}>
         <p className={styles.emptyText}>
-          No hay sesiones de Writing libres. Cada sesion admite un solo texto, asi que abre
-          una sesion de paper <span className="data">WRITING</span> en Registrar y vuelve.
+          No hay sesiones de Writing libres. Cada sesión admite un solo texto, así que abre
+          una sesión de Writing en Registrar y vuelve.
         </p>
         {/* Tras crearla, Registrar devuelve aqui con la sesion ya disponible. */}
         <Link className={`${ui.primary} ${styles.emptyAction}`} href="/registrar?nueva=writing">
@@ -84,12 +85,12 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
         {editing !== null && <input type="hidden" name="id" value={editing.id} />}
 
         <label>
-          <span className={ui.label}>Sesion</span>
+          <span className={ui.label}>Sesión</span>
           {editing === null ? (
             <select name="sessionId" required aria-invalid={invalid('sessionId')}>
               {availableSessions.map((session) => (
                 <option key={session.id} value={session.id}>
-                  {session.date} · P{session.part} · {session.kind}
+                  {session.date} · P{session.part} · {KIND_LABELS[session.kind]}
                 </option>
               ))}
             </select>
@@ -115,11 +116,11 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
         </label>
 
         <label>
-          <span className={ui.label}>Genero</span>
+          <span className={ui.label}>Género</span>
           <select name="genre" defaultValue={editing?.genre ?? 'ESSAY'}>
             {GENRES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {GENRE_LABELS[value]}
               </option>
             ))}
           </select>
@@ -153,7 +154,7 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
             <option value="">sin corregir</option>
             {CORRECTORS.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {CORRECTOR_LABELS[value]}
               </option>
             ))}
           </select>
@@ -211,7 +212,7 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
                   .filter((piece) => editing === null || piece.id !== editing.id)
                   .map((piece) => (
                     <option key={piece.id} value={piece.id}>
-                      #{piece.id} · {piece.date} · {piece.genre}
+                      #{piece.id} · {piece.date} · {GENRE_LABELS[piece.genre]}
                     </option>
                   ))}
               </select>

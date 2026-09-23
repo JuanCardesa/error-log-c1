@@ -4,6 +4,7 @@ import { FIXED_WINDOW_DAYS } from '@/lib/domain/thresholds';
 import { q4FalseCertainties } from '@/lib/queries/q4FalseCertainties';
 import shared from '../_shared/report.module.css';
 import ui from '../_shared/ui.module.css';
+import { CATEGORY_LABELS, CAUSE_LABELS } from '../_shared/labels';
 import styles from './certezas.module.css';
 
 /**
@@ -26,9 +27,9 @@ export default async function CertezasPage() {
         <div>
           <h1>Falsas certezas</h1>
           <p className={shared.lede}>
-            Errores cometidos con <span className="data">SEGURO</span> en los ultimos{' '}
-            {FIXED_WINDOW_DAYS} dias. No son lagunas: son cosas que crees saber y no
-            sabes, y por eso van antes que cualquier categoria.
+            Errores cometidos con confianza «Seguro» en los últimos {FIXED_WINDOW_DAYS}{' '}
+            días. No son lagunas: son cosas que crees saber y no sabes, y por eso van antes
+            que cualquier categoría.
           </p>
         </div>
         <span className={styles.count}>{rows.length}</span>
@@ -36,7 +37,7 @@ export default async function CertezasPage() {
 
       {rows.length === 0 ? (
         <p className={ui.empty}>
-          Ninguna en los ultimos {FIXED_WINDOW_DAYS} dias. Es la mejor noticia que puede
+          Ninguna en los últimos {FIXED_WINDOW_DAYS} días. Es la mejor noticia que puede
           dar esta vista.
         </p>
       ) : (
@@ -45,8 +46,8 @@ export default async function CertezasPage() {
             <li key={row.errorId} className={styles.item}>
               <div className={styles.meta}>
                 <span className="data">{row.date}</span>
-                <span className="data">{row.cause}</span>
-                <span className="data">{row.category}</span>
+                <span>{CAUSE_LABELS[row.cause]}</span>
+                <span>{CATEGORY_LABELS[row.category]}</span>
                 {row.subcategory !== null && (
                   <span className="data">· {row.subcategory}</span>
                 )}

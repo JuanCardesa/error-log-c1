@@ -17,7 +17,7 @@ export function WindowSwitch({
   readonly basePath: string;
 }) {
   return (
-    <div className={styles.windowSwitch} role="group" aria-label="Ventana de analisis">
+    <div className={styles.windowSwitch} role="group" aria-label="Ventana de análisis">
       {WINDOW_DAYS_OPTIONS.map((days) => (
         <Link
           key={days}

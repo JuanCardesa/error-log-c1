@@ -41,7 +41,7 @@ export default async function RuoePage({
         <div>
           <h1>RUOE</h1>
           <p className={shared.lede}>
-            Precision por part y semana ISO en los ultimos {windowDays} dias. Es la vista
+            Precisión por part y semana ISO en los últimos {windowDays} días. Es la vista
             que dice si semanas de drills de una part han servido de algo.
           </p>
         </div>
@@ -50,13 +50,13 @@ export default async function RuoePage({
 
       {q3.rows.length === 0 ? (
         <p className={ui.empty}>
-          Sin sesiones de RUOE con items en la ventana. Prueba a ampliarla a 60 dias.
+          Sin sesiones de RUOE con ítems en la ventana. Prueba a ampliarla a 60 días.
         </p>
       ) : (
         <div className={ui.tableWrap}>
           <table className={styles.matrix}>
             <caption className="sr-only">
-              Precision por part y semana. Las celdas vacias no tienen datos.
+              Precisión por part y semana. Las celdas vacías no tienen datos.
             </caption>
             <thead>
               <tr>
