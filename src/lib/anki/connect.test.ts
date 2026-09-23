@@ -161,9 +161,15 @@ describe('plazos y reintentos', () => {
     expect(slept).toEqual([500, 1000]);
   });
 
+  // `multi` figura entre las lecturas, asi que un lote anidado colaba como lectura y
+  // dejaba reintentable la escritura de dentro. Hoy nadie los envia: se rechazan enteros.
+  const nested: AnkiRequest =
+    ({ action: 'multi', version: 6, params: { actions: [read('cardsInfo'), multi('cardsInfo', 'addNote')] } });
+
   it.each([
     ['una escritura', read('addNote')],
     ['un multi con una escritura dentro', multi('cardsInfo', 'addNote')],
+    ['un multi anidado con una escritura dentro', nested],
     ['un multi vacío', multi()],
   ])('no reintenta %s aunque expire', async (_label, body) => {
     const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError('ANKI_LENTO', 'lento'));

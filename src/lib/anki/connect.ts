@@ -43,13 +43,22 @@ export function timeoutFor(action: string): number {
   return READ_ACTIONS.has(action) ? ANKI_TIMEOUT_MS.quick : ANKI_TIMEOUT_MS.write;
 }
 
-/** `multi` solo es lectura si todas sus subacciones lo son. */
+/**
+ * `multi` solo es lectura si todas sus subacciones lo son.
+ *
+ * Un `multi` anidado se rechaza sin mirar dentro: su nombre esta en `READ_ACTIONS`, asi
+ * que clasificarlo por el nombre dejaria reintentable una escritura escondida un nivel
+ * mas abajo. La app solo construye lotes planos; recorrerlos en profundidad seria
+ * soporte para algo que nadie envia.
+ */
 export function isReadRequest(body: AnkiRequest): boolean {
   if (body.action !== 'multi') return READ_ACTIONS.has(body.action);
   const actions = body.params['actions'];
-  return Array.isArray(actions) && actions.length > 0 && actions.every((action) =>
-    typeof action === 'object' && action !== null && !Array.isArray(action)
-    && READ_ACTIONS.has(String((action as { action?: unknown }).action)));
+  return Array.isArray(actions) && actions.length > 0 && actions.every((action) => {
+    if (typeof action !== 'object' || action === null || Array.isArray(action)) return false;
+    const name = String((action as { action?: unknown }).action);
+    return name !== 'multi' && READ_ACTIONS.has(name);
+  });
 }
 
 /** `AbortSignal.timeout` aborta con un TimeoutError; fetch puede envolverlo en `cause`. */
