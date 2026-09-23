@@ -58,6 +58,13 @@ test.describe('corregir lo ya registrado', () => {
     await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
 
     await expect(page.getByRole('cell', { name: 'given up' })).toBeVisible();
+
+    // Esc cancela la edicion y el foco vuelve al boton de la fila, no al principio.
+    await page.getByRole('button', { name: 'Editar' }).first().click();
+    await expect(editForm.getByLabel('Item', { exact: true })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(editForm).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Editar' }).first()).toBeFocused();
     await expect(page.getByRole('cell', { name: 'gave up', exact: true })).toBeHidden();
   });
 

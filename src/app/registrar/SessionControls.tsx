@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 
 import type { SessionRow } from '@/lib/domain/types';
 import { deleteSessionAction, setSessionStatusAction } from './actions';
@@ -24,8 +24,24 @@ export function SessionControls({ session, errorCount }: Props) {
 
   const closed = session.status === 'CLOSED';
 
+  const askRef = useRef<HTMLButtonElement>(null);
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+
+  // Al pedir confirmacion, el foco va a Cancelar; al cancelar, vuelve a «Borrar sesion…».
+  useEffect(() => {
+    if (confirming) keepRef.current?.focus();
+    else if (wasConfirming.current) askRef.current?.focus();
+    wasConfirming.current = confirming;
+  }, [confirming]);
+
   return (
-    <div className={styles.controls}>
+    <div
+      className={styles.controls}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && confirming) setConfirming(false);
+      }}
+    >
       <button
         type="button"
         className={`${ui.secondary} ${ui.small}`}
@@ -57,6 +73,7 @@ export function SessionControls({ session, errorCount }: Props) {
             Borrar de todos modos
           </button>
           <button
+            ref={keepRef}
             type="button"
             className={`${ui.secondary} ${ui.small}`}
             onClick={() => {
@@ -68,6 +85,7 @@ export function SessionControls({ session, errorCount }: Props) {
         </>
       ) : (
         <button
+          ref={askRef}
           type="button"
           className={`${ui.secondary} ${ui.small}`}
           onClick={() => {

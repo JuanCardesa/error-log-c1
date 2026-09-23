@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, useState, useTransition } from 'react';
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
 import type { ErrorRow, SessionRow } from '@/lib/domain/types';
@@ -27,6 +27,8 @@ interface Props {
 
 export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
+  // Al cerrar una edicion, el foco vuelve al boton Editar de esa fila y no al principio.
+  const [returnTo, setReturnTo] = useState<number | null>(null);
 
   if (errors.length === 0) {
     return (
@@ -65,12 +67,14 @@ export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
                 subcategorySuggestions={subcategorySuggestions}
                 onDone={() => {
                   setEditingId(null);
+                  setReturnTo(error.id);
                 }}
               />
             ) : (
               <Row
                 key={error.id}
                 error={error}
+                focusEdit={returnTo === error.id}
                 onEdit={() => {
                   setEditingId(error.id);
                 }}
@@ -83,9 +87,30 @@ export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
   );
 }
 
-function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () => void }) {
+function Row({ error, focusEdit, onEdit }: {
+  readonly error: ErrorRow;
+  readonly focusEdit: boolean;
+  readonly onEdit: () => void;
+}) {
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const editRef = useRef<HTMLButtonElement>(null);
+  const askRef = useRef<HTMLButtonElement>(null);
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
+
+  // La fila se vuelve a montar al salir de la edicion: es entonces cuando recupera el foco.
+  useEffect(() => {
+    if (focusEdit) editRef.current?.focus();
+  }, [focusEdit]);
+
+  // Al pedir confirmacion, el foco va a la opcion segura; al cancelar, vuelve a «Borrar…».
+  useEffect(() => {
+    if (confirming) keepRef.current?.focus();
+    else if (wasConfirming.current) askRef.current?.focus();
+    wasConfirming.current = confirming;
+  }, [confirming]);
 
   const meta = CAUSE_META[error.cause];
 
@@ -117,7 +142,12 @@ function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () 
       <td className="data">
         {meta.generatesCard ? (error.ankiAdded ? 'si' : 'pendiente') : '—'}
       </td>
-      <td className={styles.rowActions}>
+      <td
+        className={styles.rowActions}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && confirming) setConfirming(false);
+        }}
+      >
         {confirming ? (
           <>
             <button
@@ -133,6 +163,7 @@ function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () 
               Borrar
             </button>
             <button
+              ref={keepRef}
               type="button"
               className={`${ui.secondary} ${ui.small}`}
               onClick={() => {
@@ -144,10 +175,11 @@ function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () 
           </>
         ) : (
           <>
-            <button type="button" className={`${ui.secondary} ${ui.small}`} onClick={onEdit}>
+            <button ref={editRef} type="button" className={`${ui.secondary} ${ui.small}`} onClick={onEdit}>
               Editar
             </button>
             <button
+              ref={askRef}
               type="button"
               className={`${ui.secondary} ${ui.small}`}
               onClick={() => {
@@ -180,15 +212,38 @@ function EditRow({
 }) {
   const [state, formAction, pending] = useActionState(updateErrorAction, EMPTY_STATE);
   const { formRef, onReset } = usePreservedForm();
+  const firstFieldRef = useRef<HTMLInputElement>(null);
+
+  // Editar es para cambiar algo: el cursor empieza dentro del formulario.
+  useEffect(() => {
+    firstFieldRef.current?.focus();
+  }, []);
 
   useEffect(() => {
     if (state.ok) onDone();
   }, [state, onDone]);
 
+  // Rechazado: al primer campo que el servidor ha marcado. Solo con cada respuesta, no
+  // con cada render de la lista, para no quitar el cursor a quien esta escribiendo.
+  useEffect(() => {
+    if (!state.ok) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [state, formRef]);
+
   return (
     <tr>
       <td colSpan={8} className={styles.editCell}>
-        <form ref={formRef} action={formAction} onReset={onReset} className={capture.grid}>
+        <form
+          ref={formRef}
+          action={formAction}
+          onReset={onReset}
+          className={capture.grid}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              onDone();
+            }
+          }}
+        >
           <input type="hidden" name="id" value={error.id} />
           <input type="hidden" name="sessionId" value={error.sessionId} />
           {/* Referencia y cambio, nada mas: la conversion a Anki y el `secs` de las
@@ -199,6 +254,7 @@ function EditRow({
             subcategorySuggestions={subcategorySuggestions}
             fieldErrors={state.fieldErrors}
             defaults={error}
+            firstFieldRef={firstFieldRef}
           />
 
           <div className={capture.fSubmit}>

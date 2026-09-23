@@ -31,6 +31,11 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
   const router = useRouter();
   const handled = useRef<number | undefined>(undefined);
 
+  // Rechazada: el foco va al primer campo que el servidor ha marcado.
+  useEffect(() => {
+    if (!state.ok) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [state, formRef]);
+
   useEffect(() => {
     if (!state.ok || state.createdId === undefined) return;
     if (handled.current === state.createdId) return;
