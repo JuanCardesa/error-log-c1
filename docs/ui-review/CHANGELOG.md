@@ -1,6 +1,6 @@
 # Rediseño de la interfaz · CHANGELOG
 
-Rama `feature/ui-redesign`, 41 commits sobre `develop` (42d77a1), 23 de septiembre de 2026. Punto
+Rama `feature/ui-redesign`, sobre `develop` (42d77a1), 23 de septiembre de 2026. Punto
 de partida: [AUDIT.md](AUDIT.md). Plan: [PLAN.md](PLAN.md), bloques 1 a 8; el 9, opcional, no se
 aprobó. El bloque 4 lo implementó otro agente a partir de [BLOCK-4-SPEC.md](BLOCK-4-SPEC.md).
 
