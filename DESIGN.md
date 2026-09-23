@@ -7,33 +7,40 @@ colors:
   sheet-sunken: "#ebe7db"
   rule: "#d9d2c2"
   rule-strong: "#b9b09b"
+  rule-field: "#8b8270"
   ink: "#1b1915"
   ink-soft: "#5b564b"
-  ink-faint: "#8b8474"
+  ink-faint: "#6d6757"
+  ink-hover: "#000000"
+  on-color: "#ffffff"
   study-blue: "#1d4ed8"
   study-blue-wash: "#e3ecfd"
   study-blue-rule: "#b6ccf7"
   exec-red: "#b4231d"
   exec-red-wash: "#fbe7e5"
   exec-red-rule: "#f3c2bd"
-  queued-ochre: "#8a6d1f"
+  queued-ochre: "#7a5f17"
   queued-ochre-wash: "#faf0d6"
   watch-taupe: "#6b6352"
   watch-taupe-wash: "#efebe0"
   ok-green: "#2f6b43"
   ok-green-wash: "#e4f0e7"
+  tier-high: "#dcefe2"
+  tier-mid: "#eaf0d9"
+  tier-low: "#faeed2"
+  tier-bad: "#f8dcd8"
 typography:
-  title:
+  page-title:
     fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-    fontSize: "19px"
+    fontSize: "22px"
     fontWeight: 600
-    lineHeight: 1.45
+    lineHeight: 1.25
     letterSpacing: "-0.01em"
   section:
     fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-    fontSize: "15px"
+    fontSize: "16px"
     fontWeight: 600
-    lineHeight: 1.45
+    lineHeight: 1.3
     letterSpacing: "-0.01em"
   body:
     fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
@@ -71,17 +78,23 @@ components:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.sheet}"
     rounded: "{rounded.sm}"
-    padding: "6px 20px"
+    padding: "6px 14px"
+  button-primary-hover:
+    backgroundColor: "{colors.ink-hover}"
   button-secondary:
     backgroundColor: "{colors.sheet}"
     textColor: "{colors.ink}"
     rounded: "{rounded.sm}"
-    padding: "4px 10px"
+    padding: "6px 14px"
   button-danger:
     backgroundColor: "{colors.exec-red}"
-    textColor: "#ffffff"
+    textColor: "{colors.on-color}"
     rounded: "{rounded.sm}"
     padding: "4px 10px"
+  button-unavailable:
+    backgroundColor: "{colors.sheet}"
+    textColor: "{colors.ink-faint}"
+    rounded: "{rounded.sm}"
   input:
     backgroundColor: "{colors.sheet}"
     textColor: "{colors.ink}"
@@ -97,14 +110,24 @@ components:
     textColor: "{colors.exec-red}"
     rounded: "{rounded.pill}"
     padding: "0 6px"
+  state-good:
+    backgroundColor: "{colors.ok-green-wash}"
+    textColor: "{colors.ok-green}"
+    rounded: "{rounded.pill}"
+    padding: "0 6px"
+  state-warn:
+    backgroundColor: "{colors.queued-ochre-wash}"
+    textColor: "{colors.queued-ochre}"
+    rounded: "{rounded.pill}"
+    padding: "0 6px"
   panel:
     backgroundColor: "{colors.sheet}"
     rounded: "{rounded.sm}"
     padding: "14px"
 ---
 
-<!-- Estado incumbente, documentado el 23-sep-2026 antes del rediseño (rama feature/ui-redesign).
-     Describe lo que hay, no lo que debería haber: los problemas están en docs/ui-review/AUDIT.md. -->
+<!-- Sistema tras el rediseño de feature/ui-redesign (23-sep-2026). Los tokens viven en
+     src/app/globals.css y las primitivas en src/app/_shared/ui.module.css. -->
 
 # Design System: Error Log C1
 
@@ -112,23 +135,27 @@ components:
 
 **Creative North Star: "El cuaderno corregido"**
 
-Una hoja de ejercicios después de pasar por el profesor: papel claro, tinta negra para
-lo escrito, azul y rojo para las correcciones. Todo lo visual sirve a leer datos en
-columna y a volcar una tanda deprisa. No hay imágenes, ni ilustraciones, ni sombras, ni
-movimiento más allá de una transición de foco.
+Una hoja de ejercicios después de pasar por el profesor: papel claro, tinta negra para lo
+escrito, azul y rojo para las correcciones. Todo lo visual sirve a dos cosas: volcar una
+tanda deprisa y leer datos en columna. No hay imágenes, ilustraciones, sombras ni
+movimiento más allá del foco.
 
-La densidad es alta a propósito: cuerpo de 13 px, espaciado en pasos de 2 a 28 px y
-paneles con borde fino. La monoespaciada lleva todo lo que se compara (fechas,
-respuestas, categorías, cifras); la sans del sistema lleva la interfaz y la prosa. El
-color es casi solo semántico: el lado de la causa (estudio en azul, ejecución en rojo)
-y el estado de cada regla (DO NOW, QUEUED, WATCH, ok).
+La densidad es alta a propósito: el cuerpo va a 13 px y el espaciado en pasos de 2 a 28 px.
+Los paneles llevan un borde fino. La monoespaciada lleva todo lo que se compara (fechas,
+respuestas, cifras); la sans del sistema lleva la interfaz, la prosa y las etiquetas de las
+taxonomías, que se leen como palabras («Preposición dependiente»), nunca como códigos. El
+color es semántico y tiene dos escalas separadas:
+- el **lado de la causa**: estudio en azul, ejecución en rojo;
+- el **estado frente a un umbral**: bien en verde, pendiente en ocre, vigilar en topo.
 
 **Key Characteristics:**
-- Papel hueso con hojas algo más claras encima; profundidad solo por tono y borde.
-- Monoespaciada tabular para todo dato comparable.
-- Azul estudio / rojo ejecución como única codificación cromática de la causa.
+- Papel hueso con hojas algo más claras encima; la profundidad sale solo del tono y el borde.
+- Monoespaciada tabular para todo dato comparable; texto legible para toda etiqueta.
+- Azul y rojo reservados al lado de la causa; los umbrales usan la escala de estados.
 - Negro de tinta para la acción primaria; sin color de marca.
-- Esquinas casi rectas (3 px) y píldoras para chips y etiquetas de estado.
+- Esquinas casi rectas (3 px); píldoras para chips y estados.
+- Todo texto de lectura pasa AA sobre las tres superficies; el foco es un contorno azul de
+  2 px.
 
 ## Colors
 
@@ -136,35 +163,43 @@ Neutros cálidos de papel y tinta, con dos plumas de corrección y una escala de
 
 ### Primary
 - **Tinta** (`ink`): texto principal, botón primario, conmutadores activos. La acción
-  principal no lleva color de marca: es tinta.
+  principal no lleva color de marca: es tinta. Al pasar el ratón oscurece a `ink-hover`.
 
 ### Secondary
-- **Azul de estudio** (`study-blue`, con `study-blue-wash` y `study-blue-rule`): causas
-  que se arreglan estudiando (DESCONOCIMIENTO, CONFUSION, ORTOGRAFIA), sus chips y sus
-  barras. También es el anillo de foco (`--accent`).
+- **Azul de estudio** (`study-blue`, con `study-blue-wash` y `study-blue-rule`): causas que
+  se arreglan estudiando (Desconocimiento, Confusión, Ortografía), sus chips y sus barras.
+  También es el anillo de foco (`--accent`).
 
 ### Tertiary
-- **Rojo de ejecución** (`exec-red` y derivados): causas de ejecución (DESPISTE,
-  FORMATO, TIEMPO), la respuesta equivocada tachada, SEGURO en la tabla, errores de
-  validación, borrado y DO NOW. Hoy carga con cuatro significados distintos.
+- **Rojo de ejecución** (`exec-red` y sus derivados): causas de ejecución (Despiste,
+  Formato, Tiempo), la respuesta equivocada tachada, errores de validación, borrado y
+  «Haz esto».
 
 ### Neutral
 - **Papel** (`paper`): fondo de página.
-- **Hoja** (`sheet`): paneles, tablas, campos.
-- **Hoja hundida** (`sheet-sunken`): cabeceras de tabla, hover, campos deshabilitados.
-- **Filete** (`rule`) y **filete marcado** (`rule-strong`): separadores y bordes de panel.
-- **Tinta suave** (`ink-soft`): texto secundario y etiquetas.
-- **Tinta tenue** (`ink-faint`): notas, metadatos, navegación secundaria. No llega a
-  4,5:1 sobre ningún fondo del sistema (3,0–3,5:1).
+- **Hoja** (`sheet`): paneles, tablas y campos.
+- **Hoja hundida** (`sheet-sunken`): cabeceras de tabla, hover, página actual en la barra y
+  campos deshabilitados.
+- **Filete** (`rule`) y **filete marcado** (`rule-strong`): separadores y bordes de panel,
+  que son decorativos.
+- **Borde de campo** (`rule-field`): el único borde que delimita un control. Da 3,3:1
+  (WCAG 1.4.11).
+- **Tinta suave** (`ink-soft`) y **tinta tenue** (`ink-faint`): texto secundario. La tenue
+  da 4,56–5,35:1 sobre las tres superficies.
 
-### Estados del motor de reglas
-- **DO NOW** reutiliza el rojo de ejecución; **QUEUED** ocre (`queued-ochre`, también el
-  aviso de demo); **WATCH** gris topo; **ok** verde (`ok-green`, también sesión OPEN y
-  mensajes de éxito).
+### Estados
+- **Bien** (`ok-green`): umbral cumplido, sesión abierta, mensajes de éxito, «Disponible».
+- **Pendiente** (`queued-ochre`, 5,32:1): por debajo de un umbral, «En cola», marca de valor
+  heredado, Anki no disponible.
+- **Vigilar** (`watch-taupe`): reglas en vigilancia y marcas neutras (reescritura de).
+- **Tramos de RUOE** (`tier-*`): solo como fondo de celda; el número manda y hay leyenda.
 
 ### Named Rules
-**The Two Pens Rule.** Azul y rojo pertenecen a la causa: estudio y ejecución. Cualquier
-otro uso compite con esa lectura.
+**The Two Pens Rule.** Azul y rojo pertenecen a la causa: estudio y ejecución. Un umbral
+cumplido o no cumplido usa la escala de estados, nunca las plumas.
+
+**The Readable Ink Rule.** Ningún texto que haya que leer baja de 4,5:1. Un control
+inactivo que tenga que explicarse no se atenúa con opacidad: pasa a tinta tenue.
 
 ## Typography
 
@@ -173,111 +208,153 @@ otro uso compite con esa lectura.
 **Label/Mono Font:** monoespaciada del sistema (`ui-monospace`, Cascadia Mono en Windows)
 con cifras tabulares.
 
-**Character:** tipografía de herramienta, sin voz propia; la personalidad la pone el
+**Character:** tipografía de herramienta, sin voz propia. La personalidad sale del
 contraste entre la sans de la interfaz y la mono de los datos.
 
 ### Hierarchy
-- **Title** (600, 19 px): h1 de cada vista.
-- **Section** (600, 15 px): h2 de panel.
-- **Body** (400, 13 px, 1,45): texto base, celdas, campos.
-- **Small** (400, 12 px): notas, pistas, tablas, navegación secundaria.
-- **Label** (400, 11 px, mayúsculas, +0,04 em): etiquetas de campo, cabeceras de tabla,
-  términos de listas de definición.
-- **Data** (mono, 13 px, tabular): fechas, respuestas, cifras, categorías.
-
-La escala es muy comprimida (11–19 px): entre sección y cuerpo hay 2 px, así que la
-jerarquía descansa sobre todo en el peso y en los bordes de panel.
+- **Page title** (600, 22 px, 1,25): h1 de cada vista.
+- **Section** (600, 16 px, 1,3): h2 de panel.
+- **Body** (400, 13 px, 1,45): texto base, celdas y campos.
+- **Small** (400, 12 px): notas, pistas, tablas y navegación secundaria.
+- **Label** (400, 11 px, mayúsculas, +0,04 em): etiquetas de campo, cabeceras de tabla y
+  etiquetas de dato en las tarjetas móviles.
+- **Data** (mono, 13 px, tabular): fechas, respuestas y cifras.
 
 ### Named Rules
-**The Column Rule.** Si un valor se va a comparar en vertical, va en monoespaciada
-tabular y alineado a la derecha cuando es número.
+**The Column Rule.** Si un valor se compara en vertical, va en monoespaciada tabular y, si
+es un número, alineado a la derecha. Una etiqueta de taxonomía es una palabra, no un dato,
+y va en la sans.
+
+**The Spoken Label Rule.** Ningún valor interno se muestra en crudo: `CONFUSION` se lee
+«Confusión» y `DO NOW`, «Haz esto». Las etiquetas viven en `src/app/_shared/labels.ts`; lo
+guardado y lo exportado sigue siendo el valor interno.
 
 ## Layout
 
-Una columna central de hasta 1200 px con 20 px de margen, bajo una barra superior con la
-navegación en dos grupos (uso diario / detalle). Las vistas se componen apilando paneles
-con borde; no hay rejilla de página ni barra lateral.
+Una columna central de hasta 1200 px con 20 px de margen, bajo una barra superior. La
+navegación va en dos grupos, uso diario y detalle, y marca la página actual. Las vistas se
+componen apilando paneles con 20 px entre ellos. No hay rejilla de página ni barra lateral.
 
-El formulario de captura es una rejilla de cuatro columnas con áreas nombradas (ítem,
-enunciado, mi respuesta, correcta / causa, categoría, subcategoría, confianza / regla /
-marcas y guardar) que cae a una columna por debajo de 760 px. La cabecera de sesión usa
-`auto-fit` con mínimo de 8,5 rem.
+**Orden por uso.** Cada vista abre con lo que se hace más a menudo: Registrar empieza por
+las sesiones abiertas y la tanda de Macmillan, con la sesión manual plegada; el Informe,
+por la acción de la semana.
 
-Puntos de ruptura usados: 600, 620 y 760 px, según el módulo. Espaciado en siete pasos
-(2, 4, 6, 10, 14, 20, 28 px) sin múltiplo común.
+**Captura:** rejilla de cinco columnas con áreas nombradas. Ítem es estrecho y Causa ocupa
+dos columnas. **Revisión de tanda:** filas compactas con los cuatro campos que hay que
+completar a la vista y el resto plegado; una barra fija al pie cuenta lo pendiente.
+
+**Puntos de ruptura:** dos.
+- **760 px:** los formularios pasan a una columna.
+- **620 px:**
+  - la navegación ocupa una fila con desplazamiento;
+  - las filas de sesión pasan a dos líneas;
+  - la tabla de errores se convierte en tarjetas etiquetadas;
+  - las barras del Informe se ocultan.
 
 ## Elevation & Depth
 
-Plano. No hay sombras salvo el anillo de foco (2 px de papel y 2 px de azul). La
-profundidad se expresa con tres tonos (papel, hoja, hoja hundida) y bordes de 1 px;
-el DO NOW del informe es el único borde de 2 px.
+Plano. No hay sombras. La profundidad se expresa con tres tonos (papel, hoja, hoja hundida)
+y bordes de 1 px; el recuadro de «Haz esto» es el único borde de 2 px. La barra fija de la
+revisión de tanda se separa con un filete superior, no con sombra.
 
 ### Named Rules
-**The Flat Sheet Rule.** Nada flota. Si algo necesita destacar, cambia de tono o de
-borde, no de altura.
+**The Flat Sheet Rule.** Nada flota. Lo que tiene que destacar cambia de tono o de borde,
+no de altura.
 
 ## Shapes
 
-Esquinas casi rectas (3 px) en paneles, campos y botones; píldora completa (999 px) en
-chips de causa, etiquetas de estado y barras de proporción. Bordes continuos de 1 px;
-discontinuos para estados vacíos y la sesión cerrada.
+Esquinas casi rectas (3 px) en paneles, campos y botones; píldora completa (`rounded.pill`)
+en chips de causa, chips de estado y barras de proporción. Bordes continuos de 1 px, y
+discontinuos solo para estados vacíos y la sesión cerrada.
 
 ## Components
 
+Todas las primitivas se definen una sola vez en `src/app/_shared/ui.module.css` y no llevan
+margen exterior: el espacio alrededor lo decide cada vista.
+
 ### Buttons
-- **Shape:** esquina casi recta (3 px).
-- **Primary:** tinta sobre texto hoja, 6 × 20 px; hover a negro puro; deshabilitado al
-  55 % de opacidad con cursor de progreso. Definido por separado en captura, sesión,
-  Writing y Anki («Crear en Anki»).
-- **Secondary / quiet:** hoja con filete marcado, 4 × 10 px, texto 12 px; hover a hoja
-  hundida. Tres definiciones con rellenos distintos (4×10, 6×10, 6×14).
-- **Danger:** rojo de ejecución con texto blanco; solo en el segundo paso de un borrado.
-- **Link-button** («Actualizar en Anki»): subrayado sin caja.
+- **Primario** (`ui.primary`): tinta sobre hoja, 6 × 14 px. Es la acción que avanza la
+  tarea; uno por formulario o por tarjeta. Un enlace que lleva a hacer algo («Ir a la cola
+  de Anki», «Abrir una sesión de Writing») usa la misma forma.
+- **Secundario** (`ui.secondary`): hoja con filete marcado, para acciones de apoyo,
+  cancelar o cambiar de estado. Lo que solo lee («Sincronizar») es secundario; lo que
+  escribe («Crear en Anki») es primario.
+- **Peligro** (`ui.danger`): rojo de ejecución, solo en el segundo paso de un borrado.
+- **Compacto** (`ui.small`): 4 × 10 px y 12 px, para acciones dentro de filas.
+- **Estados:**
+  - `disabled`: al 55 % de opacidad y cursor de prohibido;
+  - `aria-busy`: cursor de espera;
+  - `aria-disabled`: sigue enfocable, en tinta tenue y sin opacidad, con `aria-describedby`
+    hacia el aviso que explica el motivo.
 
 ### Chips
-- **Causa:** píldora mono 11 px, lavado del color de su lado con filete y texto del
-  mismo tono. Definido cuatro veces.
-- **Estado de regla:** misma forma, con la escala de estados; DO NOW relleno sólido.
-- **Estado de sesión:** OPEN en verde, CLOSED en neutro.
+- **Causa** (`ui.chipStudy`, `ui.chipExec`): píldora mono de 11 px con el lavado del color
+  de su lado.
+- **Estado** (`ui.stateGood`, `ui.stateWarn`): la misma forma, con la escala de estados.
+  Se usa para umbrales, la disponibilidad de Anki y el estado de cada fila de una tanda.
 
 ### Cards / Containers
-- **Corner Style:** 3 px.
-- **Background:** hoja sobre papel.
-- **Shadow Strategy:** ninguna (ver Elevation & Depth).
-- **Border:** 1 px filete marcado.
-- **Internal Padding:** 14 px.
+- **Panel** (`ui.panel`): hoja sobre papel, 1 px de filete marcado, 14 px de relleno.
+- **Vacío** (`ui.empty`): discontinuo, 64ch como máximo. Vacío no es cero: sin datos se
+  escribe «—», no 0.
+- **Avisos** (`ui.noticeOk`, `ui.noticeError`): el resultado de una acción, con su fondo.
+  Un aviso que sigue a una navegación recibe el foco.
 
 ### Inputs / Fields
-- **Style:** hoja, borde de filete marcado, 3 px, relleno 6 × 10 px (4 × 6 en la rejilla
-  de captura, con texto de 12 px).
-- **Focus:** sin contorno; anillo doble papel + azul.
-- **Error / Disabled:** `aria-invalid` sin estilo propio; mensaje rojo de 12 px debajo.
-  Deshabilitado en hoja hundida con tinta tenue.
+- **Estilo:** hoja, borde de campo (3,3:1), 3 px; la etiqueta (`ui.label`) va encima.
+- **Foco:** contorno azul de 2 px con desplazamiento de 2 px. Funciona en el modo de alto
+  contraste de Windows. Donde un contenedor con desplazamiento lo recortaría, va hacia
+  dentro.
+- **Error:** borde rojo con `aria-invalid` y un mensaje por línea debajo (`ui.fieldError`),
+  enlazado con `aria-describedby` y sin `role="alert"`. El foco va al primer campo
+  rechazado.
+- **Heredado:** un valor que pasa de un error al siguiente lleva la marca «heredada» en ocre
+  junto a su etiqueta hasta que se toca.
+- **Taxonomías cerradas:** siempre desplegable, nunca texto libre.
 
 ### Navigation
-- Enlaces de 13 px en tinta suave con relleno 4 × 10 px; hover en hoja hundida. El grupo
-  secundario baja a 12 px en tinta tenue, separado por un filete vertical. No hay
-  estado activo: la página actual no se marca.
+- Enlaces de 13 px en tinta suave; el grupo de detalle, a 12 px en tinta tenue, separado
+  por un filete vertical.
+- **Página actual:** `aria-current="page"`, tinta plena, peso 600 y hoja hundida.
+- A 620 px, una sola fila con desplazamiento.
 
 ### Tabla de datos
-- Cabecera en etiqueta de 11 px sobre hoja hundida, celdas de 12 px con relleno 6 × 10 px,
-  filete entre filas y hover de fila. Implementada tres veces (registro, informes,
-  reglas) con pequeñas diferencias.
+- `ui.table`: cabecera en etiqueta de 11 px sobre hoja hundida, celdas de 12 px y filete
+  entre filas. Suelta sobre el papel lleva marco (`ui.framed`); dentro de un panel, no.
+- A 620 px, la tabla de errores de una sesión pasa a tarjetas con cada dato etiquetado
+  (`data-label`).
 
-### Tarjeta de cola de Anki
-- Metadatos en 11 px, enunciado en 12 px, par «mi respuesta tachada en rojo → correcta
-  en negrita» en mono de 15 px, y la regla debajo; acción primaria a la derecha.
+### Tarjeta de corrección (firma del sistema)
+- La respuesta equivocada tachada en rojo, una flecha y la correcta en negrita, en mono de
+  15 px, con la regla debajo.
+- Se usa en la cola de Anki y en Falsas certezas.
+- La fecha enlaza a la sesión del error.
+
+### Revisión de tanda
+- **Filas:** cada error es un `fieldset` con su chip de estado («Completo», «Falta: …» o
+  «Rechazado») y un resumen de solo lectura.
+- **A la vista:** Correcta, Causa, Categoría, Confianza y Regla. El resto va plegado.
+- **Barra fija:** «Faltan N de M», «Ir al siguiente pendiente» y guardar. No se envía nada
+  mientras quede algo por completar.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** usar monoespaciada tabular para fechas, cifras, respuestas y categorías.
-- **Do** reservar azul y rojo para el lado de la causa.
+- **Do** usar monoespaciada tabular para fechas, cifras y respuestas, y la sans para
+  etiquetas.
+- **Do** mostrar cada valor de taxonomía con su etiqueta de `labels.ts`.
+- **Do** usar la escala de estados para umbrales y disponibilidad.
 - **Do** expresar profundidad con tono y filete, nunca con sombra.
-- **Do** dejar las celdas sin datos vacías y diferenciadas, no a cero.
+- **Do** escribir «—» donde no hay datos.
+- **Do** dar a cada vista su orden por uso: lo diario, primero; lo demás, plegado o a un
+  clic.
+- **Do** usar las primitivas de `ui.module.css` antes de crear una clase nueva.
 
 ### Don't:
-- **Don't** escribir colores o tamaños literales en los módulos: todo sale de `:root`
-  en `src/app/globals.css`.
-- **Don't** usar la tinta tenue para texto que haya que leer: no llega a AA.
+- **Don't** escribir colores, radios o tamaños literales en los módulos: todo sale de
+  `:root`.
+- **Don't** usar azul o rojo para decir «bien» o «mal» frente a un umbral.
+- **Don't** mostrar un valor interno en mayúsculas en la interfaz.
+- **Don't** usar `overflow: hidden` en un contenedor de controles: recorta el foco.
+- **Don't** usar bordes laterales de color, sombras ni `window.confirm`.
 - **Don't** añadir un color de marca a la acción primaria.
