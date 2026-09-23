@@ -58,6 +58,17 @@
   margin-top: var(--sp-4);
 }
 
+.emptyText {
+  margin: 0;
+}
+
+/* Enlace con aspecto de boton: lleva a abrir la sesion que falta. */
+.emptyAction {
+  display: inline-block;
+  margin-top: var(--sp-4);
+  text-decoration: none;
+}
+
 .bandsCell {
   font-family: var(--font-data);
   white-space: nowrap;

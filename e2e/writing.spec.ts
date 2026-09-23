@@ -164,3 +164,15 @@ test('cambiar de texto carga sus datos y conserva la relacion de reescritura al 
   await expect(page.getByRole('status')).toHaveText('Texto actualizado.');
   expect(readPieces()).toEqual(before);
 });
+
+test('desde Writing se abre una sesion de Writing y se vuelve con ella lista', async ({ page }) => {
+  // El enlace del aviso de «sin sesiones libres» lleva aqui.
+  await page.goto('/registrar?nueva=writing');
+  await expect(page.getByRole('button', { name: 'Nueva sesión a mano' })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('combobox', { name: 'Tipo', exact: true })).toHaveValue('WRITING');
+  await expect(page.getByRole('combobox', { name: 'Paper', exact: true })).toHaveValue('WRITING');
+  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+
+  await expect(page).toHaveURL(/\/writing$/);
+  await expect(page.getByRole('heading', { name: 'Nuevo texto' })).toBeVisible();
+});

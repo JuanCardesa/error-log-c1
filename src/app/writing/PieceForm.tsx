@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState, useEffect, useState } from 'react';
 
 import { CORRECTORS, GENRES } from '@/lib/domain/enums';
@@ -58,10 +59,16 @@ export function PieceForm({ availableSessions, pieces, editing, today }: Props) 
 
   if (!canCreate) {
     return (
-      <p className={`${ui.empty} ${styles.block}`}>
-        No hay sesiones de Writing libres. Cada sesion admite un solo texto, asi que abre
-        una sesion de paper <span className="data">WRITING</span> en Registrar y vuelve.
-      </p>
+      <div className={`${ui.empty} ${styles.block}`}>
+        <p className={styles.emptyText}>
+          No hay sesiones de Writing libres. Cada sesion admite un solo texto, asi que abre
+          una sesion de paper <span className="data">WRITING</span> en Registrar y vuelve.
+        </p>
+        {/* Tras crearla, Registrar devuelve aqui con la sesion ya disponible. */}
+        <Link className={`${ui.primary} ${styles.emptyAction}`} href="/registrar?nueva=writing">
+          Abrir una sesión de Writing
+        </Link>
+      </div>
     );
   }
 
