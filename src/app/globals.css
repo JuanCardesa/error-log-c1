@@ -20,11 +20,14 @@
   --surface-sunken: #ebe7db;
   --rule: #d9d2c2;
   --rule-strong: #b9b09b;
+  /* Borde de campo: a diferencia de los filetes, es lo unico que delimita un campo sobre
+     la hoja, y por eso pide 3:1 (WCAG 1.4.11). */
+  --rule-field: #8b8270;
 
-  /* Tinta */
+  /* Tinta. Las tres pasan 4,5:1 sobre papel, hoja y hoja hundida. */
   --ink: #1b1915;
   --ink-soft: #5b564b;
-  --ink-faint: #8b8474;
+  --ink-faint: #6d6757;
 
   /* Lados de la causa */
   --study: #1d4ed8;
@@ -37,7 +40,7 @@
   /* Estados del motor de reglas */
   --do-now: #b4231d;
   --do-now-bg: #fbe7e5;
-  --queued: #8a6d1f;
+  --queued: #7a5f17;
   --queued-bg: #faf0d6;
   --watch: #6b6352;
   --watch-bg: #efebe0;
@@ -135,9 +138,19 @@ input,
 select,
 textarea {
   padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--rule-strong);
+  border: 1px solid var(--rule-field);
   border-radius: var(--radius);
   background: var(--surface);
+}
+
+::placeholder {
+  color: var(--ink-faint);
+  opacity: 1;
+}
+
+/* El error se ve en el propio campo, no solo en el mensaje de debajo. */
+[aria-invalid='true'] {
+  border-color: var(--danger);
 }
 
 input:focus-visible,
