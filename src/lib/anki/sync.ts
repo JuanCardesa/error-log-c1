@@ -54,18 +54,25 @@ export function forgetAnkiStatus(db: Db): void {
   statusCache.delete(db);
 }
 
-/** Sin reintentos: se ejecuta al pintar la pagina y aqui esperar solo retrasa el aviso. */
-export async function ankiStatus(db: Db, config = ankiConfig(), transport = httpTransport(config), now = Date.now()): Promise<AnkiStatus> {
-  const cached = statusCache.get(db);
-  const state = getAnkiSync(db);
-  const key = JSON.stringify([config.url, config.sourceDeck, config.targetDeck, config.apiKey,
-    config.disabled, config.statusTtlMs, state?.namespace, state?.profile, state?.url, state?.sourceDeck, state?.targetDeck]);
+/**
+ * Sin reintentos: se ejecuta al pintar la pagina y aqui esperar solo retrasa el aviso.
+ *
+ * La configuracion y el transporte se resuelven **dentro** del try. Como argumentos por
+ * defecto se evaluaban antes, y un ajuste invalido tumbaba la vista entera en vez de
+ * aparecer como un estado mas.
+ */
+export async function ankiStatus(db: Db, config?: AnkiConfig, transport?: Transport, now = Date.now()): Promise<AnkiStatus> {
   try {
-    const api = ankiApi(transport);
-    const fresh = cached !== undefined && cached.key === key && now >= cached.at && now - cached.at < config.statusTtlMs;
+    const resolved = config ?? ankiConfig();
+    const cached = statusCache.get(db);
+    const state = getAnkiSync(db);
+    const key = JSON.stringify([resolved.url, resolved.sourceDeck, resolved.targetDeck, resolved.apiKey,
+      resolved.disabled, resolved.statusTtlMs, state?.namespace, state?.profile, state?.url, state?.sourceDeck, state?.targetDeck]);
+    const api = ankiApi(transport ?? httpTransport(resolved));
+    const fresh = cached !== undefined && cached.key === key && now >= cached.at && now - cached.at < resolved.statusTtlMs;
     if (!fresh) await api.version();
     const profile = await api.profile();
-    assertAnkiScope(getAnkiSync(db), config, profile);
+    assertAnkiScope(getAnkiSync(db), resolved, profile);
     if (fresh && cached.profile === profile) return cached.status;
     if (fresh) await api.version();
     const status = { available: true, message: `Anki conectado · perfil ${profile}` };

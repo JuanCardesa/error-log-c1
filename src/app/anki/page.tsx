@@ -1,6 +1,6 @@
 import { getDb } from '@/lib/db/client';
 import { loadAnkiDataset, loadDataset } from '@/lib/db/load';
-import { ankiConfig } from '@/lib/anki/config';
+import { ankiConfig, type AnkiConfig } from '@/lib/anki/config';
 import { ankiStatus } from '@/lib/anki/sync';
 import { ankiContentStale } from '@/lib/anki/create';
 import { q7AnkiReviews } from '@/lib/queries/q7AnkiReviews';
@@ -25,6 +25,14 @@ import { ReviewFailures } from './ReviewFailures';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Una configuracion invalida es un aviso en el panel, no una pagina rota: se resuelve
+ * una sola vez y `ankiStatus` devuelve el mismo motivo como estado no disponible.
+ */
+function safeAnkiConfig(): AnkiConfig | null {
+  try { return ankiConfig(); } catch { return null; }
+}
+
 export default async function AnkiPage({
   searchParams,
 }: {
@@ -36,13 +44,14 @@ export default async function AnkiPage({
   const data = loadDataset(getDb());
   const q5 = q5AnkiDebt(data, { now: new Date(), windowDays });
   const anki = loadAnkiDataset(getDb());
-  const status = await ankiStatus(getDb());
+  const config = safeAnkiConfig();
+  const status = await ankiStatus(getDb(), config ?? undefined);
   const reviews = q7AnkiReviews(anki, { now: new Date(), windowDays });
 
   // La huella se compara con el contenido de ahora: detecta la edición sin preguntar a Anki.
   const namespace = anki.sync?.namespace ?? null;
-  const stale = new Set(namespace === null ? []
-    : data.errors.filter((error) => ankiContentStale(error, namespace, ankiConfig().targetDeck)).map((error) => error.id));
+  const stale = new Set(namespace === null || config === null ? []
+    : data.errors.filter((error) => ankiContentStale(error, namespace, config.targetDeck)).map((error) => error.id));
 
   const dateOf = new Map(data.sessions.map((session) => [session.id, session.date]));
   const converted = data.errors
@@ -64,7 +73,7 @@ export default async function AnkiPage({
       </header>
 
       <SyncPanel message={status.message} lastSyncedAt={anki.sync?.lastSyncedAt ?? null}
-        deck={ankiConfig().sourceDeck} rolloverHour={anki.sync?.rolloverHour ?? null}
+        deck={config?.sourceDeck ?? anki.sync?.sourceDeck ?? '—'} rolloverHour={anki.sync?.rolloverHour ?? null}
         rolloverSource={anki.sync?.rolloverSource ?? null} />
       <ConversionFeedback>
       <h2>Cola de conversión</h2>

@@ -506,6 +506,17 @@ it('muestra estado útil con Anki abierto y cerrado', async () => {
   expect(await ankiStatus(db, CONFIG, fake.transport, t0 + 10_000)).toMatchObject({ available: false, message: expect.stringContaining('Abre Anki') });
 });
 
+it('una configuracion invalida se enseña como estado, no tumba la vista', async () => {
+  // `ankiConfig()` se evaluaba como argumento por defecto, fuera del try: lanzaba antes
+  // de poder convertirse en mensaje y se llevaba por delante la pagina entera de Anki.
+  vi.stubEnv('ANKI_ROLLOVER_HOUR', '99');
+  await expect(ankiStatus(db)).resolves.toMatchObject({
+    available: false,
+    message: expect.stringContaining('ANKI_ROLLOVER_HOUR'),
+  });
+  vi.unstubAllEnvs();
+});
+
 it('no vuelve a preguntar a Anki en cada render, pero no tapa un cambio real', async () => {
   const t0 = Date.now();
   await ankiStatus(db, CONFIG, fake.transport, t0);
