@@ -185,4 +185,9 @@
     grid-template-columns: 1fr auto;
     gap: var(--sp-2) var(--sp-4);
   }
+
+  /* En dos filas, el estado queda bajo el formato: a la derecha y a su tamaño. */
+  .sessionLink > :last-child {
+    justify-self: end;
+  }
 }
