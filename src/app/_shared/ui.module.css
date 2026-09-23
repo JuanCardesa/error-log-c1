@@ -109,6 +109,27 @@
   color: var(--exec);
 }
 
+/* Estado frente a un umbral: bien o pendiente de accion. Azul y rojo son de la causa. */
+.stateGood,
+.stateWarn {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border: 1px solid;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+.stateGood {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.stateWarn {
+  background: var(--queued-bg);
+  color: var(--queued);
+}
+
 /* ── Campos ───────────────────────────────────────────────────────────────── */
 
 .label {

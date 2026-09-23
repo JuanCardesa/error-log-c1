@@ -204,7 +204,7 @@ export default async function InformePage({
             <div>
               <dt className={ui.note}>Objetivo</dt>
               <dd>
-                <span className={q5.meetsTarget === true ? ui.chipStudy : ui.chipExec}>
+                <span className={q5.meetsTarget === true ? ui.stateGood : ui.stateWarn}>
                   {q5.meetsTarget === true ? 'cumplido' : 'por debajo'}
                 </span>
               </dd>

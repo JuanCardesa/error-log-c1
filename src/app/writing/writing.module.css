@@ -74,19 +74,21 @@
   white-space: nowrap;
 }
 
+/* Neutra: que un texto sea reescritura no es ni bueno ni malo. */
 .rewriteTag {
   display: inline-block;
   padding: 0 var(--sp-3);
   border-radius: var(--radius-pill);
-  background: var(--study-bg);
-  border: 1px solid var(--study-rule);
-  color: var(--study);
+  background: var(--watch-bg);
+  border: 1px solid var(--watch);
+  color: var(--watch);
   font-family: var(--font-data);
   font-size: var(--fs-xs);
 }
 
+/* Por encima del umbral: pendiente de accion (ocre), no un error de ejecucion (rojo). */
 .repeatBad {
-  color: var(--exec);
+  color: var(--queued);
   font-weight: 600;
 }
 

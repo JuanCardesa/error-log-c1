@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { getDb } from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
 import { FIXED_WINDOW_DAYS } from '@/lib/domain/thresholds';
@@ -19,7 +21,10 @@ import styles from './certezas.module.css';
 export const dynamic = 'force-dynamic';
 
 export default async function CertezasPage() {
-  const rows = q4FalseCertainties(loadDataset(getDb()), { now: new Date() });
+  const data = loadDataset(getDb());
+  const rows = q4FalseCertainties(data, { now: new Date() });
+  // La consulta no trae la sesion; las filas ya cargadas si. Sirve para ir a corregirla.
+  const sessionOf = new Map(data.errors.map((error) => [error.id, error.sessionId]));
 
   return (
     <div>
@@ -32,7 +37,10 @@ export default async function CertezasPage() {
             que cualquier categoría.
           </p>
         </div>
-        <span className={styles.count}>{rows.length}</span>
+        <p className={styles.count}>
+          <span className="data">{rows.length}</span>{' '}
+          {rows.length === 1 ? 'falsa certeza' : 'falsas certezas'}
+        </p>
       </header>
 
       {rows.length === 0 ? (
@@ -45,7 +53,10 @@ export default async function CertezasPage() {
           {rows.map((row) => (
             <li key={row.errorId} className={styles.item}>
               <div className={styles.meta}>
-                <span className="data">{row.date}</span>
+                <Link className="data" href={`/registrar?s=${String(sessionOf.get(row.errorId) ?? '')}`}>
+                  {row.date}
+                  <span className="sr-only"> · abrir su sesión</span>
+                </Link>
                 <span>{CAUSE_LABELS[row.cause]}</span>
                 <span>{CATEGORY_LABELS[row.category]}</span>
                 {row.subcategory !== null && (

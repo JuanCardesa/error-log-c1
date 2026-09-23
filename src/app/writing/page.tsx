@@ -130,6 +130,7 @@ export default async function WritingPage({
                           >
                             {' '}
                             {pair.pctRepeated}% repetido
+                            {pair.pctRepeated > REWRITE_REPEAT_PCT && ' · supera el umbral'}
                           </span>
                         )}
                       </td>
@@ -167,7 +168,7 @@ export default async function WritingPage({
                     q6.pctRepeated > REWRITE_REPEAT_PCT ? styles.repeatBad : styles.repeatOk
                   }
                 >
-                  ({q6.pctRepeated}%)
+                  ({q6.pctRepeated}%{q6.pctRepeated > REWRITE_REPEAT_PCT ? ', por encima del umbral' : ''})
                 </strong>
               )}
             </p>
