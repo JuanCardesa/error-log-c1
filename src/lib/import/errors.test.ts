@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { errorsForRow, IMPORT_TEMPLATE, MAX_IMPORT_LENGTH, parseImportedBatch } from './errors';
+import { errorsForRow, IMPORT_PROMPT, IMPORT_TEMPLATE, MAX_IMPORT_LENGTH, MAX_SESSION_IMPORT_ROWS, parseImportedBatch } from './errors';
 
 const draftsOf = (source: string) => parseImportedBatch(source).errors;
 
@@ -91,5 +91,30 @@ describe('pegar errores', () => {
     ['x'.repeat(MAX_IMPORT_LENGTH + 1), 'demasiado largo'],
   ])('explica un pegado invalido sin descartar silenciosamente filas', (source, expected) => {
     expect(() => draftsOf(source)).toThrow(expected);
+  });
+});
+
+describe('el ejemplo de las instrucciones', () => {
+  // Si el prompt y el importador divergen, la IA obedece y la importacion se rechaza.
+  const example = IMPORT_PROMPT.slice(IMPORT_PROMPT.indexOf('{'), IMPORT_PROMPT.lastIndexOf('}') + 1);
+
+  it('lo acepta el importador tal cual', () => {
+    const parsed = parseImportedBatch(example, '2026-09-23');
+    expect(parsed.session).toMatchObject({ date: '2026-09-15', kind: 'DRILL', source: 'LIBRO', itemsTotal: 8, timed: false });
+    expect(parsed.errors).toHaveLength(1);
+    expect(parsed.errors[0]).toMatchObject({
+      itemRef: '4', myAnswer: 'of', correctAnswer: 'off', category: 'PHRASAL_VERB',
+      cause: 'DESCONOCIMIENTO', confidence: 'DUDABA',
+    });
+  });
+
+  it('declara part como numero o null, que es lo que exige el esquema', () => {
+    expect(IMPORT_PROMPT).toContain('part: entero positivo, o null.');
+    expect(() => parseImportedBatch(example.replace('"part": null', '"part": "3"'), '2026-09-23'))
+      .toThrow('Sobre inválido');
+  });
+
+  it('anuncia el limite de filas del sobre, no el del array suelto', () => {
+    expect(IMPORT_PROMPT).toContain(`${String(MAX_SESSION_IMPORT_ROWS)} errores por sesion`);
   });
 });
