@@ -40,21 +40,30 @@
   border-left: 1px solid var(--rule);
 }
 
-.secondary {
-  font-size: var(--fs-sm);
-  color: var(--ink-faint);
-}
-
 .link {
   padding: var(--sp-2) var(--sp-4);
   border-radius: var(--radius);
   color: var(--ink-soft);
   text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Detras de .link: con la misma especificidad, el orden decide. Antes quedaba anulado. */
+.secondary {
+  font-size: var(--fs-sm);
+  color: var(--ink-faint);
 }
 
 .link:hover {
   background: var(--surface-sunken);
   color: var(--ink);
+}
+
+/* Donde estas: tinta plena, peso y fondo hundido. */
+.link[aria-current='page'] {
+  background: var(--surface-sunken);
+  color: var(--ink);
+  font-weight: 600;
 }
 
 /*
@@ -104,4 +113,31 @@
 
 .main:focus {
   outline: none;
+}
+
+/*
+ * Estrecho: la marca arriba y la navegacion en una sola fila que se desplaza. Partida en
+ * tres filas ocupaba 113 px de cabecera y el filete del segundo grupo cruzaba las filas.
+ */
+@media (max-width: 620px) {
+  .bar {
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+  }
+
+  .nav {
+    flex-wrap: nowrap;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .group {
+    flex-wrap: nowrap;
+  }
+
+  /* El scroll recorta lo que sale de la caja: aqui el foco va por dentro del enlace. */
+  .link:focus-visible {
+    outline-offset: -2px;
+  }
 }

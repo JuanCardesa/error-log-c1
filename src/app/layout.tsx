@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { NavLinks } from './_shared/NavLinks';
 
 import styles from './layout.module.css';
 import './globals.css';
@@ -38,22 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </a>
           <header className={styles.bar}>
             <span className={styles.brand}>error-log-c1</span>
-            <nav className={styles.nav} aria-label="Secciones">
-              <span className={styles.group}>
-                {NAV_MAIN.map((item) => (
-                  <Link key={item.href} className={styles.link} href={item.href}>
-                    {item.label}
-                  </Link>
-                ))}
-              </span>
-              <span className={styles.group}>
-                {NAV_MORE.map((item) => (
-                  <Link key={item.href} className={`${styles.link} ${styles.secondary}`} href={item.href}>
-                    {item.label}
-                  </Link>
-                ))}
-              </span>
-            </nav>
+            <NavLinks main={NAV_MAIN} more={NAV_MORE} />
           </header>
           {IS_DEMO && (
             <p className={styles.demo} role="status">

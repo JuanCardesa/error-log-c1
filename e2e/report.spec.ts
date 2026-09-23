@@ -50,6 +50,11 @@ test.describe('informe semanal', () => {
       await expect(page.getByRole('navigation', { name: 'Secciones' })
         .getByRole('link', { name, exact: true })).toBeVisible();
     }
+
+    // Y la barra dice donde estas.
+    const nav = page.getByRole('navigation', { name: 'Secciones' });
+    await expect(nav.getByRole('link', { name: 'Informe', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(nav.getByRole('link', { name: 'Anki', exact: true })).not.toHaveAttribute('aria-current', 'page');
   });
 
   test('la ventana de 60 dias cambia el encuadre y se mantiene en la URL', async ({
