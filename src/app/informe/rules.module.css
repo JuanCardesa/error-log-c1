@@ -64,53 +64,12 @@
   font-size: var(--fs-sm);
 }
 
-.tableWrap {
+.tableGap {
   margin-top: var(--sp-5);
-  overflow-x: auto;
-  /* Bloque contenedor: sin esto, un hijo absoluto (.sr-only) escapa del scroll. */
-  position: relative;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-sm);
-}
-
-.table th,
-.table td {
-  padding: var(--sp-3) var(--sp-4);
-  text-align: left;
-  border-bottom: 1px solid var(--rule);
-  vertical-align: top;
-}
-
-.table th {
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  font-weight: 600;
-  background: var(--surface-sunken);
-  white-space: nowrap;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: 0;
 }
 
 .rowDoNow {
   background: var(--do-now-bg);
-}
-
-.num {
-  text-align: right !important;
-  font-family: var(--font-data);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .action {

@@ -1,4 +1,7 @@
-/* Estilos compartidos por las vistas de informe. Densidad alta, datos en monoespaciada. */
+/*
+ * Estructura de las vistas de informe: cabecera, conmutador de ventana y barras. Paneles,
+ * tablas, notas y chips son primitivas de _shared/ui.module.css.
+ */
 
 .head {
   display: flex;
@@ -60,12 +63,9 @@
   color: var(--ink);
 }
 
-.panel {
+/* Separacion entre los paneles apilados de una vista. */
+.section {
   margin-bottom: var(--sp-6);
-  padding: var(--sp-5);
-  background: var(--surface);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
 }
 
 .panelHead {
@@ -77,50 +77,18 @@
   margin-bottom: var(--sp-4);
 }
 
-.note {
+/* Nota que sigue a una tabla dentro de un panel. */
+.noteAfter {
+  margin-top: var(--sp-4);
+}
+
+/* Cifras sueltas en fila (dl): la primera es la que manda. */
+.figures dd {
   margin: 0;
-  color: var(--ink-faint);
-  font-size: var(--fs-sm);
 }
 
-.tableWrap {
-  overflow-x: auto;
-  /* Bloque contenedor: sin esto, un hijo absoluto (.sr-only) escapa del scroll. */
-  position: relative;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-sm);
-}
-
-.table th,
-.table td {
-  padding: var(--sp-3) var(--sp-4);
-  text-align: left;
-  border-bottom: 1px solid var(--rule);
-  vertical-align: top;
-}
-
-.table th {
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.num {
-  text-align: right !important;
-  font-family: var(--font-data);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.figureLead {
+  font-size: var(--fs-xl);
 }
 
 /* Barra proporcional dentro de la celda: compara de un vistazo sin una libreria. */
@@ -146,32 +114,3 @@
   min-width: 6rem;
 }
 
-.chipStudy,
-.chipExec {
-  display: inline-block;
-  padding: 0 var(--sp-3);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
-  white-space: nowrap;
-}
-
-.chipStudy {
-  background: var(--study-bg);
-  border: 1px solid var(--study-rule);
-  color: var(--study);
-}
-
-.chipExec {
-  background: var(--exec-bg);
-  border: 1px solid var(--exec-rule);
-  color: var(--exec);
-}
-
-.empty {
-  padding: var(--sp-6);
-  border: 1px dashed var(--rule-strong);
-  border-radius: var(--radius);
-  color: var(--ink-soft);
-  max-width: 60ch;
-}

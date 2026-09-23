@@ -52,9 +52,10 @@
   margin-top: var(--sp-6);
 }
 
-.note {
-  margin: var(--sp-4) 0 0;
-  color: var(--ink-faint);
-  font-size: var(--fs-sm);
-  max-width: 70ch;
+.dumpList {
+  margin-top: var(--sp-4);
+}
+
+.noteGap {
+  margin-top: var(--sp-4);
 }

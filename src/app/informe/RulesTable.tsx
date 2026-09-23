@@ -1,6 +1,7 @@
 import { MIN_N } from '@/lib/domain/thresholds';
 import type { RuleEvaluation, RulesReport } from '@/lib/rules';
 import styles from './rules.module.css';
+import ui from '../_shared/ui.module.css';
 
 /** Destaca una sola acción según la prioridad del informe. */
 
@@ -61,21 +62,21 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
       <details className={styles.details}>
         <summary>Ver las siete reglas y sus cifras</summary>
 
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
+        <div className={`${ui.tableWrap} ${ui.framed} ${styles.tableGap}`}>
+          <table className={ui.table}>
             <caption className="sr-only">Estado de las siete reglas de decision</caption>
             <thead>
               <tr>
                 <th scope="col">#</th>
                 <th scope="col">Estado</th>
                 <th scope="col">Señal</th>
-                <th scope="col" className={styles.num}>
+                <th scope="col" className={ui.num}>
                   Valor
                 </th>
-                <th scope="col" className={styles.num}>
+                <th scope="col" className={ui.num}>
                   Umbral
                 </th>
-                <th scope="col" className={styles.num}>
+                <th scope="col" className={ui.num}>
                   n
                 </th>
                 <th scope="col">Accion</th>
@@ -94,9 +95,9 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
                     {rule.signal}
                     {rule.detail === null ? '' : ` · ${rule.detail}`}
                   </td>
-                  <td className={styles.num}>{formatValue(rule)}</td>
-                  <td className={styles.num}>{formatThreshold(rule)}</td>
-                  <td className={styles.num}>{rule.sampleSize}</td>
+                  <td className={ui.num}>{formatValue(rule)}</td>
+                  <td className={ui.num}>{formatThreshold(rule)}</td>
+                  <td className={ui.num}>{rule.sampleSize}</td>
                   <td className={styles.action}>{rule.action}</td>
                 </tr>
               ))}

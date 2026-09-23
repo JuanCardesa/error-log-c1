@@ -8,6 +8,7 @@ import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { runRules } from '@/lib/rules';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import { RulesTable } from './RulesTable';
 
@@ -45,28 +46,28 @@ export default async function InformePage({
 
       <RulesTable report={report} />
 
-      <section className={shared.panel} aria-labelledby="q1-heading">
+      <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q1-heading">
         <div className={shared.panelHead}>
           <h2 id="q1-heading">Q1 · Reparto de causas</h2>
-          <p className={shared.note}>
+          <p className={ui.note}>
             Estudio {q1.bySide.study}% · ejecucion {q1.bySide.exec}%
           </p>
         </div>
 
         {q1.total === 0 ? (
-          <p className={shared.empty}>Sin errores en la ventana.</p>
+          <p className={ui.empty}>Sin errores en la ventana.</p>
         ) : (
-          <div className={shared.tableWrap}>
-            <table className={shared.table}>
+          <div className={ui.tableWrap}>
+            <table className={ui.table}>
               <caption className="sr-only">Errores por causa</caption>
               <thead>
                 <tr>
                   <th scope="col">Causa</th>
                   <th scope="col">Lado</th>
-                  <th scope="col" className={shared.num}>
+                  <th scope="col" className={ui.num}>
                     n
                   </th>
-                  <th scope="col" className={shared.num}>
+                  <th scope="col" className={ui.num}>
                     %
                   </th>
                   <th scope="col" className={shared.barCell}>
@@ -81,20 +82,20 @@ export default async function InformePage({
                     <td className="data">{row.cause}</td>
                     <td>
                       <span
-                        className={row.side === 'study' ? shared.chipStudy : shared.chipExec}
+                        className={row.side === 'study' ? ui.chipStudy : ui.chipExec}
                       >
                         {row.side}
                       </span>
                     </td>
-                    <td className={shared.num}>{row.n}</td>
-                    <td className={shared.num}>{row.pct}%</td>
+                    <td className={ui.num}>{row.n}</td>
+                    <td className={ui.num}>{row.pct}%</td>
                     <td>
                       <span
                         className={`${shared.bar} ${row.side === 'study' ? shared.barStudy : shared.barExec}`}
                         style={{ width: `${String(row.pct)}%` }}
                       />
                     </td>
-                    <td className={shared.note}>{CAUSE_META[row.cause].remedy}</td>
+                    <td className={ui.note}>{CAUSE_META[row.cause].remedy}</td>
                   </tr>
                 ))}
               </tbody>
@@ -103,29 +104,29 @@ export default async function InformePage({
         )}
       </section>
 
-      <section className={shared.panel} aria-labelledby="q2-heading">
+      <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q2-heading">
         <div className={shared.panelHead}>
           <h2 id="q2-heading">Q2 · Categorias por tasa</h2>
-          <p className={shared.note}>
+          <p className={ui.note}>
             Normalizado por items intentados. Es el temario de los proximos sabados.
           </p>
         </div>
 
         {q2.rows.length === 0 ? (
-          <p className={shared.empty}>
+          <p className={ui.empty}>
             Sin errores en sesiones con items contabilizados.
           </p>
         ) : (
-          <div className={shared.tableWrap}>
-            <table className={shared.table}>
+          <div className={ui.tableWrap}>
+            <table className={ui.table}>
               <caption className="sr-only">Categorias ordenadas por tasa</caption>
               <thead>
                 <tr>
                   <th scope="col">Categoria</th>
-                  <th scope="col" className={shared.num}>
+                  <th scope="col" className={ui.num}>
                     Errores
                   </th>
-                  <th scope="col" className={shared.num}>
+                  <th scope="col" className={ui.num}>
                     Por 100 items
                   </th>
                   <th scope="col" className={shared.barCell}>
@@ -137,8 +138,8 @@ export default async function InformePage({
                 {q2.rows.map((row, index) => (
                   <tr key={row.category}>
                     <td className="data">{row.category}</td>
-                    <td className={shared.num}>{row.errors}</td>
-                    <td className={shared.num}>{row.ratePer100}</td>
+                    <td className={ui.num}>{row.errors}</td>
+                    <td className={ui.num}>{row.ratePer100}</td>
                     <td>
                       <span
                         className={shared.bar}
@@ -162,47 +163,47 @@ export default async function InformePage({
         )}
 
         {q2.excludedErrors > 0 && (
-          <p className={shared.note} style={{ marginTop: 'var(--sp-4)' }}>
+          <p className={`${ui.note} ${shared.noteAfter}`}>
             {q2.excludedErrors} error{q2.excludedErrors === 1 ? '' : 'es'} de Writing fuera
             del calculo: esas sesiones no tienen items que contar.
           </p>
         )}
       </section>
 
-      <section className={shared.panel} aria-labelledby="q5-heading">
+      <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q5-heading">
         <div className={shared.panelHead}>
           <h2 id="q5-heading">Q5 · Deuda de Anki</h2>
-          <p className={shared.note}>Umbral {ANKI_TARGET_PCT}%</p>
+          <p className={ui.note}>Umbral {ANKI_TARGET_PCT}%</p>
         </div>
 
         {q5.pctConverted === null ? (
-          <p className={shared.empty}>
+          <p className={ui.empty}>
             Ningun error de la ventana genera tarjeta. No hay deuda que medir.
           </p>
         ) : (
-          <dl className={shared.panelHead}>
+          <dl className={`${shared.panelHead} ${shared.figures}`}>
             <div>
-              <dt className={shared.note}>Convertidos</dt>
-              <dd className="data" style={{ fontSize: 'var(--fs-xl)', margin: 0 }}>
+              <dt className={ui.note}>Convertidos</dt>
+              <dd className={`data ${shared.figureLead}`}>
                 {q5.pctConverted}%
               </dd>
             </div>
             <div>
-              <dt className={shared.note}>Elegibles</dt>
-              <dd className="data" style={{ margin: 0 }}>
+              <dt className={ui.note}>Elegibles</dt>
+              <dd className="data">
                 {q5.eligible}
               </dd>
             </div>
             <div>
-              <dt className={shared.note}>Pendientes</dt>
-              <dd className="data" style={{ margin: 0 }}>
+              <dt className={ui.note}>Pendientes</dt>
+              <dd className="data">
                 {q5.pending}
               </dd>
             </div>
             <div>
-              <dt className={shared.note}>Objetivo</dt>
-              <dd style={{ margin: 0 }}>
-                <span className={q5.meetsTarget === true ? shared.chipStudy : shared.chipExec}>
+              <dt className={ui.note}>Objetivo</dt>
+              <dd>
+                <span className={q5.meetsTarget === true ? ui.chipStudy : ui.chipExec}>
                   {q5.meetsTarget === true ? 'cumplido' : 'por debajo'}
                 </span>
               </dd>

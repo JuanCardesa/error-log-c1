@@ -3,6 +3,7 @@ import { loadDataset } from '@/lib/db/load';
 import { FIXED_WINDOW_DAYS } from '@/lib/domain/thresholds';
 import { q4FalseCertainties } from '@/lib/queries/q4FalseCertainties';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import styles from './certezas.module.css';
 
 /**
@@ -34,7 +35,7 @@ export default async function CertezasPage() {
       </header>
 
       {rows.length === 0 ? (
-        <p className={shared.empty}>
+        <p className={ui.empty}>
           Ninguna en los ultimos {FIXED_WINDOW_DAYS} dias. Es la mejor noticia que puede
           dar esta vista.
         </p>

@@ -1,6 +1,7 @@
 import { CSV_EXPORTS, CSV_LABELS } from '@/lib/export/dump';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import styles from './exportar.module.css';
 
@@ -46,7 +47,7 @@ export default async function ExportarPage({
 
       <section className={styles.dump} aria-labelledby="dump-heading">
         <h2 id="dump-heading">Volcado completo</h2>
-        <ul className={styles.list} style={{ marginTop: 'var(--sp-4)' }}>
+        <ul className={`${styles.list} ${styles.dumpList}`}>
           <li className={styles.item}>
             <a className={styles.row} href="/exportar/dump.json" download>
               <span>Tus filas y el historial de Anki, completos y sin recortar por ventana</span>
@@ -54,7 +55,7 @@ export default async function ExportarPage({
             </a>
           </li>
         </ul>
-        <p className={styles.note}>
+        <p className={`${ui.note} ${styles.noteGap}`}>
           Las falsas certezas usan siempre 30 dias, porque su umbral esta calibrado a esa ventana.
           El JSON lleva tus datos tal cual, sin cifras calculadas: esas salen de los CSV o de la
           propia app. No se puede restaurar desde esta pantalla.

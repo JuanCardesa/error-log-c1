@@ -3,6 +3,7 @@ import { loadDataset } from '@/lib/db/load';
 import { q3RuoeAccuracy } from '@/lib/queries/q3RuoeAccuracy';
 import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
+import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import styles from './ruoe.module.css';
 
@@ -48,11 +49,11 @@ export default async function RuoePage({
       </header>
 
       {q3.rows.length === 0 ? (
-        <p className={shared.empty}>
+        <p className={ui.empty}>
           Sin sesiones de RUOE con items en la ventana. Prueba a ampliarla a 60 dias.
         </p>
       ) : (
-        <div className={shared.tableWrap}>
+        <div className={ui.tableWrap}>
           <table className={styles.matrix}>
             <caption className="sr-only">
               Precision por part y semana. Las celdas vacias no tienen datos.
