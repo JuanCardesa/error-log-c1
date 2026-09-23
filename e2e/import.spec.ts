@@ -14,6 +14,74 @@ const rows = [
   { itemRef: '5', prompt: 'She is interested ___ music.', myAnswer: 'on', correctAnswer: 'in', category: 'PREPOSICION_DEPENDIENTE', ruleNote: 'Interested se construye con la preposicion in.' },
 ];
 
+test('cuenta los errores pendientes y no envia hasta completarlos', async ({ page }) => {
+  await openImport(page);
+  await page.getByLabel('Errores para importar').fill(JSON.stringify([rows[0], { ...rows[1], correctAnswer: '' }]));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  await expect(page.getByRole('heading', { name: 'Revisar 2 errores' })).toBeFocused();
+  await expect(page.getByText('Faltan 1 de 2 por completar.', { exact: true })).toBeVisible();
+  const second = page.getByRole('group', { name: 'Error 2', exact: true });
+  await expect(second.getByText('Falta: correcta', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
+  await expect(page.getByRole('table', { name: 'Errores registrados en esta sesion' })).toHaveCount(0);
+  await expect(second.getByLabel('Correcta *')).toBeFocused();
+  await expect(page.getByText('Completa los errores pendientes antes de guardar. Faltan 1 de 2.')).toBeVisible();
+  await second.getByLabel('Correcta *').fill('in');
+  await expect(page.getByText('Los 2 errores estan completos.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
+});
+
+test('pulsar Ir al siguiente pendiente abre y enfoca lo que falta', async ({ page }) => {
+  await openImport(page);
+  await page.getByLabel('Errores para importar').fill(JSON.stringify([{ ...rows[0], prompt: '' }]));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  await page.getByRole('button', { name: 'Ir al siguiente pendiente' }).click();
+  const prompt = page.getByRole('group', { name: 'Error 1', exact: true }).getByLabel('Enunciado *');
+  await expect(prompt).toBeVisible();
+  await expect(prompt).toBeFocused();
+});
+
+test('recorre los pendientes en orden y conserva el resumen y el foco al quitar filas', async ({ page }) => {
+  await openImport(page);
+  await page.getByLabel('Errores para importar').fill(JSON.stringify(rows.map((row) => ({ ...row, correctAnswer: '' }))));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  const first = page.getByRole('group', { name: 'Error 1', exact: true });
+  const second = page.getByRole('group', { name: 'Error 2', exact: true });
+  const next = page.getByRole('button', { name: 'Ir al siguiente pendiente' });
+  await next.click();
+  await expect(first.getByLabel('Correcta *')).toBeFocused();
+  await next.click();
+  await expect(second.getByLabel('Correcta *')).toBeFocused();
+  await next.click();
+  await expect(first.getByLabel('Correcta *')).toBeFocused();
+  await second.getByText('Item, enunciado, tu respuesta y subcategoria', { exact: true }).click();
+  await second.getByLabel('Enunciado *').fill('She is interested ___ art.');
+  await expect(second.locator('p').filter({ hasText: 'She is interested ___ art.' })).toBeVisible();
+  await first.getByRole('button', { name: 'Quitar error 1 de la tanda' }).click();
+  await expect(first.getByLabel('Correcta *')).toBeFocused();
+  await expect(page.getByText('Faltan 1 de 1 por completar.', { exact: true })).toBeVisible();
+  await first.getByRole('button', { name: 'Quitar error 1 de la tanda' }).click();
+  await expect(page.getByRole('heading', { name: 'Revisar 0 errores' })).toBeFocused();
+});
+
+test('la revision cabe en movil y mantiene los campos principales visibles', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openImport(page);
+  await page.getByLabel('Errores para importar').fill(JSON.stringify([{ ...rows[0], correctAnswer: '', category: '', ruleNote: '' }]));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  const first = page.getByRole('group', { name: 'Error 1', exact: true });
+  await expect(first.getByRole('combobox', { name: /^Causa/ })).toBeVisible();
+  await expect(first.getByRole('combobox', { name: 'Confianza', exact: true })).toBeVisible();
+  await expect(first.getByLabel('Enunciado *')).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  const correct = await first.getByLabel('Correcta *').boundingBox();
+  const cause = await first.getByRole('combobox', { name: /^Causa/ }).boundingBox();
+  expect(correct).not.toBeNull();
+  expect(cause).not.toBeNull();
+  expect(cause!.y).toBeGreaterThan(correct!.y + correct!.height);
+});
+
 test('pega, revisa, quita una fila y guarda la tanda sin duplicarla al repetirla', async ({ page, context }) => {
   await openImport(page);
   await page.getByText('Convertir mis correcciones con IA', { exact: true }).click();

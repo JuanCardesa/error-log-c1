@@ -166,10 +166,51 @@
   font-size: var(--fs-sm);
 }
 
+/* La revision deja a la vista lo que suele faltar en una tanda pegada. */
+.review {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: minmax(8rem, 1fr) minmax(9rem, 1fr) minmax(12rem, 1.4fr) minmax(8rem, 0.8fr);
+  grid-template-areas:
+    'correct cause category conf'
+    'rule rule rule rule';
+  align-items: start;
+}
+
+.review .fCorrect { grid-area: correct; }
+.review .fCause { grid-area: cause; }
+.review .fCategory { grid-area: category; }
+.review .fConfidence { grid-area: conf; }
+.review .fRule { grid-area: rule; }
+
+.reviewMore { margin-top: var(--sp-4); }
+.reviewMore > summary { cursor: pointer; color: var(--ink-soft); font-size: var(--fs-sm); }
+
+.reviewMoreGrid {
+  display: grid;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  grid-template-columns: 5rem minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    'item prompt mine subcat'
+    'flags flags flags flags';
+  align-items: start;
+}
+
+.reviewMoreGrid .fItem { grid-area: item; }
+.reviewMoreGrid .fPrompt { grid-area: prompt; }
+.reviewMoreGrid .fMine { grid-area: mine; }
+.reviewMoreGrid .fSubcategory { grid-area: subcat; }
+.reviewMoreGrid .fFlags { grid-area: flags; }
+
+.review label, .review > div, .reviewMoreGrid label, .reviewMoreGrid > div { display: block; min-width: 0; }
+.review input, .review select, .review textarea,
+.reviewMoreGrid input, .reviewMoreGrid select, .reviewMoreGrid textarea { width: 100%; }
+
 /* ── Estrecho: todo a una columna ─────────────────────────────────────────── */
 
 @media (max-width: 760px) {
-  .grid {
+  .grid, .review, .reviewMoreGrid {
     grid-template-columns: 1fr;
     grid-template-areas: none;
   }
@@ -184,7 +225,17 @@
   .grid .fConfidence,
   .grid .fRule,
   .grid .fFlags,
-  .grid .fSubmit {
+  .grid .fSubmit,
+  .review .fCorrect,
+  .review .fCause,
+  .review .fCategory,
+  .review .fConfidence,
+  .review .fRule,
+  .reviewMoreGrid .fItem,
+  .reviewMoreGrid .fPrompt,
+  .reviewMoreGrid .fMine,
+  .reviewMoreGrid .fSubcategory,
+  .reviewMoreGrid .fFlags {
     grid-area: auto;
     grid-column: 1;
   }
