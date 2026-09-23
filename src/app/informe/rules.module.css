@@ -67,6 +67,8 @@
 .tableWrap {
   margin-top: var(--sp-5);
   overflow-x: auto;
+  /* Bloque contenedor: sin esto, un hijo absoluto (.sr-only) escapa del scroll. */
+  position: relative;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: var(--surface);

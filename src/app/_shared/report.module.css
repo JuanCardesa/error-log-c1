@@ -71,6 +71,8 @@
 
 .tableWrap {
   overflow-x: auto;
+  /* Bloque contenedor: sin esto, un hijo absoluto (.sr-only) escapa del scroll. */
+  position: relative;
 }
 
 .table {
