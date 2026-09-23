@@ -63,6 +63,20 @@
   cursor: not-allowed;
 }
 
+/*
+ * Deshabilitado pero enfocable (aria-disabled): el motivo tiene que poder leerse con el
+ * teclado. Sin opacidad, para que el texto siga pasando AA.
+ */
+.primary[aria-disabled='true'],
+.secondary[aria-disabled='true'],
+.primary[aria-disabled='true']:hover,
+.secondary[aria-disabled='true']:hover {
+  border-color: var(--rule-strong);
+  background: var(--surface);
+  color: var(--ink-faint);
+  cursor: not-allowed;
+}
+
 /* Mientras la accion esta en curso: esperar, no prohibido. */
 .primary[aria-busy='true'],
 .secondary[aria-busy='true'],

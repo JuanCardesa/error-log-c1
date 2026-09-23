@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
@@ -25,7 +26,11 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
     <li className={`${styles.card} ${pending ? styles.going : ''}`}>
       <div>
         <div className={styles.meta}>
-          <span className="data">{date}</span>
+          {/* A su sesion: corregir una errata antes de crear la tarjeta. */}
+          <Link className="data" href={`/registrar?s=${String(error.sessionId)}`}>
+            {date}
+            <span className="sr-only"> · abrir su sesión</span>
+          </Link>
           <span className={meta.side === 'study' ? ui.chipStudy : ui.chipExec}>
             {CAUSE_LABELS[error.cause]}
           </span>
@@ -46,14 +51,19 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
       </div>
 
       <div className={styles.controls}>
+      {/* Sin Anki, el boton sigue enfocable (aria-disabled) para que el motivo llegue
+          tambien por teclado; el aviso de encima de la cola dice que hacer. */}
       <button
         type="button"
-        className={ui.primary}
-        disabled={pending || !available}
+        className={available ? ui.primary : ui.secondary}
+        disabled={pending}
+        aria-disabled={!available || undefined}
         aria-busy={pending}
-        aria-describedby={!available ? 'anki-status' : undefined}
-        title={!available ? 'Abre Anki y pulsa Sincronizar para habilitar la creación.' : undefined}
-        onClick={() => { startTransition(async () => { report(await createAnkiAction(error.id)); }); }}
+        aria-describedby={!available ? 'anki-unavailable' : undefined}
+        onClick={() => {
+          if (!available) return;
+          startTransition(async () => { report(await createAnkiAction(error.id)); });
+        }}
       >
         {pending ? 'Creando…' : 'Crear en Anki'}
       </button>
@@ -74,10 +84,15 @@ export function UpdateButton({ id, available, stale }: {
     <button
       type="button"
       className={`${ui.secondary} ${ui.small}`}
-      disabled={pending || !available}
+      disabled={pending}
+      aria-disabled={!available || undefined}
       aria-busy={pending}
+      aria-describedby={!available ? 'anki-status' : undefined}
       title={available ? 'Reescribe la tarjeta con el texto actual del error.' : 'Abre Anki para poder actualizarla.'}
-      onClick={() => { startTransition(async () => { report(await updateAnkiAction(id)); }); }}
+      onClick={() => {
+        if (!available) return;
+        startTransition(async () => { report(await updateAnkiAction(id)); });
+      }}
     >
       {pending ? 'Actualizando…' : 'Actualizar en Anki'}
     </button>

@@ -10,16 +10,22 @@ export function ReviewFailures({ result, windowDays, synced }: {
   return (
     <section className={`${ui.panel} ${shared.section}`} aria-labelledby="reviews-heading">
       <h2 id="reviews-heading">Repaso en Anki</h2>
-      <p className={ui.note}>Últimos {windowDays} días, contados por el día de Anki. «Again» cuenta como fallo;
-        Hard, Good y Easy como acierto. Un <strong>lapso</strong> es un «Again» en una carta ya aprendida: eso es
-        haberla olvidado. Un «Again» en los pasos de aprendizaje es estar montándola todavía, lo normal en una
-        tarjeta recién creada. Una carta puede generar varios repasos. No incluye reprogramaciones manuales.</p>
+      <p className={ui.note}>Últimos {windowDays} días, contados por el día de Anki.</p>
+      {/* La definicion hace falta una vez; despues estorba entre el titulo y las cifras. */}
+      <details className={styles.explain}>
+        <summary>Qué cuenta como fallo y como lapso</summary>
+        <p className={ui.note}>«Again» cuenta como fallo; Hard, Good y Easy como acierto. Un{' '}
+          <strong>lapso</strong> es un «Again» en una carta ya aprendida: eso es haberla olvidado. Un «Again»
+          en los pasos de aprendizaje es estar montándola todavía, lo normal en una tarjeta recién creada. Una
+          carta puede generar varios repasos. No incluye reprogramaciones manuales.</p>
+      </details>
+      {/* Sin sincronizar no hay cifras, no ceros: vacio no es cero. */}
       <dl className={styles.summary}>
-        <div><dt>Repasos</dt><dd>{result.reviews}</dd></div>
-        <div><dt>Aciertos</dt><dd>{result.accuracy === null ? '—' : `${String(result.accuracy)}%`}</dd></div>
-        <div><dt>Lapsos</dt><dd>{result.lapses}</dd></div>
-        <div><dt>Fallos aprendiendo</dt><dd>{result.learningFailures}</dd></div>
-        <div><dt>Cartas distintas</dt><dd>{result.distinctCards}</dd></div>
+        <div><dt>Repasos</dt><dd>{synced ? result.reviews : '—'}</dd></div>
+        <div><dt>Aciertos</dt><dd>{!synced || result.accuracy === null ? '—' : `${String(result.accuracy)}%`}</dd></div>
+        <div><dt>Lapsos</dt><dd>{synced ? result.lapses : '—'}</dd></div>
+        <div><dt>Fallos aprendiendo</dt><dd>{synced ? result.learningFailures : '—'}</dd></div>
+        <div><dt>Cartas distintas</dt><dd>{synced ? result.distinctCards : '—'}</dd></div>
       </dl>
       {result.reviews === 0 ? <p className={ui.empty}>{synced
         ? 'Sin repasos en esta ventana. El historial antiguo no cuenta como estudio reciente.'

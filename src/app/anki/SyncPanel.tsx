@@ -15,7 +15,8 @@ const ROLLOVER_NOTE: Readonly<Record<'config' | 'default', (hour: string) => str
   default: (hour) => `Día de Anki: se supone que empieza a las ${hour}, el valor por defecto de Anki. Tu AnkiConnect no expone ese dato; si tu colección usa otra hora, ponla en ANKI_ROLLOVER_HOUR y vuelve a sincronizar.`,
 };
 
-export function SyncPanel({ message, lastSyncedAt, deck, rolloverHour, rolloverSource }: {
+export function SyncPanel({ available, message, lastSyncedAt, deck, rolloverHour, rolloverSource }: {
+  readonly available: boolean;
   readonly message: string; readonly lastSyncedAt: string | null; readonly deck: string;
   readonly rolloverHour: number | null;
   readonly rolloverSource: 'config' | 'default' | null;
@@ -25,7 +26,12 @@ export function SyncPanel({ message, lastSyncedAt, deck, rolloverHour, rolloverS
   return (
     <section className={styles.sync} aria-labelledby="sync-heading">
       <div className={styles.info}>
-        <h2 id="sync-heading">Conexión con Anki</h2>
+        <div className={styles.syncHead}>
+          <h2 id="sync-heading">Conexión con Anki</h2>
+          <span className={available ? styles.stateOn : styles.stateOff}>
+            {available ? 'Disponible' : 'No disponible'}
+          </span>
+        </div>
         <p id="anki-status">{message}</p>
         <p className={ui.note}>Mazo: {deck} y sus submazos.</p>
         {rolloverHour !== null && rolloverSource !== null && <p className={ui.note}>

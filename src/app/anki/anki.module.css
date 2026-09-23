@@ -131,3 +131,60 @@
   gap: var(--sp-3);
   margin-left: auto;
 }
+
+/* Estado de la conexion, junto al titulo: se lee antes que el mensaje largo. */
+.syncHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.stateOn,
+.stateOff {
+  display: inline-block;
+  padding: 0 var(--sp-3);
+  border: 1px solid;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-xs);
+}
+
+.stateOn {
+  color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.stateOff {
+  color: var(--queued);
+  background: var(--queued-bg);
+}
+
+/* Un solo aviso para toda la cola cuando Anki no responde, en vez de un boton gris por fila. */
+.unavailable {
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  max-width: 70ch;
+  border: 1px solid var(--queued);
+  border-radius: var(--radius);
+  background: var(--queued-bg);
+  color: var(--queued);
+  font-size: var(--fs-sm);
+}
+
+.explain {
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+
+.explain > summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+}
+
+.explain > p {
+  margin-top: var(--sp-3);
+}
+
+.legacyNote {
+  margin-top: var(--sp-5);
+}

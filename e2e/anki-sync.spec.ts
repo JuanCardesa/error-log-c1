@@ -90,6 +90,15 @@ test('Anki cerrado se explica sin fingir que no hay fallos', async ({ page, requ
   await expect(page.getByText('No se puede conectar', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Crear en Anki' }).first()).toBeDisabled();
   await expect(page.getByText('Todavía no hay datos importados.', { exact: false })).toBeVisible();
+
+  // Un estado y un aviso para toda la cola; el boton sigue alcanzable y dice por que no va.
+  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByText('No disponible', { exact: true })).toBeVisible();
+  await expect(page.locator('#anki-unavailable')).toContainText('abre Anki');
+  await expect(page.getByRole('button', { name: 'Crear en Anki' }).first())
+    .toHaveAccessibleDescription(/Anki no está disponible/);
+  // Sin sincronizar, las cifras de repaso no son ceros.
+  const reviews = page.getByRole('region', { name: 'Repaso en Anki' });
+  await expect(reviews.getByRole('term').filter({ hasText: /^Repasos$/ }).locator('+ dd')).toHaveText('—');
 });
 
 test('lo sincronizado sale en el CSV de Q7 y en el volcado JSON', async ({ page, request }) => {
