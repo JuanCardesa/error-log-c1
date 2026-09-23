@@ -237,7 +237,7 @@ test('corregir la categoria de un error convertido reagrupa su fallo en el repas
   const row = page.getByRole('row').filter({ hasText: linked?.correctAnswer ?? '' }).first();
   await row.getByRole('button', { name: 'Editar', exact: true }).click();
   const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
-  await editForm.getByLabel('Categoria *').fill('REGISTRO');
+  await editForm.getByLabel('Categoria *').selectOption('REGISTRO');
   await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
   await expect(page.getByRole('cell', { name: 'REGISTRO', exact: true })).toBeVisible();
 

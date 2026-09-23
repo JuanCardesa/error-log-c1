@@ -35,15 +35,34 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
   const firstFieldRef = useRef<HTMLInputElement>(null);
   const lastCreated = useRef<number | undefined>(undefined);
 
+  // Guardados en esta tanda: con ellos los campos conservados se marcan como heredados.
+  // Se cuenta durante el render, al ver un id nuevo, para no encadenar un efecto.
+  const [saves, setSaves] = useState(0);
+  const [countedId, setCountedId] = useState<number | undefined>(undefined);
+  if (state.ok && state.createdId !== undefined && state.createdId !== countedId) {
+    setCountedId(state.createdId);
+    setSaves(saves + 1);
+  }
+
+  // Una sesion abierta se abre para volcar errores: el cursor empieza en el primer campo.
   useEffect(() => {
-    if (!state.ok || state.createdId === undefined) return;
+    firstFieldRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!state.ok) {
+      // El foco va al primer campo rechazado, que lee su propio mensaje.
+      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+      return;
+    }
+    if (state.createdId === undefined) return;
     if (lastCreated.current === state.createdId) return;
     lastCreated.current = state.createdId;
 
     // Se vacia lo que cambia error a error y se conservan los valores de la tanda.
     resetForm(['cause', 'category', 'subcategory', 'confidence']);
     firstFieldRef.current?.focus();
-  }, [state, resetForm]);
+  }, [state, resetForm, formRef]);
 
   return (
     <section className={styles.capture} aria-labelledby="capture-heading">
@@ -64,7 +83,8 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
 
       <div hidden={variant === 'paste'}>
       <p className={ui.hint}>
-        <kbd>Tab</kbd> entre campos, <kbd>Enter</kbd> para guardar y seguir.
+        <kbd>Enter</kbd> guarda y sigue con el siguiente error. En la regla, <kbd>Enter</kbd> hace
+        un salto de línea y guarda <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.
       </p>
 
       <form
@@ -92,6 +112,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
           fieldErrors={state.fieldErrors}
           defaults={{ category: lastCategory ?? '' }}
           firstFieldRef={firstFieldRef}
+          carryVersion={saves}
         />
 
         <div className={styles.fSubmit}>

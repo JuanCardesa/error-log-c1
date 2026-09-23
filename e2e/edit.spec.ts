@@ -17,7 +17,7 @@ async function openSessionWithError(page: Page, reference: string) {
 
   await page.getByLabel('Enunciado *').fill('He ______ up smoking. (GAVE)');
   await page.getByLabel('Correcta *').fill('gave up');
-  await page.getByLabel('Categoria *').fill('PHRASAL_VERB');
+  await page.getByLabel('Categoria *').selectOption('PHRASAL_VERB');
   await page
     .getByLabel('Regla, con tus palabras *')
     .fill('give up es separable pero no con pronombre detras');

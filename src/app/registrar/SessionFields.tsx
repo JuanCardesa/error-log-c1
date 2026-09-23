@@ -26,8 +26,9 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
     const messages = errorsFor(field);
     if (messages.length === 0) return null;
     return (
-      <p className={ui.fieldError} id={`${fieldId}-${field}-error`} data-field={field} role="alert">
-        {messages.join(' ')}
+      // Sin role="alert": el resumen del formulario avisa y el foco va al campo rechazado.
+      <p className={ui.fieldError} id={`${fieldId}-${field}-error`} data-field={field}>
+        {messages.map((message) => <span key={message}>{message}</span>)}
       </p>
     );
   };

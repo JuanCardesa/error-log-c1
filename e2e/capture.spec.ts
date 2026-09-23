@@ -59,9 +59,14 @@ test.describe('registrar una sesion y sus errores', () => {
   test('abre una sesion y registra dos errores seguidos', async ({ page }) => {
     await openSession(page, 'Unidad 7, ej. 2');
 
+    // Se entra para volcar: el cursor ya esta en el primer campo. Sin cronometro, la
+    // casilla de final de sesion no significa nada y no se ofrece.
+    await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
+    await expect(page.getByLabel('Al final de la sesion')).toHaveCount(0);
+
     await page.getByLabel('Enunciado *').fill('He ______ up smoking last year. (GAVE)');
     await page.getByLabel('Correcta *').fill('gave up');
-    await page.getByLabel('Categoria *').fill('PHRASAL_VERB');
+    await page.getByLabel('Categoria *').selectOption('PHRASAL_VERB');
     await page
       .getByLabel('Regla, con tus palabras *')
       .fill('give up es separable pero no con pronombre detras');
@@ -69,8 +74,10 @@ test.describe('registrar una sesion y sus errores', () => {
 
     await expect(page.getByRole('cell', { name: 'gave up' })).toBeVisible();
 
-    // Segundo error: la categoria del anterior sigue puesta, que es el punto.
+    // Segundo error: la categoria del anterior sigue puesta, que es el punto, y se dice
+    // que viene heredada para que no se guarde sin mirarla.
     await expect(page.getByLabel('Categoria *')).toHaveValue('PHRASAL_VERB');
+    await expect(page.getByLabel('Categoria *')).toHaveAccessibleDescription(/heredada/);
     await expect(page.getByLabel('Enunciado *')).toHaveValue('');
     await expect(page.getByLabel('Correcta *')).toHaveValue('');
     await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
@@ -93,7 +100,7 @@ test.describe('registrar una sesion y sus errores', () => {
     await page.getByLabel('Enunciado *').fill('Prueba de regla copiada');
     await page.getByLabel('Mi respuesta', { exact: true }).fill('mi intento');
     await page.getByLabel('Correcta *').fill('una respuesta suficientemente larga');
-    await page.getByLabel('Categoria *').fill('LEXICO');
+    await page.getByLabel('Categoria *').selectOption('LEXICO');
     await page.getByLabel('Subcategoria', { exact: true }).fill('contraste');
     await page.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
     await page.getByRole('combobox', { name: 'Confianza', exact: true }).selectOption('SEGURO');
@@ -149,7 +156,7 @@ test.describe('registrar una sesion y sus errores', () => {
     await openSession(page, 'Sesion cerrada en otra pestaña');
     await page.getByLabel('Enunciado *').fill('Enunciado pendiente de guardar');
     await page.getByLabel('Correcta *').fill('given up');
-    await page.getByLabel('Categoria *').fill('PHRASAL_VERB');
+    await page.getByLabel('Categoria *').selectOption('PHRASAL_VERB');
     await page.getByLabel('Regla, con tus palabras *').fill('give up expresa abandonar una actividad');
 
     const other = await page.context().newPage();

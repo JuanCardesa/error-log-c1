@@ -127,6 +127,11 @@
   overflow-wrap: anywhere;
 }
 
+/* Cada mensaje de un campo en su linea: concatenados se leian como una frase rota. */
+.fieldError > span {
+  display: block;
+}
+
 .check {
   display: flex !important;
   align-items: center;

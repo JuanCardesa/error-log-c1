@@ -64,6 +64,11 @@
   min-width: 0;
 }
 
+/* Campos con la etiqueta aparte (causa, categoria...): tampoco pueden desbordar su columna. */
+.grid > div {
+  min-width: 0;
+}
+
 .grid input,
 .grid select,
 .grid textarea {
@@ -88,17 +93,35 @@
   margin-top: var(--sp-2);
 }
 
+/* Etiqueta y, a su lado, la marca de valor heredado del error anterior. */
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-1);
+}
+
+.labelRow > label {
+  margin-bottom: 0;
+}
+
+.carried {
+  font-size: var(--fs-xs);
+  color: var(--queued);
+}
+
 /* ── Formulario de captura: denso y en una columna cuando no cabe ─────────── */
 
 .grid {
   display: grid;
   gap: var(--sp-4);
-  grid-template-columns: 5rem minmax(14rem, 2fr) minmax(8rem, 1fr) minmax(8rem, 1fr);
+  /* Item es estrecho; Causa ocupa dos columnas para que su valor se lea entero. */
+  grid-template-columns: 5rem minmax(9rem, 1fr) minmax(12rem, 2fr) minmax(8rem, 1fr) minmax(8rem, 1fr);
   grid-template-areas:
-    'item    prompt      mine       correct'
-    'cause   category    subcat     conf'
-    'rule    rule        rule       rule'
-    'flags   flags       flags      submit';
+    'item    prompt   prompt     mine     correct'
+    'cause   cause    category   subcat   conf'
+    'rule    rule     rule       rule     rule'
+    'flags   flags    flags      flags    submit';
   align-items: start;
 }
 

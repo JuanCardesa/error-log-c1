@@ -18,7 +18,7 @@ test('registra practica libre, conserva la edicion y permite cambiar de formato'
 
   await page.getByLabel('Enunciado *').fill('She is interested ___ science.');
   await page.getByLabel('Correcta *').fill('in');
-  await page.getByLabel('Categoria *').fill('PREPOSICION_DEPENDIENTE');
+  await page.getByLabel('Categoria *').selectOption('PREPOSICION_DEPENDIENTE');
   await page.getByLabel('Regla, con tus palabras *').fill('Interested se construye con la preposicion in.');
   await page.getByRole('button', { name: 'Guardar y seguir' }).click();
   await expect(page.getByRole('cell', { name: 'in', exact: true })).toBeVisible();

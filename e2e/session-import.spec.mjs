@@ -49,7 +49,7 @@ test('round-trip del userscript real: varias actividades, vista previa editable 
   const error = page.getByRole('group', { name: 'Error 1', exact: true });
   await expect(error.getByLabel('Correcta *')).toHaveValue('');
   await error.getByLabel('Correcta *').fill('compliment');
-  await error.getByLabel('Categoria *').fill('COLOCACION');
+  await error.getByLabel('Categoria *').selectOption('COLOCACION');
   await error.getByLabel('Regla, con tus palabras *').fill('Pay a compliment se usa para hacer un cumplido.');
   await page.getByRole('button', { name: 'Crear sesión y guardar 1 error', exact: true }).click();
   await expect(page).toHaveURL(/registrar\?s=\d+/);

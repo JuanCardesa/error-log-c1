@@ -8,7 +8,7 @@
 .row .headerFields { grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); }
 .row { min-width: 0; margin: var(--sp-5) 0; padding: var(--sp-5); border: 1px solid var(--rule-strong); }
 .row legend { font-weight: 600; }
-.row .fields { grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); }
+.row .fields { grid-template-columns: 5rem minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); }
 .row > button { margin-top: var(--sp-4); }
 .actions { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-top: var(--sp-5); }
 @media (max-width: 760px) {
