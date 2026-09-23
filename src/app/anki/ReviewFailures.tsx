@@ -1,6 +1,7 @@
 import type { q7AnkiReviews } from '@/lib/queries/q7AnkiReviews';
 import shared from '../_shared/report.module.css';
 import ui from '../_shared/ui.module.css';
+import { categoryLabel } from '../_shared/labels';
 import styles from './anki.module.css';
 
 export function ReviewFailures({ result, windowDays, synced }: {
@@ -26,7 +27,7 @@ export function ReviewFailures({ result, windowDays, synced }: {
         : result.failures === 0 ? <p>Sin fallos en los repasos de esta ventana.</p>
         : result.groups.filter((group) => group.failures > 0).map((group) => (
           <div key={group.category ?? 'SIN_MAPEAR'} className={styles.failures}>
-            <h3>{group.category ?? 'Sin categoría asignada'} · {group.lapses} lapsos y {group.learningFailures} aprendiendo / {group.reviews} repasos</h3>
+            <h3>{group.category === null ? 'Sin categoría asignada' : categoryLabel(group.category)} · {group.lapses} lapsos y {group.learningFailures} aprendiendo / {group.reviews} repasos</h3>
             <ul>{group.notes.map((note) => <li key={note.noteId}><span>{note.label}</span><strong>{note.failures} {note.failures === 1 ? 'fallo' : 'fallos'}</strong></li>)}</ul>
           </div>
         ))}

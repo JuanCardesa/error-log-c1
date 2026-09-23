@@ -10,6 +10,7 @@ import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
+import { CATEGORY_LABELS } from '../_shared/labels';
 import { ConversionFeedback, ConversionNotice } from './ConversionFeedback';
 import { QueueItem, UndoButton, UpdateButton } from './QueueItem';
 import styles from './anki.module.css';
@@ -72,8 +73,8 @@ export default async function AnkiPage({
           <h1>Anki</h1>
           <p className={shared.lede}>
             La cola trae todo lo pendiente cuya causa genera tarjeta, sin caducar. Las cifras
-            son de los ultimos {windowDays} dias: por debajo del {ANKI_TARGET_PCT}% convertido,
-            el log no cierra el circulo.
+            son de los últimos {windowDays} días: por debajo del {ANKI_TARGET_PCT}% convertido,
+            el log no cierra el círculo.
           </p>
         </div>
         <WindowSwitch current={windowDays} basePath="/anki" />
@@ -107,8 +108,8 @@ export default async function AnkiPage({
       {q5.queue.length === 0 ? (
         <p className={ui.empty}>
           {q5.eligible === 0
-            ? 'Ningun error de la ventana genera tarjeta.'
-            : 'Cola vacia: todo lo que genera tarjeta ya esta convertido.'}
+            ? 'Ningún error de la ventana genera tarjeta.'
+            : 'Cola vacía: todo lo que genera tarjeta ya está convertido.'}
         </p>
       ) : (
         <ul className={styles.queue}>
@@ -126,14 +127,14 @@ export default async function AnkiPage({
       {converted.length > 0 && (
         <section className={styles.done} aria-labelledby="done-heading">
           <h2 id="done-heading">Convertidas</h2>
-          <p className={ui.note}>Las ultimas, y cualquiera cuyo texto haya cambiado desde que se convirtio.</p>
+          <p className={ui.note}>Las últimas, y cualquiera cuyo texto haya cambiado desde que se convirtió.</p>
           <ul className={styles.doneList}>
             {converted.map((error) => (
               <li key={error.id} className={styles.doneItem}>
                 <span className="data">{(error.ankiAddedAt ?? '').slice(0, 10)}</span>
                 <span className="data">{error.correctAnswer}</span>
-                <span className={ui.note}>{error.category}</span>
-                <span className={ui.note}>{error.ankiNoteId === null ? 'Marcada a mano (version anterior)'
+                <span className={ui.note}>{CATEGORY_LABELS[error.category]}</span>
+                <span className={ui.note}>{error.ankiNoteId === null ? 'Marcada a mano (versión anterior)'
                   : stale.has(error.id) ? 'Verificada · el texto ha cambiado desde entonces'
                   : 'Verificada en Anki'}</span>
                 <span className={styles.doneActions}>

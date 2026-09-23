@@ -3,6 +3,7 @@ import { expect, test, type APIRequestContext } from '@playwright/test';
 import { createDb } from '../src/lib/db/client';
 import { FAKE_ANKI_PROFILE, FAKE_ANKI_URL } from './fakeAnki';
 import { E2E_DB } from './globalSetup';
+import { categoryLabel } from '../src/app/_shared/labels';
 
 /**
  * Los flujos que solo se ven con Anki respondiendo: sincronizar, reintentar tras un
@@ -230,7 +231,7 @@ test('corregir la categoria de un error convertido reagrupa su fallo en el repas
 
   const reviews = page.getByRole('region', { name: 'Repaso en Anki' });
   const heading = (name: string) => reviews.getByRole('heading', { level: 3 }).filter({ hasText: name });
-  await expect(heading(linked?.category ?? '')).toBeVisible();
+  await expect(heading(categoryLabel(linked?.category ?? ''))).toBeVisible();
 
   // Se corrige la categoria del error vinculado, desde Registrar.
   await page.goto(`/registrar?s=${String(linked?.sessionId ?? 0)}`);
@@ -243,6 +244,6 @@ test('corregir la categoria de un error convertido reagrupa su fallo en el repas
 
   // El fallo pasa a contarse bajo la categoria corregida, sin tocar los tags de Anki.
   await page.goto('/anki');
-  await expect(heading('REGISTRO')).toBeVisible();
-  await expect(heading(linked?.category ?? '')).toHaveCount(0);
+  await expect(heading('Registro')).toBeVisible();
+  await expect(heading(categoryLabel(linked?.category ?? ''))).toHaveCount(0);
 });

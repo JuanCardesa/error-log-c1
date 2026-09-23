@@ -5,6 +5,7 @@ import { useTransition } from 'react';
 import { CAUSE_META } from '@/lib/domain/enums';
 import type { ErrorRow } from '@/lib/domain/types';
 import { createAnkiAction, undoAddedAction, updateAnkiAction } from './actions';
+import { CATEGORY_LABELS, CAUSE_LABELS } from '../_shared/labels';
 import { useConversionFeedback } from './ConversionFeedback';
 import styles from './anki.module.css';
 import ui from '../_shared/ui.module.css';
@@ -26,9 +27,9 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
         <div className={styles.meta}>
           <span className="data">{date}</span>
           <span className={meta.side === 'study' ? ui.chipStudy : ui.chipExec}>
-            {error.cause}
+            {CAUSE_LABELS[error.cause]}
           </span>
-          <span className="data">{error.category}</span>
+          <span>{CATEGORY_LABELS[error.category]}</span>
           {error.subcategory !== null && <span className="data">· {error.subcategory}</span>}
           {error.confidence === 'SEGURO' && <strong>falsa certeza</strong>}
         </div>
