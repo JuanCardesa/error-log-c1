@@ -25,6 +25,9 @@ import { ReviewFailures } from './ReviewFailures';
 
 export const dynamic = 'force-dynamic';
 
+/** Cuantas conversiones se enseñan por contexto, ademas de las que piden actualizarse. */
+const RECENT_CONVERSIONS = 8;
+
 /**
  * Una configuracion invalida es un aviso en el panel, no una pagina rota: se resuelve
  * una sola vez y `ankiStatus` devuelve el mismo motivo como estado no disponible.
@@ -54,10 +57,12 @@ export default async function AnkiPage({
     : data.errors.filter((error) => ankiContentStale(error, namespace, config.targetDeck)).map((error) => error.id));
 
   const dateOf = new Map(data.sessions.map((session) => [session.id, session.date]));
+  // Las ultimas conversiones son contexto; las desactualizadas son trabajo pendiente y no
+  // pueden quedarse fuera por antiguas: sin su fila no hay boton con el que actualizarlas.
   const converted = data.errors
     .filter((error) => error.ankiAdded && error.ankiAddedAt !== null)
     .sort((a, b) => (b.ankiAddedAt ?? '').localeCompare(a.ankiAddedAt ?? ''))
-    .slice(0, 8);
+    .filter((error, index) => index < RECENT_CONVERSIONS || stale.has(error.id));
 
   return (
     <div>
@@ -118,7 +123,8 @@ export default async function AnkiPage({
 
       {converted.length > 0 && (
         <section className={styles.done} aria-labelledby="done-heading">
-          <h2 id="done-heading">Convertidas recientemente</h2>
+          <h2 id="done-heading">Convertidas</h2>
+          <p className={shared.note}>Las ultimas, y cualquiera cuyo texto haya cambiado desde que se convirtio.</p>
           <ul className={styles.doneList}>
             {converted.map((error) => (
               <li key={error.id} className={styles.doneItem}>

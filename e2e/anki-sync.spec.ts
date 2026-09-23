@@ -83,7 +83,7 @@ test('marcar a mano avisa de lo que no comprueba, y el aviso no se pierde', asyn
   await page.getByRole('button', { name: 'Marcar a mano' }).first().click();
   // El error deja la cola y aun asi se ve lo que ha pasado, y lo que no se ha comprobado.
   await expect(page.getByText('No se ha comprobado que la tarjeta exista en Anki.', { exact: false })).toBeVisible();
-  const done = page.getByRole('region', { name: 'Convertidas recientemente' });
+  const done = page.getByRole('region', { name: 'Convertidas', exact: true });
   await expect(done.getByText('Marcada a mano').first()).toBeVisible();
 });
 
@@ -136,7 +136,7 @@ test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', a
   await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
   // El aviso vive por encima de la cola: sobrevive a que el error salga de ella.
   await expect(page.getByText('Tarjeta verificada en Anki.')).toBeVisible();
-  const done = page.getByRole('region', { name: 'Convertidas recientemente' });
+  const done = page.getByRole('region', { name: 'Convertidas', exact: true });
   await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
   await expect(pending).toHaveText(String(before - 1));
 
@@ -155,7 +155,7 @@ test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', a
 test('corregir un error convertido avisa de que la tarjeta quedó vieja y deja arreglarla', async ({ page }) => {
   await page.goto('/anki');
   await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
-  const done = page.getByRole('region', { name: 'Convertidas recientemente' });
+  const done = page.getByRole('region', { name: 'Convertidas', exact: true });
   await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
 
   // Se corrige el texto del error ya convertido, desde donde se corrige de verdad.
@@ -173,4 +173,48 @@ test('corregir un error convertido avisa de que la tarjeta quedó vieja y deja a
   await page.reload();
   await expect(done.getByText('el texto ha cambiado desde entonces')).toHaveCount(0);
   await expect(done.getByText('Verificada en Anki').first()).toBeVisible();
+});
+
+test('una conversion antigua que se corrige sigue teniendo boton para actualizarla', async ({ page, request }) => {
+  // Solo se enseñaban las ocho ultimas conversiones: corregir una anterior la dejaba
+  // desactualizada y sin ningun sitio desde el que arreglarla.
+  await page.goto('/anki');
+  const queue = page.getByRole('listitem').filter({ has: page.getByRole('button', { name: 'Crear en Anki' }) });
+  const oldest = (await queue.first().locator('strong').first().innerText()).trim();
+
+  for (let i = 0; i < 9; i += 1) {
+    await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
+    await expect(page.getByText('Tarjeta verificada en Anki.')).toBeVisible();
+    await page.reload();
+  }
+
+  const done = page.getByRole('region', { name: 'Convertidas', exact: true });
+  // La novena por antigüedad queda fuera del listado mientras no pida nada.
+  await expect(done.getByText(oldest, { exact: true })).toHaveCount(0);
+
+  // Se corrige desde donde se corrige de verdad: la sesion en Registrar.
+  const dump = await (await request.get('/exportar/dump.json')).json() as {
+    rows: { errors: { id: number; sessionId: number; correctAnswer: string; ankiNoteId: number | null }[] };
+  };
+  const target = dump.rows.errors.find((row) => row.correctAnswer === oldest && row.ankiNoteId !== null);
+  expect(target).toBeDefined();
+
+  await page.goto(`/registrar?s=${String(target?.sessionId ?? 0)}`);
+  const row = page.getByRole('row').filter({ hasText: oldest }).first();
+  await row.getByRole('button', { name: 'Editar', exact: true }).click();
+  const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
+  const rewritten = 'Regla reescrita despues de convertirla en tarjeta.';
+  await editForm.getByLabel('Regla, con tus palabras *').fill(rewritten);
+  await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByRole('cell', { name: rewritten, exact: true })).toBeVisible();
+
+  // Vuelve al listado aunque sea antigua, y con el boton que la arregla.
+  await page.goto('/anki');
+  const stale = done.getByRole('listitem').filter({ hasText: oldest });
+  await expect(stale.getByText('el texto ha cambiado desde entonces')).toBeVisible();
+  await stale.getByRole('button', { name: 'Actualizar en Anki' }).click();
+  await expect(page.getByText('Tarjeta actualizada en Anki.')).toBeVisible();
+
+  await page.reload();
+  await expect(done.getByRole('listitem').filter({ hasText: oldest })).toHaveCount(0);
 });
