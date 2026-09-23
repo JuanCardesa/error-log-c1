@@ -82,6 +82,44 @@ test('la revision cabe en movil y mantiene los campos principales visibles', asy
   expect(cause!.y).toBeGreaterThan(correct!.y + correct!.height);
 });
 
+test('permite elegir categoria con el teclado y actualiza los pendientes', async ({ page }) => {
+  await openImport(page);
+  await page.getByLabel('Errores para importar').fill(JSON.stringify([{ ...rows[0], category: '' }]));
+  await page.getByRole('button', { name: 'Preparar vista previa' }).click();
+  await page.getByRole('button', { name: 'Ir al siguiente pendiente' }).click();
+  const category = page.getByRole('group', { name: 'Error 1', exact: true }).getByLabel('Categoria *');
+  await expect(category).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(category).toHaveValue('COLOCACION');
+  await expect(page.getByText('El error esta completo.', { exact: true })).toBeVisible();
+});
+
+test('volver al texto pide confirmacion en la pagina, no con un dialogo', async ({ page }) => {
+  page.on('dialog', () => { throw new Error('dialogo nativo inesperado'); });
+  await openImport(page);
+  const original = JSON.stringify(rows);
+  const paste = page.getByLabel('Errores para importar');
+  const preview = page.getByRole('button', { name: 'Preparar vista previa' });
+  const back = page.getByRole('button', { name: 'Volver al texto pegado' });
+  await paste.fill(original);
+  await preview.click();
+  await expect(page.getByText('Convertir mis correcciones con IA', { exact: true })).toHaveCount(0);
+  await back.click();
+  await expect(paste).toHaveValue(original);
+  await preview.click();
+  const correct = page.getByRole('group', { name: 'Error 1', exact: true }).getByLabel('Correcta *');
+  await correct.fill('away');
+  await back.click();
+  await expect(page.getByRole('button', { name: 'Descartar y volver' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Seguir revisando' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(back).toBeFocused();
+  await expect(correct).toHaveValue('away');
+  await back.click();
+  await page.getByRole('button', { name: 'Descartar y volver' }).click();
+  await expect(paste).toHaveValue(original);
+});
+
 test('pega, revisa, quita una fila y guarda la tanda sin duplicarla al repetirla', async ({ page, context }) => {
   await openImport(page);
   await page.getByText('Convertir mis correcciones con IA', { exact: true }).click();

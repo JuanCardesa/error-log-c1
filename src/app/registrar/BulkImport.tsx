@@ -55,48 +55,48 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
 
   return (
     <div className={styles.bulk}>
-      <p>Pega varios errores, revisalos y guardalos juntos en esta sesion.</p>
-      <details className={styles.instructions}>
-        <summary>Convertir mis correcciones con IA</summary>
-        <ol>
-          <li>Copia estas instrucciones en la IA que uses. Pega tus correcciones o adjunta fotos y capturas si esa IA admite imagenes.</li>
-          <li>En las fotos, incluye el ejercicio, tu respuesta y la correccion o el solucionario. Usa imagenes de la misma sesion y amplialas si el texto se ve pequeño.</li>
-          <li>Copia el bloque que te devuelva y pegalo en «Errores para importar».</li>
-          <li>Revisa la vista previa, completa los datos que no se hayan podido leer y guarda la tanda.</li>
-        </ol>
-        <button type="button" className={ui.secondary} onClick={() => {
-          const selectInstructions = () => {
-            instructions.current?.focus();
-            instructions.current?.select();
-            setCopyMessage('Seleccionadas: pulsa Ctrl+C para copiarlas.');
-          };
-          // La API de portapapeles solo existe en contexto seguro: abrir la app por http
-          // desde otro equipo hace que leerla lance antes de que haya promesa que fallar.
-          try {
-            void navigator.clipboard.writeText(IMPORT_PROMPT).then(
-              () => { setCopyMessage('Instrucciones copiadas. Pegalas junto a tus correcciones.'); },
-              selectInstructions,
-            );
-          } catch {
-            selectInstructions();
-          }
-        }}>Copiar instrucciones para la IA</button>
-        <p role="status">{copyMessage}</p>
-        <textarea ref={instructions} aria-label="Instrucciones para la IA" value={IMPORT_PROMPT} readOnly rows={5} />
-        <p>Las fotos se adjuntan en la IA que uses. Aqui pegas el bloque que te devuelva; la app todavia no lee imagenes directamente.</p>
-      </details>
-      <details className={styles.instructions}>
-        <summary>Pegar desde una hoja de calculo</summary>
-        <p>Copia las celdas con sus cabeceras: Item, Enunciado, Mi respuesta, Correcta, Categoria y Regla. Puedes añadir Causa, Confianza y Subcategoria.</p>
-        <textarea aria-label="Plantilla para hoja de calculo" readOnly value={IMPORT_TEMPLATE} rows={3} onFocus={(event) => { event.target.select(); }} />
-      </details>
       {batch === null ? (
         <>
+          <p>Pega varios errores, revisalos y guardalos juntos en esta sesion.</p>
           <label className={styles.paste}>
             Errores para importar
             <textarea value={text} onChange={(event) => { setText(event.target.value); setProblem(''); }} rows={8} placeholder="Pega aqui el bloque de la IA o las celdas de tu tabla…" />
           </label>
           <button type="button" className={ui.primary} onClick={preview}>Preparar vista previa</button>
+          <details className={styles.instructions}>
+            <summary>Convertir mis correcciones con IA</summary>
+            <ol>
+              <li>Copia estas instrucciones en la IA que uses. Pega tus correcciones o adjunta fotos y capturas si esa IA admite imagenes.</li>
+              <li>En las fotos, incluye el ejercicio, tu respuesta y la correccion o el solucionario. Usa imagenes de la misma sesion y amplialas si el texto se ve pequeño.</li>
+              <li>Copia el bloque que te devuelva y pegalo en «Errores para importar».</li>
+              <li>Revisa la vista previa, completa los datos que no se hayan podido leer y guarda la tanda.</li>
+            </ol>
+            <button type="button" className={ui.secondary} onClick={() => {
+              const selectInstructions = () => {
+                instructions.current?.focus();
+                instructions.current?.select();
+                setCopyMessage('Seleccionadas: pulsa Ctrl+C para copiarlas.');
+              };
+              // La API de portapapeles solo existe en contexto seguro: abrir la app por http
+              // desde otro equipo hace que leerla lance antes de que haya promesa que fallar.
+              try {
+                void navigator.clipboard.writeText(IMPORT_PROMPT).then(
+                  () => { setCopyMessage('Instrucciones copiadas. Pegalas junto a tus correcciones.'); },
+                  selectInstructions,
+                );
+              } catch {
+                selectInstructions();
+              }
+            }}>Copiar instrucciones para la IA</button>
+            <p role="status">{copyMessage}</p>
+            <textarea ref={instructions} aria-label="Instrucciones para la IA" value={IMPORT_PROMPT} readOnly rows={5} />
+            <p>Las fotos se adjuntan en la IA que uses. Aqui pegas el bloque que te devuelva; la app todavia no lee imagenes directamente.</p>
+          </details>
+          <details className={styles.instructions}>
+            <summary>Pegar desde una hoja de calculo</summary>
+            <p>Copia las celdas con sus cabeceras: Item, Enunciado, Mi respuesta, Correcta, Categoria y Regla. Puedes añadir Causa, Confianza y Subcategoria.</p>
+            <textarea aria-label="Plantilla para hoja de calculo" readOnly value={IMPORT_TEMPLATE} rows={3} onFocus={(event) => { event.target.select(); }} />
+          </details>
         </>
       ) : (
         <ImportReview key={batch.version} {...{ session, subcategorySuggestions }} drafts={batch.rows} envelopeSession={batch.session ?? undefined}
@@ -130,7 +130,11 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
   const [snapshots, setSnapshots] = useState<ReadonlyMap<number, RowSnapshot>>(
     () => new Map(drafts.map((draft, id) => [id, snapshotFromDraft(draft)])),
   );
-  const [_dirty, setDirty] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const askRef = useRef<HTMLButtonElement>(null);
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const wasConfirming = useRef(false);
   const [openRows, setOpenRows] = useState<ReadonlySet<number>>(new Set());
   const [blocked, setBlocked] = useState(false);
   const incompleteRows = rows.filter(({ id }) => missingFields(snapshots.get(id) ?? EMPTY_SNAPSHOT).length > 0);
@@ -157,6 +161,12 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
   useEffect(() => { headingRef.current?.focus(); }, []);
 
   useEffect(() => {
+    if (confirming) keepRef.current?.focus();
+    else if (wasConfirming.current) askRef.current?.focus();
+    wasConfirming.current = confirming;
+  }, [confirming]);
+
+  useEffect(() => {
     if (focusRequest === null || handledFocus.current === focusRequest) return;
     handledFocus.current = focusRequest;
     const element = focusRequest.id === null ? headingRef.current
@@ -180,6 +190,9 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
   };
 
   const refresh = (event: FormEvent<HTMLFormElement>) => {
+    // En un select, input precede a change: renderizar aqui restauraria su valor
+    // controlado antes de que onChange reciba la seleccion hecha con el teclado.
+    if (event.type === 'input' && event.target instanceof HTMLSelectElement) return;
     const id = rowIdFor(event.target);
     if (id !== null && formRef.current !== null) {
       const snapshot = readRow(new FormData(formRef.current), id);
@@ -288,7 +301,9 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
       ); })}
       <p className={ui.hint}>Los errores ya registrados en esta sesion se omiten si coinciden item, enunciado y respuestas. Puedes editarlos en el listado.</p>
       {state.message !== null && !state.ok && <p role="alert" className={ui.fieldError}>{state.message}</p>}
-      <div className={styles.bar}>
+      <div className={styles.bar} onKeyDown={(event) => {
+        if (event.key === 'Escape' && confirming) setConfirming(false);
+      }}>
         <p className={`${styles.barStatus}${blocked ? ` ${ui.fieldError}` : ''}`} aria-live="polite">
           {blocked ? `Completa los errores pendientes antes de guardar. Faltan ${String(incompleteRows.length)} de ${String(rows.length)}.`
             : incompleteRows.length === 0
@@ -301,9 +316,13 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
         <button type="submit" className={ui.primary} disabled={pending || (target !== null && rows.length === 0)} aria-busy={pending}>
           {pending ? 'Guardando…' : target === null ? `Crear sesión y guardar ${String(rows.length)} ${rows.length === 1 ? 'error' : 'errores'}` : `Guardar ${String(rows.length)} ${rows.length === 1 ? 'error' : 'errores'}`}
         </button>
-        <button type="button" className={ui.secondary} disabled={pending} onClick={() => {
-          if (window.confirm('Volver al texto descarta los cambios hechos en la vista previa. El texto pegado se conserva. ¿Continuar?')) onBack();
-        }}>Volver al texto pegado</button>
+        {confirming ? <>
+          <span className={ui.note}>Se descartan los cambios de la vista previa; el texto pegado se conserva.</span>
+          <button type="button" className={`${ui.danger} ${ui.small}`} disabled={pending} onClick={onBack}>Descartar y volver</button>
+          <button ref={keepRef} type="button" className={`${ui.secondary} ${ui.small}`} onClick={() => { setConfirming(false); }}>Seguir revisando</button>
+        </> : <button ref={askRef} type="button" className={ui.secondary} disabled={pending} onClick={() => {
+          if (dirty) setConfirming(true); else onBack();
+        }}>Volver al texto pegado</button>}
       </div>
     </form>
   );
