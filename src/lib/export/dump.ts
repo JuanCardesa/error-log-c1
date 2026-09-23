@@ -6,13 +6,14 @@ import { q3RuoeAccuracy, q3ToCsv } from '../queries/q3RuoeAccuracy';
 import { q4FalseCertainties, q4ToCsv } from '../queries/q4FalseCertainties';
 import { q5AnkiDebt, q5ToCsv } from '../queries/q5AnkiDebt';
 import { q6RewriteEfficacy, q6ToCsv } from '../queries/q6RewriteEfficacy';
-import { runRules } from '../rules';
 
 /**
  * Exportacion. Un CSV por query, mas un volcado completo en JSON.
  *
- * El CSV permite llevarse una consulta y el JSON incluye las filas crudas para portabilidad.
- * La restauracion implementada usa las copias SQLite de pnpm db:backup.
+ * El CSV permite llevarse una consulta ya calculada. El JSON es solo tus datos: filas y
+ * espejo de Anki, sin agregaciones. Las agregaciones se recalculan desde las filas, asi
+ * que incluirlas solo era una copia del mismo dato con otra forma y otra fecha de
+ * caducidad. La restauracion implementada usa las copias SQLite de pnpm db:backup.
  */
 
 export const CSV_EXPORTS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'] as const;
@@ -59,37 +60,12 @@ export function toCsvExport(
 
 export interface JsonDump {
   readonly exportedAt: string;
-  readonly windowDays: number;
+  /** Las filas crudas son el respaldo: sin ellas el volcado no reconstruye nada. */
   readonly rows: Dataset;
   readonly anki: AnkiDataset;
-  readonly queries: {
-    readonly q1: ReturnType<typeof q1CauseSplit>;
-    readonly q2: ReturnType<typeof q2CategoryRate>;
-    readonly q3: ReturnType<typeof q3RuoeAccuracy>;
-    readonly q4: ReturnType<typeof q4FalseCertainties>;
-    readonly q5: ReturnType<typeof q5AnkiDebt>;
-    readonly q6: ReturnType<typeof q6RewriteEfficacy>;
-    readonly q7: ReturnType<typeof q7AnkiReviews>;
-  };
-  readonly rules: ReturnType<typeof runRules>;
 }
 
-export function toJsonDump(data: Dataset, options: QueryOptions, anki: AnkiDataset = EMPTY_ANKI_DATASET): JsonDump {
-  return {
-    exportedAt: options.now.toISOString(),
-    windowDays: options.windowDays,
-    // Las filas crudas son el respaldo: sin ellas el volcado no reconstruye nada.
-    rows: data,
-    anki,
-    queries: {
-      q1: q1CauseSplit(data, options),
-      q2: q2CategoryRate(data, options),
-      q3: q3RuoeAccuracy(data, options),
-      q4: q4FalseCertainties(data, { now: options.now }),
-      q5: q5AnkiDebt(data, options),
-      q6: q6RewriteEfficacy(data, options),
-      q7: q7AnkiReviews(anki, options),
-    },
-    rules: runRules(data, options),
-  };
+/** No depende de la ventana: se lleva el historial entero, no un recorte. */
+export function toJsonDump(data: Dataset, now: Date, anki: AnkiDataset = EMPTY_ANKI_DATASET): JsonDump {
+  return { exportedAt: now.toISOString(), rows: data, anki };
 }

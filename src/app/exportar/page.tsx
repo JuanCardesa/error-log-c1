@@ -48,15 +48,16 @@ export default async function ExportarPage({
         <h2 id="dump-heading">Volcado completo</h2>
         <ul className={styles.list} style={{ marginTop: 'var(--sp-4)' }}>
           <li className={styles.item}>
-            <a className={styles.row} href={`/exportar/dump.json${query}`} download>
-              <span>Tus filas, el historial de Anki, las consultas y el informe de reglas</span>
+            <a className={styles.row} href="/exportar/dump.json" download>
+              <span>Tus filas y el historial de Anki, completos y sin recortar por ventana</span>
               <span className={styles.file}>errorlog-dump.json</span>
             </a>
           </li>
         </ul>
         <p className={styles.note}>
           Las falsas certezas usan siempre 30 dias, porque su umbral esta calibrado a esa ventana.
-          El JSON permite llevarte tus datos, pero no se puede restaurar desde esta pantalla.
+          El JSON lleva tus datos tal cual, sin cifras calculadas: esas salen de los CSV o de la
+          propia app. No se puede restaurar desde esta pantalla.
           Para una copia recuperable, ejecuta <code>pnpm db:backup</code>.
           Las instrucciones para recuperarla estan en el README.
         </p>

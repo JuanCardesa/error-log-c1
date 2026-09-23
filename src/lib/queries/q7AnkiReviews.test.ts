@@ -47,9 +47,9 @@ it('no cuenta referencias huérfanas y desempata categorías de forma determinis
 });
 it('exporta el historial sin perder campos y CSV sin inventar una tasa vacía', () => {
   const anki = ankiFixture(); const practice = makeDataset();
-  const dump = toJsonDump(practice, options, anki);
+  const dump = toJsonDump(practice, NOW, anki);
   expect(dump.anki).toEqual(anki);
-  expect(dump.queries.q7.failures).toBe(1);
+  expect(q7AnkiReviews(anki, options).failures).toBe(1);
   expect(toCsvExport('q7', practice, options, anki)).toContain('PHRASAL_VERB,1,1,1,0,1,0');
   expect(q7ToCsv(q7AnkiReviews(EMPTY_ANKI_DATASET, options)).trim().split('\r\n')).toHaveLength(1);
 });

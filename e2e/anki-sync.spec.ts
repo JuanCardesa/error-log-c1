@@ -100,11 +100,11 @@ test('lo sincronizado sale en el CSV de Q7 y en el volcado JSON', async ({ page,
 
   const dump = await (await request.get('/exportar/dump.json')).json() as {
     anki: { reviews: unknown[]; notes: unknown[] };
-    queries: { q7: { reviews: number; failures: number; lapses: number; learningFailures: number; accuracy: number | null } };
   };
   expect(dump.anki.reviews).toHaveLength(4);
   expect(dump.anki.notes).toHaveLength(3);
-  expect(dump.queries.q7).toMatchObject({ reviews: 4, failures: 2, lapses: 1, learningFailures: 1, accuracy: 50 });
+  // Las cifras se recalculan desde el espejo: el CSV de Q7 las trae ya hechas.
+  expect(text).toContain('PHRASAL_VERB,2,1,1,0,1,50');
 });
 
 test('crear en Anki verifica la tarjeta y repetirlo no crea una segunda nota', async ({ page, request }) => {

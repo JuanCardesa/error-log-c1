@@ -17,9 +17,10 @@ const opts: QueryOptions = { now: NOW, windowDays: 30 };
 
 it('exporta los nulos de practica libre sin inventar paper ni part', () => {
   const free = makeSession({ paper: null, part: null });
-  const dump = toJsonDump(makeDataset({ sessions: [free] }), opts);
+  const dump = toJsonDump(makeDataset({ sessions: [free] }), NOW);
   expect(JSON.stringify(dump.rows.sessions)).toContain('"paper":null,"part":null');
-  expect(dump.queries.q3).toEqual({ weeks: [], rows: [] });
+  // El CSV de RUOE tampoco inventa una fila para una sesion sin paper.
+  expect(toCsvExport('q3', makeDataset({ sessions: [free] }), opts).trim().split('\r\n')).toHaveLength(1);
 });
 
 function sample() {
@@ -84,37 +85,31 @@ describe('exportacion a CSV', () => {
 });
 
 describe('volcado JSON', () => {
-  it('incluye las filas crudas ademas de las agregaciones', () => {
-    const dump = toJsonDump(sample(), opts);
+  it('lleva las filas crudas y nada recalculable', () => {
+    const dump = toJsonDump(sample(), NOW);
 
     expect(dump.rows.sessions).toHaveLength(2);
     expect(dump.rows.errors).toHaveLength(5);
     expect(dump.rows.pieces).toHaveLength(1);
+    // Las agregaciones se recalculan desde las filas: duplicarlas solo daba dos versiones
+    // del mismo dato, una de ellas con fecha de caducidad.
+    expect(Object.keys(dump)).toEqual(['exportedAt', 'rows', 'anki']);
   });
 
-  it('incluye las siete queries y el informe de reglas', () => {
-    const dump = toJsonDump(sample(), opts);
-
-    expect(Object.keys(dump.queries)).toEqual(['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7']);
-    expect(dump.rules.rules).toHaveLength(7);
-  });
-
-  it('sella la fecha y la ventana usadas', () => {
-    const dump = toJsonDump(sample(), { now: NOW, windowDays: 60 });
+  it('sella la fecha de exportacion y no depende de la ventana', () => {
+    const dump = toJsonDump(sample(), NOW);
     expect(dump.exportedAt).toBe(NOW.toISOString());
-    expect(dump.windowDays).toBe(60);
   });
 
   it('es serializable sin perder nada', () => {
-    const dump = toJsonDump(sample(), opts);
+    const dump = toJsonDump(sample(), NOW);
     const roundTrip: unknown = JSON.parse(JSON.stringify(dump));
     expect(roundTrip).toEqual(JSON.parse(JSON.stringify(dump)));
   });
 
   it('funciona sobre una base vacia', () => {
-    const dump = toJsonDump(makeDataset(), opts);
+    const dump = toJsonDump(makeDataset(), NOW);
     expect(dump.rows.sessions).toEqual([]);
-    expect(dump.queries.q5.pctConverted).toBeNull();
-    expect(dump.rules.doNow).toBeNull();
+    expect(dump.anki.reviews).toEqual([]);
   });
 });

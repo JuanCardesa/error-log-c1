@@ -298,7 +298,8 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
    manual explícita y consulta de repasos/fallos por categoría (Q7).
 5. **Falsas certezas** — Q4.
 6. **Writing** — alta y edición de `writing_piece` con las cuatro bandas, y Q6.
-7. **Exportar** — un CSV por query, más un dump completo en JSON.
+7. **Exportar** — un CSV por query con sus cifras ya calculadas, más un dump JSON con
+   solo los datos: filas y espejo de Anki, sin agregaciones ni ventana.
 
 CRUD completo: crear sesión, cerrarla, reabrirla, corregir sesiones pasadas, editar y
 borrar filas de error. Borrado con confirmación. Nada de datos irrecuperables por un clic.

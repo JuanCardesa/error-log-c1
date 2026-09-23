@@ -24,7 +24,7 @@ export async function GET(
   const options = { now: new Date(), windowDays };
 
   if (file === 'dump.json') {
-    return Response.json(toJsonDump(data, options, anki), {
+    return Response.json(toJsonDump(data, options.now, anki), {
       headers: { 'content-disposition': 'attachment; filename="errorlog-dump.json"' },
     });
   }
