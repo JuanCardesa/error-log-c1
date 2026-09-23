@@ -78,15 +78,6 @@ test('un fallo de Anki se explica y el reintento posterior funciona', async ({ p
   await expect(panel.getByRole('status')).toContainText('4 repasos nuevos');
 });
 
-test('marcar a mano avisa de lo que no comprueba, y el aviso no se pierde', async ({ page }) => {
-  await page.goto('/anki');
-  await page.getByRole('button', { name: 'Marcar a mano' }).first().click();
-  // El error deja la cola y aun asi se ve lo que ha pasado, y lo que no se ha comprobado.
-  await expect(page.getByText('No se ha comprobado que la tarjeta exista en Anki.', { exact: false })).toBeVisible();
-  const done = page.getByRole('region', { name: 'Convertidas', exact: true });
-  await expect(done.getByText('Marcada a mano').first()).toBeVisible();
-});
-
 test('Anki cerrado se explica sin fingir que no hay fallos', async ({ page, request }) => {
   await control(request, { disconnected: true });
   await page.goto('/anki');

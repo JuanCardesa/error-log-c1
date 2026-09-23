@@ -98,7 +98,6 @@ test.describe('registrar una sesion y sus errores', () => {
     await page.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
     await page.getByRole('combobox', { name: 'Confianza', exact: true }).selectOption('SEGURO');
     await page.getByLabel('Al final de la sesion').check();
-    await page.getByLabel('Ya es tarjeta').check();
     await page
       .getByLabel('Regla, con tus palabras *')
       .fill('una respuesta suficientemente larga');
@@ -114,16 +113,9 @@ test.describe('registrar una sesion y sus errores', () => {
     await expect(page.getByLabel('Correcta *')).toHaveValue('una respuesta suficientemente larga');
     await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue('una respuesta suficientemente larga');
     await expect(page.getByLabel('Al final de la sesion')).toBeChecked();
-    await expect(page.getByLabel('Ya es tarjeta')).toBeChecked();
 
     const rule = 'Regla corregida con una explicacion distinta de la respuesta';
     await page.getByLabel('Regla, con tus palabras *').fill(rule);
-    await page.getByRole('combobox', { name: /^Causa/ }).selectOption('DESPISTE');
-    await page.getByRole('button', { name: 'Guardar y seguir' }).click();
-    await expect(page.locator('[data-field="ankiAdded"]')).toContainText('no se arregla con una tarjeta');
-    await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue(rule);
-    await expect(page.getByLabel('Ya es tarjeta')).toBeChecked();
-
     await page.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
     await page.getByRole('button', { name: 'Guardar y seguir' }).click();
     await expect(page.getByRole('cell', { name: rule, exact: true })).toBeVisible();
@@ -131,7 +123,6 @@ test.describe('registrar una sesion y sus errores', () => {
     await expect(page.getByLabel('Correcta *')).toHaveValue('');
     await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue('');
     await expect(page.getByLabel('Al final de la sesion')).not.toBeChecked();
-    await expect(page.getByLabel('Ya es tarjeta')).not.toBeChecked();
     await expect(page.getByRole('combobox', { name: /^Causa/ })).toHaveValue('CONFUSION');
     await expect(page.getByLabel('Categoria *')).toHaveValue('LEXICO');
     await expect(page.getByLabel('Subcategoria', { exact: true })).toHaveValue('contraste');

@@ -68,18 +68,6 @@ test.describe('informe semanal', () => {
     await expect(page.getByText('Sin datos').first()).toBeAttached();
   });
 
-  test('la cola de Anki sella la conversion', async ({ page }) => {
-    await page.goto('/anki');
-
-    const pendingBefore = await page.locator('dd').nth(1).innerText();
-    await page.getByRole('button', { name: 'Marcar a mano' }).first().click();
-
-    await expect(async () => {
-      const pendingAfter = await page.locator('dd').nth(1).innerText();
-      expect(Number(pendingAfter)).toBe(Number(pendingBefore) - 1);
-    }).toPass({ timeout: 10_000 });
-  });
-
   test('las falsas certezas se listan una a una', async ({ page }) => {
     await page.goto('/certezas');
     await expect(page.getByRole('heading', { name: 'Falsas certezas' })).toBeVisible();

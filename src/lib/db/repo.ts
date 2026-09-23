@@ -134,12 +134,6 @@ export function deleteError(db: Db, id: number): void {
   db.delete(errorRow).where(eq(errorRow.id, id)).run();
 }
 
-/** Sella la conversion a tarjeta. La fecha es obligatoria: hay un CHECK que lo exige. */
-export function markAnkiAdded(db: Db, id: number, at: string): void {
-  db.update(errorRow).set({ ankiAdded: true, ankiAddedAt: at })
-    .where(and(eq(errorRow.id, id), eq(errorRow.ankiAdded, false))).run();
-}
-
 export function unmarkAnkiAdded(db: Db, id: number): void {
   db.update(errorRow).set({ ankiAdded: false, ankiAddedAt: null, ankiNoteId: null, ankiContentHash: null }).where(eq(errorRow.id, id)).run();
 }

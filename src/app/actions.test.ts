@@ -5,7 +5,8 @@ import { type Db, createDb, getDb } from '@/lib/db/client';
 import type * as DbClient from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
 import { MIGRATIONS_DIR } from '@/lib/db/paths';
-import { deleteError, deleteSession, deleteWritingPiece, getError, getSession, listErrors, listWritingPieces, markAnkiAdded } from '@/lib/db/repo';
+import { deleteError, deleteSession, deleteWritingPiece, getError, getSession, listErrors, listWritingPieces } from '@/lib/db/repo';
+import { linkAnkiNote } from '@/lib/db/ankiRepo';
 import { seed } from '@/lib/db/seed';
 import { addErrorAction, createSessionAction, updateErrorAction, updateSessionAction } from './registrar/actions';
 import { EMPTY_STATE } from './registrar/formState';
@@ -150,11 +151,32 @@ describe('corregir errores existentes', () => {
     expect(getError(db, original.id)).toEqual(changed);
   });
 
-  it('no cambia la fecha si dos pestañas marcan la misma tarjeta', () => {
+  it('rechaza dejar como tarjeta un error cuya causa no se arregla estudiando', async () => {
+    // Ya no hay casilla, pero se llega igual: cambiar la causa de un error convertido.
     const original = loadDataset(db).errors.find((row) => row.ankiAdded);
     if (original === undefined) throw new Error('Falta una tarjeta en el seed');
-    markAnkiAdded(db, original.id, '2026-09-16T15:00:00Z');
-    expect(getError(db, original.id)?.ankiAddedAt).toBe(original.ankiAddedAt);
+    const result = await updateErrorAction(EMPTY_STATE, form({ ...original, cause: 'DESPISTE' }));
+    expect(result.ok).toBe(false);
+    expect(result.fieldErrors['ankiAdded']?.[0]).toContain('no se arregla con una tarjeta');
+    expect(getError(db, original.id)?.cause).toBe(original.cause);
+  });
+
+  it('corregir un error convertido no lo desvincula de su nota', async () => {
+    // El formulario ya no trae casilla: si dejara de enviar `ankiAdded`, `updateError`
+    // limpiaria el vinculo y la huella, y la tarjeta quedaria huerfana en Anki.
+    const seeded = loadDataset(db).errors.find((row) => row.ankiAdded);
+    if (seeded === undefined) throw new Error('Falta una tarjeta en el seed');
+    linkAnkiNote(db, seeded.id, {
+      noteId: 20, model: 'Error Log C1', label: seeded.correctAnswer, tags: [], category: null,
+      firstSeenAt: '2026-09-12T18:00:00.000Z', lastSeenAt: '2026-09-12T18:00:00.000Z',
+    }, '2026-09-12T18:00:00.000Z', 'huella');
+    const original = loadDataset(db).errors.find((row) => row.id === seeded.id);
+    if (original === undefined) throw new Error('El error vinculado ha desaparecido');
+    const result = await updateErrorAction(EMPTY_STATE, form({ ...original, myAnswer: 'otra cosa' }));
+    expect(result.ok).toBe(true);
+    expect(getError(db, original.id)).toMatchObject({
+      ankiAdded: true, ankiNoteId: original.ankiNoteId, ankiAddedAt: original.ankiAddedAt,
+    });
   });
 
   it('rechaza editar un error borrado en otra pestaña', async () => {

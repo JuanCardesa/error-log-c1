@@ -54,7 +54,7 @@ denominador y registrar un error debe costar menos de 30 segundos.
 | `rule_note` | texto | **obligatorio** |
 | `anki_added` | bool | |
 | `anki_added_at` | timestamp, nullable | |
-| `anki_note_id` | FK → anki_note.note_id, nullable | vínculo verificado; NULL en marcas manuales |
+| `anki_note_id` | FK → anki_note.note_id, nullable | vínculo verificado; NULL en marcas manuales antiguas |
 | `secs` | int | histórico: segundos que costó registrarlo. Ya no se mide; se conserva lo guardado |
 | `created_at` | timestamp | |
 
@@ -88,7 +88,8 @@ denominador y registrar un error debe costar menos de 30 segundos.
 `error_row.anki_note_id` es el único vínculo con el error, con `ON DELETE SET NULL`.
 Una sincronización confirma por ID las notas vinculadas, incluso fuera del mazo origen;
 si una ya no existe, limpia también `anki_added` y `anki_added_at`. Moverla no devuelve
-la deuda. Una marca manual queda con `anki_note_id = NULL` y se muestra sin verificar.
+la deuda. Las marcas manuales de versiones anteriores quedan con `anki_note_id = NULL`
+y se muestran sin verificar; ya no se pueden crear nuevas.
 
 Cada snapshot completo validado se aplica en una transacción. Repetirlo es idempotente;
 se incluyen repasos importados antiguos y se retiran del espejo los repasos deshechos y
@@ -171,7 +172,7 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
   **Resuelto (P2, 2026-09-14):** Q4 usa 30 días fijos, no la ventana conmutable — igual que
   la regla 2, cuyo umbral absoluto de 5 está calibrado para 30 días.
 - **Q5 · Deuda de Anki** — `pct_convertidos = anki_added / errores que generan tarjeta`.
-  Umbral 80%. Incluye las marcas manuales explícitas y las creaciones verificadas;
+  Umbral 80%. Incluye las creaciones verificadas y las marcas manuales heredadas;
   no representa exclusivamente notas verificadas. El motor conserva su contrato.
   Las cifras usan la ventana; la cola de pendientes no caduca con ella.
 - **Q6 · Eficacia del rewrite** — de los errores del texto original, cuántos reaparecen en

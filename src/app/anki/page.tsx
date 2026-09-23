@@ -84,7 +84,7 @@ export default async function AnkiPage({
       <ConversionFeedback>
       <h2>Cola de conversión</h2>
       {/* Solo lo que cambia el resultado de pulsar: lo demas lo dice cada boton. */}
-      <p className={shared.note}>Marcar a mano no comprueba que la tarjeta exista. Deshacer devuelve el error a la cola y conserva la nota en Anki.</p>
+      <p className={shared.note}>Deshacer devuelve el error a la cola y conserva la nota en Anki.</p>
 
       <ConversionNotice />
 
@@ -132,7 +132,7 @@ export default async function AnkiPage({
                 <span className="data">{(error.ankiAddedAt ?? '').slice(0, 10)}</span>
                 <span className="data">{error.correctAnswer}</span>
                 <span className={shared.note}>{error.category}</span>
-                <span className={shared.note}>{error.ankiNoteId === null ? 'Marcada a mano'
+                <span className={shared.note}>{error.ankiNoteId === null ? 'Marcada a mano (version anterior)'
                   : stale.has(error.id) ? 'Verificada · el texto ha cambiado desde entonces'
                   : 'Verificada en Anki'}</span>
                 <span style={{ marginLeft: 'auto', display: 'flex', gap: '.5rem', alignItems: 'center' }}>

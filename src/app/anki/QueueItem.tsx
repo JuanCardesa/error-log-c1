@@ -4,7 +4,7 @@ import { useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
 import type { ErrorRow } from '@/lib/domain/types';
-import { createAnkiAction, markAddedAction, undoAddedAction, updateAnkiAction } from './actions';
+import { createAnkiAction, undoAddedAction, updateAnkiAction } from './actions';
 import { useConversionFeedback } from './ConversionFeedback';
 import styles from './anki.module.css';
 
@@ -53,10 +53,6 @@ export function QueueItem({ error, date, available }: { readonly error: ErrorRow
         onClick={() => { startTransition(async () => { report(await createAnkiAction(error.id)); }); }}
       >
         {pending ? 'Creando…' : 'Crear en Anki'}
-      </button>
-      <button type="button" className={styles.manual} disabled={pending}
-        onClick={() => { startTransition(async () => { report(await markAddedAction(error.id)); }); }}>
-        Marcar a mano
       </button>
       </div>
     </li>

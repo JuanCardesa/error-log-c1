@@ -48,8 +48,10 @@ avisar de cambios locales y ofrecer Actualizar en Anki. La actualización verifi
 los campos recibidos; no cambia tags, mazo ni programación. Si cambias la categoría,
 las estadísticas de Anki siguen usando sus etiquetas originales.
 
-Marcar a mano cuenta como conversión, pero no verifica ninguna tarjeta. Deshacer
-quita el vínculo local y devuelve el error a la cola sin borrar la nota de Anki.
+La conversión solo se sella tras verificarla; ya no hay marca manual. Las marcas de
+versiones anteriores se conservan, cuentan como convertidas y se señalan como no
+verificadas. Deshacer quita el vínculo local y devuelve el error a la cola sin borrar
+la nota de Anki.
 Volver a crearla recupera su identidad. Borrar un error tampoco borra su nota.
 
 ## Sincronización y estadísticas

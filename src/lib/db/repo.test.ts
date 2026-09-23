@@ -25,7 +25,6 @@ import {
   deleteWritingPiece,
   getWritingPiece,
   listWritingPieces,
-  markAnkiAdded,
   setSessionStatus,
   updateWritingPiece,
   writingSessionsWithoutPiece,
@@ -34,6 +33,7 @@ import {
   updateSession,
 } from './repo';
 import { writingPiece } from './schema';
+import { linkAnkiNote } from './ankiRepo';
 
 let db: Db;
 
@@ -179,20 +179,25 @@ describe('errores', () => {
 });
 
 describe('conversion a tarjeta', () => {
-  it('sella la fecha al marcar y la limpia al desmarcar', () => {
+  it('sella fecha y vinculo al crear la nota, y los limpia al deshacer', () => {
     const session = createSession(db, sessionInput());
     const created = createError(db, errorInput(session.id));
 
-    markAnkiAdded(db, created.id, '2026-09-12T18:00:00.000Z');
+    linkAnkiNote(db, created.id, {
+      noteId: 20, model: 'Error Log C1', label: 'deal with', tags: [], category: null,
+      firstSeenAt: '2026-09-12T18:00:00.000Z', lastSeenAt: '2026-09-12T18:00:00.000Z',
+    }, '2026-09-12T18:00:00.000Z', 'huella');
     const marked = listErrors(db, session.id)[0];
     expect(marked?.ankiAdded).toBe(true);
     expect(marked?.ankiAddedAt).toBe('2026-09-12T18:00:00.000Z');
+    expect(marked?.ankiNoteId).toBe(20);
 
     unmarkAnkiAdded(db, created.id);
     const cleared = listErrors(db, session.id)[0];
     expect(cleared?.ankiAdded).toBe(false);
     // El CHECK de la base exige que no quede fecha huerfana.
     expect(cleared?.ankiAddedAt).toBeNull();
+    expect(cleared?.ankiNoteId).toBeNull();
   });
 });
 

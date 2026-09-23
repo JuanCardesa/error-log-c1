@@ -248,16 +248,8 @@ export function ErrorFields({
           </span>
         )}
 
-        <label className={styles.check}>
-          <input
-            type="checkbox"
-            name={`${namePrefix}ankiAdded`}
-            defaultChecked={defaults?.ankiAdded ?? false}
-            aria-invalid={invalid('ankiAdded')}
-            aria-describedby={describedBy('ankiAdded')}
-          />
-          <span>Ya es tarjeta</span>
-        </label>
+        {/* La conversion se sella desde Anki, no aqui. El aviso sigue haciendo falta:
+            cambiar la causa de un error ya convertido tiene que poder rechazarse. */}
         {fieldError('ankiAdded')}
       </div>
     </>

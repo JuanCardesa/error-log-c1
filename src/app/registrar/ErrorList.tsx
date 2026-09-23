@@ -192,6 +192,8 @@ function EditRow({
           <input type="hidden" name="sessionId" value={error.sessionId} />
           {/* Conserva el `secs` que midieron las versiones anteriores; ya no se captura. */}
           <input type="hidden" name="secs" value={error.secs ?? 0} />
+          {/* Sin esto, corregir un error convertido lo desvincularia de su nota de Anki. */}
+          {error.ankiAdded && <input type="hidden" name="ankiAdded" value="on" />}
 
           <ErrorFields
             timed={session.timed}

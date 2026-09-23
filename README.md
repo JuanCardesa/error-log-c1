@@ -166,7 +166,7 @@ menos 15 observaciones en su propio denominador; las falsas certezas usan 30 dí
 
 Para crear tarjetas y leer repasos, instala AnkiConnect y deja Anki abierto.
 La app permite crear, actualizar explícitamente y deshacer vínculos, además de
-sincronizar el historial. Las marcas manuales se distinguen de las verificadas.
+sincronizar el historial. La conversión solo se sella tras verificar la tarjeta.
 [Instalación, configuración, funcionamiento y límites](docs/ANKI.md).
 
 ## Desarrollo
