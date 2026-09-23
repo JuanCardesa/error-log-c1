@@ -56,7 +56,7 @@ test('recorre los pendientes en orden y conserva el resumen y el foco al quitar 
   await expect(second.getByLabel('Correcta *')).toBeFocused();
   await next.click();
   await expect(first.getByLabel('Correcta *')).toBeFocused();
-  await second.getByText('Item, enunciado, tu respuesta y subcategoria', { exact: true }).click();
+  await second.getByText('Ítem, enunciado, tu respuesta y subcategoría', { exact: true }).click();
   await second.getByLabel('Enunciado *').fill('She is interested ___ art.');
   await expect(second.locator('p').filter({ hasText: 'She is interested ___ art.' })).toBeVisible();
   await first.getByRole('button', { name: 'Quitar error 1 de la tanda' }).click();
