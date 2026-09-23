@@ -30,7 +30,7 @@ La demo usa datos ficticios. [Ver el recorrido en imágenes estáticas](docs/DEM
 
 | Informe semanal | Evolución de Reading & Use of English |
 | --- | --- |
-| ![Informe con la acción prioritaria y sus reglas](docs/screenshots/informe.png) | ![Precisión por part y semana, con celdas sin datos diferenciadas](docs/screenshots/ruoe.png) |
+| ![Informe con la acción prioritaria y las cifras que la justifican](docs/screenshots/informe.png) | ![Precisión por part y semana, con celdas sin datos diferenciadas](docs/screenshots/ruoe.png) |
 
 ## Empezar
 
