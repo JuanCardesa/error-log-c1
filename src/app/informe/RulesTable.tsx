@@ -2,13 +2,7 @@ import { MIN_N } from '@/lib/domain/thresholds';
 import type { RuleEvaluation, RulesReport } from '@/lib/rules';
 import styles from './rules.module.css';
 
-/**
- * La tabla de decision. Es la razon de ser de todo lo anterior: sin ella las queries
- * son decoracion.
- *
- * Solo el `DO NOW` va destacado. Ensenar cinco acciones urgentes a la vez es no haber
- * decidido nada, y por eso el resto quedan explicitamente en cola.
- */
+/** Destaca una sola acción según la prioridad del informe. */
 
 function formatValue(rule: RuleEvaluation): string {
   if (rule.value === null) return '—';

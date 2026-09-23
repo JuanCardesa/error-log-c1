@@ -1,10 +1,7 @@
 # Error Log C1 — especificación
 
-Transcripción del briefing de encargo. Es la fuente de verdad del proyecto: si el código
-y este documento discrepan, discrepa el código.
-
-El antecedente de este briefing es [`error-log-spec.md`](reference/error-log-spec.md) (documento de diseño original).
-Donde ambos difieren, **manda este documento**. Ver §10.
+Contrato vigente del producto. La causa orienta el remedio; las sesiones aportan el
+denominador y registrar un error debe costar menos de 30 segundos.
 
 ---
 
@@ -85,7 +82,7 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 | --- | --- |
 | `anki_note` | `note_id` PK de Anki, `model`, `label` de texto, `tags` JSON, `category` nullable, `first_seen_at`, `last_seen_at` |
 | `anki_card` | `card_id` PK, `note_id` FK → anki_note (CASCADE), `deck`, `template_ord`, `lapses`, `reps`, `queue`, `interval_days` |
-| `anki_review` | `review_id` PK (epoch ms), `card_id` FK → anki_card (CASCADE), `reviewed_at` ISO, `review_date` civil local, `ease`, `interval`, `last_interval`, `factor`, `time_ms`, `type` |
+| `anki_review` | `review_id` PK (epoch ms), `card_id` FK → anki_card (CASCADE), `reviewed_at` ISO, `review_date` según el corte de Anki en la zona local, `ease`, `interval`, `last_interval`, `factor`, `time_ms`, `type` |
 | `anki_sync` | fila única `id=1`, `namespace` UUID de esta base, `profile`, `url`, `source_deck`, `target_deck`, `last_synced_at` nullable, `notes_seen` |
 
 `error_row.anki_note_id` es el único vínculo con el error, con `ON DELETE SET NULL`.
@@ -182,8 +179,9 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
 - **Q7 · Repaso en Anki** — número de repasos y cartas distintas, fallos `ease=1`,
   aciertos `ease=2/3/4`, porcentaje nullable si no hay repasos, y notas falladas por
   categoría principal. Solo tipos 0–3 (aprendizaje, repaso, reaprendizaje y filtrado);
-  manual y reprogramado quedan fuera. Ventana 30/60 por fecha civil local, no por el
-  cambio de día del planificador de Anki. Tags sin mapeo forman un grupo propio.
+  manual y reprogramado quedan fuera. Ventana 30/60 por el día de Anki, usando el
+  corte horario configurado o el valor predeterminado de 4:00. Los lapsos (Again de
+  tipo 1) se separan de los demás fallos. Tags sin mapeo forman un grupo propio.
 
 El cruce entre Q7 y los errores de práctica presenta recuentos y denominadores
 separados, sin equiparar sus tasas ni añadir una octava regla. La falta de sincronización
@@ -303,36 +301,23 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
 CRUD completo: crear sesión, cerrarla, reabrirla, corregir sesiones pasadas, editar y
 borrar filas de error. Borrado con confirmación. Nada de datos irrecuperables por un clic.
 
-`Error Log C1.dc.html` es la **referencia visual y de comportamiento**: densidad de
-información, monoespaciada para datos, chips de causa con color por lado (`study` azul /
-`exec` rojo), fondo hueso. Se copia a `/docs/reference/` y se respeta. No es código a
-reutilizar — se reimplementa bien.
+## 7. Decisiones técnicas
 
----
-
-## 7. Fases de entrega
-
-Una rama, un PR y un tag por fase. Al cerrar cada fase, merge a `main` y tag `v0.x`.
-
-- **Fase 1 — `feature/schema-and-core`**: schema Drizzle, migraciones, Zod, seed con datos
-  de ejemplo realistas, queries Q1–Q6 puras con tests. Sin UI. Tag `v0.1`.
-- **Fase 2 — `feature/rules-engine`**: motor de reglas con guardas y prioridad, test
-  completo. Tag `v0.2`.
-- **Fase 3 — `feature/capture-ui`**: vista Registrar con ambas variantes y validación.
-  Tag `v0.3`.
-- **Fase 4 — `feature/report-views`**: Informe, RUOE, Anki, Falsas certezas. Tag `v0.4`.
-- **Fase 5 — `feature/writing-and-export`**: Writing, Q6, CSV/JSON. Tag `v0.5`.
-- **Fase 6 — `feature/polish`**: e2e Playwright, README con capturas, accesibilidad de
-  teclado. Tag `v1.0`.
-
----
+- Consultas y reglas puras sobre filas en memoria, con reloj inyectado y fixtures.
+  `src/lib/db/` concentra el acceso a SQLite y ficheros.
+- Enums y umbrales compartidos; Zod valida entradas y SQLite protege la integridad.
+- Semana ISO propia, comprobada en cambios de año; CSS Modules sin librería de UI.
+- P1: una pieza por sesión; P2: Q4 y regla 2 usan 30 días; P3: la regla 5 usa
+  errores de sesiones cronometradas; P4: Writing obliga al paper, no a la inversa.
+- La referencia visual externa del briefing no está disponible en el repositorio.
+  Se mantiene la interfaz existente como base para los cambios aprobados.
 
 ## 8. Definition of done
 
 - `pnpm typecheck && pnpm lint && pnpm test && pnpm build` en verde.
 - Cobertura de tests en `/src/lib/` por encima del 90%.
-- Ninguna regla puede dispararse por debajo de `MIN_N`, y nunca hay dos `DO NOW`.
-- `README.md` explica en cinco líneas qué hace la app y cómo arrancarla.
+- Las reglas 0, 1, 3, 5 y 6 respetan `MIN_N` en su denominador; nunca hay dos `DO NOW`.
+- `README.md` explica el arranque, la recuperación y enlaza el contrato de Anki.
 - Cero `any` y cero `@ts-ignore`.
 - Práctica sin formato: probar alta y edición, rechazo de pares parcialmente nulos en
   Zod y SQLite, ítems obligatorios, exclusión de Q3 e inclusión correcta en Q2.
@@ -351,24 +336,3 @@ resumen de tres líneas: qué cambió y qué falta.
 Flujo de git: rama `feature/<slug>` → PR a `develop`; `develop` → `main` solo al cerrar
 fase. Conventional Commits, un commit por unidad lógica. CI (`typecheck`, `lint`, `test`,
 `build`) en push y PR a `develop` y `main`; el PR no se mergea si CI falla.
-
----
-
-## 10. Relación con `error-log-spec.md`
-
-El [documento de diseño original](reference/error-log-spec.md) queda **superado** por este briefing en estos puntos:
-
-| punto | spec original | este briefing (manda) |
-|---|---|---|
-| nombre de tabla | `error_entry` | `error_row` |
-| campos nuevos | — | `session.status`, `error_row.secs`, `error_row.subcategory` |
-| `items_total` | `NOT NULL`, `> 0` | nullable si `paper = WRITING` |
-| enum `source` | incluye `OTRO` | seis valores, sin `OTRO` |
-| enum `corrector` | `PROFESOR/WRITE_AND_IMPROVE/AUTO/NINGUNO` | `PROFESOR/YO/IA` |
-| alcance MVP | Q1, Q2, Q5; sin `writing_piece` | las seis queries y `writing_piece` dentro |
-| entrega | script local, 6–8 h | Next.js, seis fases, CI, e2e |
-| reglas de decisión | siete señales, sin mecánica | + `MIN_N`, WATCH, prioridad, estados |
-
-Lo que el original aporta y sigue vigente: el porqué del diseño (la causa es el campo que
-trabaja; sin denominador los errores no significan nada; registrar un error debe costar
-menos de 30 segundos).

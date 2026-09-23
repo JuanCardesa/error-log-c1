@@ -10,19 +10,7 @@ import { ErrorFields } from './ErrorFields';
 import { EMPTY_STATE } from './formState';
 import styles from './capture.module.css';
 
-/**
- * Entrada rapida de errores, en las dos variantes que pide §6.1.
- *
- * El requisito rector del spec original manda sobre todo lo demas: **dar de alta un
- * error tiene que costar menos de 30 segundos**. De ahi salen las tres decisiones que
- * gobiernan este componente:
- *  - la causa, la categoria y la subcategoria sobreviven al envio, porque dentro de una
- *    tanda se repiten mucho;
- *  - al guardar, el foco vuelve solo al primer campo;
- *  - `secs` se mide solo. Pedirlo a mano seria cobrar el tiempo que se quiere ahorrar.
- *
- * Los campos viven en `ErrorFields`, compartidos con la edicion de una fila.
- */
+/** Conserva los valores de la tanda y devuelve el foco al guardar. */
 
 export type Variant = 'grid' | 'card' | 'paste';
 

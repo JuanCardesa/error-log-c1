@@ -158,94 +158,16 @@ Si esa ruta predeterminada no existe, puedes restaurar directamente a ella omiti
 el segundo argumento. Una exportación JSON sirve para portabilidad; aún no hay importación
 del volcado completo ni restauración desde la interfaz.
 
-## Cómo decide el informe
+## Informe y Anki
 
-| Consulta | Para qué sirve |
-| --- | --- |
-| Reparto de causas | Distinguir conocimiento y ejecución |
-| Categorías por tasa | Comparar errores por ítems intentados |
-| Precisión RUOE | Seguir cada part por semana ISO |
-| Falsas certezas | Revisar fallos cometidos con `SEGURO` |
-| Deuda de Anki | Ver qué errores siguen sin convertirse en tarjetas |
-| Eficacia del rewrite | Comprobar si reaparecen errores del original |
+El informe prioriza una acción con siete reglas. Las reglas de porcentaje exigen al
+menos 15 observaciones en su propio denominador; las falsas certezas usan 30 días.
+[Consultas, umbrales y decisiones](docs/SPEC.md#4-consultas-q1q6-del-mvp-y-q7-de-anki).
 
-Las reglas de porcentaje necesitan al menos 15 observaciones en **su propio denominador**.
-`needs n ≥ 15` indica muestra insuficiente y `n/a`, ausencia de datos aplicables.
-La cola de Anki incluye desconocimiento, confusión y ortografía. **Crear en Anki**
-crea una nota y comprueba que tiene tarjeta antes de marcar la conversión. **Marcar
-a mano** sigue disponible y se distingue como una conversión sin verificar.
-
-## Conectar con Anki
-
-1. En Anki, abre **Herramientas → Complementos → Descargar complementos** e instala
-   [AnkiConnect, código 2055492159](https://ankiweb.net/shared/info/2055492159).
-2. Reinicia Anki y deja abierto el perfil que contiene tu colección.
-3. En esta app abre **Anki → Sincronizar**. Puedes seguir usando la app con Anki cerrado;
-   los datos de la última sincronización siguen disponibles.
-4. **Crear en Anki** envía el enunciado, tu respuesta, la solución y la regla a una nota
-   propia. El botón solo marca la conversión tras verificarla. Si se corta la conexión,
-   vuelve a pulsarlo: la identidad del error permite recuperar la nota ya creada.
-
-Por defecto lee `English B2 to C1 Practice` y sus submazos, y crea las notas en
-`English B2 to C1 Practice::Error Log`, con el tipo **Error Log C1**. No modifica el
-tipo de 18 campos ni las notas anteriores. Deshacer una conversión devuelve el error
-a la cola y conserva la nota de Anki; crearla otra vez recupera esa misma nota.
-Editar después el error en la app no actualiza automáticamente la nota ya creada.
-
-La sincronización comprueba los vínculos aunque hayas movido las notas a otro mazo.
-Si Anki confirma que una nota vinculada ya no existe, el error vuelve a estar pendiente.
-Las conversiones manuales no se pueden comprobar. La regla de deuda conserva su umbral
-y cuenta ambos tipos de conversión; el informe no supone que toda marca manual esté verificada.
-
-**Repaso en Anki** muestra repasos, porcentaje de aciertos, fallos y cartas distintas
-en 30/60 días. `Again` es fallo; `Hard`, `Good` y `Easy` son aciertos. Los pasos de
-aprendizaje también cuentan; las reprogramaciones manuales no. Las notas con varios
-`cat::` se asignan a una categoría principal; las etiquetas originales se conservan.
-El historial antiguo se importa, pero no llena artificialmente la ventana reciente.
-El informe compara cantidades de ambas fuentes; sus denominadores no son equivalentes.
-
-Se usa el día civil local, no el cambio de día de Anki a las 04:00. Los datos son un
-espejo del historial de las cartas que están actualmente en los mazos configurados:
-deshacer un repaso en Anki lo retira del espejo al sincronizar, y las cartas borradas
-o movidas fuera de esos mazos dejan de entrar en sus estadísticas.
-
-Configuración opcional del servidor (variables de entorno):
-
-| Variable | Valor por defecto |
-| --- | --- |
-| `ANKI_CONNECT_URL` | `http://127.0.0.1:8765` (solo direcciones locales) |
-| `ANKI_SOURCE_DECK` | `English B2 to C1 Practice` |
-| `ANKI_TARGET_DECK` | `<mazo origen>::Error Log` |
-| `ANKI_CONNECT_API_KEY` | sin clave; configúrala si tu AnkiConnect la requiere |
-| `ANKI_ROLLOVER_HOUR` | sin declarar; se supone `4` |
-| `ANKI_BATCH_SIZE` | `250` cartas por petición |
-| `ANKI_SYNC_BUDGET_MS` | `180000`, tope de una sincronización entera |
-
-Los nombres de mazo admiten hasta 256 caracteres (también el destino derivado), la
-clave hasta 1024 y la URL hasta 2048. Los valores declarados deben ser no vacíos y no
-contener caracteres de control. La URL admite puertos del 1 al 65535, solo en este equipo.
-Para conectar sin clave, deja `ANKI_CONNECT_API_KEY` sin definir.
-
-`ANKI_ROLLOVER_HOUR` es la hora a la que empieza el día en tu colección («next day starts
-at» en las preferencias de Anki). Los repasos se agrupan por ese corte, no por medianoche:
-uno de la 1:30 pertenece al día anterior. AnkiConnect no expone ese dato —comprobado
-contra una instalación real—, así que si tu colección no usa el 4 por defecto, decláralo
-aquí. La pantalla de Anki dice siempre si la hora que está usando la sabe o la supone.
-
-La primera sincronización o creación vincula esta base al perfil, dirección y mazos
-configurados. Un cambio de perfil/configuración se rechaza para no mezclar colecciones
-ni devolver deuda por notas de otro perfil. Antes de guardar, cada nota vinculada que
-existe debe tener exactamente el `ErrorLogId` de su error y del namespace de esta base;
-una sola discrepancia detiene toda la sincronización sin cambiar SQLite, incluso si el
-perfil y los mazos coinciden. Para otra colección usa una base nueva mediante
-`DB_FILE_OVERRIDE`; no se cambia automáticamente la colección de una base existente.
-Requiere una versión reciente de AnkiConnect con `getActiveProfile`.
-La demo y las pruebas desactivan el acceso a la colección personal. No hay llamadas
-automáticas para borrar notas, cambiar el planificador o responder tarjetas.
-
-Q7 se exporta a CSV. El JSON incluye también notas, cartas, repasos y estado de
-sincronización; la copia SQLite incluye el vínculo y la identidad de recuperación.
-[Decisiones de implementación y límites](docs/ANKI.md).
+Para crear tarjetas y leer repasos, instala AnkiConnect y deja Anki abierto.
+La app permite crear, actualizar explícitamente y deshacer vínculos, además de
+sincronizar el historial. Las marcas manuales se distinguen de las verificadas.
+[Instalación, configuración, funcionamiento y límites](docs/ANKI.md).
 
 ## Desarrollo
 
@@ -267,5 +189,4 @@ se restaura conservando filas, relaciones y migraciones. La cobertura de `src/li
 un mínimo del 90 % en líneas, sentencias, funciones y ramas.
 
 [Contribuir](CONTRIBUTING.md) · [Contrato del producto](docs/SPEC.md) ·
-[Plan de implementación](docs/PLAN.md) ·
 [Regenerar la demo y las capturas](docs/DEMO.md) · [Licencia MIT](LICENSE)

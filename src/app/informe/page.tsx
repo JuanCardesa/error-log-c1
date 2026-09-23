@@ -12,12 +12,7 @@ import shared from '../_shared/report.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import { RulesTable } from './RulesTable';
 
-/**
- * Informe. Q1, Q2 y Q5 arriba como evidencia, y debajo la tabla de decision.
- *
- * El orden importa: primero lo que ha pasado, luego lo que hay que hacer. Las cifras
- * sin la accion son una base de datos de verguenza; la accion sin las cifras no se cree.
- */
+/** Informe de reglas, práctica y repaso. */
 
 export const dynamic = 'force-dynamic';
 
