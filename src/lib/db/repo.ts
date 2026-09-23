@@ -75,6 +75,14 @@ export function createError(db: Db, input: ErrorInput): ErrorRow {
   return created;
 }
 
+/**
+ * Identidad de una fila importada: item, enunciado, respuesta y solucion, sin espacios
+ * alrededor. Alta e importacion la comparten para que un mismo pegado no cuele dos veces
+ * en una via y una en la otra.
+ */
+const fingerprint = (row: Pick<ErrorInput, 'itemRef' | 'prompt' | 'myAnswer' | 'correctAnswer'>): string =>
+  JSON.stringify([row.itemRef ?? '', row.prompt, row.myAnswer ?? '', row.correctAnswer].map((value) => value.trim()));
+
 /** Guarda la tanda completa y evita duplicar el mismo error al volver a pegarlo. */
 export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorInput[]) {
   return db.transaction((tx) => {
@@ -82,8 +90,6 @@ export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorIn
     if (target === undefined) return { ok: false, message: 'Esa sesion ya no existe.' } as const;
     if (target.status !== 'OPEN') return { ok: false, message: 'La sesion esta cerrada. Reabrela para importar.' } as const;
 
-    const fingerprint = (row: Pick<ErrorInput, 'itemRef' | 'prompt' | 'myAnswer' | 'correctAnswer'>) =>
-      JSON.stringify([row.itemRef ?? '', row.prompt, row.myAnswer ?? '', row.correctAnswer].map((value) => value.trim()));
     const existing = tx.select().from(errorRow).where(eq(errorRow.sessionId, sessionId)).all();
     const seen = new Set(existing.map(fingerprint));
     let created = 0;
@@ -106,7 +112,7 @@ export function createSessionWithErrors(db: Db, header: SessionInput, inputs: re
     const seen = new Set<string>();
     let created = 0;
     for (const input of inputs) {
-      const key = JSON.stringify([input.itemRef ?? '', input.prompt, input.myAnswer ?? '', input.correctAnswer].map((text) => text.trim()));
+      const key = fingerprint(input);
       if (seen.has(key)) continue;
       tx.insert(errorRow).values({ ...input, sessionId: createdSession.id, lateInSession: header.timed && input.lateInSession }).run();
       seen.add(key);
