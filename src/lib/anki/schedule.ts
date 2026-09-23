@@ -1,4 +1,4 @@
-import { toIsoDate } from '../time/dates';
+import { addDays, parseIsoDate, toIsoDate, toUtcIsoDate } from '../time/dates';
 
 /**
  * El día de Anki no empieza a medianoche.
@@ -16,8 +16,6 @@ import { toIsoDate } from '../time/dates';
  * suposición, en vez de enseñar una cifra que parece leída de la colección.
  */
 export const DEFAULT_ROLLOVER_HOUR = 4;
-
-const HOUR_MS = 3_600_000;
 
 export type RolloverSource = 'anki' | 'config' | 'default';
 export interface Rollover {
@@ -48,7 +46,17 @@ export function resolveRollover(preferences: unknown, configured?: number): Roll
   return hour === null ? { hour: DEFAULT_ROLLOVER_HOUR, source: 'default' } : { hour, source: 'anki' };
 }
 
-/** Fecha del día de Anki al que pertenece un instante, en el calendario local. */
+/**
+ * Fecha del día de Anki al que pertenece un instante, en el calendario local.
+ *
+ * Se compara la hora del reloj con el corte y se retrocede un día civil. Restar la
+ * duración del corte al instante absoluto parecía equivalente y no lo es: en los días
+ * con cambio de hora el reloj local salta o repite una hora, y el resultado se iba un
+ * día entero. El día anterior se calcula en UTC, que es donde la aritmética civil no
+ * depende de la zona.
+ */
 export function ankiDay(reviewedAt: Date, rolloverHour: number): string {
-  return toIsoDate(new Date(reviewedAt.getTime() - rolloverHour * HOUR_MS));
+  const civil = toIsoDate(reviewedAt);
+  if (reviewedAt.getHours() >= rolloverHour) return civil;
+  return toUtcIsoDate(addDays(parseIsoDate(civil), -1));
 }
