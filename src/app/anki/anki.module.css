@@ -185,6 +185,7 @@
   margin-top: var(--sp-3);
 }
 
-.legacyNote {
+/* Dentro de .done para ganar al margen cero de ui.note, sea cual sea el orden de carga. */
+.done .legacyNote {
   margin-top: var(--sp-5);
 }
