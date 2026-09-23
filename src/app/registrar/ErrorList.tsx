@@ -42,23 +42,25 @@ export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
 
   return (
     <div className={`${ui.tableWrap} ${ui.framed} ${styles.wrap}`}>
-      <table className={`${ui.table} ${styles.table}`}>
+      {/* Roles explicitos: en estrecho la tabla pasa a tarjetas con display: block, y sin
+          ellos algunos lectores dejan de exponerla como tabla y de anunciar las cabeceras. */}
+      <table role="table" className={`${ui.table} ${styles.table}`}>
         <caption className="sr-only">Errores registrados en esta sesión</caption>
-        <thead>
-          <tr>
-            <th scope="col">Ítem</th>
-            <th scope="col">Correcta</th>
-            <th scope="col">Causa</th>
-            <th scope="col">Categoría</th>
-            <th scope="col">Conf.</th>
-            <th scope="col">Regla</th>
-            <th scope="col">Anki</th>
-            <th scope="col">
+        <thead role="rowgroup">
+          <tr role="row">
+            <th role="columnheader" scope="col">Ítem</th>
+            <th role="columnheader" scope="col">Correcta</th>
+            <th role="columnheader" scope="col">Causa</th>
+            <th role="columnheader" scope="col">Categoría</th>
+            <th role="columnheader" scope="col">Conf.</th>
+            <th role="columnheader" scope="col">Regla</th>
+            <th role="columnheader" scope="col">Anki</th>
+            <th role="columnheader" scope="col">
               <span className="sr-only">Acciones</span>
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody role="rowgroup">
           {errors.map((error) =>
             editingId === error.id ? (
               <EditRow
@@ -116,21 +118,21 @@ function Row({ error, focusEdit, onEdit }: {
   const meta = CAUSE_META[error.cause];
 
   return (
-    <tr className={pending ? styles.rowGoing : undefined}>
-      <td className="data" data-label="Ítem">{error.itemRef ?? '—'}</td>
-      <td className="data" data-label="Correcta">{error.correctAnswer}</td>
-      <td data-label="Causa">
+    <tr role="row" className={pending ? styles.rowGoing : undefined}>
+      <td role="cell" className="data" data-label="Ítem">{error.itemRef ?? '—'}</td>
+      <td role="cell" className="data" data-label="Correcta">{error.correctAnswer}</td>
+      <td role="cell" data-label="Causa">
         <span className={meta.side === 'study' ? ui.chipStudy : ui.chipExec}>
           {CAUSE_LABELS[error.cause]}
         </span>
       </td>
-      <td data-label="Categoría">
+      <td role="cell" data-label="Categoría">
         {CATEGORY_LABELS[error.category]}
         {error.subcategory !== null && (
           <span className={styles.sub}> · {error.subcategory}</span>
         )}
       </td>
-      <td data-label="Confianza">
+      <td role="cell" data-label="Confianza">
         {error.confidence === 'SEGURO' ? (
           <strong className={styles.sure} title="Falsa certeza: creencia instalada">
             {CONFIDENCE_LABELS.SEGURO}
@@ -139,11 +141,12 @@ function Row({ error, focusEdit, onEdit }: {
           CONFIDENCE_LABELS[error.confidence]
         )}
       </td>
-      <td className={styles.rule} data-label="Regla">{error.ruleNote}</td>
-      <td className="data" data-label="Anki">
+      <td role="cell" className={styles.rule} data-label="Regla">{error.ruleNote}</td>
+      <td role="cell" className="data" data-label="Anki">
         {meta.generatesCard ? (error.ankiAdded ? 'sí' : 'pendiente') : '—'}
       </td>
       <td
+        role="cell"
         className={styles.rowActions}
         onKeyDown={(event) => {
           if (event.key === 'Escape' && confirming) setConfirming(false);
@@ -231,8 +234,8 @@ function EditRow({
   }, [state, formRef]);
 
   return (
-    <tr>
-      <td colSpan={8} className={styles.editCell}>
+    <tr role="row">
+      <td role="cell" colSpan={8} className={styles.editCell}>
         <form
           ref={formRef}
           action={formAction}
