@@ -49,7 +49,7 @@ export default async function AnkiPage({
   const anki = loadAnkiDataset(getDb());
   const config = safeAnkiConfig();
   const status = await ankiStatus(getDb(), config ?? undefined);
-  const reviews = q7AnkiReviews(anki, { now: new Date(), windowDays });
+  const reviews = q7AnkiReviews(anki, { now: new Date(), windowDays }, data.errors);
 
   // La huella se compara con el contenido de ahora: detecta la edición sin preguntar a Anki.
   const namespace = anki.sync?.namespace ?? null;

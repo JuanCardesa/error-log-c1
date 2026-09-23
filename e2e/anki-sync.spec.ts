@@ -9,7 +9,10 @@ import { E2E_DB } from './globalSetup';
  * fallo y exportar lo sincronizado. Hablan con el doble que arranca Playwright.
  */
 
-async function control(request: APIRequestContext, body: { failAction?: string | null; disconnected?: boolean }) {
+async function control(request: APIRequestContext, body: {
+  failAction?: string | null; disconnected?: boolean;
+  reviewsFor?: { cardId: number; ease: number; type: number };
+}) {
   expect((await request.post(`${FAKE_ANKI_URL}/__control`, { data: body })).ok()).toBe(true);
 }
 
@@ -196,4 +199,48 @@ test('una conversion antigua que se corrige sigue teniendo boton para actualizar
 
   await page.reload();
   await expect(done.getByRole('listitem').filter({ hasText: oldest })).toHaveCount(0);
+});
+
+test('corregir la categoria de un error convertido reagrupa su fallo en el repaso', async ({ page, request }) => {
+  // Actualizar reescribe campos, nunca tags. Sin resolver la categoria desde el error
+  // local, el fallo seguiria contando bajo la etiqueta con la que llego de Anki.
+  await page.goto('/anki');
+  await page.getByRole('button', { name: 'Crear en Anki' }).first().click();
+  await expect(page.getByText('Tarjeta verificada en Anki.')).toBeVisible();
+  await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByRole('status'))
+    .toContainText('repasos nuevos');
+
+  // La nota recien creada nace sin historial: se le da un fallo en el doble.
+  const first = await (await request.get('/exportar/dump.json')).json() as {
+    rows: { errors: { id: number; sessionId: number; correctAnswer: string; category: string; ankiNoteId: number | null }[] };
+    anki: { cards: { cardId: number; noteId: number }[] };
+  };
+  const linked = first.rows.errors.find((row) => row.ankiNoteId !== null);
+  expect(linked).toBeDefined();
+  const card = first.anki.cards.find((row) => row.noteId === linked?.ankiNoteId);
+  expect(card).toBeDefined();
+
+  await control(request, { reviewsFor: { cardId: card?.cardId ?? 0, ease: 1, type: 1 } });
+  await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Conexión con Anki' }).getByRole('status'))
+    .toContainText('repasos nuevos');
+
+  const reviews = page.getByRole('region', { name: 'Repaso en Anki' });
+  const heading = (name: string) => reviews.getByRole('heading', { level: 3 }).filter({ hasText: name });
+  await expect(heading(linked?.category ?? '')).toBeVisible();
+
+  // Se corrige la categoria del error vinculado, desde Registrar.
+  await page.goto(`/registrar?s=${String(linked?.sessionId ?? 0)}`);
+  const row = page.getByRole('row').filter({ hasText: linked?.correctAnswer ?? '' }).first();
+  await row.getByRole('button', { name: 'Editar', exact: true }).click();
+  const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
+  await editForm.getByLabel('Categoria *').fill('REGISTRO');
+  await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByRole('cell', { name: 'REGISTRO', exact: true })).toBeVisible();
+
+  // El fallo pasa a contarse bajo la categoria corregida, sin tocar los tags de Anki.
+  await page.goto('/anki');
+  await expect(heading('REGISTRO')).toBeVisible();
+  await expect(heading(linked?.category ?? '')).toHaveCount(0);
 });

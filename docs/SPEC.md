@@ -183,7 +183,8 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
   categoría principal. Solo tipos 0–3 (aprendizaje, repaso, reaprendizaje y filtrado);
   manual y reprogramado quedan fuera. Ventana 30/60 por el día de Anki, usando el
   corte horario configurado o el valor predeterminado de 4:00. Los lapsos (Again de
-  tipo 1) se separan de los demás fallos. Tags sin mapeo forman un grupo propio.
+  tipo 1) se separan de los demás fallos. La categoría de una nota vinculada sale de su
+  error local; las demás, de sus tags, y los tags sin mapeo forman un grupo propio.
 
 Q7 no alimenta ninguna regla ni se cruza con los errores de práctica: sus denominadores
 no son equiparables. La falta de sincronización se distingue de una ventana sincronizada

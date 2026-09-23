@@ -1,5 +1,5 @@
 import type { Category } from '../domain/enums';
-import { EMPTY_ANKI_DATASET, type AnkiDataset, type QueryOptions } from '../domain/types';
+import { EMPTY_ANKI_DATASET, type AnkiDataset, type ErrorRow, type QueryOptions } from '../domain/types';
 import { toCsv } from '../csv/csv';
 import { inWindow } from '../time/dates';
 import { percentage } from './window';
@@ -16,7 +16,30 @@ import { percentage } from './window';
  */
 const REVIEW_TYPE = 1;
 
-export function q7AnkiReviews(data: AnkiDataset = EMPTY_ANKI_DATASET, options: QueryOptions) {
+/**
+ * Categoria con la que se agrupa una nota.
+ *
+ * Si la nota esta vinculada a un error del log, manda la categoria de ese error: es la
+ * que tu corriges y la que usan las demas vistas. Actualizar una tarjeta reescribe sus
+ * campos pero nunca sus tags —no se tocan etiquetas de tu coleccion—, asi que resolverla
+ * aqui es lo que evita que corregir una categoria deje las estadisticas de repaso
+ * contando bajo la antigua para siempre. Sin filas locales, manda la etiqueta de Anki.
+ */
+function categoryResolver(errors: readonly ErrorRow[]) {
+  const local = new Map<number, ErrorRow['category']>();
+  for (const error of errors) {
+    if (error.ankiNoteId !== null) local.set(error.ankiNoteId, error.category);
+  }
+  return (note: { noteId: number; category: Category | null }): Category | null =>
+    local.get(note.noteId) ?? note.category;
+}
+
+export function q7AnkiReviews(
+  data: AnkiDataset = EMPTY_ANKI_DATASET,
+  options: QueryOptions,
+  errors: readonly ErrorRow[] = [],
+) {
+  const categoryOfNote = categoryResolver(errors);
   const notes = new Map(data.notes.map((note) => [note.noteId, note]));
   const cards = new Map(data.cards.map((card) => [card.cardId, card]));
   const groups = new Map<Category | null, { category: Category | null; reviews: number; failures: number; lapses: number; cards: Set<number>; notes: Map<number, { noteId: number; label: string; failures: number }> }>();
@@ -31,10 +54,11 @@ export function q7AnkiReviews(data: AnkiDataset = EMPTY_ANKI_DATASET, options: Q
     if (!note) continue;
     reviews += 1;
     touched.add(review.cardId);
-    let group = groups.get(note.category);
+    const category = categoryOfNote(note);
+    let group = groups.get(category);
     if (group === undefined) {
-      group = { category: note.category, reviews: 0, failures: 0, lapses: 0, cards: new Set(), notes: new Map() };
-      groups.set(note.category, group);
+      group = { category, reviews: 0, failures: 0, lapses: 0, cards: new Set(), notes: new Map() };
+      groups.set(category, group);
     }
     group.reviews += 1;
     group.cards.add(review.cardId);

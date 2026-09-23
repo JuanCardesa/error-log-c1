@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { q7AnkiReviews, q7ToCsv } from './q7AnkiReviews';
 import { EMPTY_ANKI_DATASET } from '../domain/types';
 import { ankiFixture, NOW } from '../anki/fixtures/build';
-import { makeDataset } from './fixtures/build';
+import { makeDataset, makeError } from './fixtures/build';
 import { toCsvExport, toJsonDump } from '../export/dump';
 
 const options = { now: NOW, windowDays: 30 };
@@ -44,6 +44,24 @@ it('no cuenta referencias huérfanas y desempata categorías de forma determinis
   };
   expect(q7AnkiReviews(snapshot, options).reviews).toBe(2);
   expect(q7AnkiReviews(snapshot, options).groups.map((group) => group.category)).toEqual([null, 'PHRASAL_VERB']);
+});
+it('agrupa una nota vinculada por la categoria de su error, no por su etiqueta', () => {
+  // La nota 20 llega de Anki etiquetada PHRASAL_VERB. Si corriges el error a COLOCACION,
+  // actualizar la tarjeta reescribe campos pero nunca tags: sin resolverlo aqui, Q7
+  // seguiria contando ese fallo bajo la categoria vieja para siempre.
+  const anki = ankiFixture();
+  const linked = [makeError({ ankiNoteId: 20, ankiAdded: true, category: 'COLOCACION' })];
+
+  expect(q7AnkiReviews(anki, options).groups[0]?.category).toBe('PHRASAL_VERB');
+  expect(q7AnkiReviews(anki, options, linked).groups[0]).toMatchObject({
+    category: 'COLOCACION', failures: 1, notes: [{ noteId: 20, label: 'deal with', failures: 1 }],
+  });
+});
+it('no toca la categoria de una nota que no es de ningun error del log', () => {
+  const anki = ankiFixture();
+  // Un error del log sin vincular no puede reetiquetar una nota que no es suya.
+  const unrelated = [makeError({ ankiNoteId: null, category: 'COLOCACION' })];
+  expect(q7AnkiReviews(anki, options, unrelated).groups[0]?.category).toBe('PHRASAL_VERB');
 });
 it('exporta el historial sin perder campos y CSV sin inventar una tasa vacía', () => {
   const anki = ankiFixture(); const practice = makeDataset();

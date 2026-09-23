@@ -82,7 +82,7 @@ it('solo devuelve la deuda cuando notesInfo confirma que la nota vinculada no ex
   // Nota fuera del mazo buscado: sigue existiendo, no debe volver a la cola.
   await syncAnki(db, fake.transport, NOW, CONFIG);
   expect(getError(db, 1)?.ankiAdded).toBe(true);
-  fake.notes.delete(nid);
+  fake.deleteNote(nid);
   await syncAnki(db, fake.transport, NOW, CONFIG);
   expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null });
 });
@@ -116,7 +116,7 @@ it.each(['missing', 'empty', 'wrong-error', 'html'])('un vínculo válido no ocu
   else fields['ErrorLogId'] = { order: 0, value: mode === 'empty' ? ''
     : mode === 'wrong-error' ? identity.replace(/::2$/, '::1') : `<b>${identity}</b>` };
   fake.notes.set(changed.noteId, { ...changed, fields });
-  fake.notes.delete(ids[2]!);
+  fake.deleteNote(ids[2]!);
   await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CONFIG' });
   expect(loadAnkiDataset(db)).toEqual(before);
   expect(db.select().from(errorRow).all()).toEqual(errors);
@@ -138,7 +138,7 @@ it('se niega a vaciar el historial cuando Anki no reconoce ninguna nota vinculad
   const noteIds = await convertThree();
   const before = loadAnkiDataset(db);
   // Perfil, endpoint y mazo intactos: es otra coleccion restaurada bajo el mismo nombre.
-  for (const noteId of noteIds) fake.notes.delete(noteId);
+  for (const noteId of noteIds) fake.deleteNote(noteId);
   await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CONFIG' });
   expect([1, 2, 3].map((id) => getError(db, id)?.ankiAdded)).toEqual([true, true, true]);
   expect([1, 2, 3].map((id) => getError(db, id)?.ankiAddedAt)).not.toContain(null);
@@ -147,8 +147,8 @@ it('se niega a vaciar el historial cuando Anki no reconoce ninguna nota vinculad
 
 it('devuelve a la cola las notas borradas de verdad mientras quede alguna reconocible', async () => {
   const noteIds = await convertThree();
-  fake.notes.delete(noteIds[0]!);
-  fake.notes.delete(noteIds[1]!);
+  fake.deleteNote(noteIds[0]!);
+  fake.deleteNote(noteIds[1]!);
   await syncAnki(db, fake.transport, NOW, CONFIG);
   expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null });
   expect(getError(db, 2)).toMatchObject({ ankiNoteId: null, ankiAdded: false, ankiAddedAt: null });
@@ -476,6 +476,8 @@ it('los errores de red y snapshots incompletos no cambian nada en SQLite', async
   fake.disconnected = true;
   await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CERRADO' });
   fake.disconnected = false;
+  // A proposito sin `deleteNote`: la carta se queda huerfana, que es la coleccion
+  // cambiando a mitad de la lectura, no un borrado del usuario.
   fake.notes.delete(20);
   await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toThrow('Falta la nota');
   expect(loadAnkiDataset(db)).toEqual(before);

@@ -54,7 +54,7 @@ export function toCsvExport(
     case 'q6':
       return q6ToCsv(q6RewriteEfficacy(data, options));
     case 'q7':
-      return q7ToCsv(q7AnkiReviews(anki, options));
+      return q7ToCsv(q7AnkiReviews(anki, options, data.errors));
   }
 }
 

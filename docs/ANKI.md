@@ -45,8 +45,9 @@ existente. Solo se marca la conversión tras verificar la identidad y al menos u
 
 Editar un error no reescribe su nota. Una huella del contenido confirmado permite
 avisar de cambios locales y ofrecer Actualizar en Anki. La actualización verifica
-los campos recibidos; no cambia tags, mazo ni programación. Si cambias la categoría,
-las estadísticas de Anki siguen usando sus etiquetas originales.
+los campos recibidos; no cambia tags, mazo ni programación. Si cambias la categoría de un
+error, sus estadísticas de repaso pasan a contarse bajo la nueva: para una nota vinculada
+manda la categoría local, y las etiquetas de tu colección se quedan como están.
 
 La conversión solo se sella tras verificarla; ya no hay marca manual. Las marcas de
 versiones anteriores se conservan, cuentan como convertidas y se señalan como no
@@ -69,8 +70,8 @@ son aciertos. Se separan los lapsos de repaso (tipo 1) y los fallos restantes. S
 registros manuales, reprogramaciones y respuestas inválidas. Q7 se lee en la pestaña Anki
 y no altera las siete reglas del informe.
 
-Las etiquetas se asignan a una categoría principal mediante el mapeo de
-`src/lib/anki/categories.ts`. Q7 tiene CSV; el JSON exporta el espejo y sus resultados.
+Las notas no vinculadas al log se asignan a una categoría principal mediante el mapeo de
+etiquetas de `src/lib/anki/categories.ts`. Q7 tiene CSV; el JSON exporta el espejo y sus resultados.
 Para recuperar toda la app, usa una copia SQLite: [copias y recuperación](../README.md#copias-y-recuperación).
 
 ## Protecciones y límites
