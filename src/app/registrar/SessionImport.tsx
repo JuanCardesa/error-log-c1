@@ -18,7 +18,7 @@ export function SessionImport({ today, openSessions, subcategorySuggestions }: {
   // Mientras se revisa, la pagina esconde lo demas (ver .idleOnly en page.module.css).
   return <section className={ui.panel} aria-label="Importar una tanda de estudio" data-reviewing={batch?.session ? 'true' : undefined}>
     <h2>Pegar sesión y errores</h2>
-    <p>Pega el bloque de «Copiar todo» de Macmillan. Revisa la cabecera y completa cada error antes de guardar.</p>
+    <p className={styles.intro}>Pega el bloque de «Copiar todo» de Macmillan. Revisa la cabecera y completa cada error antes de guardar.</p>
     {batch?.session ? <ImportReview session={null} proposal={batch.session} today={today}
       openSessions={openSessions} subcategorySuggestions={subcategorySuggestions} drafts={batch.errors}
       onBack={() => setBatch(null)} onSaved={(message, id) => {
