@@ -17,7 +17,7 @@ test('conserva Writing cuando otra pestaña ocupa la sesion', async ({ page, con
   await page.goto('/registrar');
   await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
-  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+  await page.getByRole('button', { name: 'Abrir sesión' }).click();
   await expect(page).toHaveURL(/s=\d+/);
   const sessionId = new URL(page.url()).searchParams.get('s');
   if (sessionId === null) throw new Error('Falta la sesion recien creada');
@@ -46,7 +46,7 @@ test('prepara un formulario vacio tras guardar un nuevo texto', async ({ page })
     await page.goto('/registrar');
     await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
     await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
-    await page.getByRole('button', { name: 'Abrir sesion' }).click();
+    await page.getByRole('button', { name: 'Abrir sesión' }).click();
     await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeVisible();
   }
 
@@ -171,7 +171,7 @@ test('desde Writing se abre una sesion de Writing y se vuelve con ella lista', a
   await expect(page.getByRole('button', { name: 'Nueva sesión a mano' })).toHaveAttribute('aria-expanded', 'true');
   await expect(page.getByRole('combobox', { name: 'Tipo', exact: true })).toHaveValue('WRITING');
   await expect(page.getByRole('combobox', { name: 'Paper', exact: true })).toHaveValue('WRITING');
-  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+  await page.getByRole('button', { name: 'Abrir sesión' }).click();
 
   await expect(page).toHaveURL(/\/writing$/);
   await expect(page.getByRole('heading', { name: 'Nuevo texto' })).toBeVisible();

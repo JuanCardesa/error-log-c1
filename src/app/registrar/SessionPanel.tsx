@@ -7,6 +7,7 @@ import { SessionControls } from './SessionControls';
 import { SessionForm } from './SessionForm';
 import styles from './page.module.css';
 import list from './list.module.css';
+import { SOURCE_LABELS, STATUS_LABELS } from '../_shared/labels';
 import ui from '../_shared/ui.module.css';
 
 /** Cabecera y edición de una sesión. */
@@ -39,12 +40,12 @@ export function SessionPanel({
         <div>
           <dt>Fuente</dt>
           <dd className="data">
-            {session.source}
+            {SOURCE_LABELS[session.source]}
             {session.sourceRef === null ? '' : ` · ${session.sourceRef}`}
           </dd>
         </div>
         <div>
-          <dt>Items</dt>
+          <dt>Ítems</dt>
           <dd className="data">
             {session.itemsTotal === null
               ? 'no aplica'
@@ -52,8 +53,8 @@ export function SessionPanel({
           </dd>
         </div>
         <div>
-          <dt>Cronometro</dt>
-          <dd className="data">{session.timed ? 'si' : 'no'}</dd>
+          <dt>Cronómetro</dt>
+          <dd className="data">{session.timed ? 'sí' : 'no'}</dd>
         </div>
         <div>
           <dt>Errores</dt>
@@ -65,7 +66,7 @@ export function SessionPanel({
             <span
               className={session.status === 'OPEN' ? styles.badgeOpen : styles.badgeClosed}
             >
-              {session.status}
+              {STATUS_LABELS[session.status]}
             </span>
           </dd>
         </div>

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
 
 import { CAUSE_META } from '@/lib/domain/enums';
+import { CATEGORY_LABELS, CAUSE_LABELS, CONFIDENCE_LABELS } from '../_shared/labels';
 import type { ErrorRow, SessionRow } from '@/lib/domain/types';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { deleteErrorAction, updateErrorAction } from './actions';
@@ -33,8 +34,8 @@ export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
   if (errors.length === 0) {
     return (
       <p className={`${ui.empty} ${styles.empty}`}>
-        Sin errores todavia. Una sesion de cero errores es valida y cuenta en el
-        denominador: cierrala sin mas cuando termines.
+        Sin errores todavía. Una sesión de cero errores es válida y cuenta en el
+        denominador: ciérrala sin más cuando termines.
       </p>
     );
   }
@@ -42,13 +43,13 @@ export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
   return (
     <div className={`${ui.tableWrap} ${ui.framed} ${styles.wrap}`}>
       <table className={`${ui.table} ${styles.table}`}>
-        <caption className="sr-only">Errores registrados en esta sesion</caption>
+        <caption className="sr-only">Errores registrados en esta sesión</caption>
         <thead>
           <tr>
-            <th scope="col">Item</th>
+            <th scope="col">Ítem</th>
             <th scope="col">Correcta</th>
             <th scope="col">Causa</th>
-            <th scope="col">Categoria</th>
+            <th scope="col">Categoría</th>
             <th scope="col">Conf.</th>
             <th scope="col">Regla</th>
             <th scope="col">Anki</th>
@@ -120,27 +121,27 @@ function Row({ error, focusEdit, onEdit }: {
       <td className="data">{error.correctAnswer}</td>
       <td>
         <span className={meta.side === 'study' ? ui.chipStudy : ui.chipExec}>
-          {error.cause}
+          {CAUSE_LABELS[error.cause]}
         </span>
       </td>
-      <td className="data">
-        {error.category}
+      <td>
+        {CATEGORY_LABELS[error.category]}
         {error.subcategory !== null && (
           <span className={styles.sub}> · {error.subcategory}</span>
         )}
       </td>
-      <td className="data">
+      <td>
         {error.confidence === 'SEGURO' ? (
           <strong className={styles.sure} title="Falsa certeza: creencia instalada">
-            SEGURO
+            {CONFIDENCE_LABELS.SEGURO}
           </strong>
         ) : (
-          error.confidence
+          CONFIDENCE_LABELS[error.confidence]
         )}
       </td>
       <td className={styles.rule}>{error.ruleNote}</td>
       <td className="data">
-        {meta.generatesCard ? (error.ankiAdded ? 'si' : 'pendiente') : '—'}
+        {meta.generatesCard ? (error.ankiAdded ? 'sí' : 'pendiente') : '—'}
       </td>
       <td
         className={styles.rowActions}

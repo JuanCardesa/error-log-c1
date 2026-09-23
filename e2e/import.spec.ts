@@ -3,10 +3,10 @@ import { expect, test, type Page } from '@playwright/test';
 async function openImport(page: Page) {
   await page.goto('/registrar');
   await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
-  await page.getByLabel('Items *').fill('8');
+  await page.getByLabel('Ítems *').fill('8');
   await page.getByLabel('Aciertos *').fill('5');
   await page.getByLabel('Referencia').fill('Importacion de correcciones');
-  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+  await page.getByRole('button', { name: 'Abrir sesión' }).click();
   await page.getByRole('button', { name: 'Pegar varios errores', exact: true }).click();
 }
 
@@ -24,11 +24,11 @@ test('cuenta los errores pendientes y no envia hasta completarlos', async ({ pag
   const second = page.getByRole('group', { name: 'Error 2', exact: true });
   await expect(second.getByText('Falta: correcta', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
-  await expect(page.getByRole('table', { name: 'Errores registrados en esta sesion' })).toHaveCount(0);
+  await expect(page.getByRole('table', { name: 'Errores registrados en esta sesión' })).toHaveCount(0);
   await expect(second.getByLabel('Correcta *')).toBeFocused();
   await expect(page.getByText('Completa los errores pendientes antes de guardar. Faltan 1 de 2.')).toBeVisible();
   await second.getByLabel('Correcta *').fill('in');
-  await expect(page.getByText('Los 2 errores estan completos.', { exact: true })).toBeVisible();
+  await expect(page.getByText('Los 2 errores están completos.', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeFocused();
 });
@@ -88,11 +88,11 @@ test('permite elegir categoria con el teclado y actualiza los pendientes', async
   await page.getByLabel('Errores para importar').fill(JSON.stringify([{ ...rows[0], category: '' }]));
   await page.getByRole('button', { name: 'Preparar vista previa' }).click();
   await page.getByRole('button', { name: 'Ir al siguiente pendiente' }).click();
-  const category = page.getByRole('group', { name: 'Error 1', exact: true }).getByLabel('Categoria *');
+  const category = page.getByRole('group', { name: 'Error 1', exact: true }).getByLabel('Categoría *');
   await expect(category).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(category).toHaveValue('COLOCACION');
-  await expect(page.getByText('El error esta completo.', { exact: true })).toBeVisible();
+  await expect(page.getByText('El error está completo.', { exact: true })).toBeVisible();
 });
 
 test('volver al texto pide confirmacion en la pagina, no con un dialogo', async ({ page }) => {
@@ -138,10 +138,10 @@ test('pega, revisa, quita una fila y guarda la tanda sin duplicarla al repetirla
   await first.getByRole('combobox', { name: 'Confianza', exact: true }).selectOption('SEGURO');
   await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
-  const table = page.getByRole('table', { name: 'Errores registrados en esta sesion' });
+  const table = page.getByRole('table', { name: 'Errores registrados en esta sesión' });
   await expect(table.locator('tbody tr')).toHaveCount(2);
-  await expect(table.getByRole('cell', { name: 'CONFUSION', exact: true })).toBeVisible();
-  await expect(table.getByRole('cell', { name: 'SEGURO', exact: true })).toBeVisible();
+  await expect(table.getByRole('cell', { name: 'Confusión', exact: true })).toBeVisible();
+  await expect(table.getByRole('cell', { name: 'Seguro', exact: true })).toBeVisible();
   await expect(page.getByLabel('Errores para importar')).toHaveValue('');
 
   await page.getByLabel('Errores para importar').fill(JSON.stringify(rows));
@@ -172,7 +172,7 @@ test('un error invalido bloquea toda la tanda y se puede corregir sin perder los
   await page.getByRole('button', { name: 'Preparar vista previa' }).click();
   await page.getByRole('button', { name: 'Guardar 3 errores', exact: true }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'No se ha guardado ningun error' })).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Errores registrados en esta sesion' })).toHaveCount(0);
+  await expect(page.getByRole('table', { name: 'Errores registrados en esta sesión' })).toHaveCount(0);
   const first = page.getByRole('group', { name: 'Error 1', exact: true });
   const second = page.getByRole('group', { name: 'Error 2', exact: true });
   await expect(first.getByLabel('Correcta *')).toHaveValue('off');
@@ -195,13 +195,13 @@ test('pega una tabla y conserva la tanda si otra pestaña cierra la sesion', asy
   const other = await page.context().newPage();
   try {
     await other.goto(page.url());
-    await other.getByRole('button', { name: 'Cerrar sesion', exact: true }).click();
-    await expect(other.getByRole('button', { name: 'Reabrir sesion', exact: true })).toBeVisible();
+    await other.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+    await expect(other.getByRole('button', { name: 'Reabrir sesión', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Guardar 1 error', exact: true }).click();
     await expect(page.getByRole('alert').filter({ hasText: 'ya no esta abierta' })).toBeVisible();
     await expect(page.getByRole('group', { name: 'Error 1', exact: true }).getByLabel('Correcta *')).toHaveValue('off');
-    await other.getByRole('button', { name: 'Reabrir sesion', exact: true }).click();
-    await expect(other.getByRole('button', { name: 'Cerrar sesion', exact: true })).toBeVisible();
+    await other.getByRole('button', { name: 'Reabrir sesión', exact: true }).click();
+    await expect(other.getByRole('button', { name: 'Cerrar sesión', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Guardar 1 error', exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: '1 error guardado.' })).toBeVisible();
   } finally { await other.close(); }

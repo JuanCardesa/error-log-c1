@@ -58,12 +58,12 @@ export function SessionForm({ today, editing = null, onDone, preset, returnTo }:
   return (
     <section className={ui.panel} aria-labelledby="session-heading">
       <h2 id="session-heading">
-        {isEdit ? `Corregir sesion #${String(editing.id)}` : 'Nueva sesion'}
+        {isEdit ? `Corregir sesión #${String(editing.id)}` : 'Nueva sesión'}
       </h2>
       <p className={ui.hint}>
         {isEdit
-          ? 'Corregir la cabecera no toca los errores ya registrados. Pasa por la misma validacion que el alta.'
-          : 'Una sesion es el denominador. Registrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
+          ? 'Corregir la cabecera no toca los errores ya registrados. Pasa por la misma validación que el alta.'
+          : 'Una sesión es el denominador. Regístrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
       </p>
 
       <form ref={formRef} action={formAction} onReset={onReset} className={styles.form}>
@@ -78,7 +78,7 @@ export function SessionForm({ today, editing = null, onDone, preset, returnTo }:
 
         <div className={styles.actions}>
           <button type="submit" className={`${ui.primary} ${styles.submit}`} disabled={pending} aria-busy={pending}>
-            {pending ? 'Guardando…' : isEdit ? 'Guardar cabecera' : 'Abrir sesion'}
+            {pending ? 'Guardando…' : isEdit ? 'Guardar cabecera' : 'Abrir sesión'}
           </button>
           {isEdit && (
             <button type="button" className={ui.secondary} onClick={onDone}>

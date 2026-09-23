@@ -15,7 +15,7 @@ export type MissingField = 'correctAnswer' | 'category' | 'ruleNote' | 'prompt';
 
 export const MISSING_LABELS: Readonly<Record<MissingField, string>> = {
   correctAnswer: 'correcta',
-  category: 'categoria',
+  category: 'categoría',
   ruleNote: 'regla',
   prompt: 'enunciado',
 };

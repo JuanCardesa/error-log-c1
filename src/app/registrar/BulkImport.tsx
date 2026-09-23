@@ -12,6 +12,7 @@ import { SessionFields } from './SessionFields';
 import { MISSING_LABELS, missingFields, readRow, snapshotFromDraft, type MissingField, type RowSnapshot } from './reviewRows';
 import headerStyles from './session.module.css';
 import styles from './bulk.module.css';
+import { KIND_LABELS } from '../_shared/labels';
 import ui from '../_shared/ui.module.css';
 
 interface Props {
@@ -57,7 +58,7 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
     <div className={styles.bulk}>
       {batch === null ? (
         <>
-          <p>Pega varios errores, revisalos y guardalos juntos en esta sesion.</p>
+          <p>Pega varios errores, revísalos y guárdalos juntos en esta sesión.</p>
           <label className={styles.paste}>
             Errores para importar
             <textarea value={text} onChange={(event) => { setText(event.target.value); setProblem(''); }} rows={8} placeholder="Pega aqui el bloque de la IA o las celdas de tu tabla…" />
@@ -66,9 +67,9 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
           <details className={styles.instructions}>
             <summary>Convertir mis correcciones con IA</summary>
             <ol>
-              <li>Copia estas instrucciones en la IA que uses. Pega tus correcciones o adjunta fotos y capturas si esa IA admite imagenes.</li>
-              <li>En las fotos, incluye el ejercicio, tu respuesta y la correccion o el solucionario. Usa imagenes de la misma sesion y amplialas si el texto se ve pequeño.</li>
-              <li>Copia el bloque que te devuelva y pegalo en «Errores para importar».</li>
+              <li>Copia estas instrucciones en la IA que uses. Pega tus correcciones o adjunta fotos y capturas si esa IA admite imágenes.</li>
+              <li>En las fotos, incluye el ejercicio, tu respuesta y la corrección o el solucionario. Usa imágenes de la misma sesión y amplíalas si el texto se ve pequeño.</li>
+              <li>Copia el bloque que te devuelva y pégalo en «Errores para importar».</li>
               <li>Revisa la vista previa, completa los datos que no se hayan podido leer y guarda la tanda.</li>
             </ol>
             <button type="button" className={ui.secondary} onClick={() => {
@@ -81,7 +82,7 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
               // desde otro equipo hace que leerla lance antes de que haya promesa que fallar.
               try {
                 void navigator.clipboard.writeText(IMPORT_PROMPT).then(
-                  () => { setCopyMessage('Instrucciones copiadas. Pegalas junto a tus correcciones.'); },
+                  () => { setCopyMessage('Instrucciones copiadas. Pégalas junto a tus correcciones.'); },
                   selectInstructions,
                 );
               } catch {
@@ -90,11 +91,11 @@ export function BulkImport({ session, subcategorySuggestions }: Props) {
             }}>Copiar instrucciones para la IA</button>
             <p role="status">{copyMessage}</p>
             <textarea ref={instructions} aria-label="Instrucciones para la IA" value={IMPORT_PROMPT} readOnly rows={5} />
-            <p>Las fotos se adjuntan en la IA que uses. Aqui pegas el bloque que te devuelva; la app todavia no lee imagenes directamente.</p>
+            <p>Las fotos se adjuntan en la IA que uses. Aquí pegas el bloque que te devuelva; la app todavía no lee imágenes directamente.</p>
           </details>
           <details className={styles.instructions}>
-            <summary>Pegar desde una hoja de calculo</summary>
-            <p>Copia las celdas con sus cabeceras: Item, Enunciado, Mi respuesta, Correcta, Categoria y Regla. Puedes añadir Causa, Confianza y Subcategoria.</p>
+            <summary>Pegar desde una hoja de cálculo</summary>
+            <p>Copia las celdas con sus cabeceras: Ítem, Enunciado, Mi respuesta, Correcta, Categoría y Regla. Puedes añadir Causa, Confianza y Subcategoría.</p>
             <textarea aria-label="Plantilla para hoja de calculo" readOnly value={IMPORT_TEMPLATE} rows={3} onFocus={(event) => { event.target.select(); }} />
           </details>
         </>
@@ -246,7 +247,7 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
     }}>
       <h3 ref={headingRef} tabIndex={-1}>Revisar {rows.length} {rows.length === 1 ? 'error' : 'errores'}</h3>
       {rows.length === 0 ? <p className={ui.hint}>Esta tanda no contiene errores. La sesión contará igualmente en los informes.</p>
-        : <p className={ui.hint}>Comprueba las correcciones y la regla. Si no venian causa y confianza, proponemos DESCONOCIMIENTO y DUDABA: cambialas si no reflejan lo que te paso.</p>}
+        : <p className={ui.hint}>Comprueba las correcciones y la regla. Si no venían causa y confianza, proponemos Desconocimiento y Dudaba: cámbialas si no reflejan lo que te pasó.</p>}
       {envelopeSession !== undefined && <p className={ui.hint}>Se añaden los errores a esta sesión. La cabecera del bloque no sustituye la actual ni se suman sus recuentos.</p>}
       {proposal !== undefined && <>
         {openSessions.length > 0 && <label className={styles.paste}>
@@ -254,11 +255,11 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
           <select value={targetId} disabled={pending} onChange={(event) => setTargetId(event.target.value)}>
             <option value="new">Crear sesión con esta tanda</option>
             {openSessions.map((row) => <option key={row.id} value={row.id}>
-              Añadir a #{row.id} · {row.date} · {row.sourceRef || 'Sin referencia'} · {row.kind}
+              Añadir a #{row.id} · {row.date} · {row.sourceRef || 'Sin referencia'} · {KIND_LABELS[row.kind]}
             </option>)}
           </select>
         </label>}
-        {target !== null && <p role="status">Se conserva la cabecera de la sesión #{target.id}: {target.itemsCorrect ?? '—'}/{target.itemsTotal ?? '—'} aciertos/items.
+        {target !== null && <p role="status">Se conserva la cabecera de la sesión #{target.id}: {target.itemsCorrect ?? '—'}/{target.itemsTotal ?? '—'} aciertos/ítems.
           Los recuentos del bloque no se suman automáticamente. Puedes corregirlos en la cabecera de esa sesión.</p>}
         <fieldset hidden={target !== null} disabled={pending || target !== null} className={styles.row}>
           <legend>Cabecera propuesta</legend>
@@ -285,7 +286,7 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
             }}>Quitar error {index + 1} de la tanda</button>
           </div>
           <p className={styles.rowSummary}>
-            {snapshot.itemRef && <><span className="data">item {snapshot.itemRef}</span>{' · '}</>}
+            {snapshot.itemRef && <><span className="data">ítem {snapshot.itemRef}</span>{' · '}</>}
             {snapshot.prompt.trim() === '' ? <em>sin enunciado</em> : snapshot.prompt}
             {snapshot.myAnswer && <>{' · '}<span>tu respuesta: <s className="data">{snapshot.myAnswer}</s></span></>}
           </p>
@@ -299,7 +300,7 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
             defaults={draft} namePrefix={`${String(id)}.`} fieldErrors={rowErrors} />
         </fieldset>
       ); })}
-      <p className={ui.hint}>Los errores ya registrados en esta sesion se omiten si coinciden item, enunciado y respuestas. Puedes editarlos en el listado.</p>
+      <p className={ui.hint}>Los errores ya registrados en esta sesión se omiten si coinciden ítem, enunciado y respuestas. Puedes editarlos en el listado.</p>
       {state.message !== null && !state.ok && <p role="alert" className={ui.fieldError}>{state.message}</p>}
       <div className={styles.bar} onKeyDown={(event) => {
         if (event.key === 'Escape' && confirming) setConfirming(false);
@@ -307,7 +308,7 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
         <p className={`${styles.barStatus}${blocked ? ` ${ui.fieldError}` : ''}`} aria-live="polite">
           {blocked ? `Completa los errores pendientes antes de guardar. Faltan ${String(incompleteRows.length)} de ${String(rows.length)}.`
             : incompleteRows.length === 0
-              ? rows.length === 0 ? '' : `${rows.length === 1 ? 'El error esta completo' : `Los ${String(rows.length)} errores estan completos`}.`
+              ? rows.length === 0 ? '' : `${rows.length === 1 ? 'El error está completo' : `Los ${String(rows.length)} errores están completos`}.`
               : `Faltan ${String(incompleteRows.length)} de ${String(rows.length)} por completar.`}
         </p>
         {incompleteRows.length > 0 && <button type="button" className={`${ui.secondary} ${ui.small}`} onClick={goToNextPending}>

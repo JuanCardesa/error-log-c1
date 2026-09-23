@@ -42,14 +42,14 @@ test('round-trip del userscript real: varias actividades, vista previa editable 
   await preview(page, json);
   const header = page.getByRole('group', { name: 'Cabecera propuesta' });
   await expect(header.getByRole('combobox', { name: 'Paper', exact: true })).toHaveValue('');
-  await expect(header.getByLabel('Items *')).toHaveValue('4');
+  await expect(header.getByLabel('Ítems *')).toHaveValue('4');
   await header.getByLabel('Tipo').selectOption('CLASE');
   await header.getByLabel('Minutos').fill('17');
   await header.getByLabel('Cronometrada').check();
   const error = page.getByRole('group', { name: 'Error 1', exact: true });
   await expect(error.getByLabel('Correcta *')).toHaveValue('');
   await error.getByLabel('Correcta *').fill('compliment');
-  await error.getByLabel('Categoria *').selectOption('COLOCACION');
+  await error.getByLabel('Categoría *').selectOption('COLOCACION');
   await error.getByLabel('Regla, con tus palabras *').fill('Pay a compliment se usa para hacer un cumplido.');
   await page.getByRole('button', { name: 'Crear sesión y guardar 1 error', exact: true }).click();
   await expect(page).toHaveURL(/registrar\?s=\d+/);
@@ -111,5 +111,5 @@ test('confirma una tanda sin errores y no repite el aviso al recargar', async ({
   await expect(page).toHaveURL(/registrar\?s=\d+$/);
   await page.reload();
   await expect(notice).toHaveCount(0);
-  await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
+  await expect(page.getByLabel('Ítem', { exact: true })).toBeFocused();
 });

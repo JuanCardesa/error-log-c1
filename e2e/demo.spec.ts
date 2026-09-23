@@ -39,12 +39,12 @@ test('recorrido de registro e informe para el README', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/registrar');
   await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
-  await page.getByLabel('Items *').fill('8');
+  await page.getByLabel('Ítems *').fill('8');
   await page.getByLabel('Aciertos *').fill('6');
   await page.getByLabel('Referencia').fill('Práctica semanal · datos de ejemplo');
   await frame(page, 1, 'Empieza por tu sesión', 'Los intentos también cuentan: 2 errores sobre 8 ejercicios.');
 
-  await page.getByRole('button', { name: 'Abrir sesion', exact: true }).click();
+  await page.getByRole('button', { name: 'Abrir sesión', exact: true }).click();
   await page.getByRole('button', { name: 'Pegar varios errores', exact: true }).click();
   await page.getByLabel('Errores para importar').fill(
     'Item\tEnunciado\tMi respuesta\tCorrecta\tCategoria\tRegla\n'
@@ -64,7 +64,7 @@ test('recorrido de registro e informe para el README', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
-  const table = page.getByRole('table', { name: 'Errores registrados en esta sesion' });
+  const table = page.getByRole('table', { name: 'Errores registrados en esta sesión' });
   await expect(table.locator('tbody tr')).toHaveCount(2);
   await table.scrollIntoViewIfNeeded();
   await frame(page, 4, 'Tus errores, guardados', 'La tanda se guarda completa; los duplicados de la misma sesión se omiten.');

@@ -11,6 +11,7 @@ import {
   listOpenSessions,
 } from '@/lib/db/repo';
 import type { SessionRow } from '@/lib/domain/types';
+import { KIND_LABELS, PAPER_LABELS, STATUS_LABELS } from '../_shared/labels';
 import { toIsoDate } from '@/lib/time/dates';
 import { CaptureForm } from './CaptureForm';
 import { ErrorList } from './ErrorList';
@@ -62,7 +63,7 @@ export default async function RegistrarPage({ searchParams }: Props) {
         <header className={styles.head}>
           <h1>Registrar</h1>
           <p className={styles.lede}>
-            Abre una sesion y vuelca los errores. El objetivo es que cada error cueste
+            Abre una sesión y vuelca los errores. El objetivo es que cada error cueste
             menos de 30 segundos.
           </p>
         </header>
@@ -107,15 +108,15 @@ export default async function RegistrarPage({ searchParams }: Props) {
               ))}
             </ul>
             {pages > 1 && (
-              <nav className={styles.pagination} aria-label="Paginas de sesiones">
+              <nav className={styles.pagination} aria-label="Páginas de sesiones">
                 {page > 1 && (
                   <Link href={page === 2 ? '/registrar' : `/registrar?p=${String(page - 1)}`}>
-                    ← Mas recientes
+                    ← Más recientes
                   </Link>
                 )}
-                <span>Pagina {page} de {pages} · {total} sesiones</span>
+                <span>Página {page} de {pages} · {total} sesiones</span>
                 {page < pages && (
-                  <Link href={`/registrar?p=${String(page + 1)}`}>Mas antiguas →</Link>
+                  <Link href={`/registrar?p=${String(page + 1)}`}>Más antiguas →</Link>
                 )}
               </nav>
             )}
@@ -140,7 +141,7 @@ export default async function RegistrarPage({ searchParams }: Props) {
         <h1>
           <span className="data">{active.date}</span>{' '}
           <span className={styles.title}>
-            {active.paper === null ? 'Sin formato de examen' : `${active.paper} Part ${String(active.part)}`} · {active.kind}
+            {active.paper === null ? 'Sin formato de examen' : `${PAPER_LABELS[active.paper]} Part ${String(active.part)}`} · {KIND_LABELS[active.kind]}
           </span>
         </h1>
 
@@ -157,7 +158,7 @@ export default async function RegistrarPage({ searchParams }: Props) {
         />
       ) : (
         <p className={styles.closed}>
-          Sesion cerrada. Reabrela para corregirla o añadir errores que faltaran.
+          Sesión cerrada. Reábrela para corregirla o añadir errores que faltaran.
         </p>
       )}
 
@@ -183,7 +184,7 @@ function SessionLink({ session, href, action }: {
     <Link className={styles.sessionLink} href={href}>
       <span className="data">{session.date}</span>
       <span className={styles.meta}>
-        {session.paper === null ? 'Sin formato de examen' : `${session.paper} P${String(session.part)}`} · {session.kind}
+        {session.paper === null ? 'Sin formato de examen' : `${PAPER_LABELS[session.paper]} P${String(session.part)}`} · {KIND_LABELS[session.kind]}
         {action !== undefined && session.sourceRef !== null && ` · ${session.sourceRef}`}
       </span>
       <span className="data">
@@ -193,7 +194,7 @@ function SessionLink({ session, href, action }: {
       </span>
       {action === undefined ? (
         <span className={session.status === 'OPEN' ? styles.badgeOpen : styles.badgeClosed}>
-          {session.status}
+          {STATUS_LABELS[session.status]}
         </span>
       ) : (
         <span className={styles.action}>{action}</span>

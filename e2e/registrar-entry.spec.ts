@@ -15,14 +15,14 @@ test('la sesion a mano queda plegada y una abierta se retoma desde arriba', asyn
   // Plegada: sus campos no estan a la vista hasta pedirla.
   const toggle = page.getByRole('button', { name: 'Nueva sesión a mano' });
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.getByLabel('Items *')).toBeHidden();
+  await expect(page.getByLabel('Ítems *')).toBeHidden();
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
-  await page.getByLabel('Items *').fill('8');
+  await page.getByLabel('Ítems *').fill('8');
   await page.getByLabel('Aciertos *').fill('6');
   await page.getByLabel('Referencia').fill('Sesion para retomar');
-  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+  await page.getByRole('button', { name: 'Abrir sesión' }).click();
   await expect(page).toHaveURL(/s=\d+/);
   const id = new URL(page.url()).searchParams.get('s');
 
@@ -32,7 +32,7 @@ test('la sesion a mano queda plegada y una abierta se retoma desde arriba', asyn
   const resume = open.locator(`a[href="/registrar?s=${String(id)}#captura"]`);
   await expect(resume).toContainText('Continuar');
   await resume.click();
-  await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
+  await expect(page.getByLabel('Ítem', { exact: true })).toBeFocused();
 });
 
 test('mientras se revisa una tanda, la entrada deja solo la revision', async ({ page }) => {

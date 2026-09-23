@@ -52,13 +52,13 @@ export function SessionControls({ session, errorCount }: Props) {
           });
         }}
       >
-        {closed ? 'Reabrir sesion' : 'Cerrar sesion'}
+        {closed ? 'Reabrir sesión' : 'Cerrar sesión'}
       </button>
 
       {confirming ? (
         <>
           <span className={styles.warn}>
-            Se borran tambien sus {errorCount} error{errorCount === 1 ? '' : 'es'}.
+            Se borran también sus {errorCount} error{errorCount === 1 ? '' : 'es'}.
           </span>
           <button
             type="button"
@@ -92,7 +92,7 @@ export function SessionControls({ session, errorCount }: Props) {
             setConfirming(true);
           }}
         >
-          Borrar sesion…
+          Borrar sesión…
         </button>
       )}
     </div>

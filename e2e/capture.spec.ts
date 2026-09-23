@@ -13,11 +13,11 @@ import { type Page, expect, test } from '@playwright/test';
 async function openSession(page: Page, reference: string, timed = false) {
   await page.goto('/registrar');
   await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
-  await page.getByLabel('Items *').fill('8');
+  await page.getByLabel('Ítems *').fill('8');
   await page.getByLabel('Aciertos *').fill('5');
   await page.getByLabel('Referencia').fill(reference);
   if (timed) await page.getByLabel('Cronometrada').check();
-  await page.getByRole('button', { name: 'Abrir sesion' }).click();
+  await page.getByRole('button', { name: 'Abrir sesión' }).click();
 
   // Al crearla se entra en ella, asi que la captura ya tiene que estar disponible.
   await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeVisible();
@@ -29,19 +29,19 @@ test.describe('registrar una sesion y sus errores', () => {
     await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
 
     // Mas aciertos que items: la sesion no debe abrirse.
-    await page.getByLabel('Items *').fill('6');
+    await page.getByLabel('Ítems *').fill('6');
     await page.getByLabel('Aciertos *').fill('9');
     await page.getByLabel('Referencia').fill('Cabecera pendiente');
     await page.getByRole('combobox', { name: 'Fuente' }).selectOption('TRAINER');
     await page.getByLabel('Cronometrada').check();
-    await page.getByRole('button', { name: 'Abrir sesion' }).click();
+    await page.getByRole('button', { name: 'Abrir sesión' }).click();
 
     await expect(page.locator('#s-itemsCorrect-error')).toContainText(
       'No puedes acertar mas items de los que intentaste',
     );
     // Y sin sesion valida no aparece la entrada de errores.
     await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeHidden();
-    await expect(page.getByLabel('Items *')).toHaveValue('6');
+    await expect(page.getByLabel('Ítems *')).toHaveValue('6');
     await expect(page.getByLabel('Aciertos *')).toHaveValue('9');
     await expect(page.getByLabel('Referencia')).toHaveValue('Cabecera pendiente');
     await expect(page.getByRole('combobox', { name: 'Fuente' })).toHaveValue('TRAINER');
@@ -49,11 +49,11 @@ test.describe('registrar una sesion y sus errores', () => {
 
     // Un segundo rechazo tampoco debe limpiar el formulario.
     await page.getByLabel('Aciertos *').fill('8');
-    await page.getByRole('button', { name: 'Abrir sesion' }).click();
+    await page.getByRole('button', { name: 'Abrir sesión' }).click();
     await expect(page.locator('#s-itemsCorrect-error')).toBeVisible();
     await expect(page.getByLabel('Aciertos *')).toHaveValue('8');
     await page.getByLabel('Aciertos *').fill('5');
-    await page.getByRole('button', { name: 'Abrir sesion' }).click();
+    await page.getByRole('button', { name: 'Abrir sesión' }).click();
     await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeVisible();
     await expect(page.getByText('5 / 6', { exact: true })).toBeVisible();
   });
@@ -63,12 +63,12 @@ test.describe('registrar una sesion y sus errores', () => {
 
     // Se entra para volcar: el cursor ya esta en el primer campo. Sin cronometro, la
     // casilla de final de sesion no significa nada y no se ofrece.
-    await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
-    await expect(page.getByLabel('Al final de la sesion')).toHaveCount(0);
+    await expect(page.getByLabel('Ítem', { exact: true })).toBeFocused();
+    await expect(page.getByLabel('Al final de la sesión')).toHaveCount(0);
 
     await page.getByLabel('Enunciado *').fill('He ______ up smoking last year. (GAVE)');
     await page.getByLabel('Correcta *').fill('gave up');
-    await page.getByLabel('Categoria *').selectOption('PHRASAL_VERB');
+    await page.getByLabel('Categoría *').selectOption('PHRASAL_VERB');
     await page
       .getByLabel('Regla, con tus palabras *')
       .fill('give up es separable pero no con pronombre detras');
@@ -78,11 +78,11 @@ test.describe('registrar una sesion y sus errores', () => {
 
     // Segundo error: la categoria del anterior sigue puesta, que es el punto, y se dice
     // que viene heredada para que no se guarde sin mirarla.
-    await expect(page.getByLabel('Categoria *')).toHaveValue('PHRASAL_VERB');
-    await expect(page.getByLabel('Categoria *')).toHaveAccessibleDescription(/heredada/);
+    await expect(page.getByLabel('Categoría *')).toHaveValue('PHRASAL_VERB');
+    await expect(page.getByLabel('Categoría *')).toHaveAccessibleDescription(/heredada/);
     await expect(page.getByLabel('Enunciado *')).toHaveValue('');
     await expect(page.getByLabel('Correcta *')).toHaveValue('');
-    await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
+    await expect(page.getByLabel('Ítem', { exact: true })).toBeFocused();
 
     await page.getByLabel('Enunciado *').fill('She ______ on her parents. (RELIES)');
     await page.getByLabel('Correcta *').fill('relies');
@@ -98,15 +98,15 @@ test.describe('registrar una sesion y sus errores', () => {
   test('conserva el error rechazado y limpia solo al guardar', async ({ page }) => {
     await openSession(page, 'Unidad 8, regla copiada', true);
 
-    await page.getByLabel('Item', { exact: true }).fill('4');
+    await page.getByLabel('Ítem', { exact: true }).fill('4');
     await page.getByLabel('Enunciado *').fill('Prueba de regla copiada');
     await page.getByLabel('Mi respuesta', { exact: true }).fill('mi intento');
     await page.getByLabel('Correcta *').fill('una respuesta suficientemente larga');
-    await page.getByLabel('Categoria *').selectOption('LEXICO');
-    await page.getByLabel('Subcategoria', { exact: true }).fill('contraste');
+    await page.getByLabel('Categoría *').selectOption('LEXICO');
+    await page.getByLabel('Subcategoría', { exact: true }).fill('contraste');
     await page.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
     await page.getByRole('combobox', { name: 'Confianza', exact: true }).selectOption('SEGURO');
-    await page.getByLabel('Al final de la sesion').check();
+    await page.getByLabel('Al final de la sesión').check();
     await page
       .getByLabel('Regla, con tus palabras *')
       .fill('una respuesta suficientemente larga');
@@ -116,12 +116,12 @@ test.describe('registrar una sesion y sus errores', () => {
     await expect(page.locator('[data-field="ruleNote"]')).toContainText(
       'no puede ser la respuesta correcta',
     );
-    await expect(page.getByLabel('Item', { exact: true })).toHaveValue('4');
+    await expect(page.getByLabel('Ítem', { exact: true })).toHaveValue('4');
     await expect(page.getByLabel('Enunciado *')).toHaveValue('Prueba de regla copiada');
     await expect(page.getByLabel('Mi respuesta', { exact: true })).toHaveValue('mi intento');
     await expect(page.getByLabel('Correcta *')).toHaveValue('una respuesta suficientemente larga');
     await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue('una respuesta suficientemente larga');
-    await expect(page.getByLabel('Al final de la sesion')).toBeChecked();
+    await expect(page.getByLabel('Al final de la sesión')).toBeChecked();
 
     const rule = 'Regla corregida con una explicacion distinta de la respuesta';
     await page.getByLabel('Regla, con tus palabras *').fill(rule);
@@ -131,12 +131,12 @@ test.describe('registrar una sesion y sus errores', () => {
     await expect(page.getByLabel('Enunciado *')).toHaveValue('');
     await expect(page.getByLabel('Correcta *')).toHaveValue('');
     await expect(page.getByLabel('Regla, con tus palabras *')).toHaveValue('');
-    await expect(page.getByLabel('Al final de la sesion')).not.toBeChecked();
+    await expect(page.getByLabel('Al final de la sesión')).not.toBeChecked();
     await expect(page.getByRole('combobox', { name: /^Causa/ })).toHaveValue('CONFUSION');
-    await expect(page.getByLabel('Categoria *')).toHaveValue('LEXICO');
-    await expect(page.getByLabel('Subcategoria', { exact: true })).toHaveValue('contraste');
+    await expect(page.getByLabel('Categoría *')).toHaveValue('LEXICO');
+    await expect(page.getByLabel('Subcategoría', { exact: true })).toHaveValue('contraste');
     await expect(page.getByRole('combobox', { name: 'Confianza', exact: true })).toHaveValue('SEGURO');
-    await expect(page.getByLabel('Item', { exact: true })).toBeFocused();
+    await expect(page.getByLabel('Ítem', { exact: true })).toBeFocused();
   });
 
   test('ir a pegar una tanda y volver no se lleva el formulario', async ({ page }) => {
@@ -158,14 +158,14 @@ test.describe('registrar una sesion y sus errores', () => {
     await openSession(page, 'Sesion cerrada en otra pestaña');
     await page.getByLabel('Enunciado *').fill('Enunciado pendiente de guardar');
     await page.getByLabel('Correcta *').fill('given up');
-    await page.getByLabel('Categoria *').selectOption('PHRASAL_VERB');
+    await page.getByLabel('Categoría *').selectOption('PHRASAL_VERB');
     await page.getByLabel('Regla, con tus palabras *').fill('give up expresa abandonar una actividad');
 
     const other = await page.context().newPage();
     try {
       await other.goto(page.url());
-      await other.getByRole('button', { name: 'Cerrar sesion', exact: true }).click();
-      await expect(other.getByRole('button', { name: 'Reabrir sesion', exact: true })).toBeVisible();
+      await other.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+      await expect(other.getByRole('button', { name: 'Reabrir sesión', exact: true })).toBeVisible();
     } finally {
       await other.close();
     }

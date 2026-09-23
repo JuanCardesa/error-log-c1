@@ -3,7 +3,7 @@
 import { type RefObject, useId, useState } from 'react';
 
 import { CATEGORIES, CAUSES, CAUSE_META, CONFIDENCES } from '@/lib/domain/enums';
-import { CATEGORY_LABELS } from '../_shared/labels';
+import { CATEGORY_LABELS, CAUSE_LABELS, CONFIDENCE_LABELS, SIDE_LABELS } from '../_shared/labels';
 import styles from './capture.module.css';
 import ui from '../_shared/ui.module.css';
 
@@ -142,7 +142,7 @@ export function ErrorFields({
 
   const itemField = (
     <label className={styles.fItem}>
-      <span className={ui.label}>Item</span>
+      <span className={ui.label}>Ítem</span>
       <input
         ref={firstFieldRef}
         name={`${namePrefix}itemRef`}
@@ -222,7 +222,7 @@ export function ErrorFields({
       >
         {CAUSES.map((value) => (
           <option key={value} value={value}>
-            {value}
+            {CAUSE_LABELS[value]}
           </option>
         ))}
       </select>
@@ -234,7 +234,7 @@ export function ErrorFields({
     <div className={styles.fCategory}>
       <div className={styles.labelRow}>
         <label className={ui.label} htmlFor={`${scope}-category`}>
-          Categoria <abbr title="obligatorio">*</abbr>
+          Categoría <abbr title="obligatorio">*</abbr>
         </label>
         {carriedMark('category', category)}
       </div>
@@ -276,7 +276,7 @@ export function ErrorFields({
     <div className={styles.fSubcategory}>
       <div className={styles.labelRow}>
         <label className={ui.label} htmlFor={`${scope}-subcategory`}>
-          Subcategoria
+          Subcategoría
         </label>
         {carriedMark('subcategory', subcategory)}
       </div>
@@ -321,7 +321,7 @@ export function ErrorFields({
       >
         {CONFIDENCES.map((value) => (
           <option key={value} value={value}>
-            {value}
+            {CONFIDENCE_LABELS[value]}
           </option>
         ))}
       </select>
@@ -341,7 +341,7 @@ export function ErrorFields({
         defaultValue={defaults?.ruleNote ?? ''}
         aria-invalid={invalid('ruleNote')}
         aria-describedby={describedBy(errorRef('ruleNote'))}
-        placeholder={compact ? 'Por que es asi, con tus palabras' : "call off lleva doble f; 'of' es otra preposicion"}
+        placeholder={compact ? 'Por qué es así, con tus palabras' : "call off lleva doble f; 'of' es otra preposición"}
       />
       {fieldError('ruleNote')}
     </label>
@@ -357,7 +357,7 @@ export function ErrorFields({
             name={`${namePrefix}lateInSession`}
             defaultChecked={defaults?.lateInSession ?? false}
           />
-          <span>Al final de la sesion</span>
+          <span>Al final de la sesión</span>
         </label>
       )}
 
@@ -380,7 +380,7 @@ export function ErrorFields({
         </div>
         <details className={styles.reviewMore} open={detailsOpen === true || detailInvalid}
           onToggle={(event) => { onDetailsToggle?.(event.currentTarget.open); }}>
-          <summary>Item, enunciado, tu respuesta y subcategoria</summary>
+          <summary>Ítem, enunciado, tu respuesta y subcategoría</summary>
           <div className={styles.reviewMoreGrid}>
             {itemField}
             {promptField}
@@ -421,7 +421,7 @@ function CauseChip({ cause, id }: { readonly cause: string; readonly id: string 
       className={`${meta.side === 'study' ? ui.chipStudy : ui.chipExec} ${styles.causeChip}`}
       title={meta.remedy}
     >
-      {meta.side === 'study' ? 'estudio' : 'ejecucion'}
+      {SIDE_LABELS[meta.side]}
       {meta.generatesCard ? ' · tarjeta' : ' · sin tarjeta'}
     </span>
   );

@@ -3,6 +3,7 @@
 import { useId, useState } from 'react';
 import { PAPERS, SESSION_KINDS, SOURCES, partsFor, type Paper } from '@/lib/domain/enums';
 import type { ImportedSession } from '@/lib/import/errors';
+import { KIND_LABELS, PAPER_LABELS, SOURCE_LABELS } from '../_shared/labels';
 import styles from './session.module.css';
 import ui from '../_shared/ui.module.css';
 
@@ -63,7 +64,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
           >
             {SESSION_KINDS.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {KIND_LABELS[value]}
               </option>
             ))}
           </select>
@@ -88,7 +89,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
                 value={value}
                 disabled={kind === 'WRITING' && value !== 'WRITING'}
               >
-                {value}
+                {PAPER_LABELS[value]}
               </option>
             ))}
           </select>
@@ -119,7 +120,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
           <select name="source" defaultValue={defaults?.source ?? 'LIBRO'}>
             {SOURCES.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {SOURCE_LABELS[value]}
               </option>
             ))}
           </select>
@@ -136,7 +137,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
         </label>
 
         <label>
-          <span className={ui.label}>Items{isWriting ? '' : ' *'}</span>
+          <span className={ui.label}>Ítems{isWriting ? '' : ' *'}</span>
           <input
             type="number"
             name="itemsTotal"
@@ -165,7 +166,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
             aria-describedby={invalid('itemsCorrect') ? `${fieldId}-itemsCorrect-error` : undefined}
           />
           {fieldError('itemsCorrect')}
-          {isWriting && <span className={ui.help}>El Writing no se mide por items.</span>}
+          {isWriting && <span className={ui.help}>El Writing no se mide por ítems.</span>}
         </label>
 
         <label>
