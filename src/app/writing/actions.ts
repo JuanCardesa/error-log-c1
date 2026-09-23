@@ -42,7 +42,7 @@ export async function saveWritingPieceAction(
   const editingId = integer(form, 'id');
 
   if (editingId !== null && !isValidId(editingId)) {
-    return { ok: false, fieldErrors: {}, message: 'El identificador del texto no es valido.' };
+    return { ok: false, fieldErrors: {}, message: 'El identificador del texto no es válido.' };
   }
 
   const parsed = writingPieceInputSchema({ today: toIsoDate(new Date()) }).safeParse(
@@ -63,14 +63,14 @@ export async function saveWritingPieceAction(
         return { ok: false, fieldErrors: {}, message: 'Ese texto ya no existe. Tus cambios siguen en el formulario.' };
       }
       if (original !== null && original.sessionId !== parsed.data.sessionId) {
-        return { ok: false, fieldErrors: { sessionId: ['La sesion de un texto existente no se puede cambiar.'] }, message: null };
+        return { ok: false, fieldErrors: { sessionId: ['La sesión de un texto existente no se puede cambiar.'] }, message: null };
       }
       const session = getSession(db, parsed.data.sessionId);
       if (session === null || session.paper !== 'WRITING') {
-        return { ok: false, fieldErrors: { sessionId: ['Esa sesion de Writing ya no esta disponible.'] }, message: null };
+        return { ok: false, fieldErrors: { sessionId: ['Esa sesión de Writing ya no está disponible.'] }, message: null };
       }
       if (editingId === null && hasWritingPiece(db, session.id)) {
-        return { ok: false, fieldErrors: { sessionId: ['Esa sesion ya tiene un texto. Elige otra sesion o edita el existente.'] }, message: null };
+        return { ok: false, fieldErrors: { sessionId: ['Esa sesión ya tiene un texto. Elige otra sesión o edita el existente.'] }, message: null };
       }
 
       const check = checkRewriteLink(listWritingPieces(db), editingId ?? 0, parsed.data.rewriteOf);
@@ -85,7 +85,7 @@ export async function saveWritingPieceAction(
       return { ok: true, fieldErrors: {}, message: 'Texto guardado.', createdId: created.id };
     }).immediate();
   } catch {
-    return { ok: false, fieldErrors: {}, message: 'No se pudo guardar el texto. Tus cambios siguen aqui para reintentarlo.' };
+    return { ok: false, fieldErrors: {}, message: 'No se pudo guardar el texto. Tus cambios siguen aquí para reintentarlo.' };
   }
   if (result.ok) revalidatePath('/', 'layout');
   return result;

@@ -171,7 +171,7 @@ test('un error invalido bloquea toda la tanda y se puede corregir sin perder los
   ]));
   await page.getByRole('button', { name: 'Preparar vista previa' }).click();
   await page.getByRole('button', { name: 'Guardar 3 errores', exact: true }).click();
-  await expect(page.getByRole('alert').filter({ hasText: 'No se ha guardado ningun error' })).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'No se ha guardado ningún error' })).toBeVisible();
   await expect(page.getByRole('table', { name: 'Errores registrados en esta sesión' })).toHaveCount(0);
   const first = page.getByRole('group', { name: 'Error 1', exact: true });
   const second = page.getByRole('group', { name: 'Error 2', exact: true });
@@ -198,7 +198,7 @@ test('pega una tabla y conserva la tanda si otra pestaña cierra la sesion', asy
     await other.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
     await expect(other.getByRole('button', { name: 'Reabrir sesión', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Guardar 1 error', exact: true }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'ya no esta abierta' })).toBeVisible();
+    await expect(page.getByRole('alert').filter({ hasText: 'ya no está abierta' })).toBeVisible();
     await expect(page.getByRole('group', { name: 'Error 1', exact: true }).getByLabel('Correcta *')).toHaveValue('off');
     await other.getByRole('button', { name: 'Reabrir sesión', exact: true }).click();
     await expect(other.getByRole('button', { name: 'Cerrar sesión', exact: true })).toBeVisible();

@@ -68,7 +68,7 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
         ctx.addIssue({
           code: 'custom',
           path: ['part'],
-          message: 'Una sesion sin formato de examen no tiene part',
+          message: 'Una sesión sin formato de examen no tiene part',
         });
       } else if (value.paper !== null) {
         const maxPart = MAX_PART[value.paper];
@@ -86,7 +86,7 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
         ctx.addIssue({
           code: 'custom',
           path: ['paper'],
-          message: 'Una sesion de tipo WRITING tiene que ser del paper WRITING',
+          message: 'Una sesión de tipo Writing tiene que ser del paper Writing',
         });
       }
 
@@ -96,14 +96,14 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
           ctx.addIssue({
             code: 'custom',
             path: ['itemsTotal'],
-            message: 'Solo el paper WRITING puede quedarse sin items',
+            message: 'Solo el paper Writing puede quedarse sin ítems',
           });
         }
         if (value.itemsCorrect === null) {
           ctx.addIssue({
             code: 'custom',
             path: ['itemsCorrect'],
-            message: 'Solo el paper WRITING puede quedarse sin items',
+            message: 'Solo el paper Writing puede quedarse sin ítems',
           });
         }
       }
@@ -116,7 +116,7 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
         ctx.addIssue({
           code: 'custom',
           path: ['itemsCorrect'],
-          message: 'No puedes acertar mas items de los que intentaste',
+          message: 'No puedes acertar más ítems de los que intentaste',
         });
       }
     })

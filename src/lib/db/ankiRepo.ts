@@ -76,7 +76,7 @@ function assertNotWholesaleUnlink(db: AnkiDb, missingNoteIds: readonly number[])
   if (missingNoteIds.filter((noteId) => linked.has(noteId)).length !== linked.size) return;
   throw new AnkiError('ANKI_CONFIG',
     `Anki no reconoce ninguna de las ${String(linked.size)} notas vinculadas a esta base. `
-    + 'Suele significar que el perfil abierto tiene otra coleccion, restaurada o recreada. '
+    + 'Suele significar que el perfil abierto tiene otra colección, restaurada o recreada. '
     + 'No se ha cambiado nada. Si de verdad has borrado todas esas tarjetas, usa «Deshacer» '
     + 'en la cola de conversion y vuelve a sincronizar.');
 }

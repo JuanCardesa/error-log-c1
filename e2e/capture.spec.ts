@@ -37,7 +37,7 @@ test.describe('registrar una sesion y sus errores', () => {
     await page.getByRole('button', { name: 'Abrir sesión' }).click();
 
     await expect(page.locator('#s-itemsCorrect-error')).toContainText(
-      'No puedes acertar mas items de los que intentaste',
+      'No puedes acertar más ítems de los que intentaste',
     );
     // Y sin sesion valida no aparece la entrada de errores.
     await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeHidden();
@@ -171,7 +171,7 @@ test.describe('registrar una sesion y sus errores', () => {
     }
 
     await page.getByRole('button', { name: 'Guardar y seguir' }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'La sesion esta cerrada.' })).toBeVisible();
+    await expect(page.getByRole('alert').filter({ hasText: 'La sesión está cerrada.' })).toBeVisible();
     await expect(page.getByLabel('Enunciado *')).toHaveValue('Enunciado pendiente de guardar');
     await expect(page.getByLabel('Correcta *')).toHaveValue('given up');
   });

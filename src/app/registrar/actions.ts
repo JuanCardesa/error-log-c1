@@ -55,7 +55,7 @@ export async function createSessionAction(
     return {
       ok: false,
       fieldErrors: collectIssues(parsed.error),
-      message: 'Revisa la cabecera: no se aceptan errores hasta que sea valida.',
+      message: 'Revisa la cabecera: no se aceptan errores hasta que sea válida.',
     };
   }
 
@@ -65,7 +65,7 @@ export async function createSessionAction(
   return {
     ok: true,
     fieldErrors: {},
-    message: `Sesion #${String(created.id)} abierta.`,
+    message: `Sesión #${String(created.id)} abierta.`,
     createdId: created.id,
   };
 }
@@ -116,18 +116,18 @@ export async function addErrorAction(
 ): Promise<FormState> {
   const sessionId = integer(form, 'sessionId');
   if (sessionId === null || Number.isNaN(sessionId)) {
-    return { ok: false, fieldErrors: {}, message: 'Falta la sesion.' };
+    return { ok: false, fieldErrors: {}, message: 'Falta la sesión.' };
   }
 
   const session = getSession(getDb(), sessionId);
   if (session === null) {
-    return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe.' };
+    return { ok: false, fieldErrors: {}, message: 'Esa sesión ya no existe.' };
   }
   if (session.status === 'CLOSED') {
     return {
       ok: false,
       fieldErrors: {},
-      message: 'La sesion esta cerrada. Reabrela para seguir añadiendo errores.',
+      message: 'La sesión está cerrada. Reábrela para seguir añadiendo errores.',
     };
   }
 
@@ -155,17 +155,17 @@ export async function updateErrorAction(
 
   const sessionId = integer(form, 'sessionId');
   if (sessionId === null || Number.isNaN(sessionId)) {
-    return { ok: false, fieldErrors: {}, message: 'Falta la sesion.' };
+    return { ok: false, fieldErrors: {}, message: 'Falta la sesión.' };
   }
 
   const session = getSession(getDb(), sessionId);
   if (session === null) {
-    return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe.' };
+    return { ok: false, fieldErrors: {}, message: 'Esa sesión ya no existe.' };
   }
 
   const original = getError(getDb(), id);
   if (original === null || original.sessionId !== sessionId) {
-    return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe en esta sesion. Tus cambios siguen en el formulario.' };
+    return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe en esta sesión. Tus cambios siguen en el formulario.' };
   }
 
   const parsed = errorInputSchema().safeParse(errorFormValues(form, session.timed));
@@ -193,7 +193,7 @@ export async function updateSessionAction(
 ): Promise<FormState> {
   const id = integer(form, 'id');
   if (!isValidId(id)) {
-    return { ok: false, fieldErrors: {}, message: 'Falta la sesion a corregir.' };
+    return { ok: false, fieldErrors: {}, message: 'Falta la sesión a corregir.' };
   }
 
   const parsed = parseSessionForm(form, text(form, 'status') === 'CLOSED' ? 'CLOSED' : 'OPEN');
@@ -207,10 +207,10 @@ export async function updateSessionAction(
   }
 
   if (parsed.data.paper !== 'WRITING' && hasWritingPiece(getDb(), id)) {
-    return { ok: false, fieldErrors: { paper: ['Esta sesion tiene un texto asociado y debe seguir siendo de Writing.'] }, message: null };
+    return { ok: false, fieldErrors: { paper: ['Esta sesión tiene un texto asociado y debe seguir siendo de Writing.'] }, message: null };
   }
   if (!updateSession(getDb(), id, parsed.data)) {
-    return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe. Tus cambios siguen en el formulario.' };
+    return { ok: false, fieldErrors: {}, message: 'Esa sesión ya no existe. Tus cambios siguen en el formulario.' };
   }
   revalidatePath('/registrar');
   revalidatePath('/informe');

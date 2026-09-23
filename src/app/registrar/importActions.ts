@@ -13,15 +13,15 @@ import type { FormState } from './formState';
 export async function importErrorsAction(_previous: FormState, form: FormData): Promise<FormState> {
   const db = getDb();
   const sessionId = Number(form.get('sessionId'));
-  if (!Number.isSafeInteger(sessionId) || sessionId <= 0) return { ok: false, fieldErrors: {}, message: 'Falta la sesion.' };
+  if (!Number.isSafeInteger(sessionId) || sessionId <= 0) return { ok: false, fieldErrors: {}, message: 'Falta la sesión.' };
   const session = getSession(db, sessionId);
   if (session === null || session.status !== 'OPEN') {
-    return { ok: false, fieldErrors: {}, message: 'La sesion ya no esta abierta. Reabrela para importar.' };
+    return { ok: false, fieldErrors: {}, message: 'La sesión ya no está abierta. Reábrela para importar.' };
   }
   const isEnvelope = form.has('envelope');
   const raw = form.get(isEnvelope ? 'envelope' : 'rows');
   if (typeof raw !== 'string' || raw.length > MAX_IMPORT_LENGTH) {
-    return { ok: false, fieldErrors: {}, message: 'La tanda es demasiado grande. Dividela en partes.' };
+    return { ok: false, fieldErrors: {}, message: 'La tanda es demasiado grande. Divídela en partes.' };
   }
   let data: unknown;
   try { data = JSON.parse(raw); }
@@ -39,7 +39,7 @@ export async function importErrorsAction(_previous: FormState, form: FormData): 
 
   const { fieldErrors, inputs } = validateImportRows(batch.data, { sessionId, timed: session.timed });
   if (Object.keys(fieldErrors).length > 0) {
-    return { ok: false, fieldErrors, message: 'Revisa los campos señalados. No se ha guardado ningun error de la tanda.' };
+    return { ok: false, fieldErrors, message: 'Revisa los campos señalados. No se ha guardado ningún error de la tanda.' };
   }
   try {
     const result = importErrors(db, sessionId, inputs);
@@ -50,7 +50,7 @@ export async function importErrorsAction(_previous: FormState, form: FormData): 
       message: `${String(result.created)} ${result.created === 1 ? 'error guardado' : 'errores guardados'}.${result.skipped > 0 ? ` ${result.skipped === 1 ? '1 repetido omitido' : `${String(result.skipped)} repetidos omitidos`}; los existentes se conservan.` : ''}`,
     };
   } catch {
-    return { ok: false, fieldErrors: {}, message: 'No se pudo guardar la tanda. Los datos siguen aqui para que puedas reintentarlo.' };
+    return { ok: false, fieldErrors: {}, message: 'No se pudo guardar la tanda. Los datos siguen aquí para que puedas reintentarlo.' };
   }
 }
 

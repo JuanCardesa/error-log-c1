@@ -54,7 +54,7 @@ export const RULE_SPECS: readonly RuleSpec[] = [
     id: 1,
     signal: 'DESCONOCIMIENTO sobre todas las causas',
     action:
-      'El material te queda grande ahora. Baja de nivel o sube el ritmo de Anki antes de mas simulacros.',
+      'El material te queda grande ahora. Baja de nivel o sube el ritmo de Anki antes de más simulacros.',
     threshold: 60,
     watch: 50,
     unit: 'pct',
@@ -66,7 +66,7 @@ export const RULE_SPECS: readonly RuleSpec[] = [
   },
   {
     id: 2,
-    signal: 'Errores con confidence = SEGURO (30 dias)',
+    signal: 'Errores con confidence = SEGURO (30 días)',
     action:
       'Las tarjetas de contraste tienen prioridad absoluta. Son creencias falsas, no lagunas.',
     threshold: 5,
@@ -82,8 +82,8 @@ export const RULE_SPECS: readonly RuleSpec[] = [
   },
   {
     id: 3,
-    signal: 'Una sola categoria sobre el total de errores',
-    action: 'Sabados monotematicos durante tres semanas.',
+    signal: 'Una sola categoría sobre el total de errores',
+    action: 'Sábados monotemáticos durante tres semanas.',
     threshold: 25,
     watch: 20,
     unit: 'pct',
@@ -98,7 +98,7 @@ export const RULE_SPECS: readonly RuleSpec[] = [
     id: 4,
     signal: 'pct_convertidos (Q5)',
     action:
-      'Salta ejercicios un dia y ponte al dia con las tarjetas. Si no, el log no sirve de nada.',
+      'Salta ejercicios un día y ponte al día con las tarjetas. Si no, el log no sirve de nada.',
     threshold: ANKI_TARGET_PCT,
     watch: 90,
     unit: 'pct',
@@ -114,7 +114,7 @@ export const RULE_SPECS: readonly RuleSpec[] = [
     id: 5,
     signal: 'Errores con late_in_session (solo sesiones cronometradas)',
     action:
-      'Fatiga o gestion del tiempo. Practica parts cronometrados sueltos, no sesiones largas.',
+      'Fatiga o gestión del tiempo. Practica parts cronometrados sueltos, no sesiones largas.',
     threshold: 35,
     watch: 28,
     unit: 'pct',
@@ -128,7 +128,7 @@ export const RULE_SPECS: readonly RuleSpec[] = [
   {
     id: 6,
     signal: 'El rewrite repite errores del original',
-    action: 'No estas leyendo la correccion. Leela antes de reescribir, con el original delante.',
+    action: 'No estás leyendo la corrección. Léela antes de reescribir, con el original delante.',
     threshold: REWRITE_REPEAT_PCT,
     watch: 35,
     unit: 'pct',

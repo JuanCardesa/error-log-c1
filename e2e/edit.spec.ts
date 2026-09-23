@@ -134,7 +134,7 @@ test.describe('corregir lo ya registrado', () => {
     await page.getByRole('button', { name: 'Guardar cabecera' }).click();
 
     await expect(page.locator('#s-itemsCorrect-error')).toContainText(
-      'No puedes acertar mas items de los que intentaste',
+      'No puedes acertar más ítems de los que intentaste',
     );
     await expect(page.getByLabel('Aciertos *')).toHaveValue('99');
     await expect(page.getByLabel('Referencia')).toHaveValue('Referencia corregida');
