@@ -50,6 +50,16 @@
   --accent: #1d4ed8;
   --danger: #b4231d;
 
+  /* Acciones: el hover del primario oscurece la tinta; el texto sobre color lleno. */
+  --ink-hover: #000;
+  --on-color: #fff;
+
+  /* Tramos de precision de RUOE, del verde al rojo. Solo fondo: el numero manda. */
+  --tier-high: #dcefe2;
+  --tier-mid: #eaf0d9;
+  --tier-low: #faeed2;
+  --tier-bad: #f8dcd8;
+
   /* Tipografia */
   --font-ui: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-data: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas, monospace;
@@ -69,6 +79,7 @@
   --sp-7: 28px;
 
   --radius: 3px;
+  --radius-pill: 999px;
 }
 
 * {

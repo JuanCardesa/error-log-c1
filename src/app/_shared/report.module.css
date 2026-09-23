@@ -129,7 +129,7 @@
   display: block;
   height: 6px;
   min-width: 2px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--ink-faint);
 }
 
@@ -150,7 +150,7 @@
 .chipExec {
   display: inline-block;
   padding: 0 var(--sp-3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: var(--font-data);
   font-size: var(--fs-xs);
   white-space: nowrap;

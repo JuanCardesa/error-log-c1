@@ -55,14 +55,14 @@
 }
 
 .tierHigh {
-  background: #dcefe2;
+  background: var(--tier-high);
 }
 .tierMid {
-  background: #eaf0d9;
+  background: var(--tier-mid);
 }
 .tierLow {
-  background: #faeed2;
+  background: var(--tier-low);
 }
 .tierBad {
-  background: #f8dcd8;
+  background: var(--tier-bad);
 }

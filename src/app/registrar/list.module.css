@@ -70,7 +70,7 @@
 .chipExec {
   display: inline-block;
   padding: 0 var(--sp-3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: var(--font-data);
   font-size: var(--fs-xs);
   white-space: nowrap;
@@ -117,7 +117,7 @@
 .danger {
   background: var(--danger);
   border-color: var(--danger);
-  color: #fff;
+  color: var(--on-color);
 }
 
 .danger:hover:not(:disabled) {

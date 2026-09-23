@@ -84,7 +84,7 @@
 }
 
 .primary:hover:not(:disabled) {
-  background: #000;
+  background: var(--ink-hover);
 }
 
 .primary:disabled {
@@ -124,7 +124,7 @@
 .rewriteTag {
   display: inline-block;
   padding: 0 var(--sp-3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--study-bg);
   border: 1px solid var(--study-rule);
   color: var(--study);

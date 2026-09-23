@@ -80,7 +80,7 @@
 }
 
 .primary:hover:not(:disabled) {
-  background: #000;
+  background: var(--ink-hover);
 }
 
 .primary:disabled {

@@ -28,9 +28,9 @@
 .doNowTag {
   display: inline-block;
   padding: 0 var(--sp-3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--do-now);
-  color: #fff;
+  color: var(--on-color);
   font-family: var(--font-data);
   font-size: var(--fs-xs);
   letter-spacing: 0.06em;
@@ -133,7 +133,7 @@
 .stNeeds {
   display: inline-block;
   padding: 0 var(--sp-3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-family: var(--font-data);
   font-size: var(--fs-xs);
   white-space: nowrap;
@@ -142,7 +142,7 @@
 .stDoNow {
   background: var(--do-now);
   border: 1px solid var(--do-now);
-  color: #fff;
+  color: var(--on-color);
 }
 
 .stQueued {
