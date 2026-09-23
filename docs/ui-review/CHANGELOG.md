@@ -18,8 +18,8 @@ y datos de los CSV y el JSON son idénticos a `develop`.
 
 | | Antes | Después |
 |---|---|---|
-| Tests unitarios | 584 | **593** |
-| Tests e2e (5 omitidos siempre: generan capturas) | 55 | **65** |
+| Tests unitarios | 584 | **599** |
+| Tests e2e (5 omitidos siempre: generan capturas) | 55 | **66** |
 | `detect` estático sobre `src/app` | 1 (borde lateral) | **0** |
 | `detect` en páginas: contraste bajo (1280 / 390 px) | 64 / 64 | **0 / 0** |
 | `detect` en páginas: longitud de línea (1280) | 18 | 14 · ver nota |
@@ -49,7 +49,7 @@ y datos de los CSV y el JSON son idénticos a `develop`.
 
 | Dimensión | Antes | Después | Qué queda |
 |---|---|---|---|
-| Accesibilidad | 2 | 3 | Objetivos táctiles < 44 px (AAA); las tarjetas móviles pierden la semántica de tabla |
+| Accesibilidad | 2 | 3 | Objetivos táctiles < 44 px (AAA) |
 | Rendimiento | 3 | 3 | Sin problemas; `/anki` tiene pantalla de carga |
 | Responsive | 2 | 3 | Algunas tablas del Informe y de Writing se desplazan en su marco a 390 px, a propósito |
 | Theming | 3 | 3 | Todo sale de tokens; no hay modo oscuro (nadie lo pidió) |
@@ -76,8 +76,8 @@ Capturas de página completa sobre la demo (`pnpm demo`), a 1280 px (`-desktop`)
 ### Registrar: tanda de Macmillan y «Pegar varios» (bloque 4)
 [antes](before/03-registrar-pegar-desktop.png) · [revisión de 12 errores](after/11-revision-tanda-desktop.png) ·
 [tras guardar](after/12-tanda-guardada-desktop.png) · [pegar varios](after/03-registrar-pegar-desktop.png)
-- **Filas compactas:** cada error tiene un chip «Completo», «Falta: correcta, categoría, regla» o
-  «Rechazado». A la vista quedan Correcta, Causa, Categoría, Confianza y Regla; el resto va
+- **Filas compactas:** cada error tiene un chip «Listo para enviar», «Falta: correcta, categoría,
+  regla» o «Rechazado». A la vista quedan Correcta, Causa, Categoría, Confianza y Regla; el resto va
   plegado.
 - **Barra fija:** «Faltan 7 de 12», «Ir al siguiente pendiente» y guardar. No se envía nada con
   filas incompletas.
@@ -177,6 +177,22 @@ Capturas de página completa sobre la demo (`pnpm demo`), a 1280 px (`-desktop`)
 | 8 | Anki no disponible: botones grises, ceros falsos | **Resuelto** (bloque 7) |
 | 9 | Jerarquía invertida en `/registrar` | **Resuelto** (bloque 5) |
 | 10 | Primitivas duplicadas, rojo sobrecargado, sin página actual | **Resuelto** (bloques 2 y 8) |
+
+## Revisión de Copilot
+
+Se revisó el PR con GitHub Copilot, que no encontró fallos críticos ni altos. Sus ocho
+recomendaciones se aplicaron así:
+
+| # | Recomendación | Qué se hizo |
+|---|---|---|
+| 1 | Categorías desconocidas como `undefined` o código crudo | `categoryLabel` dice «Categoría no reconocida (X)» y lo usan la cola y las convertidas de Anki. Por tipos no se daba hoy (`categoryOf` solo devuelve valores de la taxonomía), pero protege ante datos editados a mano. |
+| 2 | La señal técnica de una regla podía volver a verse | Un test exige una etiqueta para cada regla de `RULE_SPECS`. Se prefirió a un texto genérico: el fallo aparece en los tests y no en pantalla. |
+| 3 | Las tarjetas móviles dejaban de ser una tabla | Roles ARIA explícitos: el árbol de accesibilidad a 390 px es idéntico al de escritorio. Las etiquetas visuales llevan texto alternativo vacío. |
+| 4 | Posible desfase entre el contador y un `select` controlado | En la práctica no ocurre: el DOM ya tiene el valor al llegar `onChange`. Un e2e nuevo elige categoría y causa con el teclado y lo demuestra. |
+| 5 | `setState` durante el render (`blocked`) | El aviso de envío bloqueado se deriva y se limpia al editar. |
+| 6 | «Completo» parecía «validado» | Pasa a «Listo para enviar». |
+| 7 | Nada fijaba el contrato del `FormData` | `buildImportPayload` (en `reviewRows.ts`), movido sin cambiar su lógica, con tres tests de contrato. |
+| 8 | El aviso de guardado podía reescribir la URL de otra vista | Solo se limpia `?aviso=` si la URL sigue siendo la de esa sesión. |
 
 ## Pendiente
 

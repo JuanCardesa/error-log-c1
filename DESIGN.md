@@ -322,7 +322,8 @@ margen exterior: el espacio alrededor lo decide cada vista.
 - `ui.table`: cabecera en etiqueta de 11 px sobre hoja hundida, celdas de 12 px y filete
   entre filas. Suelta sobre el papel lleva marco (`ui.framed`); dentro de un panel, no.
 - A 620 px, la tabla de errores de una sesión pasa a tarjetas con cada dato etiquetado
-  (`data-label`).
+  (`data-label`). Los roles ARIA explícitos mantienen la tabla para el lector de pantalla y la
+  etiqueta visual lleva texto alternativo vacío.
 
 ### Tarjeta de corrección (firma del sistema)
 - La respuesta equivocada tachada en rojo, una flecha y la correcta en negrita, en mono de
@@ -331,8 +332,9 @@ margen exterior: el espacio alrededor lo decide cada vista.
 - La fecha enlaza a la sesión del error.
 
 ### Revisión de tanda
-- **Filas:** cada error es un `fieldset` con su chip de estado («Completo», «Falta: …» o
-  «Rechazado») y un resumen de solo lectura.
+- **Filas:** cada error es un `fieldset` con su chip de estado («Listo para enviar», «Falta: …»
+  o «Rechazado») y un resumen de solo lectura. «Listo para enviar» no es «validado»: las
+  reglas de negocio las comprueba el servidor.
 - **A la vista:** Correcta, Causa, Categoría, Confianza y Regla. El resto va plegado.
 - **Barra fija:** «Faltan N de M», «Ir al siguiente pendiente» y guardar. No se envía nada
   mientras quede algo por completar.
