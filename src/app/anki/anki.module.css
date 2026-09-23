@@ -119,7 +119,7 @@
 .failures ul { list-style: none; padding: 0; }
 .failures li { display: flex; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-3) 0; border-bottom: 1px solid var(--rule); }
 .failures strong { white-space: nowrap; }
-@media (max-width: 600px) {
+@media (max-width: 620px) {
   .card { grid-template-columns: 1fr; }
   .controls { max-width: none; }
 }

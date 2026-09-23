@@ -114,3 +114,16 @@
   min-width: 6rem;
 }
 
+/* Estrecho: la barra repite el porcentaje de al lado; sin ella, la tabla cabe entera. */
+@media (max-width: 620px) {
+  .barCell {
+    display: none;
+  }
+
+  /* El remedio es prosa: con ancho propio, la tabla se desplaza en su marco en vez de
+     partirlo palabra a palabra. */
+  .remedyCell {
+    min-width: 14rem;
+  }
+}
+

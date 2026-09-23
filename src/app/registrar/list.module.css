@@ -52,3 +52,59 @@
 .rowActions button + button {
   margin-left: var(--sp-2);
 }
+
+/*
+ * Estrecho: cada error pasa a ser una tarjeta con sus datos etiquetados, en vez de una
+ * tabla de 780 px que obligaba a desplazarse para llegar a Editar y Borrar.
+ */
+@media (max-width: 620px) {
+  .wrap .table,
+  .wrap .table tbody,
+  .wrap .table tr,
+  .wrap .table td {
+    display: block;
+  }
+
+  /* Las cabeceras siguen para el lector de pantalla; a la vista las sustituye cada etiqueta. */
+  .wrap .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .wrap .table tr {
+    padding: var(--sp-4);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .wrap .table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .wrap .table td,
+  .wrap .table tbody tr:last-child td {
+    padding: var(--sp-1) 0;
+    border: 0;
+  }
+
+  .wrap .table td[data-label]::before {
+    content: attr(data-label);
+    display: inline-block;
+    min-width: 6.5rem;
+    font-family: var(--font-ui);
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+  }
+
+  .wrap .rowActions {
+    margin-top: var(--sp-3);
+  }
+
+  .wrap .rule {
+    max-width: none;
+  }
+}

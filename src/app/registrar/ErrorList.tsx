@@ -117,20 +117,20 @@ function Row({ error, focusEdit, onEdit }: {
 
   return (
     <tr className={pending ? styles.rowGoing : undefined}>
-      <td className="data">{error.itemRef ?? '—'}</td>
-      <td className="data">{error.correctAnswer}</td>
-      <td>
+      <td className="data" data-label="Ítem">{error.itemRef ?? '—'}</td>
+      <td className="data" data-label="Correcta">{error.correctAnswer}</td>
+      <td data-label="Causa">
         <span className={meta.side === 'study' ? ui.chipStudy : ui.chipExec}>
           {CAUSE_LABELS[error.cause]}
         </span>
       </td>
-      <td>
+      <td data-label="Categoría">
         {CATEGORY_LABELS[error.category]}
         {error.subcategory !== null && (
           <span className={styles.sub}> · {error.subcategory}</span>
         )}
       </td>
-      <td>
+      <td data-label="Confianza">
         {error.confidence === 'SEGURO' ? (
           <strong className={styles.sure} title="Falsa certeza: creencia instalada">
             {CONFIDENCE_LABELS.SEGURO}
@@ -139,8 +139,8 @@ function Row({ error, focusEdit, onEdit }: {
           CONFIDENCE_LABELS[error.confidence]
         )}
       </td>
-      <td className={styles.rule}>{error.ruleNote}</td>
-      <td className="data">
+      <td className={styles.rule} data-label="Regla">{error.ruleNote}</td>
+      <td className="data" data-label="Anki">
         {meta.generatesCard ? (error.ankiAdded ? 'sí' : 'pendiente') : '—'}
       </td>
       <td

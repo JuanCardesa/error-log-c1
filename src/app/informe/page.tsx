@@ -74,7 +74,7 @@ export default async function InformePage({
                   <th scope="col" className={shared.barCell}>
                     <span className="sr-only">Proporción</span>
                   </th>
-                  <th scope="col">Remedio</th>
+                  <th scope="col" className={shared.remedyCell}>Remedio</th>
                 </tr>
               </thead>
               <tbody>
@@ -90,13 +90,13 @@ export default async function InformePage({
                     </td>
                     <td className={ui.num}>{row.n}</td>
                     <td className={ui.num}>{row.pct}%</td>
-                    <td>
+                    <td className={shared.barCell}>
                       <span
                         className={`${shared.bar} ${row.side === 'study' ? shared.barStudy : shared.barExec}`}
                         style={{ width: `${String(row.pct)}%` }}
                       />
                     </td>
-                    <td className={ui.note}>{CAUSE_META[row.cause].remedy}</td>
+                    <td className={`${ui.note} ${shared.remedyCell}`}>{CAUSE_META[row.cause].remedy}</td>
                   </tr>
                 ))}
               </tbody>
@@ -123,7 +123,7 @@ export default async function InformePage({
               <caption className="sr-only">Categorías ordenadas por tasa</caption>
               <thead>
                 <tr>
-                  <th scope="col">Categoria</th>
+                  <th scope="col">Categoría</th>
                   <th scope="col" className={ui.num}>
                     Errores
                   </th>
@@ -141,7 +141,7 @@ export default async function InformePage({
                     <td>{CATEGORY_LABELS[row.category]}</td>
                     <td className={ui.num}>{row.errors}</td>
                     <td className={ui.num}>{row.ratePer100}</td>
-                    <td>
+                    <td className={shared.barCell}>
                       <span
                         className={shared.bar}
                         style={{
