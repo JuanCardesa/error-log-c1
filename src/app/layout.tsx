@@ -9,11 +9,16 @@ export const metadata: Metadata = {
   description: 'Registro de errores para la preparacion del Cambridge C1 Advanced',
 };
 
-const NAV = [
+/** El uso diario: registrar lo que falla, leer que hacer y convertirlo en tarjetas. */
+const NAV_MAIN = [
   { href: '/registrar', label: 'Registrar' },
   { href: '/informe', label: 'Informe' },
-  { href: '/ruoe', label: 'RUOE' },
   { href: '/anki', label: 'Anki' },
+] as const;
+
+/** Detalle y mantenimiento: siguen a un clic, pero no compiten con las tres de arriba. */
+const NAV_MORE = [
+  { href: '/ruoe', label: 'RUOE' },
   { href: '/certezas', label: 'Falsas certezas' },
   { href: '/writing', label: 'Writing' },
   { href: '/exportar', label: 'Exportar' },
@@ -34,11 +39,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className={styles.bar}>
             <span className={styles.brand}>error-log-c1</span>
             <nav className={styles.nav} aria-label="Secciones">
-              {NAV.map((item) => (
-                <Link key={item.href} className={styles.link} href={item.href}>
-                  {item.label}
-                </Link>
-              ))}
+              <span className={styles.group}>
+                {NAV_MAIN.map((item) => (
+                  <Link key={item.href} className={styles.link} href={item.href}>
+                    {item.label}
+                  </Link>
+                ))}
+              </span>
+              <span className={styles.group}>
+                {NAV_MORE.map((item) => (
+                  <Link key={item.href} className={`${styles.link} ${styles.secondary}`} href={item.href}>
+                    {item.label}
+                  </Link>
+                ))}
+              </span>
             </nav>
           </header>
           {IS_DEMO && (

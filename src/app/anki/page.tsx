@@ -77,7 +77,8 @@ export default async function AnkiPage({
         rolloverSource={anki.sync?.rolloverSource ?? null} />
       <ConversionFeedback>
       <h2>Cola de conversión</h2>
-      <p className={shared.note}>La conversión incluye tarjetas verificadas y marcas manuales. Marcar a mano no comprueba que exista la tarjeta. Deshacer devuelve el error a la cola y conserva la nota en Anki. Si corriges un error ya convertido, su tarjeta no se reescribe sola: se avisa y puedes actualizarla.</p>
+      {/* Solo lo que cambia el resultado de pulsar: lo demas lo dice cada boton. */}
+      <p className={shared.note}>Marcar a mano no comprueba que la tarjeta exista. Deshacer devuelve el error a la cola y conserva la nota en Anki.</p>
 
       <ConversionNotice />
 

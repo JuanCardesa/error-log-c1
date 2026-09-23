@@ -33,5 +33,6 @@ test('el informe no presenta falta de sincronización como cero fallos', async (
   await page.goto('/informe');
   await expect(page.getByRole('heading', { name: 'Práctica y repaso en Anki' })).toBeVisible();
   await expect(page.getByText('Todavía no has sincronizado Anki.', { exact: false })).toBeVisible();
+  await page.getByText('Ver las siete reglas y sus cifras').click();
   await expect(page.getByRole('table', { name: /siete reglas/ }).locator('tbody tr')).toHaveCount(7);
 });

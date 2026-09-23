@@ -23,8 +23,26 @@
 
 .nav {
   display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.group {
+  display: flex;
   gap: var(--sp-2);
   flex-wrap: wrap;
+}
+
+/* Separa el uso diario del detalle sin esconderlo ni sacarlo del orden de tabulacion. */
+.group + .group {
+  padding-left: var(--sp-4);
+  border-left: 1px solid var(--rule);
+}
+
+.secondary {
+  font-size: var(--fs-sm);
+  color: var(--ink-faint);
 }
 
 .link {
@@ -65,7 +83,7 @@
 
 /*
  * Salto al contenido. Invisible hasta que recibe foco: sin el, llegar al contenido con
- * el teclado obliga a tabular por los siete enlaces de navegacion en cada pagina.
+ * el teclado obliga a tabular por toda la navegacion en cada pagina.
  */
 .skip {
   position: absolute;

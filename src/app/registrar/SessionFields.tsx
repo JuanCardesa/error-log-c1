@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { MAX_PART, PAPERS, SESSION_KINDS, SOURCES, partsFor, type Paper } from '@/lib/domain/enums';
+import { PAPERS, SESSION_KINDS, SOURCES, partsFor, type Paper } from '@/lib/domain/enums';
 import type { ImportedSession } from '@/lib/import/errors';
 import styles from './session.module.css';
 
@@ -108,9 +108,6 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
               </option>
             ))}
           </select>
-          <span className={styles.help}>
-            {paper} llega a {MAX_PART[paper]}
-          </span>
           {fieldError('part')}
         </label>}
         {paper === null && fieldError('part')}

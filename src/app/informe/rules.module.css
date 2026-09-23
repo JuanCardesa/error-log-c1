@@ -1,3 +1,18 @@
+.details {
+  margin-top: var(--sp-5);
+}
+
+.details summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: var(--fs-sm);
+  padding: var(--sp-2) 0;
+}
+
+.details summary:hover {
+  color: var(--ink);
+}
+
 .headRow {
   margin-bottom: var(--sp-4);
 }

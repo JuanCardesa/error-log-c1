@@ -278,7 +278,7 @@ function CauseChip({ cause }: { readonly cause: string }) {
       className={meta.side === 'study' ? styles.chipStudy : styles.chipExec}
       title={meta.remedy}
     >
-      {meta.side}
+      {meta.side === 'study' ? 'estudio' : 'ejecucion'}
       {meta.generatesCard ? ' · tarjeta' : ' · sin tarjeta'}
     </span>
   );
