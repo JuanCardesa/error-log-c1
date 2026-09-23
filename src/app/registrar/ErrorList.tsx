@@ -10,6 +10,7 @@ import { ErrorFields } from './ErrorFields';
 import { EMPTY_STATE } from './formState';
 import capture from './capture.module.css';
 import styles from './list.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * Errores ya registrados en la sesion, con correccion en linea.
@@ -29,7 +30,7 @@ export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
 
   if (errors.length === 0) {
     return (
-      <p className={styles.empty}>
+      <p className={`${ui.empty} ${styles.empty}`}>
         Sin errores todavia. Una sesion de cero errores es valida y cuenta en el
         denominador: cierrala sin mas cuando termines.
       </p>
@@ -37,8 +38,8 @@ export function ErrorList({ errors, session, subcategorySuggestions }: Props) {
   }
 
   return (
-    <div className={styles.wrap}>
-      <table className={styles.table}>
+    <div className={`${ui.tableWrap} ${ui.framed} ${styles.wrap}`}>
+      <table className={`${ui.table} ${styles.table}`}>
         <caption className="sr-only">Errores registrados en esta sesion</caption>
         <thead>
           <tr>
@@ -93,7 +94,7 @@ function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () 
       <td className="data">{error.itemRef ?? '—'}</td>
       <td className="data">{error.correctAnswer}</td>
       <td>
-        <span className={meta.side === 'study' ? styles.chipStudy : styles.chipExec}>
+        <span className={meta.side === 'study' ? ui.chipStudy : ui.chipExec}>
           {error.cause}
         </span>
       </td>
@@ -121,7 +122,7 @@ function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () 
           <>
             <button
               type="button"
-              className={styles.danger}
+              className={`${ui.danger} ${ui.small}`}
               disabled={pending}
               onClick={() => {
                 startTransition(async () => {
@@ -133,7 +134,7 @@ function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () 
             </button>
             <button
               type="button"
-              className={styles.quiet}
+              className={`${ui.secondary} ${ui.small}`}
               onClick={() => {
                 setConfirming(false);
               }}
@@ -143,12 +144,12 @@ function Row({ error, onEdit }: { readonly error: ErrorRow; readonly onEdit: () 
           </>
         ) : (
           <>
-            <button type="button" className={styles.quiet} onClick={onEdit}>
+            <button type="button" className={`${ui.secondary} ${ui.small}`} onClick={onEdit}>
               Editar
             </button>
             <button
               type="button"
-              className={styles.quiet}
+              className={`${ui.secondary} ${ui.small}`}
               onClick={() => {
                 setConfirming(true);
               }}
@@ -201,16 +202,16 @@ function EditRow({
           />
 
           <div className={capture.fSubmit}>
-            <button type="submit" className={capture.primary} disabled={pending}>
+            <button type="submit" className={ui.primary} disabled={pending} aria-busy={pending}>
               {pending ? 'Guardando…' : 'Guardar cambios'}
             </button>
-            <button type="button" className={styles.quiet} onClick={onDone}>
+            <button type="button" className={`${ui.secondary} ${ui.small}`} onClick={onDone}>
               Cancelar
             </button>
           </div>
         </form>
         {state.message !== null && !state.ok && (
-          <p role="alert" className={capture.fieldError}>{state.message}</p>
+          <p role="alert" className={ui.fieldError}>{state.message}</p>
         )}
       </td>
     </tr>

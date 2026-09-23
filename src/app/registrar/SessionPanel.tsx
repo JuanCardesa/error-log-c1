@@ -7,6 +7,7 @@ import { SessionControls } from './SessionControls';
 import { SessionForm } from './SessionForm';
 import styles from './page.module.css';
 import list from './list.module.css';
+import ui from '../_shared/ui.module.css';
 
 /** Cabecera y edición de una sesión. */
 export function SessionPanel({
@@ -73,7 +74,7 @@ export function SessionPanel({
       <div className={list.controls}>
         <button
           type="button"
-          className={list.quiet}
+          className={`${ui.secondary} ${ui.small}`}
           onClick={() => {
             setEditing(true);
           }}

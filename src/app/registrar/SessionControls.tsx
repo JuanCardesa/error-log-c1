@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import type { SessionRow } from '@/lib/domain/types';
 import { deleteSessionAction, setSessionStatusAction } from './actions';
 import styles from './list.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * Cerrar, reabrir y borrar una sesion. Cerrar no es destructivo —solo deja de aceptar
@@ -27,7 +28,7 @@ export function SessionControls({ session, errorCount }: Props) {
     <div className={styles.controls}>
       <button
         type="button"
-        className={styles.quiet}
+        className={`${ui.secondary} ${ui.small}`}
         disabled={pending}
         onClick={() => {
           startTransition(async () => {
@@ -45,7 +46,7 @@ export function SessionControls({ session, errorCount }: Props) {
           </span>
           <button
             type="button"
-            className={styles.danger}
+            className={`${ui.danger} ${ui.small}`}
             disabled={pending}
             onClick={() => {
               startTransition(async () => {
@@ -57,7 +58,7 @@ export function SessionControls({ session, errorCount }: Props) {
           </button>
           <button
             type="button"
-            className={styles.quiet}
+            className={`${ui.secondary} ${ui.small}`}
             onClick={() => {
               setConfirming(false);
             }}
@@ -68,7 +69,7 @@ export function SessionControls({ session, errorCount }: Props) {
       ) : (
         <button
           type="button"
-          className={styles.quiet}
+          className={`${ui.secondary} ${ui.small}`}
           onClick={() => {
             setConfirming(true);
           }}

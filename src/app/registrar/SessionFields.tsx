@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 import { PAPERS, SESSION_KINDS, SOURCES, partsFor, type Paper } from '@/lib/domain/enums';
 import type { ImportedSession } from '@/lib/import/errors';
 import styles from './session.module.css';
+import ui from '../_shared/ui.module.css';
 
 export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange, idPrefix }: {
   readonly today: string;
@@ -25,7 +26,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
     const messages = errorsFor(field);
     if (messages.length === 0) return null;
     return (
-      <p className={styles.fieldError} id={`${fieldId}-${field}-error`} data-field={field} role="alert">
+      <p className={ui.fieldError} id={`${fieldId}-${field}-error`} data-field={field} role="alert">
         {messages.join(' ')}
       </p>
     );
@@ -33,7 +34,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
 
   return <>
         <label>
-          <span className={styles.label}>Fecha</span>
+          <span className={ui.label}>Fecha</span>
           <input
             type="date"
             name="date"
@@ -48,7 +49,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
         </label>
 
         <label>
-          <span className={styles.label}>Tipo</span>
+          <span className={ui.label}>Tipo</span>
           <select
             name="kind"
             value={kind}
@@ -68,7 +69,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
         </label>
 
         <label>
-          <span className={styles.label}>Paper</span>
+          <span className={ui.label}>Paper</span>
           <select
             name="paper"
             value={paper ?? ''}
@@ -94,7 +95,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
         </label>
 
         {paper !== null && <label>
-          <span className={styles.label}>Part</span>
+          <span className={ui.label}>Part</span>
           <select
             name="part"
             defaultValue={String(defaults?.paper === paper ? defaults.part : 1)}
@@ -113,7 +114,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
         {paper === null && fieldError('part')}
 
         <label>
-          <span className={styles.label}>Fuente</span>
+          <span className={ui.label}>Fuente</span>
           <select name="source" defaultValue={defaults?.source ?? 'LIBRO'}>
             {SOURCES.map((value) => (
               <option key={value} value={value}>
@@ -124,7 +125,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
         </label>
 
         <label className={styles.wide}>
-          <span className={styles.label}>Referencia</span>
+          <span className={ui.label}>Referencia</span>
           <input
             name="sourceRef"
             autoComplete="off"
@@ -134,7 +135,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
         </label>
 
         <label>
-          <span className={styles.label}>Items{isWriting ? '' : ' *'}</span>
+          <span className={ui.label}>Items{isWriting ? '' : ' *'}</span>
           <input
             type="number"
             name="itemsTotal"
@@ -150,7 +151,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
         </label>
 
         <label>
-          <span className={styles.label}>Aciertos{isWriting ? '' : ' *'}</span>
+          <span className={ui.label}>Aciertos{isWriting ? '' : ' *'}</span>
           <input
             type="number"
             name="itemsCorrect"
@@ -163,11 +164,11 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
             aria-describedby={invalid('itemsCorrect') ? `${fieldId}-itemsCorrect-error` : undefined}
           />
           {fieldError('itemsCorrect')}
-          {isWriting && <span className={styles.help}>El Writing no se mide por items.</span>}
+          {isWriting && <span className={ui.help}>El Writing no se mide por items.</span>}
         </label>
 
         <label>
-          <span className={styles.label}>Minutos</span>
+          <span className={ui.label}>Minutos</span>
           <input
             type="number"
             name="durationMin"
@@ -177,7 +178,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
           />
         </label>
 
-        <label className={styles.check}>
+        <label className={`${ui.check} ${styles.checkCell}`}>
           <input type="checkbox" name="timed" defaultChecked={defaults?.timed ?? false} onChange={(event) => onTimedChange?.(event.target.checked)} />
           <span>Cronometrada</span>
         </label>

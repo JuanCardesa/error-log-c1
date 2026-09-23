@@ -14,12 +14,6 @@
   flex-wrap: wrap;
 }
 
-.hint {
-  margin: var(--sp-2) 0 var(--sp-5);
-  color: var(--ink-soft);
-  font-size: var(--fs-sm);
-}
-
 .variantSwitch {
   display: flex;
   border: 1px solid var(--rule-strong);
@@ -65,20 +59,6 @@
 
 /* ── Campos ───────────────────────────────────────────────────────────────── */
 
-.label {
-  display: block;
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  margin-bottom: var(--sp-1);
-}
-
-.label abbr {
-  color: var(--danger);
-  text-decoration: none;
-}
-
 .grid label {
   display: block;
   min-width: 0;
@@ -88,29 +68,6 @@
 .grid select,
 .grid textarea {
   width: 100%;
-}
-
-.fieldError {
-  margin: var(--sp-2) 0 0;
-  color: var(--danger);
-  font-size: var(--fs-sm);
-}
-
-.help {
-  display: block;
-  color: var(--ink-faint);
-  font-size: var(--fs-xs);
-}
-
-.check {
-  display: flex !important;
-  align-items: center;
-  gap: var(--sp-3);
-  white-space: nowrap;
-}
-
-.check input {
-  width: auto !important;
 }
 
 .fFlags {
@@ -126,47 +83,9 @@
   gap: var(--sp-3);
 }
 
-.primary {
-  padding: var(--sp-3) var(--sp-6);
-  border: 1px solid var(--ink);
-  border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--surface);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.primary:hover:not(:disabled) {
-  background: var(--ink-hover);
-}
-
-.primary:disabled {
-  opacity: 0.55;
-  cursor: progress;
-}
-
-/* Chips de causa: color por lado, azul study / rojo exec (§6). */
-.chipStudy,
-.chipExec {
-  display: inline-block;
+/* El chip de lado va bajo el select de causa. */
+.causeChip {
   margin-top: var(--sp-2);
-  padding: 0 var(--sp-3);
-  border-radius: var(--radius-pill);
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
-  white-space: nowrap;
-}
-
-.chipStudy {
-  background: var(--study-bg);
-  border: 1px solid var(--study-rule);
-  color: var(--study);
-}
-
-.chipExec {
-  background: var(--exec-bg);
-  border: 1px solid var(--exec-rule);
-  color: var(--exec);
 }
 
 /* ── Formulario de captura: denso y en una columna cuando no cabe ─────────── */

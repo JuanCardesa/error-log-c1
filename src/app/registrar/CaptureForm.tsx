@@ -9,6 +9,7 @@ import { BulkImport } from './BulkImport';
 import { ErrorFields } from './ErrorFields';
 import { EMPTY_STATE } from './formState';
 import styles from './capture.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * Conserva los valores de la tanda y devuelve el foco al guardar.
@@ -62,7 +63,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
       </div>
 
       <div hidden={variant === 'paste'}>
-      <p className={styles.hint}>
+      <p className={ui.hint}>
         <kbd>Tab</kbd> entre campos, <kbd>Enter</kbd> para guardar y seguir.
       </p>
 
@@ -94,14 +95,14 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
         />
 
         <div className={styles.fSubmit}>
-          <button type="submit" className={styles.primary} disabled={pending}>
+          <button type="submit" className={ui.primary} disabled={pending} aria-busy={pending}>
             {pending ? 'Guardando…' : 'Guardar y seguir'}
           </button>
         </div>
       </form>
 
       {state.message !== null && !state.ok && (
-        <p role="alert" className={styles.fieldError}>{state.message}</p>
+        <p role="alert" className={ui.fieldError}>{state.message}</p>
       )}
 
       <p aria-live="polite" className="sr-only">

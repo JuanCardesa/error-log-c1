@@ -4,6 +4,7 @@ import { type RefObject, useId, useState } from 'react';
 
 import { CATEGORIES, CAUSES, CAUSE_META, CONFIDENCES } from '@/lib/domain/enums';
 import styles from './capture.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
  * Los campos de un error, compartidos por el alta y la edicion.
@@ -65,7 +66,7 @@ export function ErrorFields({
     if (messages.length === 0) return null;
     return (
       <p
-        className={styles.fieldError}
+        className={ui.fieldError}
         id={errorId(field)}
         // Ancla estable: el id va aislado con useId y no sirve para apuntar desde fuera.
         data-field={field}
@@ -82,7 +83,7 @@ export function ErrorFields({
   return (
     <>
       <label className={styles.fItem}>
-        <span className={styles.label}>Item</span>
+        <span className={ui.label}>Item</span>
         <input
           ref={firstFieldRef}
           name={`${namePrefix}itemRef`}
@@ -94,7 +95,7 @@ export function ErrorFields({
       </label>
 
       <label className={styles.fPrompt}>
-        <span className={styles.label}>
+        <span className={ui.label}>
           Enunciado <abbr title="obligatorio">*</abbr>
         </span>
         <input
@@ -110,7 +111,7 @@ export function ErrorFields({
       </label>
 
       <label className={styles.fMine}>
-        <span className={styles.label}>Mi respuesta</span>
+        <span className={ui.label}>Mi respuesta</span>
         <input
           name={`${namePrefix}myAnswer`}
           autoComplete="off"
@@ -120,7 +121,7 @@ export function ErrorFields({
       </label>
 
       <label className={styles.fCorrect}>
-        <span className={styles.label}>
+        <span className={ui.label}>
           Correcta <abbr title="obligatorio">*</abbr>
         </span>
         <input
@@ -136,7 +137,7 @@ export function ErrorFields({
       </label>
 
       <label className={styles.fCause}>
-        <span className={styles.label}>Causa</span>
+        <span className={ui.label}>Causa</span>
         <select
           name={`${namePrefix}cause`}
           value={cause}
@@ -154,7 +155,7 @@ export function ErrorFields({
       </label>
 
       <label className={styles.fCategory}>
-        <span className={styles.label}>
+        <span className={ui.label}>
           Categoria <abbr title="obligatorio">*</abbr>
         </span>
         <input
@@ -178,7 +179,7 @@ export function ErrorFields({
       </label>
 
       <label className={styles.fSubcategory}>
-        <span className={styles.label}>Subcategoria</span>
+        <span className={ui.label}>Subcategoria</span>
         <input
           name={`${namePrefix}subcategory`}
           list={`${scope}-subcategories`}
@@ -197,7 +198,7 @@ export function ErrorFields({
       </label>
 
       <label className={styles.fConfidence}>
-        <span className={styles.label}>Confianza</span>
+        <span className={ui.label}>Confianza</span>
         <select
           name={`${namePrefix}confidence`}
           value={confidence}
@@ -214,7 +215,7 @@ export function ErrorFields({
       </label>
 
       <label className={styles.fRule}>
-        <span className={styles.label}>
+        <span className={ui.label}>
           Regla, con tus palabras <abbr title="obligatorio">*</abbr>
         </span>
         <textarea
@@ -231,7 +232,7 @@ export function ErrorFields({
       </label>
 
       <div className={styles.fFlags}>
-        <label className={styles.check}>
+        <label className={ui.check}>
           <input
             type="checkbox"
             name={`${namePrefix}lateInSession`}
@@ -242,7 +243,7 @@ export function ErrorFields({
           <span>Al final de la sesion</span>
         </label>
         {!timed && (
-          <span className={styles.help} id={`${scope}-late-help`}>
+          <span className={ui.help} id={`${scope}-late-help`}>
             Solo con cronometro: sin el, el dato no significa nada.
           </span>
         )}
@@ -263,7 +264,7 @@ function CauseChip({ cause }: { readonly cause: string }) {
 
   return (
     <span
-      className={meta.side === 'study' ? styles.chipStudy : styles.chipExec}
+      className={`${meta.side === 'study' ? ui.chipStudy : ui.chipExec} ${styles.causeChip}`}
       title={meta.remedy}
     >
       {meta.side === 'study' ? 'estudio' : 'ejecucion'}

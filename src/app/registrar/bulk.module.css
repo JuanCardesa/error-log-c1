@@ -10,10 +10,7 @@
 .row legend { font-weight: 600; }
 .row .fields { grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); }
 .row > button { margin-top: var(--sp-4); }
-.secondary { padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--rule-strong); border-radius: var(--radius); cursor: pointer; }
-.secondary:disabled { opacity: 0.55; cursor: progress; }
 .actions { display: flex; flex-wrap: wrap; gap: var(--sp-4); margin-top: var(--sp-5); }
-.success { padding: var(--sp-4); background: var(--ok-bg); color: var(--ok); }
 @media (max-width: 760px) {
   .row .fields { grid-template-columns: 1fr; }
   .row .headerFields { grid-template-columns: 1fr; }

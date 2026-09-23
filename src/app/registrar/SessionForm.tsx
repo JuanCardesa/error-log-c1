@@ -9,6 +9,7 @@ import { usePreservedForm } from '../_shared/usePreservedForm';
 import { createSessionAction, updateSessionAction } from './actions';
 import { EMPTY_STATE } from './formState';
 import styles from './session.module.css';
+import ui from '../_shared/ui.module.css';
 
 /** Alta y edición comparten campos y validación. */
 
@@ -45,11 +46,11 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
   }, [state, router, isEdit, onDone]);
 
   return (
-    <section className={styles.panel} aria-labelledby="session-heading">
+    <section className={ui.panel} aria-labelledby="session-heading">
       <h2 id="session-heading">
         {isEdit ? `Corregir sesion #${String(editing.id)}` : 'Nueva sesion'}
       </h2>
-      <p className={styles.hint}>
+      <p className={ui.hint}>
         {isEdit
           ? 'Corregir la cabecera no toca los errores ya registrados. Pasa por la misma validacion que el alta.'
           : 'Una sesion es el denominador. Registrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
@@ -66,11 +67,11 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
         <SessionFields today={today} defaults={editing ?? undefined} fieldErrors={state.fieldErrors} idPrefix="s" />
 
         <div className={styles.actions}>
-          <button type="submit" className={styles.primary} disabled={pending}>
+          <button type="submit" className={`${ui.primary} ${styles.submit}`} disabled={pending} aria-busy={pending}>
             {pending ? 'Guardando…' : isEdit ? 'Guardar cabecera' : 'Abrir sesion'}
           </button>
           {isEdit && (
-            <button type="button" className={styles.secondary} onClick={onDone}>
+            <button type="button" className={ui.secondary} onClick={onDone}>
               Cancelar
             </button>
           )}
@@ -79,7 +80,7 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
 
       {state.message !== null && (
         <p
-          className={state.ok ? styles.ok : styles.formError}
+          className={state.ok ? ui.noticeOk : ui.noticeError}
           role={state.ok ? 'status' : 'alert'}
         >
           {state.message}
