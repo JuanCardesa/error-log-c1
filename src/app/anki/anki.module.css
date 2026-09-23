@@ -80,7 +80,7 @@
 }
 
 .done {
-  margin-top: var(--sp-6);
+  margin: var(--sp-6) 0;
 }
 
 .doneList {

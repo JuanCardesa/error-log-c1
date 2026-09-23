@@ -29,7 +29,7 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
   const { doNow, queued } = report;
 
   return (
-    <section aria-labelledby="rules-heading">
+    <section className={styles.rules} aria-labelledby="rules-heading">
       <div className={styles.headRow}>
         <h2 id="rules-heading">Que cambio esta semana</h2>
       </div>

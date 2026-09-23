@@ -1,3 +1,8 @@
+/* La decision y su respaldo, separados de los paneles de cifras que siguen. */
+.rules {
+  margin-bottom: var(--sp-6);
+}
+
 .details {
   margin-top: var(--sp-5);
 }
