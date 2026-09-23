@@ -28,10 +28,11 @@ de control. La URL acepta HTTP/HTTPS local, sin credenciales ni consulta; puerto
 Los nombres y claves declarados no pueden estar vacíos.
 
 El corte horario es «next day starts at» en Anki. Un repaso a la 1:30 pertenece al
-día anterior si el corte es 4:00. La versión de AnkiConnect verificada no expone ese
-dato: declara `ANKI_ROLLOVER_HOUR` si usas otro corte. La app distingue una hora
-configurada de una supuesta; conserva también la lectura de preferencias si el
-complemento la admite. Los cálculos usan la zona local del servidor.
+día anterior si el corte es 4:00. AnkiConnect no expone ese dato —comprobado contra la
+instalación real: de sus 121 acciones, `getPreferences` responde «unsupported action» y
+`getDeckConfig` son opciones de mazo—, así que no se le pregunta. Declara
+`ANKI_ROLLOVER_HOUR` si usas otro corte; si no, se supone 4:00 y la pantalla dice que es
+una suposición. Los cálculos usan la zona local del servidor.
 
 ## Crear, actualizar y deshacer
 

@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_ROLLOVER_HOUR, ankiDay, resolveRollover, rolloverHourIn } from './schedule';
+import { DEFAULT_ROLLOVER_HOUR, ankiDay, isRolloverHour, resolveRollover } from './schedule';
 
 // Otro proceso fija TZ antes de cargar Node: tambien funciona en Windows y no depende
 // de la zona horaria de quien ejecuta Vitest.
@@ -33,30 +33,22 @@ describe('corte de día de Anki', () => {
     expect(ankiDayIn('Europe/Madrid', instant, hour)).toBe(expected);
   });
 
-  it('lee la hora de configuración esté donde esté', () => {
-    expect(rolloverHourIn({ scheduling: { rollover: 2 } })).toBe(2);
-    expect(rolloverHourIn({ sched: { rollover: 5 } })).toBe(5);
-    expect(rolloverHourIn({ rollover: 0 })).toBe(0);
-  });
-
   it.each([
-    ['nulo', null],
-    ['no es objeto', 6],
-    ['sin la clave', { collapseTime: 1200 }],
-    ['fuera de rango', { rollover: 24 }],
-    ['negativa', { rollover: -1 }],
-    ['no entera', { rollover: 4.5 }],
-    ['no numérica', { rollover: '4' }],
-  ])('no deduce nada cuando la respuesta %s', (_label, preferences) => {
-    expect(rolloverHourIn(preferences)).toBeNull();
+    ['entera dentro de rango', 0, true],
+    ['entera dentro de rango', 23, true],
+    ['fuera de rango', 24, false],
+    ['negativa', -1, false],
+    ['no entera', 4.5, false],
+    ['no numérica', '4', false],
+    ['nula', null, false],
+  ])('acepta o rechaza la hora declarada: %s (%j)', (_label, value, expected) => {
+    expect(isRolloverHour(value)).toBe(expected);
   });
 
-  it('distingue lo leído, lo declarado y lo supuesto', () => {
-    expect(resolveRollover({ scheduling: { rollover: 2 } })).toEqual({ hour: 2, source: 'anki' });
-    // Lo declarado a mano gana incluso si Anki dijera otra cosa.
-    expect(resolveRollover({ scheduling: { rollover: 2 } }, 6)).toEqual({ hour: 6, source: 'config' });
-    expect(resolveRollover(6)).toEqual({ hour: DEFAULT_ROLLOVER_HOUR, source: 'default' });
-    // El caso real: AnkiConnect no soporta la acción y no hay nada que leer.
-    expect(resolveRollover(null, 0)).toEqual({ hour: 0, source: 'config' });
+  it('distingue lo declarado de lo supuesto', () => {
+    // AnkiConnect no expone el corte de la colección, asi que solo hay dos origenes.
+    expect(resolveRollover(6)).toEqual({ hour: 6, source: 'config' });
+    expect(resolveRollover(0)).toEqual({ hour: 0, source: 'config' });
+    expect(resolveRollover()).toEqual({ hour: DEFAULT_ROLLOVER_HOUR, source: 'default' });
   });
 });

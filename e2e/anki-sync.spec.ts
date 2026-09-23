@@ -59,8 +59,10 @@ test('sincroniza, refleja los repasos y no los duplica al repetir', async ({ pag
   await expect(stat('Fallos aprendiendo')).toHaveText('1');
   await expect(stat('Cartas distintas')).toHaveText('3');
   await expect(reviews.getByText('deal with')).toBeVisible();
-  // El corte de día sale de la colección, y se dice cuál se ha usado.
-  await expect(panel.getByText('Día de Anki: empieza a las 4:00', { exact: false })).toBeVisible();
+  // Anki no expone su corte, asi que se supone 4:00 y se dice que es una suposicion:
+  // nunca se ensena una cifra con aire de leida de la coleccion.
+  await expect(panel.getByText('se supone que empieza a las 4:00', { exact: false })).toBeVisible();
+  await expect(panel.getByText('ponla en ANKI_ROLLOVER_HOUR', { exact: false })).toBeVisible();
 
   // Repetir sin estudiar no inventa repasos nuevos ni duplica el historial.
   await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();

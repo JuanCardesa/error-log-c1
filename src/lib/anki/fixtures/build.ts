@@ -65,8 +65,6 @@ export class FakeAnki {
   models: string[] = [];
   fields = ERRORLOG_FIELDS;
   disconnected = false;
-  /** Forma anidada de `getPreferences`; `rolloverFrom` tolera las otras y cae al 4. */
-  rollover = 4;
   failAction: string | null = null;
   added = 0;
   afterAddFails = false;
@@ -87,7 +85,6 @@ export class FakeAnki {
       case 'version': return 6;
       case 'getActiveProfile': return this.profile;
       case 'deckNames': return this.decks;
-      case 'getPreferences': return { scheduling: { rollover: this.rollover }, collapseTime: 1200 };
       case 'findCards': return this.cards.map((value) => value.cardId);
       case 'findNotes': {
         const query = String(params['query']);

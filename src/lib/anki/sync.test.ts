@@ -22,7 +22,7 @@ afterEach(() => db.$client.close());
 
 it('sincroniza por lotes, incluye submazos y cartas nuevas, y no crea mazos al leer', async () => {
   const result = await syncAnki(db, fake.transport, NOW, CONFIG);
-  expect(result).toEqual({ reviews: 1, newReviews: 1, notes: 1, cards: 1, rollover: { hour: 4, source: 'anki' } });
+  expect(result).toEqual({ reviews: 1, newReviews: 1, notes: 1, cards: 1, rollover: { hour: 4, source: 'default' } });
   expect(fake.calls.find((call) => call.action === 'findCards')?.params['query']).not.toContain('is:new');
   expect(fake.calls.some((call) => /^(create|add|delete)/.test(call.action))).toBe(false);
   expect(loadAnkiDataset(db)).toMatchObject({ sync: { profile: 'Juan', lastSyncedAt: NOW.toISOString() } });
@@ -32,28 +32,27 @@ it('sincroniza por lotes, incluye submazos y cartas nuevas, y no crea mazos al l
   expect(fake.calls.filter((call) => call.action === 'multi')).toHaveLength(1);
 });
 it('fecha los repasos con el corte de día de Anki, no con la medianoche civil', async () => {
-  // 00:30 local: con corte a las 4 pertenece al día anterior; con corte a 0, al mismo.
+  // 00:30 local: con el corte supuesto (4) pertenece al día anterior; con 0, al mismo.
   const lateNight = new Date(2026, 8, 22, 0, 30).getTime();
   fake.reviews['10'] = [review({ id: lateNight })];
   await syncAnki(db, fake.transport, NOW, CONFIG);
-  expect(loadAnkiDataset(db)).toMatchObject({ reviews: [{ reviewDate: '2026-09-21' }], sync: { rolloverHour: 4, rolloverSource: 'anki' } });
+  expect(loadAnkiDataset(db)).toMatchObject({ reviews: [{ reviewDate: '2026-09-21' }], sync: { rolloverHour: 4, rolloverSource: 'default' } });
 
-  fake.rollover = 0;
-  await syncAnki(db, fake.transport, NOW, CONFIG);
-  expect(loadAnkiDataset(db)).toMatchObject({ reviews: [{ reviewDate: '2026-09-22' }], sync: { rolloverHour: 0, rolloverSource: 'anki' } });
+  await syncAnki(db, fake.transport, NOW, { ...CONFIG, rolloverHour: 0 });
+  expect(loadAnkiDataset(db)).toMatchObject({ reviews: [{ reviewDate: '2026-09-22' }], sync: { rolloverHour: 0, rolloverSource: 'config' } });
 
-  // Lo declarado a mano gana sobre lo que diga la colección.
+  // Lo declarado a mano se guarda como declarado, no como supuesto.
   await syncAnki(db, fake.transport, NOW, { ...CONFIG, rolloverHour: 9 });
   expect(loadAnkiDataset(db)).toMatchObject({ sync: { rolloverHour: 9, rolloverSource: 'config' } });
 });
 
-it('una versión de AnkiConnect sin getPreferences no impide sincronizar', async () => {
-  // Es el caso real: la instalación verificada responde «unsupported action».
-  fake.failAction = 'getPreferences';
-  expect((await syncAnki(db, fake.transport, NOW, CONFIG)).rollover).toEqual({ hour: 4, source: 'default' });
+it('no pregunta a Anki por el corte: ninguna version lo expone', async () => {
+  // Comprobado contra la instalacion real: `getPreferences` responde «unsupported
+  // action». Preguntarlo era una peticion por sincronizacion que nunca respondia nada.
+  await syncAnki(db, fake.transport, NOW, CONFIG);
+  expect(fake.calls.some((call) => call.action === 'getPreferences')).toBe(false);
   expect(loadAnkiDataset(db).sync).toMatchObject({ rolloverHour: 4, rolloverSource: 'default' });
 
-  // Y con la hora declarada a mano, esa misma versión sí usa el corte correcto.
   await syncAnki(db, fake.transport, NOW, { ...CONFIG, rolloverHour: 2 });
   expect(loadAnkiDataset(db).sync).toMatchObject({ rolloverHour: 2, rolloverSource: 'config' });
 });
@@ -379,7 +378,7 @@ it('se rinde con explicación si la lectura entera se pasa de tiempo, sin guarda
 });
 
 it.each([
-  ['version', 1], ['getActiveProfile', 1], ['deckNames', 1], ['getPreferences', 1],
+  ['version', 1], ['getActiveProfile', 1], ['deckNames', 1],
   ['findCards', 1], ['multi', 1], ['notesInfo', 1], ['getActiveProfile', 2],
 ] as const)('el presupuesto cancela una espera en %s (llamada %s) y nunca guarda al llegar tarde', async (action, occurrence) => {
   await syncAnki(db, fake.transport, NOW, CONFIG);
@@ -421,7 +420,7 @@ it('suma las llamadas iniciales y comprueba el plazo al volver de cada await', a
       clock += 25;
       return result;
     }, NOW, { ...CONFIG, syncBudgetMs: 100 })).rejects.toMatchObject({ code: 'ANKI_LENTO' });
-    expect(calls).toEqual(['version', 'getActiveProfile', 'deckNames', 'getPreferences']);
+    expect(calls).toEqual(['version', 'getActiveProfile', 'deckNames', 'findCards']);
     expect(loadAnkiDataset(db).sync).toBeNull();
   } finally { spy.mockRestore(); }
 });
@@ -444,7 +443,8 @@ it('aborta el HTTP en vuelo y libera el bloqueo al agotar el presupuesto', async
     expect(signal?.aborted).toBe(true);
     await withAnkiLock(db, async () => undefined);
     await vi.advanceTimersByTimeAsync(2000);
-    expect(fetcher).toHaveBeenCalledTimes(5);
+    // version, getActiveProfile, deckNames y el findCards que se queda colgado.
+    expect(fetcher).toHaveBeenCalledTimes(4);
     expect(loadAnkiDataset(db).sync).toBeNull();
   } finally { vi.unstubAllGlobals(); vi.useRealTimers(); }
 });
