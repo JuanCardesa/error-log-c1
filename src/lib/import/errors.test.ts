@@ -47,8 +47,13 @@ describe('pegar errores', () => {
   it('acepta el bloque de la IA, normaliza categorias y deja visibles los valores por defecto', () => {
     expect(draftsOf('```json\n' + JSON.stringify([example]) + '\n```')[0]).toMatchObject({
       ...example, itemRef: '4', category: 'PHRASAL_VERB', cause: 'DESCONOCIMIENTO', confidence: 'DUDABA',
-      ankiAdded: false, lateInSession: false,
+      lateInSession: false,
     });
+  });
+
+  it('descarta una conversion que venga en el bloque: eso lo sella Anki', () => {
+    const draft = draftsOf(JSON.stringify([{ ...example, ankiAdded: true }]))[0];
+    expect(draft).not.toHaveProperty('ankiAdded');
   });
 
   it('conserva campos pendientes para completarlos en la vista previa', () => {

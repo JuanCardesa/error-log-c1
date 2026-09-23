@@ -62,7 +62,7 @@ it('los errores estructurales y de negocio llegan al campo de la misma fila', ()
 
 it.each([
   { ...row, correctAnswer: '' }, { ...row, category: '' }, { ...row, ruleNote: 'corta' },
-  { ...row, cause: 'DESPISTE', ankiAdded: true },
+  { ...row, ruleNote: row.correctAnswer },
 ])('un error inválido impide crear la cabecera y todas las filas', (invalid) => {
   const result = importSessionWithErrors(db, { session, errors: [row, invalid] }, options);
   expect(result.ok).toBe(false);

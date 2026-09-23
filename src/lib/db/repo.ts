@@ -126,8 +126,23 @@ export function getError(db: Db, id: number): ErrorRow | null {
   return db.select().from(errorRow).where(eq(errorRow.id, id)).get() ?? null;
 }
 
+/**
+ * Corregir una fila escribe lo que se teclea y nada mas.
+ *
+ * La conversion a Anki —marca, sello, vinculo y huella— no se toca desde aqui: se sella
+ * al crear la nota y se deshace por su via explicita, `unmarkAnkiAdded`. Antes bastaba
+ * con que el formulario no mandara `ankiAdded` para que esta funcion borrara el vinculo
+ * y dejara la tarjeta huerfana en Anki. El `secs` de las versiones anteriores se conserva
+ * por lo mismo: ya no se mide, asi que ninguna edicion puede sobrescribirlo.
+ */
 export function updateError(db: Db, id: number, input: ErrorInput): boolean {
-  return db.update(errorRow).set({ ...input, ...(!input.ankiAdded ? { ankiNoteId: null, ankiContentHash: null } : {}) }).where(eq(errorRow.id, id)).run().changes > 0;
+  const { sessionId, itemRef, prompt, myAnswer, correctAnswer, cause, category,
+    subcategory, confidence, lateInSession, ruleNote } = input;
+  // Enumeradas y no `...input`: lo que se escribe se lee aqui, sin depender de que quien
+  // llame no traiga de mas.
+  return db.update(errorRow).set({ sessionId, itemRef, prompt, myAnswer, correctAnswer,
+    cause, category, subcategory, confidence, lateInSession, ruleNote })
+    .where(eq(errorRow.id, id)).run().changes > 0;
 }
 
 export function deleteError(db: Db, id: number): void {

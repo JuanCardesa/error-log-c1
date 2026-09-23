@@ -71,13 +71,15 @@ export async function createSessionAction(
 }
 
 /**
- * Lee y valida un error del formulario. La comparten el alta y la edicion para que las
- * reglas no puedan divergir entre crear y corregir.
+ * Los campos de un error tal y como se teclean. La comparten el alta y la edicion para
+ * que las reglas no puedan divergir entre crear y corregir.
+ *
+ * Nada de Anki ni de `secs` sale de aqui: el formulario no los trae, y lo que decide si
+ * un error esta convertido es la fila guardada, no un campo oculto que cualquier POST
+ * puede omitir.
  */
-function parseErrorForm(form: FormData, sessionTimed: boolean, addedAt: string | null = null) {
-  const ankiAdded = checkbox(form, 'ankiAdded');
-
-  return errorInputSchema().safeParse({
+function errorFormValues(form: FormData, sessionTimed: boolean) {
+  return {
     sessionId: integer(form, 'sessionId'),
     itemRef: text(form, 'itemRef'),
     prompt: text(form, 'prompt'),
@@ -90,12 +92,7 @@ function parseErrorForm(form: FormData, sessionTimed: boolean, addedAt: string |
     // `late_in_session` solo significa algo con cronometro (§3 del spec original).
     lateInSession: sessionTimed ? checkbox(form, 'lateInSession') : false,
     ruleNote: text(form, 'ruleNote'),
-    ankiAdded,
-    ankiAddedAt: ankiAdded ? addedAt ?? new Date().toISOString() : null,
-    // Ya no se mide: el alta no lo manda y queda null. La edicion sigue enviando el
-    // valor guardado, para no borrar lo que midieron las versiones anteriores.
-    secs: integer(form, 'secs'),
-  });
+  };
 }
 
 /** Un despiste no se arregla estudiando: convertirlo en tarjeta es el error clasico. */
@@ -134,13 +131,11 @@ export async function addErrorAction(
     };
   }
 
-  const parsed = parseErrorForm(form, session.timed);
+  // Un error nace sin convertir: la conversion se sella al crear la nota en Anki.
+  const parsed = errorInputSchema().safeParse(errorFormValues(form, session.timed));
   if (!parsed.success) {
     return { ok: false, fieldErrors: collectIssues(parsed.error), message: null };
   }
-
-  const impossible = rejectImpossibleCard(parsed.data.cause, parsed.data.ankiAdded);
-  if (impossible !== null) return impossible;
 
   const created = createError(getDb(), parsed.data);
   revalidatePath('/registrar');
@@ -173,12 +168,14 @@ export async function updateErrorAction(
     return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe en esta sesion. Tus cambios siguen en el formulario.' };
   }
 
-  const parsed = parseErrorForm(form, session.timed, original.ankiAddedAt);
+  const parsed = errorInputSchema().safeParse(errorFormValues(form, session.timed));
   if (!parsed.success) {
     return { ok: false, fieldErrors: collectIssues(parsed.error), message: null };
   }
 
-  const impossible = rejectImpossibleCard(parsed.data.cause, parsed.data.ankiAdded);
+  // Si esta convertido lo dice la fila, no el formulario: cambiar la causa de un error
+  // que ya tiene tarjeta sigue teniendo que poder rechazarse.
+  const impossible = rejectImpossibleCard(parsed.data.cause, original.ankiAdded);
   if (impossible !== null) return impossible;
 
   if (!updateError(getDb(), id, parsed.data)) {

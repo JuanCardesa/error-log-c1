@@ -268,6 +268,9 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
 - La duración solo se puede escribir manualmente en la vista previa. Macmillan propone
   `kind = DRILL` editable, `paper = part = null`, `source = LIBRO` y `timed = false`.
   Unidad, página y actividad siguen siendo texto en `source_ref`, sin campos nuevos.
+- Una tanda pegada entra siempre pendiente de convertir. Un `ankiAdded` en el bloque se
+  descarta como cualquier clave que no esté en el borrador: el sello de conversión solo
+  lo pone crear la nota en Anki y verificarla.
 - Se conservan el array de errores, el objeto de error individual y el TSV anteriores
   para añadir a una sesión existente. Su límite sigue siendo 100 filas. El sobre admite
   0–300 errores para conservar la tanda completa, con un máximo de 200 000 caracteres.
@@ -297,8 +300,9 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
    sin una part ficticia. Elegir el tipo `WRITING` sigue exigiendo paper `WRITING`.
 2. **Informe** — Q1, Q2, Q5 y la tabla de reglas de decisión con el `DO NOW` destacado.
 3. **RUOE** — Q3.
-4. **Anki** — cola de pendientes con creación verificada mediante AnkiConnect, marca
-   manual explícita y consulta de repasos/fallos por categoría (Q7).
+4. **Anki** — cola de pendientes con creación verificada mediante AnkiConnect,
+   actualización y deshacer explícitos, y consulta de repasos/fallos por categoría (Q7).
+   No hay marca manual: una conversión solo se sella tras verificar la tarjeta.
 5. **Falsas certezas** — Q4.
 6. **Writing** — alta y edición de `writing_piece` con las cuatro bandas, y Q6.
 7. **Exportar** — un CSV por cada query que sea una tabla (Q1–Q4 y Q7), más un dump JSON

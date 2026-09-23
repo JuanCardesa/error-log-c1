@@ -54,7 +54,8 @@ export const importDraftSchema = z.object({
   subcategory: z.string().nullish().transform((v) => v ?? ''),
   confidence: z.string().default(DEFAULT_CONFIDENCE),
   lateInSession: z.boolean().default(false),
-  ankiAdded: z.boolean().default(false),
+  // Sin `ankiAdded`: una conversion no se pega, se sella al crear la tarjeta. Si el
+  // bloque lo trae, se descarta como cualquier otra clave que no este aqui.
 });
 
 export type ImportDraft = z.infer<typeof importDraftSchema>;

@@ -67,9 +67,6 @@ function errorInput(sessionId: number, overrides: Partial<ErrorInput> = {}): Err
     confidence: 'DUDABA',
     lateInSession: false,
     ruleNote: 'sustain a loss es la colocacion formal, suffer es mas general',
-    ankiAdded: false,
-    ankiAddedAt: null,
-    secs: 25,
     ...overrides,
   };
 }

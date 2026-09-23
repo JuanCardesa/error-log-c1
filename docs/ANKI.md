@@ -66,13 +66,20 @@ El espejo local se sustituye en una transacción. Incluye importaciones antiguas
 retira repasos deshechos y excluye de las estadísticas cartas borradas o fuera del
 alcance. Conserva metadatos de notas vistas para reconocerlas si vuelven.
 
+La fecha de cada repaso se calcula al sincronizar, comparando la hora del reloj local
+con el corte. Los espejos guardados por versiones anteriores a esta la calculaban
+restando el corte al instante absoluto, lo que solo difiere en los días con cambio de
+hora. Sincroniza una vez después de actualizar y esas fechas se recalculan enteras: el
+espejo se sustituye, no se completa.
+
 Q7 muestra repasos, cartas distintas y fallos: `Again` es fallo; `Hard`, `Good` y `Easy`
 son aciertos. Se separan los lapsos de repaso (tipo 1) y los fallos restantes. Se excluyen
 registros manuales, reprogramaciones y respuestas inválidas. Q7 se lee en la pestaña Anki
 y no altera las siete reglas del informe.
 
 Las notas no vinculadas al log se asignan a una categoría principal mediante el mapeo de
-etiquetas de `src/lib/anki/categories.ts`. Q7 tiene CSV; el JSON exporta el espejo y sus resultados.
+etiquetas de `src/lib/anki/categories.ts`. Q7 tiene CSV; el JSON exporta el espejo, solo
+datos y sin agregaciones.
 Para recuperar toda la app, usa una copia SQLite: [copias y recuperación](../README.md#copias-y-recuperación).
 
 ## Protecciones y límites
@@ -95,5 +102,7 @@ Para recuperar toda la app, usa una copia SQLite: [copias y recuperación](../RE
 
 Las pruebas automatizadas usan dobles de AnkiConnect y SQLite real. No demuestran
 compatibilidad con todas las versiones del complemento. Las cifras y verificaciones
-históricas están en el historial de Git y en la
-[auditoría del 22 de septiembre](AUDIT-2026-09-22.md).
+históricas están en el historial de Git, en la
+[auditoría del 22 de septiembre](AUDIT-2026-09-22.md) y en la
+[revisión del 23](AUDIT-2026-09-23.md), que además recoge los cambios de contrato
+frente a `v1.2`.

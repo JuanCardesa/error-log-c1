@@ -658,10 +658,14 @@ it('un cambio de perfil al verificar deja la nota recuperable pero no elimina de
   expect(fake.added).toBe(1);
   expect(getError(db, 1)?.ankiAdded).toBe(false);
 });
-it('desmarcar desde Registrar limpia el vínculo; borrar un error conserva la nota de Anki', async () => {
+it('deshacer limpia el vínculo; corregir el texto no, y borrar un error conserva la nota', async () => {
   const nid = await createAnkiNote(db, 1, fake.transport, NOW, CONFIG);
-  const original = getError(db, 1)!;
-  updateError(db, 1, { ...original, ankiAdded: false, ankiAddedAt: null });
+  const converted = getError(db, 1)!;
+  // Corregir es corregir: solo «Deshacer» desvincula, y por eso tiene su propia via.
+  const { ankiAdded, ankiAddedAt, secs, ...editable } = converted;
+  updateError(db, 1, editable);
+  expect(getError(db, 1)).toMatchObject({ ankiAdded, ankiAddedAt, secs, ankiNoteId: nid });
+  unmarkAnkiAdded(db, 1);
   expect(getError(db, 1)?.ankiNoteId).toBeNull();
   deleteError(db, 1);
   expect(fake.notes.has(nid)).toBe(true);

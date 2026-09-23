@@ -37,9 +37,7 @@ export async function importErrorsAction(_previous: FormState, form: FormData): 
     return { ok: false, fieldErrors, message: `La tanda debe contener entre 1 y ${String(isEnvelope ? MAX_SESSION_IMPORT_ROWS : MAX_IMPORT_ROWS)} errores válidos.` };
   }
 
-  const { fieldErrors, inputs } = validateImportRows(batch.data, {
-    sessionId, timed: session.timed, now: new Date().toISOString(),
-  });
+  const { fieldErrors, inputs } = validateImportRows(batch.data, { sessionId, timed: session.timed });
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, fieldErrors, message: 'Revisa los campos señalados. No se ha guardado ningun error de la tanda.' };
   }
@@ -67,10 +65,9 @@ export async function importSessionAction(_previous: FormState, form: FormData):
   catch { return { ok: false, fieldErrors: {}, message: 'El sobre está incompleto o no es JSON válido.' }; }
   const minutes = form.get('durationMin');
   const durationMin = minutes === null || minutes === '' ? null : typeof minutes === 'string' ? Number(minutes) : Number.NaN;
-  const now = new Date();
   try {
     const result = importSessionWithErrors(getDb(), value, {
-      today: toIsoDate(now), now: now.toISOString(), durationMin,
+      today: toIsoDate(new Date()), durationMin,
     });
     if (result.ok) revalidatePath('/', 'layout');
     return result;

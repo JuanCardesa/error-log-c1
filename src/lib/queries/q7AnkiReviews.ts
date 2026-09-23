@@ -1,5 +1,5 @@
 import type { Category } from '../domain/enums';
-import { EMPTY_ANKI_DATASET, type AnkiDataset, type ErrorRow, type QueryOptions } from '../domain/types';
+import type { AnkiDataset, ErrorRow, QueryOptions } from '../domain/types';
 import { toCsv } from '../csv/csv';
 import { inWindow } from '../time/dates';
 import { percentage } from './window';
@@ -23,7 +23,8 @@ const REVIEW_TYPE = 1;
  * que tu corriges y la que usan las demas vistas. Actualizar una tarjeta reescribe sus
  * campos pero nunca sus tags —no se tocan etiquetas de tu coleccion—, asi que resolverla
  * aqui es lo que evita que corregir una categoria deje las estadisticas de repaso
- * contando bajo la antigua para siempre. Sin filas locales, manda la etiqueta de Anki.
+ * contando bajo la antigua para siempre. Una nota que no es de ningun error del log
+ * conserva su etiqueta: es la unica categoria que tiene.
  */
 function categoryResolver(errors: readonly ErrorRow[]) {
   const local = new Map<number, ErrorRow['category']>();
@@ -34,10 +35,15 @@ function categoryResolver(errors: readonly ErrorRow[]) {
     local.get(note.noteId) ?? note.category;
 }
 
+/**
+ * Las filas locales son obligatorias, y vacias solo si de verdad no hay ninguna: con un
+ * valor por defecto, olvidarse de pasarlas no fallaba, agrupaba por la etiqueta de Anki
+ * y dejaba dos pantallas contando lo mismo bajo categorias distintas.
+ */
 export function q7AnkiReviews(
-  data: AnkiDataset = EMPTY_ANKI_DATASET,
+  data: AnkiDataset,
   options: QueryOptions,
-  errors: readonly ErrorRow[] = [],
+  errors: readonly ErrorRow[],
 ) {
   const categoryOfNote = categoryResolver(errors);
   const notes = new Map(data.notes.map((note) => [note.noteId, note]));

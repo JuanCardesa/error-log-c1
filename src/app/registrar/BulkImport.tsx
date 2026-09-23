@@ -135,7 +135,6 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
         return {
           ...Object.fromEntries(textFields.map((field) => [field, form.get(`${prefix}${field}`)])),
           lateInSession: form.has(`${prefix}lateInSession`),
-          ankiAdded: form.has(`${prefix}ankiAdded`),
         };
       });
       setSentIds(rows.map((row) => row.id));

@@ -26,7 +26,6 @@ export interface ErrorFieldDefaults {
   readonly subcategory?: string | null;
   readonly confidence?: string;
   readonly lateInSession?: boolean;
-  readonly ankiAdded?: boolean;
   readonly ruleNote?: string;
 }
 

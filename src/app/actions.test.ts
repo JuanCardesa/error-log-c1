@@ -62,6 +62,20 @@ describe('importar en una sesión abierta', () => {
     expect(listErrors(db, id)).toHaveLength(1);
   });
 
+  it('no importa una conversion: la tanda entra siempre pendiente', async () => {
+    // La vista previa no manda ese campo, pero un POST a mano sí puede. Sellarlo aquí
+    // dejaba una conversion sin tarjeta detras, y encima con una causa que nunca genera
+    // tarjeta. Se descarta como cualquier clave que no este en el borrador.
+    const created = await createSessionAction(EMPTY_STATE, form(header));
+    const id = created.createdId!;
+    const result = await importErrorsAction(EMPTY_STATE, form({ sessionId: id,
+      rows: JSON.stringify([{ ...row, cause: 'DESPISTE', ankiAdded: true }]) }));
+    expect(result.ok).toBe(true);
+    expect(listErrors(db, id)[0]).toMatchObject({
+      cause: 'DESPISTE', ankiAdded: false, ankiAddedAt: null, ankiNoteId: null,
+    });
+  });
+
   it.each([['rows', MAX_IMPORT_ROWS], ['envelope', MAX_SESSION_IMPORT_ROWS]] as const)('respeta el límite de %s sin guardar parcialmente', async (field, limit) => {
     const created = await createSessionAction(EMPTY_STATE, form(header));
     const id = created.createdId!;
@@ -134,7 +148,13 @@ describe('corregir errores existentes', () => {
       confidence: 'DUDABA', ruleNote: 'Call off significa cancelar una actividad.',
     }));
     expect(created.ok).toBe(true);
-    expect(getError(db, created.createdId ?? 0)?.secs).toBeNull();
+    const fresh = getError(db, created.createdId ?? 0);
+    if (fresh === null) throw new Error('El error recien creado ha desaparecido');
+    expect(fresh.secs).toBeNull();
+
+    // Un POST con `secs=0` no convierte «no medido» en «medido en cero segundos».
+    expect((await updateErrorAction(EMPTY_STATE, form({ ...fresh, secs: 0 }))).ok).toBe(true);
+    expect(getError(db, fresh.id)?.secs).toBeNull();
 
     // Lo que midieron las versiones anteriores sigue ahi despues de corregirlo.
     const measured = loadDataset(db).errors.find((row) => row.secs !== null);
@@ -161,9 +181,11 @@ describe('corregir errores existentes', () => {
     expect(getError(db, original.id)?.cause).toBe(original.cause);
   });
 
-  it('corregir un error convertido no lo desvincula de su nota', async () => {
-    // El formulario ya no trae casilla: si dejara de enviar `ankiAdded`, `updateError`
-    // limpiaria el vinculo y la huella, y la tarjeta quedaria huerfana en Anki.
+  it('un POST sin `ankiAdded` no desvincula un error convertido', async () => {
+    // Una accion de servidor es un POST publico: una pestaña abierta antes de convertir,
+    // o un envio a mano, no manda ese campo. Si su ausencia valiera como «desmarcalo», la
+    // nota quedaria huerfana en Anki y se perderia la huella con la que se detecta que la
+    // tarjeta esta desactualizada. Desvincular es «Deshacer», y solo eso.
     const seeded = loadDataset(db).errors.find((row) => row.ankiAdded);
     if (seeded === undefined) throw new Error('Falta una tarjeta en el seed');
     linkAnkiNote(db, seeded.id, {
@@ -172,10 +194,13 @@ describe('corregir errores existentes', () => {
     }, '2026-09-12T18:00:00.000Z', 'huella');
     const original = loadDataset(db).errors.find((row) => row.id === seeded.id);
     if (original === undefined) throw new Error('El error vinculado ha desaparecido');
-    const result = await updateErrorAction(EMPTY_STATE, form({ ...original, myAnswer: 'otra cosa' }));
+    const input = form({ ...original, myAnswer: 'otra cosa' });
+    input.delete('ankiAdded');
+    const result = await updateErrorAction(EMPTY_STATE, input);
     expect(result.ok).toBe(true);
     expect(getError(db, original.id)).toMatchObject({
-      ankiAdded: true, ankiNoteId: original.ankiNoteId, ankiAddedAt: original.ankiAddedAt,
+      myAnswer: 'otra cosa', ankiAdded: true, ankiNoteId: original.ankiNoteId,
+      ankiAddedAt: original.ankiAddedAt, ankiContentHash: original.ankiContentHash,
     });
   });
 
