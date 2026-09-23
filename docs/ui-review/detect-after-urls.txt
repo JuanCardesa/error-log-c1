@@ -1,0 +1,191 @@
+### DESKTOP 1280x800
+
+http://127.0.0.1:3001/registrar
+  [line-length] ~213 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [line-length] ~174 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/registrar?s=1
+  [line-length] ~213 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [cramped-padding] <div> "ui-module__sPVHEW__tableWrap": children flush against border+bg on top/bottom (no inset)
+    → Text is too close to the edge of its container. Two shapes: (1) an element with its own text where the padding is too low for the font size, and (2) a wrapper with text-bearing children and near-zero padding against a visible boundary (border, outline, or non-transparent background) — children land flush against the boundary line. Add at least 8px (ideally 12–16px) of padding inside bordered, outlined, or colored containers.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/informe
+  [line-length] ~213 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [line-length] ~193 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [cramped-padding] <div> "ui-module__sPVHEW__tableWrap": children flush against border+bg on top/right/bottom (no inset)
+    → Text is too close to the edge of its container. Two shapes: (1) an element with its own text where the padding is too low for the font size, and (2) a wrapper with text-bearing children and near-zero padding against a visible boundary (border, outline, or non-transparent background) — children land flush against the boundary line. Add at least 8px (ideally 12–16px) of padding inside bordered, outlined, or colored containers.
+  [line-length] ~88 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [text-occlusion] td.rules-module__ai0aea__action "Congelar vocabulario nue" is 67% covered by an opaque element (th.report-module___yZ45a__barCell)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [line-length] ~88 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [text-occlusion] td.rules-module__ai0aea__action "El material te queda gra" is 82% covered by an opaque element (th.report-module___yZ45a__barCell)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [line-length] ~88 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [line-length] ~88 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [line-length] ~88 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [line-length] ~88 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [text-occlusion] td.rules-module__ai0aea__action "No estás leyendo la corr" is 87% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th "Estado" is 100% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th "Señal" is 50% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th.ui-module__sPVHEW__num "Valor" is 50% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th.ui-module__sPVHEW__num "Umbral" is 50% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th.ui-module__sPVHEW__num "Muestra" is 50% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th "Acción" is 52% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] span.rules-module__ai0aea__stWatch "Vigilar" is 100% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td "Despiste y tiempo sobre " is 50% covered by an opaque element (th)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "37%" is 50% covered by an opaque element (th.report-module___yZ45a__barCell)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "> 40%" is 50% covered by an opaque element (th.report-module___yZ45a__barCell)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "27" is 50% covered by an opaque element (th.report-module___yZ45a__barCell)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] span.rules-module__ai0aea__stOk "Bien" is 100% covered by an opaque element (th)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td "Desconocimiento sobre el" is 73% covered by an opaque element (th)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "22.2%" is 33% covered by an opaque element (th.report-module___yZ45a__barCell)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "> 60%" is 33% covered by an opaque element (th.report-module___yZ45a__barCell)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "27" is 33% covered by an opaque element (th.report-module___yZ45a__barCell)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "33.3%" is 50% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "> 50%" is 50% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] p.rules-module__ai0aea__legend "no es un fallo: con meno" is 40% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/anki
+  [line-length] ~213 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/ruoe
+  [line-length] ~213 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/certezas
+  [line-length] ~213 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/writing
+  [line-length] ~213 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/exportar
+  [line-length] ~213 chars/line (aim for <80)
+    → Text lines wider than ~80 characters are hard to read. The eye loses its place tracking back to the start of the next line. Add a max-width (65ch to 75ch) to text containers.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+48 anti-patterns found.
+
+── Advisory (not counted as failures) ──
+
+http://127.0.0.1:3001/ruoe
+  [repeating-stripes-gradient] repeating-gradient decorative stripes
+    → Repeating-gradient stripes used as surface decoration are a recurring generated-UI signature. Reach for a deliberate texture or leave the surface plain.
+
+1 advisory note. Suppress with --no-advisory.
+
+### MOBILE 390x844
+
+http://127.0.0.1:3001/registrar
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/registrar?s=1
+  [cramped-padding] <div> "ui-module__sPVHEW__tableWrap": children flush against border+bg on right (no inset)
+    → Text is too close to the edge of its container. Two shapes: (1) an element with its own text where the padding is too low for the font size, and (2) a wrapper with text-bearing children and near-zero padding against a visible boundary (border, outline, or non-transparent background) — children land flush against the boundary line. Add at least 8px (ideally 12–16px) of padding inside bordered, outlined, or colored containers.
+  [clipped-overflow-container] thead clips a positioned child
+    → A clipping container (overflow hidden or clip) wrapping an absolutely-positioned child cuts off tooltips, menus, and popovers that need to escape. Let the overflow be visible, or move the positioned layer out of the clip.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/informe
+  [cramped-padding] <div> "ui-module__sPVHEW__tableWrap": children flush against border+bg on top/right/bottom (no inset)
+    → Text is too close to the edge of its container. Two shapes: (1) an element with its own text where the padding is too low for the font size, and (2) a wrapper with text-bearing children and near-zero padding against a visible boundary (border, outline, or non-transparent background) — children land flush against the boundary line. Add at least 8px (ideally 12–16px) of padding inside bordered, outlined, or colored containers.
+  [text-occlusion] th "Estado" is 100% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th "Señal" is 50% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th.ui-module__sPVHEW__num "Valor" is 50% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] th.ui-module__sPVHEW__num "Umbral" is 67% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] span.rules-module__ai0aea__stWatch "Vigilar" is 100% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td "Despiste y tiempo sobre " is 61% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "37%" is 100% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td.ui-module__sPVHEW__num "> 40%" is 100% covered by an opaque element (section.ui-module__sPVHEW__panel.report-module___yZ45a__section)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [text-occlusion] td "Desconocimiento sobre el" is 56% covered by an opaque element (span.ui-module__sPVHEW__chipStudy)
+    → Text is painted under an opaque element or a second text run, so part of it cannot be read. A decorative box, a stacked layer, or an inline element with leaked padding lands on the words instead of beside them. Give overlapping layers room, or move the text out from under the layer above it.
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/anki
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/ruoe
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/certezas
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/writing
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+http://127.0.0.1:3001/exportar
+  [cream-palette] cream/beige page background rgb(242, 239, 230)
+    → A warm cream or beige page background has become the default "tasteful" AI surface, reached for by reflex. Choose a background that comes from a deliberate palette, not the safe warm off-white.
+
+20 anti-patterns found.
+
+── Advisory (not counted as failures) ──
+
+http://127.0.0.1:3001/ruoe
+  [repeating-stripes-gradient] repeating-gradient decorative stripes
+    → Repeating-gradient stripes used as surface decoration are a recurring generated-UI signature. Reach for a deliberate texture or leave the surface plain.
+
+1 advisory note. Suppress with --no-advisory.
