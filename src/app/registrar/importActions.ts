@@ -38,7 +38,7 @@ export async function importErrorsAction(_previous: FormState, form: FormData): 
   }
 
   const { fieldErrors, inputs } = validateImportRows(batch.data, {
-    sessionId, timed: session.timed, elapsed: Number(form.get('secs')), now: new Date().toISOString(),
+    sessionId, timed: session.timed, now: new Date().toISOString(),
   });
   if (Object.keys(fieldErrors).length > 0) {
     return { ok: false, fieldErrors, message: 'Revisa los campos señalados. No se ha guardado ningun error de la tanda.' };
@@ -70,7 +70,7 @@ export async function importSessionAction(_previous: FormState, form: FormData):
   const now = new Date();
   try {
     const result = importSessionWithErrors(getDb(), value, {
-      today: toIsoDate(now), now: now.toISOString(), durationMin, elapsed: Number(form.get('secs')),
+      today: toIsoDate(now), now: now.toISOString(), durationMin,
     });
     if (result.ok) revalidatePath('/', 'layout');
     return result;

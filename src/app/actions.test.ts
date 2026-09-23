@@ -7,7 +7,7 @@ import { loadDataset } from '@/lib/db/load';
 import { MIGRATIONS_DIR } from '@/lib/db/paths';
 import { deleteError, deleteSession, deleteWritingPiece, getError, getSession, listErrors, listWritingPieces, markAnkiAdded } from '@/lib/db/repo';
 import { seed } from '@/lib/db/seed';
-import { createSessionAction, updateErrorAction, updateSessionAction } from './registrar/actions';
+import { addErrorAction, createSessionAction, updateErrorAction, updateSessionAction } from './registrar/actions';
 import { EMPTY_STATE } from './registrar/formState';
 import { importErrorsAction } from './registrar/importActions';
 import { MAX_IMPORT_ROWS, MAX_SESSION_IMPORT_ROWS } from '@/lib/import/errors';
@@ -121,6 +121,27 @@ describe('sesiones sin formato de examen', () => {
 });
 
 describe('corregir errores existentes', () => {
+  it('no mide el tiempo de un error nuevo, pero no borra el de los antiguos', async () => {
+    const open = await createSessionAction(EMPTY_STATE, form({
+      date: '2020-01-20', kind: 'DRILL', paper: null, part: null, source: 'LIBRO',
+      itemsTotal: 10, itemsCorrect: 8,
+    }));
+    expect(open.ok).toBe(true);
+    const created = await addErrorAction(EMPTY_STATE, form({
+      sessionId: open.createdId, prompt: 'They called ___ the meeting.', myAnswer: 'of',
+      correctAnswer: 'off', cause: 'CONFUSION', category: 'PHRASAL_VERB',
+      confidence: 'DUDABA', ruleNote: 'Call off significa cancelar una actividad.',
+    }));
+    expect(created.ok).toBe(true);
+    expect(getError(db, created.createdId ?? 0)?.secs).toBeNull();
+
+    // Lo que midieron las versiones anteriores sigue ahi despues de corregirlo.
+    const measured = loadDataset(db).errors.find((row) => row.secs !== null);
+    if (measured === undefined) throw new Error('Falta un error con secs en el seed');
+    expect((await updateErrorAction(EMPTY_STATE, form({ ...measured, myAnswer: 'otra cosa' }))).ok).toBe(true);
+    expect(getError(db, measured.id)?.secs).toBe(measured.secs);
+  });
+
   it('conserva la fecha de conversion a Anki al corregir el texto', async () => {
     const original = loadDataset(db).errors.find((row) => row.ankiAdded);
     if (original === undefined) throw new Error('Falta una tarjeta en el seed');

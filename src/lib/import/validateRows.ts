@@ -3,15 +3,14 @@ import { errorInputSchema, type ErrorInput } from '../validation/schemas';
 import type { ImportDraft } from './errors';
 
 export function validateImportRows(drafts: readonly ImportDraft[], options: {
-  sessionId: number; timed: boolean; elapsed: number; now: string;
+  sessionId: number; timed: boolean; now: string;
 }) {
   const fieldErrors: Record<string, string[]> = {};
   const inputs: ErrorInput[] = [];
-  const { sessionId, timed, elapsed, now } = options;
-  const secs = Number.isSafeInteger(elapsed) && elapsed >= 0 && drafts.length > 0 ? Math.round(elapsed / drafts.length) : null;
+  const { sessionId, timed, now } = options;
   drafts.forEach((draft, index) => {
     const parsed = errorInputSchema().safeParse({
-      ...draft, sessionId, secs, lateInSession: timed && draft.lateInSession,
+      ...draft, sessionId, lateInSession: timed && draft.lateInSession,
       ankiAddedAt: draft.ankiAdded ? now : null,
     });
     if (!parsed.success) {

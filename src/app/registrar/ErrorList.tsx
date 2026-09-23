@@ -190,6 +190,7 @@ function EditRow({
         <form ref={formRef} action={formAction} onReset={onReset} className={capture.grid}>
           <input type="hidden" name="id" value={error.id} />
           <input type="hidden" name="sessionId" value={error.sessionId} />
+          {/* Conserva el `secs` que midieron las versiones anteriores; ya no se captura. */}
           <input type="hidden" name="secs" value={error.secs ?? 0} />
 
           <ErrorFields

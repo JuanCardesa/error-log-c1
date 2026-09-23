@@ -7,7 +7,7 @@ import { createSessionWithErrors } from './repo';
 
 /** Entrada no confiable, incluso si el navegador ya preparó la vista previa. */
 export function importSessionWithErrors(db: Db, value: unknown, options: {
-  today: string; now: string; elapsed: number; durationMin: unknown;
+  today: string; now: string; durationMin: unknown;
 }) {
   const envelope = importEnvelopeSchema(options.today).safeParse(value, importParseOptions);
   const duration = z.number().int().nonnegative().nullable().safeParse(options.durationMin);

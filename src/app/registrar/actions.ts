@@ -92,6 +92,8 @@ function parseErrorForm(form: FormData, sessionTimed: boolean, addedAt: string |
     ruleNote: text(form, 'ruleNote'),
     ankiAdded,
     ankiAddedAt: ankiAdded ? addedAt ?? new Date().toISOString() : null,
+    // Ya no se mide: el alta no lo manda y queda null. La edicion sigue enviando el
+    // valor guardado, para no borrar lo que midieron las versiones anteriores.
     secs: integer(form, 'secs'),
   });
 }

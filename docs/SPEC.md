@@ -55,7 +55,7 @@ denominador y registrar un error debe costar menos de 30 segundos.
 | `anki_added` | bool | |
 | `anki_added_at` | timestamp, nullable | |
 | `anki_note_id` | FK → anki_note.note_id, nullable | vínculo verificado; NULL en marcas manuales |
-| `secs` | int | segundos que costó registrarlo |
+| `secs` | int | histórico: segundos que costó registrarlo. Ya no se mide; se conserva lo guardado |
 | `created_at` | timestamp | |
 
 ### `writing_piece` — un texto de Writing.

@@ -32,13 +32,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
 
   const { formRef, onReset, resetForm } = usePreservedForm();
   const firstFieldRef = useRef<HTMLInputElement>(null);
-  // Arranca en 0 y se fija al montar: leer el reloj en el render es impuro.
-  const startedAt = useRef<number>(0);
   const lastCreated = useRef<number | undefined>(undefined);
-
-  useEffect(() => {
-    startedAt.current = Date.now();
-  }, []);
 
   useEffect(() => {
     if (!state.ok || state.createdId === undefined) return;
@@ -47,20 +41,8 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
 
     // Se vacia lo que cambia error a error y se conservan los valores de la tanda.
     resetForm(['cause', 'category', 'subcategory', 'confidence']);
-    startedAt.current = Date.now();
     firstFieldRef.current?.focus();
   }, [state, resetForm]);
-
-  /**
-   * `secs` se calcula aqui, sobre el payload, y no con un input oculto: asi el valor es
-   * el del momento del envio y no el del ultimo render.
-   */
-  const submit = (payload: FormData): void => {
-    const elapsed =
-      startedAt.current === 0 ? 0 : Math.round((Date.now() - startedAt.current) / 1000);
-    payload.set('secs', String(elapsed));
-    formAction(payload);
-  };
 
   return (
     <section className={styles.capture} aria-labelledby="capture-heading">
@@ -86,7 +68,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
 
       <form
         ref={formRef}
-        action={submit}
+        action={formAction}
         onReset={onReset}
         className={styles.grid}
         onKeyDown={(event) => {
