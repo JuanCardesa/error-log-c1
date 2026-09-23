@@ -25,7 +25,7 @@ La demo usa datos ficticios. [Ver el recorrido en imágenes estáticas](docs/DEM
   los errores que reaparecen al reescribir un texto.
 - **Conectar el repaso.** Crea tarjetas en Anki y consulta los fallos por categoría con
   AnkiConnect, mediante sincronización manual.
-- **Llevarte tus datos.** Exporta las siete consultas a CSV, las filas a JSON o una
+- **Llevarte tus datos.** Exporta las consultas a CSV, las filas a JSON o una
   copia SQLite restaurable.
 
 | Informe semanal | Evolución de Reading & Use of English |

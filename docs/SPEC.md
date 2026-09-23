@@ -190,7 +190,9 @@ Q7 no alimenta ninguna regla ni se cruza con los errores de práctica: sus denom
 no son equiparables. La falta de sincronización se distingue de una ventana sincronizada
 sin repasos.
 
-Cada query exporta también a **CSV** (comillas escapadas correctamente).
+Las queries que devuelven una tabla exportan también a **CSV** (comillas escapadas
+correctamente). Q5 y Q6 devuelven una única fila de totales y no tienen descarga propia:
+su resultado se lee en pantalla.
 
 Los informes generales y las reglas incluyen la práctica sin formato de examen en su
 universo habitual: describen el estudio global, no exclusivamente el rendimiento en
@@ -299,8 +301,8 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
    manual explícita y consulta de repasos/fallos por categoría (Q7).
 5. **Falsas certezas** — Q4.
 6. **Writing** — alta y edición de `writing_piece` con las cuatro bandas, y Q6.
-7. **Exportar** — un CSV por query con sus cifras ya calculadas, más un dump JSON con
-   solo los datos: filas y espejo de Anki, sin agregaciones ni ventana.
+7. **Exportar** — un CSV por cada query que sea una tabla (Q1–Q4 y Q7), más un dump JSON
+   con solo los datos: filas y espejo de Anki, sin agregaciones ni ventana.
 
 CRUD completo: crear sesión, cerrarla, reabrirla, corregir sesiones pasadas, editar y
 borrar filas de error. Borrado con confirmación. Nada de datos irrecuperables por un clic.

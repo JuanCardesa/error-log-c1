@@ -29,7 +29,8 @@ export async function GET(
     });
   }
 
-  const match = /^(q[1-7])\.csv$/.exec(file);
+  // La lista de exportaciones manda: el patron solo separa el nombre de la extension.
+  const match = /^(q\d+)\.csv$/.exec(file);
   const which = match?.[1];
   if (which === undefined || !isCsvExport(which)) {
     return new Response('No existe ese fichero.', { status: 404 });

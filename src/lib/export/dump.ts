@@ -4,8 +4,6 @@ import { q1CauseSplit, q1ToCsv } from '../queries/q1CauseSplit';
 import { q2CategoryRate, q2ToCsv } from '../queries/q2CategoryRate';
 import { q3RuoeAccuracy, q3ToCsv } from '../queries/q3RuoeAccuracy';
 import { q4FalseCertainties, q4ToCsv } from '../queries/q4FalseCertainties';
-import { q5AnkiDebt, q5ToCsv } from '../queries/q5AnkiDebt';
-import { q6RewriteEfficacy, q6ToCsv } from '../queries/q6RewriteEfficacy';
 
 /**
  * Exportacion. Un CSV por query, mas un volcado completo en JSON.
@@ -16,7 +14,12 @@ import { q6RewriteEfficacy, q6ToCsv } from '../queries/q6RewriteEfficacy';
  * caducidad. La restauracion implementada usa las copias SQLite de pnpm db:backup.
  */
 
-export const CSV_EXPORTS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7'] as const;
+/**
+ * Un CSV por consulta que sea una tabla. La deuda de Anki y la eficacia del rewrite se
+ * quedaron fuera: su resultado es una sola fila de totales que ya esta en pantalla, y un
+ * fichero de una linea no da nada que hacer en una hoja de calculo.
+ */
+export const CSV_EXPORTS = ['q1', 'q2', 'q3', 'q4', 'q7'] as const;
 export type CsvExport = (typeof CSV_EXPORTS)[number];
 
 export function isCsvExport(value: string): value is CsvExport {
@@ -28,8 +31,6 @@ export const CSV_LABELS: Readonly<Record<CsvExport, string>> = {
   q2: 'Categorias por tasa',
   q3: 'Precision RUOE por part y semana',
   q4: 'Falsas certezas',
-  q5: 'Deuda de Anki',
-  q6: 'Eficacia del rewrite',
   q7: 'Repasos y fallos en Anki',
 };
 
@@ -49,10 +50,6 @@ export function toCsvExport(
     case 'q4':
       // Ventana fija de 30 dias, no la conmutable (decision P2).
       return q4ToCsv(q4FalseCertainties(data, { now: options.now }));
-    case 'q5':
-      return q5ToCsv(q5AnkiDebt(data, options));
-    case 'q6':
-      return q6ToCsv(q6RewriteEfficacy(data, options));
     case 'q7':
       return q7ToCsv(q7AnkiReviews(anki, options, data.errors));
   }

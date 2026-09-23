@@ -1,4 +1,3 @@
-import { toCsv } from '../csv/csv';
 import { generatesCard } from '../domain/enums';
 import { ANKI_TARGET_PCT } from '../domain/thresholds';
 import type { Dataset, ErrorRow, QueryOptions } from '../domain/types';
@@ -66,11 +65,4 @@ export function q5AnkiDebt(data: Dataset, options: QueryOptions): Q5Result {
     meetsTarget: pctConverted >= ANKI_TARGET_PCT,
     queue,
   };
-}
-
-export function q5ToCsv(result: Q5Result): string {
-  return toCsv(
-    ['elegibles', 'convertidos', 'pendientes', 'pct_convertidos', 'umbral'],
-    [[result.eligible, result.added, result.pending, result.pctConverted, ANKI_TARGET_PCT]],
-  );
 }

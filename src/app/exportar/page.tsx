@@ -26,8 +26,8 @@ export default async function ExportarPage({
         <div>
           <h1>Exportar</h1>
           <p className={shared.lede}>
-            Cada consulta en su CSV, listo para abrir en una hoja de calculo. La ventana
-            activa es de {windowDays} dias.
+            Las consultas que son una tabla, en CSV listo para una hoja de calculo. La
+            ventana activa es de {windowDays} dias.
           </p>
         </div>
         <WindowSwitch current={windowDays} basePath="/exportar" />

@@ -51,10 +51,14 @@ beforeEach(() => {
 });
 
 describe('exportacion a CSV', () => {
-  it('reconoce las siete queries', () => {
-    expect([...CSV_EXPORTS]).toEqual(['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7']);
+  it('reconoce solo las consultas que son una tabla', () => {
+    // Q5 y Q6 devuelven una unica fila de totales: su CSV no daba nada que la pantalla
+    // no diga ya, y pedirlos por URL tiene que fallar como cualquier otro nombre.
+    expect([...CSV_EXPORTS]).toEqual(['q1', 'q2', 'q3', 'q4', 'q7']);
     expect(isCsvExport('q1')).toBe(true);
     expect(isCsvExport('q7')).toBe(true);
+    expect(isCsvExport('q5')).toBe(false);
+    expect(isCsvExport('q6')).toBe(false);
     expect(isCsvExport('q8')).toBe(false);
     expect(isCsvExport('../secreto')).toBe(false);
   });
