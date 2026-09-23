@@ -281,9 +281,9 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
   de una versión antigua sin recuentos completos se exportan como array compatible
   para completar la cabecera manualmente, sin inventar el denominador.
 
-1. **Registrar** — cabecera de sesión + entrada rápida de errores, en dos variantes
-   conmutables: **grid** (tabla, teclado, para volcar diez errores seguidos) y **card**
-   (un error a la vez, campos grandes). `category` con autocompletado y última usada
+1. **Registrar** — cabecera de sesión + entrada rápida de errores en un único formulario,
+   denso y con teclado, que pasa a una columna cuando no cabe a lo ancho; pegar una tanda
+   es una opción aparte. `category` con autocompletado y última usada
    preseleccionada; `subcategory` texto libre con sugerencias de lo ya escrito.
    `late_in_session` deshabilitado si la sesión no es `timed`. Valida la cabecera **antes**
    de aceptar errores y muestra el error concreto.

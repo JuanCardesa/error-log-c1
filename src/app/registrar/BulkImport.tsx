@@ -185,7 +185,7 @@ export function ImportReview({ session, subcategorySuggestions, drafts, onBack, 
         <fieldset key={id} disabled={pending} className={styles.row}>
           <legend>Error {index + 1}</legend>
           <div className={`${capture.grid} ${styles.fields}`}>
-            <ErrorFields variant="grid" timed={target?.timed ?? timed} subcategorySuggestions={subcategorySuggestions}
+            <ErrorFields timed={target?.timed ?? timed} subcategorySuggestions={subcategorySuggestions}
               defaults={draft} namePrefix={`${String(id)}.`}
               fieldErrors={errorsForRow(state.fieldErrors, sentIds.indexOf(id))} />
           </div>

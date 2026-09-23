@@ -10,9 +10,15 @@ import { ErrorFields } from './ErrorFields';
 import { EMPTY_STATE } from './formState';
 import styles from './capture.module.css';
 
-/** Conserva los valores de la tanda y devuelve el foco al guardar. */
+/**
+ * Conserva los valores de la tanda y devuelve el foco al guardar.
+ *
+ * Un unico formulario, que el CSS ya adapta al ancho disponible. Pegar una tanda es otra
+ * cosa y por eso sigue separado; elegir entre dos presentaciones del mismo formulario no
+ * lo era.
+ */
 
-export type Variant = 'grid' | 'card' | 'paste';
+export type Variant = 'form' | 'paste';
 
 interface Props {
   readonly session: SessionRow;
@@ -22,7 +28,7 @@ interface Props {
 
 export function CaptureForm({ session, subcategorySuggestions, lastCategory }: Props) {
   const [state, formAction, pending] = useActionState(addErrorAction, EMPTY_STATE);
-  const [variant, setVariant] = useState<Variant>('grid');
+  const [variant, setVariant] = useState<Variant>('form');
 
   const { formRef, onReset, resetForm } = usePreservedForm();
   const firstFieldRef = useRef<HTMLInputElement>(null);
@@ -62,25 +68,9 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
         <h2 id="capture-heading">Añadir error</h2>
 
         <div className={styles.variantSwitch} role="group" aria-label="Modo de entrada">
-          <button
-            type="button"
-            className={variant === 'grid' ? styles.variantOn : styles.variantOff}
-            aria-pressed={variant === 'grid'}
-            onClick={() => {
-              setVariant('grid');
-            }}
-          >
-            Grid
-          </button>
-          <button
-            type="button"
-            className={variant === 'card' ? styles.variantOn : styles.variantOff}
-            aria-pressed={variant === 'card'}
-            onClick={() => {
-              setVariant('card');
-            }}
-          >
-            Card
+          <button type="button" className={variant === 'form' ? styles.variantOn : styles.variantOff}
+            aria-pressed={variant === 'form'} onClick={() => { setVariant('form'); }}>
+            Uno a uno
           </button>
           <button type="button" className={variant === 'paste' ? styles.variantOn : styles.variantOff}
             aria-pressed={variant === 'paste'} onClick={() => { setVariant('paste'); }}>
@@ -92,16 +82,13 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
       <div hidden={variant === 'paste'}>
       <p className={styles.hint}>
         <kbd>Tab</kbd> entre campos, <kbd>Enter</kbd> para guardar y seguir.
-        {variant === 'grid'
-          ? ' Grid: para volcar diez errores seguidos.'
-          : ' Card: un error a la vez, campos grandes.'}
       </p>
 
       <form
         ref={formRef}
         action={submit}
         onReset={onReset}
-        className={variant === 'grid' ? styles.grid : styles.card}
+        className={styles.grid}
         onKeyDown={(event) => {
           // En el textarea, Enter hace salto de linea; Ctrl+Enter guarda.
           if (
@@ -117,7 +104,6 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory }: P
         <input type="hidden" name="sessionId" value={session.id} />
 
         <ErrorFields
-          variant={variant === 'card' ? 'card' : 'grid'}
           timed={session.timed}
           subcategorySuggestions={subcategorySuggestions}
           fieldErrors={state.fieldErrors}

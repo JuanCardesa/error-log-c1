@@ -193,7 +193,6 @@ function EditRow({
           <input type="hidden" name="secs" value={error.secs ?? 0} />
 
           <ErrorFields
-            variant="grid"
             timed={session.timed}
             subcategorySuggestions={subcategorySuggestions}
             fieldErrors={state.fieldErrors}
