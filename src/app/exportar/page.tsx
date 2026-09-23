@@ -40,6 +40,7 @@ export default async function ExportarPage({
             <a className={styles.row} href={`/exportar/${key}.csv${query}`} download>
               <span>{CSV_LABELS[key]}</span>
               <span className={styles.file}>errorlog-{key}.csv</span>
+              <span className={styles.download}>Descargar</span>
             </a>
           </li>
         ))}
@@ -52,6 +53,7 @@ export default async function ExportarPage({
             <a className={styles.row} href="/exportar/dump.json" download>
               <span>Tus filas y el historial de Anki, completos y sin recortar por ventana</span>
               <span className={styles.file}>errorlog-dump.json</span>
+              <span className={styles.download}>Descargar</span>
             </a>
           </li>
         </ul>

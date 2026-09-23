@@ -98,6 +98,17 @@ export default async function RuoePage({
           </table>
         </div>
       )}
+
+      {q3.rows.length > 0 && (
+        // Los colores solo acompañan al numero; aqui se dice que significa cada uno.
+        <p className={styles.legend}>
+          <span><span className={`${styles.swatch} ${styles.tierHigh}`} /> 85 % o más</span>
+          <span><span className={`${styles.swatch} ${styles.tierMid}`} /> 70–84 %</span>
+          <span><span className={`${styles.swatch} ${styles.tierLow}`} /> 50–69 %</span>
+          <span><span className={`${styles.swatch} ${styles.tierBad}`} /> menos del 50 %</span>
+          <span><span className={`${styles.swatch} ${styles.blank}`} /> sin práctica esa semana</span>
+        </p>
+      )}
     </div>
   );
 }

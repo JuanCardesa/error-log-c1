@@ -30,7 +30,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: var(--sp-5);
   align-items: center;
   padding: var(--sp-4) var(--sp-5);
@@ -40,6 +40,14 @@
 
 .row:hover {
   background: var(--surface-sunken);
+}
+
+/* Que la fila diga lo que hace: sin esto parecia una lista de texto. */
+.download {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
 .file {
