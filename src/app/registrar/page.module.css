@@ -93,8 +93,24 @@
   padding: 0;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
-  overflow: hidden;
   background: var(--surface);
+}
+
+/* Filas pegadas entre si: el foco va por dentro para no montarse en la vecina. */
+.sessionLink:focus-visible {
+  outline-offset: -2px;
+}
+
+.sessions li:first-child .sessionLink {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.sessions li:last-child .sessionLink {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.sessions li:only-child .sessionLink {
+  border-radius: var(--radius);
 }
 
 .sessions li + li .sessionLink {

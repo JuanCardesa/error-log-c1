@@ -19,8 +19,22 @@
   display: flex;
   border: 1px solid var(--rule-strong);
   border-radius: var(--radius);
-  overflow: hidden;
   flex-shrink: 0;
+}
+
+/* Sin `overflow: hidden` en el grupo, que recortaria el foco: los extremos se redondean. */
+.windowSwitch > :first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.windowSwitch > :last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.windowOn:focus-visible,
+.windowOff:focus-visible {
+  position: relative;
+  z-index: 1;
 }
 
 .windowOn,

@@ -24,7 +24,6 @@
   display: flex;
   border: 1px solid var(--rule-strong);
   border-radius: var(--radius);
-  overflow: hidden;
 }
 
 .variantOn,
@@ -34,6 +33,21 @@
   background: transparent;
   cursor: pointer;
   font-size: var(--fs-sm);
+}
+
+/* Sin `overflow: hidden` en el grupo, que recortaria el foco: los extremos se redondean. */
+.variantSwitch > :first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.variantSwitch > :last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.variantOn:focus-visible,
+.variantOff:focus-visible {
+  position: relative;
+  z-index: 1;
 }
 
 .variantOn {

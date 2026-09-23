@@ -5,7 +5,23 @@
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: var(--surface);
-  overflow: hidden;
+}
+
+/* Filas pegadas entre si: el foco va por dentro para no montarse en la vecina. */
+.row:focus-visible {
+  outline-offset: -2px;
+}
+
+.item:first-child .row {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.item:last-child .row {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.item:only-child .row {
+  border-radius: var(--radius);
 }
 
 .item + .item {
