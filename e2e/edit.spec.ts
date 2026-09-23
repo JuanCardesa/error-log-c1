@@ -9,6 +9,7 @@ import { type Page, expect, test } from '@playwright/test';
 
 async function openSessionWithError(page: Page, reference: string) {
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByLabel('Items *').fill('8');
   await page.getByLabel('Aciertos *').fill('5');
   await page.getByLabel('Referencia').fill(reference);

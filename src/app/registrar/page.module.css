@@ -85,6 +85,39 @@
   color: var(--ink-soft);
 }
 
+/* Entrada: sesiones abiertas, tanda de Macmillan y sesion a mano, por orden de uso. */
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+/* Revisar una tanda es una sola tarea: lo demas se aparta hasta que termine. */
+.page:has([data-reviewing]) .idleOnly {
+  display: none;
+}
+
+.openBlock .sessions {
+  margin-top: var(--sp-3);
+}
+
+.action {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.manualHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-4);
+}
+
+.manualBody {
+  margin-top: var(--sp-4);
+}
+
 .recent {
   margin-top: var(--sp-7);
 }

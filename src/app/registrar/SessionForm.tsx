@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef } from 'react';
 
 import { SessionFields } from './SessionFields';
 import type { SessionRow } from '@/lib/domain/types';
+import type { ImportedSession } from '@/lib/import/errors';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { createSessionAction, updateSessionAction } from './actions';
 import { EMPTY_STATE } from './formState';
@@ -18,9 +19,13 @@ interface Props {
   /** Sesion a corregir. `null` para abrir una nueva. */
   readonly editing?: SessionRow | null;
   readonly onDone?: () => void;
+  /** Solo al abrir una nueva: valores de partida (p. ej. Writing al venir de /writing). */
+  readonly preset?: Partial<ImportedSession>;
+  /** Solo al abrir una nueva: a donde ir tras crearla, en vez de entrar en ella. */
+  readonly returnTo?: string;
 }
 
-export function SessionForm({ today, editing = null, onDone }: Props) {
+export function SessionForm({ today, editing = null, onDone, preset, returnTo }: Props) {
   const isEdit = editing !== null;
   const { formRef, onReset } = usePreservedForm();
   const [state, formAction, pending] = useActionState(
@@ -47,8 +52,8 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
     }
     // Se abre una sesion para volcar errores en ella: entrar es el siguiente paso, no
     // buscarla luego en la lista.
-    router.push(`/registrar?s=${String(state.createdId)}`);
-  }, [state, router, isEdit, onDone]);
+    router.push(returnTo ?? `/registrar?s=${String(state.createdId)}`);
+  }, [state, router, isEdit, onDone, returnTo]);
 
   return (
     <section className={ui.panel} aria-labelledby="session-heading">
@@ -69,7 +74,7 @@ export function SessionForm({ today, editing = null, onDone }: Props) {
           </>
         )}
 
-        <SessionFields today={today} defaults={editing ?? undefined} fieldErrors={state.fieldErrors} idPrefix="s" />
+        <SessionFields today={today} defaults={editing ?? preset} fieldErrors={state.fieldErrors} idPrefix="s" />
 
         <div className={styles.actions}>
           <button type="submit" className={`${ui.primary} ${styles.submit}`} disabled={pending} aria-busy={pending}>

@@ -10,12 +10,13 @@ import {
   listSessions,
   listOpenSessions,
 } from '@/lib/db/repo';
+import type { SessionRow } from '@/lib/domain/types';
 import { toIsoDate } from '@/lib/time/dates';
 import { CaptureForm } from './CaptureForm';
 import { ErrorList } from './ErrorList';
-import { SessionForm } from './SessionForm';
 import { SessionPanel } from './SessionPanel';
 import { SessionImport } from './SessionImport';
+import { ManualSession } from './ManualSession';
 import { SavedNotice } from './SavedNotice';
 import styles from './page.module.css';
 
@@ -53,6 +54,9 @@ export default async function RegistrarPage({ searchParams }: Props) {
     const pages = Math.max(1, Math.ceil(total / pageSize));
     const page = Math.min(parseId(params['p']) ?? 1, pages);
     const recent = listSessions(db, pageSize, (page - 1) * pageSize);
+    const open = listOpenSessions(db);
+    // Desde /writing, sin sesion libre: se abre el alta con Writing puesto y se vuelve alli.
+    const fromWriting = params['nueva'] === 'writing';
     return (
       <div className={styles.page}>
         <header className={styles.head}>
@@ -63,33 +67,42 @@ export default async function RegistrarPage({ searchParams }: Props) {
           </p>
         </header>
 
-        <SessionImport today={today} openSessions={listOpenSessions(db)} subcategorySuggestions={distinctSubcategories(db)} />
-        <SessionForm today={today} />
+        {/* Por orden de uso: retomar lo abierto, pegar la tanda de Macmillan y, a un
+            clic, la sesion a mano. Mientras se revisa una tanda, solo queda la revision. */}
+        <div className={styles.entry}>
+          {page === 1 && open.length > 0 && (
+            <section className={`${styles.openBlock} ${styles.idleOnly}`} aria-labelledby="open-heading">
+              <h2 id="open-heading">Sesiones abiertas</h2>
+              <ul className={styles.sessions}>
+                {open.map((session) => (
+                  <li key={session.id}>
+                    {/* Al formulario de captura: retomar una abierta es seguir volcando. */}
+                    <SessionLink session={session} href={`/registrar?s=${String(session.id)}#captura`} action="Continuar →" />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <SessionImport today={today} openSessions={open} subcategorySuggestions={distinctSubcategories(db)} />
+
+          <div className={styles.idleOnly}>
+            <ManualSession
+              today={today}
+              initiallyOpen={fromWriting}
+              preset={fromWriting ? { kind: 'WRITING', paper: 'WRITING', part: 1 } : undefined}
+              returnTo={fromWriting ? '/writing' : undefined}
+            />
+          </div>
+        </div>
 
         {recent.length > 0 && (
-          <section className={styles.recent} aria-labelledby="recent-heading">
+          <section className={`${styles.recent} ${styles.idleOnly}`} aria-labelledby="recent-heading">
             <h2 id="recent-heading">{page === 1 ? 'Sesiones recientes' : 'Historial de sesiones'}</h2>
             <ul className={styles.sessions}>
               {recent.map((session) => (
                 <li key={session.id}>
-                  <Link className={styles.sessionLink} href={`/registrar?s=${String(session.id)}`}>
-                    <span className="data">{session.date}</span>
-                    <span className={styles.meta}>
-                      {session.paper === null ? 'Sin formato de examen' : `${session.paper} P${String(session.part)}`} · {session.kind}
-                    </span>
-                    <span className="data">
-                      {session.itemsTotal === null
-                        ? '—'
-                        : `${String(session.itemsCorrect ?? 0)}/${String(session.itemsTotal)}`}
-                    </span>
-                    <span
-                      className={
-                        session.status === 'OPEN' ? styles.badgeOpen : styles.badgeClosed
-                      }
-                    >
-                      {session.status}
-                    </span>
-                  </Link>
+                  <SessionLink session={session} href={`/registrar?s=${String(session.id)}`} />
                 </li>
               ))}
             </ul>
@@ -154,5 +167,37 @@ export default async function RegistrarPage({ searchParams }: Props) {
         subcategorySuggestions={subcategories}
       />
     </div>
+  );
+}
+
+/**
+ * Una sesion en una lista. En el historial, la fila acaba en su estado; en las abiertas,
+ * en la accion que lleva a seguir con ella.
+ */
+function SessionLink({ session, href, action }: {
+  readonly session: SessionRow;
+  readonly href: string;
+  readonly action?: string;
+}) {
+  return (
+    <Link className={styles.sessionLink} href={href}>
+      <span className="data">{session.date}</span>
+      <span className={styles.meta}>
+        {session.paper === null ? 'Sin formato de examen' : `${session.paper} P${String(session.part)}`} · {session.kind}
+        {action !== undefined && session.sourceRef !== null && ` · ${session.sourceRef}`}
+      </span>
+      <span className="data">
+        {session.itemsTotal === null
+          ? '—'
+          : `${String(session.itemsCorrect ?? 0)}/${String(session.itemsTotal)}`}
+      </span>
+      {action === undefined ? (
+        <span className={session.status === 'OPEN' ? styles.badgeOpen : styles.badgeClosed}>
+          {session.status}
+        </span>
+      ) : (
+        <span className={styles.action}>{action}</span>
+      )}
+    </Link>
   );
 }

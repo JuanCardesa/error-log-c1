@@ -12,6 +12,7 @@ import { type Page, expect, test } from '@playwright/test';
 /** Abre una sesion nueva y deja la pagina dentro de ella, lista para capturar. */
 async function openSession(page: Page, reference: string, timed = false) {
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByLabel('Items *').fill('8');
   await page.getByLabel('Aciertos *').fill('5');
   await page.getByLabel('Referencia').fill(reference);
@@ -25,6 +26,7 @@ async function openSession(page: Page, reference: string, timed = false) {
 test.describe('registrar una sesion y sus errores', () => {
   test('conserva la cabecera invalida y permite corregirla', async ({ page }) => {
     await page.goto('/registrar');
+    await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
 
     // Mas aciertos que items: la sesion no debe abrirse.
     await page.getByLabel('Items *').fill('6');

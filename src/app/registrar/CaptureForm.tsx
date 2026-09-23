@@ -66,7 +66,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory, aut
   }, [state, resetForm, formRef]);
 
   return (
-    <section className={styles.capture} aria-labelledby="capture-heading">
+    <section id="captura" className={styles.capture} aria-labelledby="capture-heading">
       <div className={styles.captureHead}>
         <h2 id="capture-heading">Añadir error</h2>
 

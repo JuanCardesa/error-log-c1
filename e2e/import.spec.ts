@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function openImport(page: Page) {
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByLabel('Items *').fill('8');
   await page.getByLabel('Aciertos *').fill('5');
   await page.getByLabel('Referencia').fill('Importacion de correcciones');

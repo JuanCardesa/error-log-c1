@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('registra practica libre, conserva la edicion y permite cambiar de formato', async ({ page }) => {
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByRole('combobox', { name: /^Part\b/ }).selectOption('8');
   await page.getByRole('combobox', { name: 'Paper', exact: true }).selectOption('');
   await expect(page.getByRole('combobox', { name: /^Part\b/ })).toHaveCount(0);
@@ -52,6 +53,7 @@ test('registra practica libre, conserva la edicion y permite cambiar de formato'
 
 test('elegir tipo Writing exige su paper y muestra una part valida', async ({ page }) => {
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByRole('combobox', { name: 'Paper', exact: true }).selectOption('');
   await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
   await expect(page.getByRole('combobox', { name: 'Paper', exact: true })).toHaveValue('WRITING');

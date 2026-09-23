@@ -15,6 +15,7 @@ function readPieces() {
 
 test('conserva Writing cuando otra pestaña ocupa la sesion', async ({ page, context }) => {
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
   await page.getByRole('button', { name: 'Abrir sesion' }).click();
   await expect(page).toHaveURL(/s=\d+/);
@@ -43,6 +44,7 @@ test('prepara un formulario vacio tras guardar un nuevo texto', async ({ page })
   const before = readPieces();
   for (let index = 0; index < 2; index += 1) {
     await page.goto('/registrar');
+    await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
     await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
     await page.getByRole('button', { name: 'Abrir sesion' }).click();
     await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeVisible();

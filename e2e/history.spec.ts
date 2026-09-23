@@ -6,6 +6,7 @@ import { E2E_DB } from './globalSetup';
 
 test('permite abrir sesiones antiguas y volver a la primera pagina', async ({ page }) => {
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByLabel('Items *').fill('8');
   await page.getByLabel('Aciertos *').fill('8');
   await page.getByLabel('Referencia').fill('Prueba del historial');

@@ -38,6 +38,7 @@ test('recorrido de registro e informe para el README', async ({ page }) => {
   mkdirSync('docs/media', { recursive: true });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/registrar');
+  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
   await page.getByLabel('Items *').fill('8');
   await page.getByLabel('Aciertos *').fill('6');
   await page.getByLabel('Referencia').fill('Práctica semanal · datos de ejemplo');
