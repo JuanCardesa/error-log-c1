@@ -11,15 +11,15 @@ test.describe('informe semanal', () => {
   test('destaca exactamente una accion', async ({ page }) => {
     await page.goto('/informe');
 
-    const doNow = page.locator('text=DO NOW');
+    const doNow = page.locator('text=Haz esto');
     await expect(doNow.first()).toBeVisible();
 
     // La tabla es el respaldo, no la portada: se abre para comprobarla.
     await page.getByText('Ver las siete reglas y sus cifras').click();
 
-    // La propiedad, no el ejemplo: nunca dos DO NOW en la tabla.
+    // La propiedad, no el ejemplo: nunca dos «Haz esto» en la tabla.
     const statuses = await page.locator('tbody tr td:nth-child(2)').allInnerTexts();
-    const doNowCount = statuses.filter((status) => status.trim() === 'DO NOW').length;
+    const doNowCount = statuses.filter((status) => status.trim() === 'Haz esto').length;
     expect(doNowCount).toBe(1);
   });
 
@@ -28,7 +28,7 @@ test.describe('informe semanal', () => {
 
     // La accion sin la cifra no se cree: tiene que decir señal, valor y umbral.
     const why = page.locator('p', { hasText: 'umbral' }).first();
-    await expect(why).toContainText('n =');
+    await expect(why).toContainText('muestra de');
   });
 
   test('las siete reglas aparecen con su estado al desplegarlas', async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe('informe semanal', () => {
     await page.getByRole('link', { name: '60 d' }).click();
 
     await expect(page).toHaveURL(/w=60/);
-    await expect(page.getByText('Ultimos 60 dias')).toBeVisible();
+    await expect(page.getByText('Últimos 60 días')).toBeVisible();
   });
 
   test('RUOE distingue una celda sin datos de un cero', async ({ page }) => {

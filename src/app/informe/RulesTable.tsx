@@ -1,9 +1,15 @@
 import { MIN_N } from '@/lib/domain/thresholds';
 import type { RuleEvaluation, RulesReport } from '@/lib/rules';
+import { RULE_SIGNAL_LABELS, RULE_STATUS_LABELS, categoryLabel } from '../_shared/labels';
 import styles from './rules.module.css';
 import ui from '../_shared/ui.module.css';
 
 /** Destaca una sola acción según la prioridad del informe. */
+
+/** La señal en palabras; si el motor añade una regla que la interfaz no conoce, la suya. */
+function signalLabel(rule: RuleEvaluation): string {
+  return RULE_SIGNAL_LABELS[rule.id] ?? rule.signal;
+}
 
 function formatValue(rule: RuleEvaluation): string {
   if (rule.value === null) return '—';
@@ -31,7 +37,7 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
   return (
     <section className={styles.rules} aria-labelledby="rules-heading">
       <div className={styles.headRow}>
-        <h2 id="rules-heading">Que cambio esta semana</h2>
+        <h2 id="rules-heading">Qué hacer esta semana</h2>
       </div>
 
       {doNow === null ? (
@@ -41,12 +47,12 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
         </p>
       ) : (
         <div className={styles.doNow}>
-          <span className={styles.doNowTag}>DO NOW</span>
+          <span className={styles.doNowTag}>{RULE_STATUS_LABELS['DO NOW']}</span>
           <p className={styles.doNowAction}>{doNow.action}</p>
           <p className={styles.doNowWhy}>
-            <span className="data">{doNow.signal}</span>: {formatValue(doNow)} (umbral{' '}
-            {formatThreshold(doNow)}, n = {doNow.sampleSize})
-            {doNow.detail === null ? '' : ` · ${doNow.detail}`}
+            {signalLabel(doNow)}: {formatValue(doNow)} (umbral {formatThreshold(doNow)}, muestra
+            de {doNow.sampleSize})
+            {doNow.detail === null ? '' : ` · ${categoryLabel(doNow.detail)}`}
           </p>
         </div>
       )}
@@ -64,7 +70,7 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
 
         <div className={`${ui.tableWrap} ${ui.framed} ${styles.tableGap}`}>
           <table className={ui.table}>
-            <caption className="sr-only">Estado de las siete reglas de decision</caption>
+            <caption className="sr-only">Estado de las siete reglas de decisión</caption>
             <thead>
               <tr>
                 <th scope="col">#</th>
@@ -77,9 +83,9 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
                   Umbral
                 </th>
                 <th scope="col" className={ui.num}>
-                  n
+                  Muestra
                 </th>
-                <th scope="col">Accion</th>
+                <th scope="col">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -88,12 +94,12 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
                   <td className="data">{rule.id}</td>
                   <td>
                     <span className={STATUS_CLASS[rule.status] ?? styles.stNeeds}>
-                      {rule.status}
+                      {RULE_STATUS_LABELS[rule.status]}
                     </span>
                   </td>
                   <td>
-                    {rule.signal}
-                    {rule.detail === null ? '' : ` · ${rule.detail}`}
+                    {signalLabel(rule)}
+                    {rule.detail === null ? '' : ` · ${categoryLabel(rule.detail)}`}
                   </td>
                   <td className={ui.num}>{formatValue(rule)}</td>
                   <td className={ui.num}>{formatThreshold(rule)}</td>
@@ -106,9 +112,10 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
         </div>
 
         <p className={styles.legend}>
-          <strong>needs n ≥ {MIN_N}</strong> no es un fallo: con menos de {MIN_N} errores en
-          la ventana un porcentaje es ruido, y actuar sobre ruido cuesta una semana de
-          estudio. <strong>n/a</strong> significa que no hay datos de ese tipo todavia.
+          <strong>{RULE_STATUS_LABELS['needs n ≥ 15']}</strong> no es un fallo: con menos de
+          {' '}{MIN_N} errores en la ventana un porcentaje es ruido, y actuar sobre ruido cuesta
+          una semana de estudio. <strong>{RULE_STATUS_LABELS['n/a']}</strong> significa que todavía
+          no hay datos de ese tipo.
         </p>
       </details>
     </section>

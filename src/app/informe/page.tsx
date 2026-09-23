@@ -10,6 +10,7 @@ import { WindowSwitch } from '../_shared/WindowSwitch';
 import shared from '../_shared/report.module.css';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
+import { CATEGORY_LABELS, CAUSE_LABELS, SIDE_LABELS } from '../_shared/labels';
 import { RulesTable } from './RulesTable';
 
 /** Informe de reglas, práctica y repaso. */
@@ -37,8 +38,8 @@ export default async function InformePage({
         <div>
           <h1>Informe</h1>
           <p className={shared.lede}>
-            Ultimos {windowDays} dias. {q1.total} error{q1.total === 1 ? '' : 'es'} sobre{' '}
-            {q2.itemsAttempted} items intentados.
+            Últimos {windowDays} días. {q1.total} error{q1.total === 1 ? '' : 'es'} sobre{' '}
+            {q2.itemsAttempted} ítems intentados.
           </p>
         </div>
         <WindowSwitch current={windowDays} basePath="/informe" />
@@ -48,9 +49,9 @@ export default async function InformePage({
 
       <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q1-heading">
         <div className={shared.panelHead}>
-          <h2 id="q1-heading">Q1 · Reparto de causas</h2>
+          <h2 id="q1-heading">Reparto de causas</h2>
           <p className={ui.note}>
-            Estudio {q1.bySide.study}% · ejecucion {q1.bySide.exec}%
+            Estudio {q1.bySide.study}% · ejecución {q1.bySide.exec}%
           </p>
         </div>
 
@@ -71,7 +72,7 @@ export default async function InformePage({
                     %
                   </th>
                   <th scope="col" className={shared.barCell}>
-                    <span className="sr-only">Proporcion</span>
+                    <span className="sr-only">Proporción</span>
                   </th>
                   <th scope="col">Remedio</th>
                 </tr>
@@ -79,12 +80,12 @@ export default async function InformePage({
               <tbody>
                 {q1.rows.map((row) => (
                   <tr key={row.cause}>
-                    <td className="data">{row.cause}</td>
+                    <td>{CAUSE_LABELS[row.cause]}</td>
                     <td>
                       <span
                         className={row.side === 'study' ? ui.chipStudy : ui.chipExec}
                       >
-                        {row.side}
+                        {SIDE_LABELS[row.side]}
                       </span>
                     </td>
                     <td className={ui.num}>{row.n}</td>
@@ -106,20 +107,20 @@ export default async function InformePage({
 
       <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q2-heading">
         <div className={shared.panelHead}>
-          <h2 id="q2-heading">Q2 · Categorias por tasa</h2>
+          <h2 id="q2-heading">Categorías por tasa</h2>
           <p className={ui.note}>
-            Normalizado por items intentados. Es el temario de los proximos sabados.
+            Normalizado por ítems intentados. Es el temario de los próximos sábados.
           </p>
         </div>
 
         {q2.rows.length === 0 ? (
           <p className={ui.empty}>
-            Sin errores en sesiones con items contabilizados.
+            Sin errores en sesiones con ítems contabilizados.
           </p>
         ) : (
           <div className={ui.tableWrap}>
             <table className={ui.table}>
-              <caption className="sr-only">Categorias ordenadas por tasa</caption>
+              <caption className="sr-only">Categorías ordenadas por tasa</caption>
               <thead>
                 <tr>
                   <th scope="col">Categoria</th>
@@ -127,17 +128,17 @@ export default async function InformePage({
                     Errores
                   </th>
                   <th scope="col" className={ui.num}>
-                    Por 100 items
+                    Por 100 ítems
                   </th>
                   <th scope="col" className={shared.barCell}>
-                    <span className="sr-only">Proporcion</span>
+                    <span className="sr-only">Proporción</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {q2.rows.map((row, index) => (
                   <tr key={row.category}>
-                    <td className="data">{row.category}</td>
+                    <td>{CATEGORY_LABELS[row.category]}</td>
                     <td className={ui.num}>{row.errors}</td>
                     <td className={ui.num}>{row.ratePer100}</td>
                     <td>
@@ -165,20 +166,20 @@ export default async function InformePage({
         {q2.excludedErrors > 0 && (
           <p className={`${ui.note} ${shared.noteAfter}`}>
             {q2.excludedErrors} error{q2.excludedErrors === 1 ? '' : 'es'} de Writing fuera
-            del calculo: esas sesiones no tienen items que contar.
+            del cálculo: esas sesiones no tienen ítems que contar.
           </p>
         )}
       </section>
 
       <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q5-heading">
         <div className={shared.panelHead}>
-          <h2 id="q5-heading">Q5 · Deuda de Anki</h2>
+          <h2 id="q5-heading">Deuda de Anki</h2>
           <p className={ui.note}>Umbral {ANKI_TARGET_PCT}%</p>
         </div>
 
         {q5.pctConverted === null ? (
           <p className={ui.empty}>
-            Ningun error de la ventana genera tarjeta. No hay deuda que medir.
+            Ningún error de la ventana genera tarjeta. No hay deuda que medir.
           </p>
         ) : (
           <dl className={`${shared.panelHead} ${shared.figures}`}>

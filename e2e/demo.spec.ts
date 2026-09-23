@@ -72,6 +72,6 @@ test('recorrido de registro e informe para el README', async ({ page }) => {
   await page.goto('/informe');
   // La captura muestra lo que se ve al abrir: la accion destacada y sus cifras. La tabla
   // de las siete reglas queda plegada, que es su estado real por defecto.
-  await expect(page.getByText('DO NOW').first()).toBeVisible();
+  await expect(page.getByText('Haz esto').first()).toBeVisible();
   await frame(page, 5, 'Elige una acción para esta semana', 'El informe prioriza el siguiente paso y muestra la cifra que lo justifica.');
 });
