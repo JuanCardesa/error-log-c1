@@ -341,6 +341,36 @@ describe('Q5 · deuda de Anki', () => {
     expect(result.meetsTarget).toBe(false);
   });
 
+  it('la cola no caduca con la ventana, pero las cifras si', () => {
+    // Un pendiente de hace 90 dias salia de la ventana de 30 y de la de 60: desaparecia
+    // de todas las vistas disponibles sin convertirse y sin forma de recuperarlo.
+    const data = makeDataset({
+      sessions: [makeSession({ id: 1, date: daysAgo(2) }), makeSession({ id: 2, date: daysAgo(90) })],
+      errors: [
+        makeError({ id: 10, sessionId: 1, cause: 'CONFUSION', ankiAdded: false }),
+        makeError({ id: 11, sessionId: 2, cause: 'DESCONOCIMIENTO', ankiAdded: false }),
+      ],
+    });
+
+    const result = q5AnkiDebt(data, opts);
+    // Las cifras siguen siendo las de la ventana: no se mezclan denominadores.
+    expect(result).toMatchObject({ eligible: 1, added: 0, pending: 1 });
+    // La cola los trae ambos, el mas antiguo primero.
+    expect(result.queue.map((error) => error.id)).toEqual([11, 10]);
+  });
+
+  it('no pone en cola lo ya convertido aunque sea anterior a la ventana', () => {
+    const data = makeDataset({
+      sessions: [makeSession({ id: 1, date: daysAgo(120) })],
+      errors: [
+        makeError({ id: 20, sessionId: 1, cause: 'CONFUSION', ankiAdded: true }),
+        makeError({ id: 21, sessionId: 1, cause: 'DESPISTE', ankiAdded: false }),
+      ],
+    });
+
+    expect(q5AnkiDebt(data, opts).queue).toEqual([]);
+  });
+
   it('marca el objetivo cumplido justo en el 80%', () => {
     const data = makeDataset({
       sessions: [makeSession({ id: 1 })],

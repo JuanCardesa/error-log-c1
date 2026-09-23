@@ -14,6 +14,10 @@ import { percentage, sliceWindow } from './window';
  * Con denominador cero, `pctConverted` es `null` y no 0: una base recien creada no tiene
  * una deuda del 100%, no tiene deuda. Tratar 0/0 como 0% dispararia la regla de maxima
  * prioridad sobre una base vacia.
+ *
+ * Las cifras miran la ventana; la cola, no. Una deuda no deja de existir por cumplir
+ * sesenta dias: filtrarla por ventana hacia desaparecer pendientes antiguos de todas las
+ * vistas disponibles, sin avisar y sin forma de recuperarlos.
  */
 
 export interface Q5Result {
@@ -24,7 +28,10 @@ export interface Q5Result {
   readonly pctConverted: number | null;
   /** `null` cuando no hay nada que convertir. */
   readonly meetsTarget: boolean | null;
-  /** Cola de pendientes, la mas antigua primero: es el orden en que hay que atacarla. */
+  /**
+   * Cola de pendientes, la mas antigua primero: es el orden en que hay que atacarla.
+   * Incluye todo lo pendiente, tambien lo anterior a la ventana.
+   */
   readonly queue: readonly ErrorRow[];
 }
 
@@ -37,12 +44,13 @@ export function q5AnkiDebt(data: Dataset, options: QueryOptions): Q5Result {
   const eligible = eligiblePairs.length;
   const added = eligible - pendingPairs.length;
 
-  const queue = [...pendingPairs]
-    .sort(
-      (a, b) =>
-        a.session.date.localeCompare(b.session.date) || a.error.id - b.error.id,
-    )
-    .map(({ error }) => error);
+  // La cola sale del historial entero, no de la ventana.
+  const sessionDate = new Map(data.sessions.map((session) => [session.id, session.date]));
+  const queue = data.errors
+    .filter((error) => generatesCard(error.cause) && !error.ankiAdded)
+    .sort((a, b) =>
+      (sessionDate.get(a.sessionId) ?? '').localeCompare(sessionDate.get(b.sessionId) ?? '')
+      || a.id - b.id);
 
   if (eligible === 0) {
     return { eligible: 0, added: 0, pending: 0, pctConverted: null, meetsTarget: null, queue };

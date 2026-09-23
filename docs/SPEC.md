@@ -173,6 +173,7 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
 - **Q5 · Deuda de Anki** — `pct_convertidos = anki_added / errores que generan tarjeta`.
   Umbral 80%. Incluye las marcas manuales explícitas y las creaciones verificadas;
   no representa exclusivamente notas verificadas. El motor conserva su contrato.
+  Las cifras usan la ventana; la cola de pendientes no caduca con ella.
 - **Q6 · Eficacia del rewrite** — de los errores del texto original, cuántos reaparecen en
   su rewrite. Umbral 50%. Empareja por `rewrite_of` y compara
   `(category, subcategory, correct_answer)`.

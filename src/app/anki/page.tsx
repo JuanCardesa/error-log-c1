@@ -70,8 +70,9 @@ export default async function AnkiPage({
         <div>
           <h1>Anki</h1>
           <p className={shared.lede}>
-            Errores de los ultimos {windowDays} dias cuya causa genera tarjeta. Por debajo
-            del {ANKI_TARGET_PCT}% convertido, el log no cierra el circulo.
+            La cola trae todo lo pendiente cuya causa genera tarjeta, sin caducar. Las cifras
+            son de los ultimos {windowDays} dias: por debajo del {ANKI_TARGET_PCT}% convertido,
+            el log no cierra el circulo.
           </p>
         </div>
         <WindowSwitch current={windowDays} basePath="/anki" />
