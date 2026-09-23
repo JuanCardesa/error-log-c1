@@ -48,6 +48,13 @@
   max-width: 68ch;
 }
 
+/* Enlace con aspecto de boton: lleva a donde se hace la accion. */
+.doNowLink {
+  display: inline-block;
+  margin-top: var(--sp-4);
+  text-decoration: none;
+}
+
 .doNowWhy {
   margin: 0;
   color: var(--exec);

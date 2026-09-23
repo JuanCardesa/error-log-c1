@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { MIN_N } from '@/lib/domain/thresholds';
 import type { RuleEvaluation, RulesReport } from '@/lib/rules';
 import { RULE_SIGNAL_LABELS, RULE_STATUS_LABELS, categoryLabel } from '../_shared/labels';
@@ -31,7 +33,19 @@ const STATUS_CLASS: Record<string, string | undefined> = {
   'n/a': styles.stNa,
 };
 
-export function RulesTable({ report }: { readonly report: RulesReport }) {
+/**
+ * Donde se hace la accion de cada regla, cuando tiene pantalla. Las demas piden cambiar
+ * como se estudia y no hay sitio al que llevar: no se inventa un enlace.
+ */
+function actionLink(ruleId: number, pendingAnki: number): { href: string; label: string } | null {
+  if (ruleId === 2) return { href: '/certezas', label: 'Ver las falsas certezas' };
+  if (ruleId === 4) return { href: '/anki', label: `Ir a la cola de Anki · ${String(pendingAnki)} pendientes` };
+  if (ruleId === 6) return { href: '/writing', label: 'Ver los textos de Writing' };
+  return null;
+}
+
+export function RulesTable({ report, pendingAnki }: { readonly report: RulesReport; readonly pendingAnki: number }) {
+  const link = report.doNow === null ? null : actionLink(report.doNow.id, pendingAnki);
   const { doNow, queued } = report;
 
   return (
@@ -54,6 +68,11 @@ export function RulesTable({ report }: { readonly report: RulesReport }) {
             de {doNow.sampleSize})
             {doNow.detail === null ? '' : ` · ${categoryLabel(doNow.detail)}`}
           </p>
+          {link !== null && (
+            <Link className={`${ui.primary} ${styles.doNowLink}`} href={link.href}>
+              {link.label}
+            </Link>
+          )}
         </div>
       )}
 

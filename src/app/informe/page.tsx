@@ -45,7 +45,7 @@ export default async function InformePage({
         <WindowSwitch current={windowDays} basePath="/informe" />
       </header>
 
-      <RulesTable report={report} />
+      <RulesTable report={report} pendingAnki={q5.pending} />
 
       <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q1-heading">
         <div className={shared.panelHead}>
