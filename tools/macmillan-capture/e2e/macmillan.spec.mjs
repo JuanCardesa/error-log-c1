@@ -23,7 +23,7 @@ async function openActivity(page, options = {}) {
   });
   await page.goto(PLAYER);
   await page.addScriptTag({ content: SCRIPT });
-  await page.getByRole('button', { name: 'Errores', exact: false }).click();
+  await page.getByRole('button', { name: /Error Log/ }).click();
   return activityId;
 }
 
@@ -31,7 +31,7 @@ const status = (page) => page.locator('.status');
 const block = (page) => page.locator('textarea[aria-label="Bloque para copiar"]');
 
 async function copiedRows(page) {
-  await page.getByRole('button', { name: 'Copiar todo' }).click();
+  await page.getByRole('button', { name: /^Copiar (tanda|sesión sin errores)$/ }).click();
   await expect(block(page)).not.toHaveValue('');
   return JSON.parse(await block(page).inputValue()).errors;
 }
@@ -52,7 +52,7 @@ test('sin la marca de correccion no exporta nada', async ({ page }) => {
   await openActivity(page, { marked: false });
 
   await expect(status(page)).toHaveText(/no esta corregido/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeDisabled();
 });
 
 test('una actividad entera correcta no genera entradas', async ({ page }) => {
@@ -71,13 +71,13 @@ test('si aria y la clase se contradicen, no se elige ganador', async ({ page }) 
   await openActivity(page, { conflict: true });
 
   await expect(status(page)).toHaveText(/se contradicen/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeDisabled();
 });
 
 test('el recuento va a la cabecera de la sesion, no al listado', async ({ page }) => {
   await openActivity(page);
 
-  await expect(page.locator('.counts')).toHaveText(/3 respuestas comprobadas, 2 aciertos/i);
+  await expect(page.locator('.counts')).toHaveText(/2 \/ 3 respuestas correctas/i);
   const rows = await copiedRows(page);
   expect(rows).toHaveLength(1);
   expect(JSON.stringify(rows)).not.toContain('aciertos');
@@ -122,7 +122,7 @@ test('al reintentar vuelve a «sin corregir» pero el fallo ya cometido no se pi
 
   // Fallarlo y luego acertarlo no borra que lo fallaste: eso es el registro de errores.
   await expect(page.locator('.tray')).toHaveText(/1 fallo guardado/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeEnabled();
 });
 
 test('un tipo de interaccion sin comprobar se avisa, no se da por bueno en silencio', async ({ page }) => {
@@ -150,9 +150,12 @@ test('acumula los fallos de varias actividades y los entrega en un solo bloque',
   expect(rows).toHaveLength(2);
   expect(rows.map((row) => row.myAnswer)).toEqual(['visit', 'promise']);
 
-  // Entregada la bandeja, queda vacia y no se repite.
+  // Copiada no significa guardada: la bandeja sigue hasta vaciarla.
+  await expect(page.locator('.tray')).toHaveText(/2 fallos guardados/i);
+  await page.getByRole('button', { name: 'Vaciar…' }).click();
+  await page.getByRole('button', { name: 'Vaciar tanda' }).click();
   await expect(page.locator('.tray')).toHaveText(/vacia/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeDisabled();
 });
 
 test('la bandeja sobrevive a recargar y sigue contando', async ({ page }) => {
@@ -161,7 +164,7 @@ test('la bandeja sobrevive a recargar y sigue contando', async ({ page }) => {
 
   await page.reload();
   await page.addScriptTag({ content: SCRIPT });
-  await page.getByRole('button', { name: 'Errores', exact: false }).click();
+  await page.getByRole('button', { name: /Error Log/ }).click();
 
   await expect(page.locator('.tray')).toHaveText(/1 fallo guardado/i);
 });
@@ -170,13 +173,14 @@ test('vaciar la bandeja descarta y no vuelve a recoger lo mismo', async ({ page 
   await openActivity(page);
   await expect(page.locator('.tray')).toHaveText(/1 fallo guardado/i);
 
-  await page.getByRole('button', { name: 'Vaciar la bandeja' }).click();
+  await page.getByRole('button', { name: 'Vaciar…' }).click();
+  await page.getByRole('button', { name: 'Vaciar tanda' }).click();
   await expect(page.locator('.tray')).toHaveText(/vacia/i);
 
   // Aunque la pagina se vuelva a leer, lo descartado no reaparece solo.
   await page.reload();
   await page.addScriptTag({ content: SCRIPT });
-  await page.getByRole('button', { name: 'Errores', exact: false }).click();
+  await page.getByRole('button', { name: /Error Log/ }).click();
   await expect(page.locator('.tray')).toHaveText(/vacia/i);
 });
 
@@ -275,6 +279,7 @@ test('la muestra tecnica enmascara lo que parezca una credencial de la pagina', 
     document.querySelector('.dragTarget').textContent = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJ';
   });
 
+  await page.getByRole('button', { name: 'Más opciones' }).click();
   await page.getByRole('button', { name: 'Copiar muestra tecnica' }).click();
   const muestra = await block(page).inputValue();
 
@@ -296,9 +301,10 @@ test('si la actividad no encaja, el panel lo dice en vez de esconderse', async (
 
   await expect(status(page)).toHaveText(/no reconozco esta actividad/i);
   await expect(page.locator('.detail')).toHaveText(/muestra tecnica/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeDisabled();
 
   // Y la muestra tiene que salir util, con el marcado del hueco que no sabemos leer.
+  await page.getByRole('button', { name: 'Más opciones' }).click();
   await page.getByRole('button', { name: 'Copiar muestra tecnica' }).click();
   const muestra = await block(page).inputValue();
   expect(muestra).toContain('data-rcfid');

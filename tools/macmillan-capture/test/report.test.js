@@ -31,7 +31,7 @@ describe('mensajes de estado', () => {
   it('con fallos nuevos dice cuantos ha guardado de esta actividad', () => {
     const state = message({ phase: 'ready', incorrect: 3, checked: 10, fresh: 3 });
     expect(state.title).toMatch(/3 fallos guardados/);
-    expect(state.detail).toMatch(/Copiar todo/);
+    expect(state.detail).toMatch(/Copiar tanda/);
   });
 
   it('si ya estaban en la bandeja, no los vuelve a anunciar como nuevos', () => {

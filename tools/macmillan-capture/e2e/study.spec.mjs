@@ -6,10 +6,10 @@ const script = readFileSync('tools/macmillan-capture/dist/errorlog-macmillan.use
 const origin = 'https://mee.macmillaneducation.com';
 async function attach(frame) {
   await frame.addScriptTag({ content: script });
-  await frame.getByRole('button', { name: /Errores/ }).click();
+  await frame.getByRole('button', { name: /Error Log/ }).click();
 }
 async function copy(frame) {
-  await frame.getByRole('button', { name: 'Copiar todo' }).click();
+  await frame.getByRole('button', { name: /^Copiar (tanda|sesión sin errores)$/ }).click();
   return JSON.parse(await frame.getByLabel('Bloque para copiar').inputValue());
 }
 
@@ -25,29 +25,31 @@ test('comparte el contexto del visor y acumula actividades entre marcos sin perd
   await page.addScriptTag({ content: script });
   let frame = page.frames().find((value) => value.url().endsWith('/act-1'));
   await attach(frame);
-  await expect(frame.locator('.counts')).toContainText('3 respuestas comprobadas, 2 aciertos');
+  await expect(frame.locator('.counts')).toContainText('2 / 3 respuestas correctas');
   await page.locator('[data-page-number]').evaluate((element) => element.setAttribute('data-page-number', '7'));
   // La segunda actividad se lee en otro marco ya abierto; el primero conserva estado.
   await page.evaluate(() => { const iframe = document.createElement('iframe'); iframe.src = '/act-2'; document.body.append(iframe); });
   await expect(page.frameLocator('iframe').nth(1).locator('.activity')).toBeVisible();
   frame = page.frames().find((value) => value.url().endsWith('/act-2'));
   await attach(frame);
-  await expect(frame.locator('.counts')).toContainText('4 respuestas comprobadas, 3 aciertos');
+  await expect(frame.locator('.counts')).toContainText('3 / 4 respuestas correctas');
   const block = await copy(frame);
   expect(block.session).toMatchObject({ itemsTotal: 4, itemsCorrect: 3, sourceRef: 'Ready for C1 Advanced · págs. 6-7 · actividades 1-2' });
   expect(block.errors).toHaveLength(1);
   const first = page.frames().find((value) => value.url().endsWith('/act-1'));
-  await expect(first.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  // Copiada no significa guardada: el otro marco sigue viendo la tanda hasta vaciarla.
+  await expect(first.getByRole('button', { name: 'Copiar tanda' })).toBeEnabled();
 });
 
 test('vaciar reinicia recuentos; recargar no los resucita y la siguiente tanda empieza desde cero', async ({ page }) => {
   await page.route(`${origin}/**`, (route) => route.fulfill({ contentType: 'text/html', body: rcfActivityPage({ activityId: new URL(route.request().url()).pathname }) }));
   await page.goto(`${origin}/uno`);
   await attach(page);
-  await page.getByRole('button', { name: 'Vaciar la bandeja' }).click();
+  await page.getByRole('button', { name: 'Vaciar…' }).click();
+  await page.getByRole('button', { name: 'Vaciar tanda' }).click();
   await page.reload();
   await attach(page);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeDisabled();
   await expect(page.locator('.counts')).toBeHidden();
   await page.goto(`${origin}/dos`);
   await attach(page);
@@ -64,7 +66,7 @@ test('más de cien fallos siguen siendo una sola sesión y una sola copia', asyn
   const block = await copy(page);
   expect(block.errors).toHaveLength(101);
   expect(block.session).toMatchObject({ itemsTotal: 101, itemsCorrect: 0 });
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeEnabled();
 });
 
 test('no atribuye a otro visor los metadatos que quedaron de una navegación anterior', async ({ page }) => {
@@ -77,6 +79,9 @@ test('no atribuye a otro visor los metadatos que quedaron de una navegación ant
   await page.goto(`${origin}/con-contexto`);
   await attach(page);
   await copy(page);
+  // Importada la tanda, se vacía: la siguiente empieza sin el contexto de la anterior.
+  await page.getByRole('button', { name: 'Vaciar…' }).click();
+  await page.getByRole('button', { name: 'Vaciar tanda' }).click();
   await page.goto(`${origin}/sin-contexto`);
   await attach(page);
   expect((await copy(page)).session.sourceRef).toBe(null);
@@ -121,7 +126,7 @@ test('un bloque demasiado largo queda accesible entero y no se marca como export
   expect(stored.tray).toHaveLength(300);
   expect(stored.study.activities).toHaveLength(1);
   expect(stored.done).toEqual({});
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeEnabled();
 });
 
 test('un estado guardado con forma inesperada no impide arrancar ni pierde la tanda nueva', async ({ page }) => {
@@ -136,7 +141,7 @@ test('un estado guardado con forma inesperada no impide arrancar ni pierde la ta
   });
   await attach(page);
   expect(failures).toEqual([]);
-  await expect(page.locator('.counts')).toContainText('3 respuestas comprobadas, 2 aciertos');
+  await expect(page.locator('.counts')).toContainText('2 / 3 respuestas correctas');
   expect((await copy(page)).errors).toHaveLength(1);
 });
 

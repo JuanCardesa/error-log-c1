@@ -21,7 +21,7 @@ async function openExercise(page, html) {
   });
   await page.goto(PLAYER);
   await page.addScriptTag({ content: SCRIPT });
-  await page.getByRole('button', { name: 'Errores', exact: false }).click();
+  await page.getByRole('button', { name: /Error Log/ }).click();
 }
 
 /** Escribe como lo haria yo: pulsaciones de verdad, que es lo que el guion escucha. */
@@ -35,7 +35,7 @@ const status = (page) => page.locator('.status');
 const block = (page) => page.locator('textarea[aria-label="Bloque para copiar"]');
 
 async function copiedRows(page) {
-  await page.getByRole('button', { name: 'Copiar todo' }).click();
+  await page.getByRole('button', { name: /^Copiar (tanda|sesión sin errores)$/ }).click();
   await expect(block(page)).not.toHaveValue('');
   return JSON.parse(await block(page).inputValue()).errors;
 }
@@ -45,7 +45,7 @@ test('un ejercicio sin corregir no exporta nada', async ({ page }) => {
   await answer(page, 0, 'off');
 
   await expect(status(page)).toHaveText(/no esta corregido/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeDisabled();
 });
 
 test('un ejercicio entero correcto no genera ninguna entrada', async ({ page }) => {
@@ -82,7 +82,7 @@ test('el recuento de aciertos se queda en la cabecera, no en el listado', async 
   await answer(page, 2, 'up');
   await page.getByRole('button', { name: 'Check' }).click();
 
-  await expect(page.locator('.counts')).toHaveText(/3 respuestas comprobadas, 2 aciertos/i);
+  await expect(page.locator('.counts')).toHaveText('2 / 3 respuestas correctas');
   const rows = await copiedRows(page);
   expect(rows).toHaveLength(1);
   for (const row of rows) {
@@ -130,13 +130,20 @@ test('exportar dos veces no duplica entradas', async ({ page }) => {
 
   expect(await copiedRows(page)).toHaveLength(1);
 
-  // Copiado ya, la bandeja se vacia y el boton se apaga en vez de repetir la entrada.
-  await expect(page.locator('.tray')).toHaveText(/vacia/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  // Copiada no significa guardada: la bandeja se conserva y volver a copiar no duplica.
+  await expect(page.locator('.tray')).toHaveText(/1 fallo guardado/i);
+  expect(await copiedRows(page)).toHaveLength(1);
 
-  // Olvidar lo copiado devuelve los fallos a la bandeja en el momento.
+  // Vaciar pide confirmación; después la bandeja queda vacía y copiar se apaga.
+  await page.getByRole('button', { name: 'Vaciar…' }).click();
+  await page.getByRole('button', { name: 'Vaciar tanda' }).click();
+  await expect(page.locator('.tray')).toHaveText(/vacia/i);
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeDisabled();
+
+  // Olvidar lo vaciado devuelve los fallos a la bandeja en el momento.
+  await page.getByRole('button', { name: 'Más opciones' }).click();
   await page.getByRole('button', { name: 'Olvidar lo exportado' }).click();
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeEnabled();
   await expect(page.locator('.tray')).toHaveText(/1 fallo guardado/i);
 });
 
@@ -170,7 +177,7 @@ test('si solo hay color, dice que no lo sabe leer en vez de fingir', async ({ pa
   await page.getByRole('button', { name: 'Check' }).click();
 
   await expect(status(page)).toHaveText(/no reconozco como marca la correccion/i);
-  await expect(page.getByRole('button', { name: 'Copiar todo' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copiar tanda' })).toBeDisabled();
 });
 
 for (const marking of ['aria', 'attr']) {
@@ -201,19 +208,21 @@ test('lo ya exportado se recuerda aunque recargue el ejercicio', async ({ page }
 
   await page.reload();
   await page.addScriptTag({ content: SCRIPT });
-  await page.getByRole('button', { name: 'Errores', exact: false }).click();
+  await page.getByRole('button', { name: /Error Log/ }).click();
   await answer(page, 0, 'of');
   await answer(page, 1, 'after');
   await answer(page, 2, 'up');
   await page.getByRole('button', { name: 'Check' }).click();
 
-  await expect(status(page)).toHaveText(/ya estaban guardados/i);
-  await expect(page.locator('.tray')).toHaveText(/vacia/i);
+  // Lo copiado sigue en la bandeja hasta vaciarla: el mismo fallo no entra dos veces.
+  await expect(status(page)).toHaveText(/1 fallo guardado/i);
+  await expect(page.locator('.tray')).toHaveText(/1 fallo guardado de 1 actividad/i);
 });
 
 test('la muestra tecnica no lleva cookies ni la query de la URL', async ({ page }) => {
   await openExercise(page, exercisePage());
   await page.evaluate(() => { document.cookie = 'sesion=secreto-que-no-debe-salir'; });
+  await page.getByRole('button', { name: 'Más opciones' }).click();
   await page.getByRole('button', { name: 'Copiar muestra tecnica' }).click();
 
   const sample = await block(page).inputValue();

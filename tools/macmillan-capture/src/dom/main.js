@@ -24,6 +24,8 @@ const TRAY_KEY = 'errorlog-macmillan:tray';
 const DONE_KEY = 'errorlog-macmillan:done';
 const STUDY_KEY = 'errorlog-macmillan:study';
 const STUDY_DONE_KEY = 'errorlog-macmillan:study-done';
+// La última tanda copiada: «Volver a copiar la última» la recupera aunque se haya vaciado.
+const LAST_KEY = 'errorlog-macmillan:last-export';
 
 const EXPLANATION_HINT = '[class*=feedback], [class*=explanation], [class*=rationale], [data-feedback], [class*=explicacion]';
 
@@ -88,6 +90,8 @@ export function start(doc) {
     done: new Set(loadList(DONE_KEY, [])),
     study: normalizeStudy(load(STUDY_KEY, null)),
     studyDone: loadMarks(STUDY_DONE_KEY, {}),
+    last: typeof load(LAST_KEY, null) === 'string' ? load(LAST_KEY, null) : null,
+    copied: false,
     context: {},
     unsupported: 0,
     note: '',
@@ -101,6 +105,7 @@ export function start(doc) {
     onOpen: () => { render(); },
     onCopy: () => { copyErrors(); },
     onEmpty: () => { emptyTray(); },
+    onRecopy: () => { recopy(); },
     onSample: () => { copySample(); },
     onForget: () => { forget(); },
   });
@@ -395,6 +400,8 @@ export function start(doc) {
     if (added.added === 0 && added.updated === 0 && settled.updated === 0) return;
     state.tray = settled.tray;
     save(TRAY_KEY, state.tray);
+    // Entró algo nuevo: lo copiado ya no es toda la tanda.
+    if (added.added > 0) state.copied = false;
     if (settled.updated > 0) {
       state.note = settled.updated === 1
         ? 'Macmillan ha confirmado la solucion de 1 fallo guardado.'
@@ -465,6 +472,9 @@ export function start(doc) {
       tray: stats,
       trayText: describeTray(state.tray),
       note: state.note,
+      missing: state.tray.filter((entry) => tidy(entry.row.correctAnswer ?? '') === '').length,
+      hasLast: state.last !== null,
+      copied: state.copied,
     });
     panel.badge(stats.count);
   }
@@ -491,16 +501,25 @@ export function start(doc) {
       render();
       return;
     }
-    // Se da por despachado al entregar el bloque, no al confirmar el portapapeles: el
-    // texto ya esta en el cuadro aunque el navegador niegue el permiso de copia.
-    state.done = markDone(state.done, batch.map((entry) => entry.mark));
-    state.tray = [];
-    state.full = false;
-    save(TRAY_KEY, state.tray);
-    save(DONE_KEY, [...state.done]);
-    finishStudy();
-    void panel.deliver(json, (message) => {
-      state.note = legacy ? `${message} Bandeja de una versión anterior: solo errores, completa la cabecera manualmente.` : message;
+    // Copiar no despacha nada: copiada no significa guardada. La bandeja y los recuentos
+    // siguen hasta que se vacían a propósito, y la copia queda para volver a copiarla.
+    state.last = json;
+    save(LAST_KEY, json);
+    void panel.deliver(json, (clipboard) => {
+      state.copied = clipboard;
+      const legacyNote = legacy ? 'Bandeja de una versión anterior: solo errores, completa la cabecera manualmente.' : '';
+      state.note = clipboard
+        ? legacyNote
+        : `Seleccionado abajo: pulsa Ctrl+C para copiarlo y pégalo en Sesiones de Error Log. ${legacyNote}`.trim();
+      render();
+    });
+  }
+
+  function recopy() {
+    if (state.last === null) return;
+    void panel.deliver(state.last, (clipboard) => {
+      state.copied = clipboard;
+      state.note = clipboard ? 'Última tanda copiada otra vez.' : 'Seleccionado abajo: pulsa Ctrl+C para copiarlo.';
       render();
     });
   }
@@ -515,6 +534,7 @@ export function start(doc) {
     save(TRAY_KEY, state.tray);
     save(DONE_KEY, [...state.done]);
     finishStudy();
+    state.copied = false;
     state.note = `Bandeja vaciada: ${String(count)} descartados.`;
     render();
   }
@@ -528,8 +548,8 @@ export function start(doc) {
       store,
       note: `${state.mode}/${state.phase}`,
     });
-    void panel.deliver(text, (message) => {
-      state.note = message;
+    void panel.deliver(text, (clipboard) => {
+      state.note = clipboard ? 'Muestra tecnica copiada.' : 'Seleccionado abajo: pulsa Ctrl+C para copiarlo.';
       render();
     });
   }
