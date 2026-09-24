@@ -1,91 +1,152 @@
 /*
- * Tokens y estilos base.
+ * Tokens y estilos base del rediseño v5 («Error Log C1 v5.dc.html»).
  *
- * ── PUNTO DE INTERCAMBIO VISUAL ──────────────────────────────────────────────
- * La paleta definitiva sale de `Error Log C1.dc.html` (§6), que todavia no esta
- * disponible. Todo lo visual vive en las variables de `:root`; los componentes no
- * llevan colores ni tamaños literales. Cuando llegue el prototipo se reescriben
- * estas variables y el comportamiento no se toca.
- *
- * Lo que §6 describe en texto y esta reflejado abajo: fondo hueso, monoespaciada
- * para datos, densidad alta, chips de causa con color por lado (study azul,
- * exec rojo).
- * ─────────────────────────────────────────────────────────────────────────────
+ * Todo lo visual vive en las variables de `:root`: los módulos no llevan colores ni
+ * tamaños literales. Plex Sans y Plex Mono para trabajar; Source Serif 4 solo para leer
+ * (títulos de página, recomendación, enunciados y la pareja respuesta → corrección).
+ * El cristal se reserva a lo que flota: nunca en tablas ni datos.
  */
 
 :root {
-  /* Superficies */
-  --bg: #f2efe6;
-  --surface: #fbf9f4;
-  --surface-sunken: #ebe7db;
-  --rule: #d9d2c2;
-  --rule-strong: #b9b09b;
-  /* Borde de campo: a diferencia de los filetes, es lo unico que delimita un campo sobre
-     la hoja, y por eso pide 3:1 (WCAG 1.4.11). */
-  --rule-field: #8b8270;
+  /* ── Superficies ─────────────────────────────── */
+  --color-bg: #f6f5f1;
+  --color-surface: #ffffff;
+  --color-surface-2: #ecedea;
+  --color-skeleton: #e4e5e0;
+  --color-selected: #e6ece8;
+  --color-brand-tint: #e3eae6;
+  --color-brand-tint-hover: #ccd9d2;
 
-  /* Tinta. Las tres pasan 4,5:1 sobre papel, hoja y hoja hundida. */
-  --ink: #1b1915;
-  --ink-soft: #5b564b;
-  --ink-faint: #6d6757;
+  /* ── Tinta ───────────────────────────────────── */
+  --color-ink: #20231f;
+  --color-ink-2: #5b6259;
+  --color-ink-disabled: #a5aba2;
+  --color-primary-hover: #383c36;
+  --color-primary-blocked: #8d928a;
+  --color-on-ink: #ffffff;
 
-  /* Lados de la causa */
-  --study: #1d4ed8;
-  --study-bg: #e3ecfd;
-  --study-rule: #b6ccf7;
-  --exec: #b4231d;
-  --exec-bg: #fbe7e5;
-  --exec-rule: #f3c2bd;
+  /* ── Bordes ──────────────────────────────────── */
+  --color-rule: #daddd5;
+  --color-control: #7c847a;
 
-  /* Estados del motor de reglas */
-  --do-now: #b4231d;
-  --do-now-bg: #fbe7e5;
-  --queued: #7a5f17;
-  --queued-bg: #faf0d6;
-  --watch: #6b6352;
-  --watch-bg: #efebe0;
-  --ok: #2f6b43;
-  --ok-bg: #e4f0e7;
+  /* ── Marca y estados ─────────────────────────── */
+  --color-brand: #304f46;
+  --color-success: #276544;
+  --color-warning: #805509;
+  --color-warning-soft: #e2c98f;
+  --color-danger: #b23830;
+  --color-danger-soft: #f7e9e7;
+  --color-info: #315f83;
+  --color-toast-check: #9fd3b4;
+  --color-toast-muted: #b7bdb4;
 
-  --accent: #1d4ed8;
-  --danger: #b4231d;
+  /* ── Visualización ───────────────────────────── */
+  --viz-study: #315f83;
+  --viz-exec: #9aa396;
+  --viz-bar-past: #9fbdb0;
+  --viz-acc-85: #c9dcd3;
+  --viz-acc-70: #dfe9e3;
+  --viz-acc-55: #ecedea;
+  --viz-acc-low: #f1e9da;
 
-  /* Acciones: el hover del primario oscurece la tinta; el texto sobre color lleno. */
-  --ink-hover: #000;
-  --on-color: #fff;
+  /* ── Tipografía ──────────────────────────────── */
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-serif: var(--font-source-serif), Georgia, serif;
 
-  /* Tramos de precision de RUOE, del verde al rojo. Solo fondo: el numero manda. */
-  --tier-high: #dcefe2;
-  --tier-mid: #eaf0d9;
-  --tier-low: #faeed2;
-  --tier-bad: #f8dcd8;
+  --text-page-title: 600 30px/36px var(--font-serif);
+  --text-reco-title: 600 30px/38px var(--font-serif);
+  --text-prompt-lg: 400 22px/32px var(--font-serif);
+  --text-prompt: 400 19px/28px var(--font-serif);
+  --text-correction: 600 18px/26px var(--font-serif);
+  --text-section: 600 18px/24px var(--font-sans);
+  --text-subtitle: 600 16px/22px var(--font-sans);
+  --text-body: 400 14px/20px var(--font-sans);
+  --text-field: 400 15px/22px var(--font-sans);
+  --text-label: 500 13px/18px var(--font-sans);
+  --text-aux: 400 13px/18px var(--font-sans);
+  --text-kbd: 500 11px/16px var(--font-mono);
+  --text-data: 400 13px/20px var(--font-mono);
+  --text-metric: 600 28px/32px var(--font-sans);
 
-  /* Tipografia */
-  --font-ui: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-data: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas, monospace;
-  --fs-xs: 11px;
-  --fs-sm: 12px;
-  --fs-base: 13px;
-  --fs-lg: 15px;
-  --fs-xl: 19px;
-  /* Titulos: un salto claro sobre el cuerpo; la jerarquia no puede vivir solo del peso. */
-  --fs-h1: 22px;
-  --fs-h2: 16px;
+  /* ── Espacio ─────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --page-max: 1264px;
+  --page-pad: 32px;
+  --reading-max: 720px;
 
-  /* Densidad: alta a proposito. Es una herramienta de volcado de datos. */
-  --sp-1: 2px;
-  --sp-2: 4px;
-  --sp-3: 6px;
-  --sp-4: 10px;
-  --sp-5: 14px;
-  --sp-6: 20px;
-  --sp-7: 28px;
+  /* ── Tamaños de control ──────────────────────── */
+  --control-h: 40px;
+  --control-h-compact: 36px;
+  --control-h-touch: 44px;
+  --row-h: 44px;
+  --row-h-comfy: 52px;
 
-  --radius: 3px;
-  --radius-pill: 999px;
+  /* ── Geometría ───────────────────────────────── */
+  --radius-control: 4px;
+  --radius-panel: 6px;
+  --radius-overlay: 8px;
+  --radius-float: 10px;
+
+  /* ── Profundidad ─────────────────────────────── */
+  --shadow-1: 0 1px 2px rgba(32, 35, 31, 0.04), 0 6px 20px rgba(32, 35, 31, 0.05);
+  --shadow-menu: 0 12px 32px rgba(32, 35, 31, 0.14);
+  --shadow-dialog: 0 16px 40px rgba(32, 35, 31, 0.24);
+  --shadow-palette: 0 24px 64px rgba(32, 35, 31, 0.28);
+  --shadow-drawer: -12px 0 32px rgba(32, 35, 31, 0.1);
+  --shadow-toast: 0 8px 24px rgba(32, 35, 31, 0.2);
+
+  /* ── Cristal (solo elementos flotantes) ──────── */
+  --glass-bar-bg: rgba(246, 245, 241, 0.74);
+  --glass-footer-bg: rgba(246, 245, 241, 0.76);
+  --glass-menu-bg: rgba(255, 255, 255, 0.84);
+  --glass-list-bg: rgba(255, 255, 255, 0.92);
+  --glass-palette-bg: rgba(255, 255, 255, 0.9);
+  --glass-toast-bg: rgba(32, 35, 31, 0.84);
+  --glass-border: rgba(124, 132, 122, 0.28);
+  --glass-blur: blur(16px) saturate(1.4);
+  --glass-blur-strong: blur(20px) saturate(1.5);
+  --scrim: rgba(32, 35, 31, 0.3);
+
+  /* ── Movimiento ──────────────────────────────── */
+  --dur-fast: 120ms;
+  --dur-panel: 160ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* ── Capas ───────────────────────────────────── */
+  --z-sticky: 20;
+  --z-drawer: 30;
+  --z-toast: 40;
+  --z-dialog: 50;
+  --z-palette: 60;
+
+  /* Altura de la cabecera fija: el drawer y los paneles pegajosos empiezan debajo. */
+  --header-h: 56px;
 }
 
-* {
+@media (max-width: 639px) {
+  :root {
+    --page-pad: 16px;
+    /* Dos filas: marca + Más, y los cuatro destinos. */
+    --header-h: 92px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  :root {
+    --page-pad: 24px;
+  }
+}
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -95,12 +156,17 @@ body {
   padding: 0;
 }
 
+html {
+  /* Un ancla o un foco no queda escondido bajo la cabecera fija. */
+  scroll-padding-top: calc(var(--header-h) + var(--space-4));
+}
+
 body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: var(--fs-base);
-  line-height: 1.45;
+  background-color: var(--color-bg);
+  /* Grano de papel: ruido SVG al 7 % de alfa, 180 px en mosaico. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .13 0 0 0 0 .14 0 0 0 0 .12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  color: var(--color-ink);
+  font: var(--text-body);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -108,48 +174,19 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-h1 {
-  font-size: var(--fs-h1);
-  line-height: 1.25;
-}
-h2 {
-  font-size: var(--fs-h2);
-  line-height: 1.3;
-}
-h3 {
-  font-size: var(--fs-base);
-}
-
-/* Los datos van en monoespaciada: se comparan en vertical. */
-.data,
-code,
-kbd {
-  font-family: var(--font-data);
-  font-variant-numeric: tabular-nums;
-}
-
-kbd {
-  padding: 1px var(--sp-2);
-  border: 1px solid var(--rule-strong);
-  border-bottom-width: 2px;
-  border-radius: var(--radius);
-  background: var(--surface);
-  font-size: var(--fs-xs);
 }
 
 a {
-  color: var(--ink);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.18em;
+  color: var(--color-brand);
+  text-underline-offset: 3px;
 }
 
-::selection {
-  background: var(--study-bg);
-  color: var(--ink);
+a:hover {
+  color: var(--color-ink);
+}
+
+p {
+  margin: 0;
 }
 
 input,
@@ -160,47 +197,93 @@ button {
   color: inherit;
 }
 
-input,
-textarea {
-  caret-color: var(--accent);
+button {
+  cursor: pointer;
 }
 
 input,
-select,
 textarea {
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--rule-field);
-  border-radius: var(--radius);
-  background: var(--surface);
+  caret-color: var(--color-brand);
 }
 
 ::placeholder {
-  color: var(--ink-faint);
+  color: var(--color-ink-2);
   opacity: 1;
+}
+
+::selection {
+  background: var(--color-brand-tint);
+  color: var(--color-ink);
 }
 
 /* El error se ve en el propio campo, no solo en el mensaje de debajo. */
 [aria-invalid='true'] {
-  border-color: var(--danger);
+  border-color: var(--color-danger) !important;
 }
 
 /*
- * Foco con `outline` y no con sombra: el modo de alto contraste de Windows borra las
- * sombras pero respeta el contorno. Vale para todo lo enfocable, `summary` incluido.
- * Un contenedor con `overflow: hidden` lo recorta: los grupos de botones redondean sus
- * extremos en vez de recortar.
+ * Foco con `outline`: el modo de alto contraste de Windows borra las sombras pero respeta
+ * el contorno. Vale para todo lo enfocable, `summary` incluido.
  */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
 }
 
-input:disabled,
-select:disabled,
-textarea:disabled {
-  background: var(--surface-sunken);
-  color: var(--ink-faint);
-  cursor: not-allowed;
+button,
+[role='button'],
+[role='tab'],
+[role='option'],
+[role='link'],
+[role='menuitem'],
+[role='radio'] {
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* El chevron de un summary gira al abrir. */
+details[open] > summary .chevron {
+  transform: rotate(90deg);
+}
+
+.chevron {
+  flex-shrink: 0;
+  transition: transform var(--dur-fast) ease;
+  vertical-align: -3px;
+}
+
+.data,
+code,
+kbd {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+kbd {
+  display: inline-block;
+  font: var(--text-kbd);
+  padding: 0 5px;
+  border: 1px solid var(--color-rule);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+  white-space: nowrap;
 }
 
 /* Accesible para lector de pantalla, invisible en pantalla. */
@@ -216,11 +299,53 @@ textarea:disabled {
   border: 0;
 }
 
+@keyframes el-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes el-slide {
+  from {
+    opacity: 0.4;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes el-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass-bar-bg: rgba(246, 245, 241, 0.97);
+    --glass-footer-bg: rgba(246, 245, 241, 0.97);
+    --glass-menu-bg: #ffffff;
+    --glass-list-bg: #ffffff;
+    --glass-palette-bg: #ffffff;
+    --glass-toast-bg: #20231f;
   }
 }

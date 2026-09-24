@@ -1,33 +1,49 @@
 import Link from 'next/link';
 
-import { WINDOW_DAYS_OPTIONS } from '@/lib/domain/thresholds';
-import styles from './report.module.css';
+import { DEFAULT_WINDOW_DAYS, WINDOW_DAYS_OPTIONS } from '@/lib/domain/thresholds';
+import ui from './ui.module.css';
 
 /**
- * Conmutador 30/60 dias. Son enlaces, no botones: cambiar la ventana cambia lo que
- * mira el informe, y eso merece una URL propia.
+ * Conmutador 30/60 días. Son enlaces: cambiar la ventana cambia lo que se mira, y eso
+ * merece una URL propia. Conserva los demás parámetros de la vista (`keep`), para que
+ * cambiar el periodo no cierre una pestaña ni un filtro.
  *
- * Q4 y la regla 2 no lo obedecen: van siempre a 30 dias (decision P2).
+ * Q4 y la regla 2 no lo obedecen: van siempre a 30 días (decisión P2).
  */
 export function WindowSwitch({
   current,
   basePath,
+  keep = {},
+  label = 'Periodo',
 }: {
   readonly current: number;
   readonly basePath: string;
+  readonly keep?: Readonly<Record<string, string | undefined>>;
+  readonly label?: string;
 }) {
+  const href = (days: number): string => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(keep)) {
+      if (value !== undefined && value !== '') params.set(key, value);
+    }
+    if (days !== DEFAULT_WINDOW_DAYS) params.set('w', String(days));
+    const query = params.toString();
+    return query === '' ? basePath : `${basePath}?${query}`;
+  };
+
   return (
-    <div className={styles.windowSwitch} role="group" aria-label="Ventana de análisis">
+    <nav className={ui.segmented} aria-label={label}>
       {WINDOW_DAYS_OPTIONS.map((days) => (
         <Link
           key={days}
-          href={days === 30 ? basePath : `${basePath}?w=${String(days)}`}
-          className={days === current ? styles.windowOn : styles.windowOff}
+          href={href(days)}
+          className={ui.segment}
           aria-current={days === current ? 'true' : undefined}
+          scroll={false}
         >
-          {days} d
+          {days} días
         </Link>
       ))}
-    </div>
+    </nav>
   );
 }

@@ -1,290 +1,750 @@
 /*
- * Primitivas de interfaz compartidas: botones, chips, campos, avisos, paneles y tablas.
- *
- * Cada una se define aqui una sola vez. Antes vivian copiadas en cada modulo y las copias
- * ya no coincidian (rellenos, anchos, cursores). Las primitivas no llevan margen exterior:
- * el espacio alrededor lo decide cada vista, que es donde de verdad difiere.
+ * Primitivas compartidas: botones, campos, avisos, superficies, tablas, pestañas y
+ * segmentados. Cada una se define aquí una vez; no llevan margen exterior, que decide
+ * cada vista.
  */
 
 /* ── Botones ──────────────────────────────────────────────────────────────── */
 
-/* Primario: la accion que avanza la tarea. Uno por formulario o por tarjeta. */
 .primary,
 .secondary,
+.ghost,
 .danger {
-  padding: var(--sp-3) var(--sp-5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control-h);
+  padding: 0 var(--space-4);
   border: 1px solid transparent;
-  border-radius: var(--radius);
-  cursor: pointer;
+  border-radius: var(--radius-control);
+  font-weight: 500;
   white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+  cursor: pointer;
 }
 
+/* Primario: la acción que avanza la tarea visible. Uno por tarea. */
 .primary {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--color-ink);
+  color: var(--color-on-ink);
 }
 
-.primary:hover:not(:disabled) {
-  background: var(--ink-hover);
+.primary:hover:not(:disabled, [aria-disabled='true']) {
+  background: var(--color-primary-hover);
+  color: var(--color-on-ink);
 }
 
-/* Secundario: acciones de apoyo, cancelar, cambiar de estado. */
+/* Bloqueado pero enfocable: el motivo tiene que poder leerse con el teclado. */
+.primary[aria-disabled='true'],
+.primary:disabled {
+  background: var(--color-primary-blocked);
+  cursor: not-allowed;
+}
+
+.primary[aria-busy='true'] {
+  background: var(--color-primary-blocked);
+  cursor: progress;
+}
+
 .secondary {
-  border-color: var(--rule-strong);
-  background: var(--surface);
+  background: var(--color-surface);
+  border-color: var(--color-control);
+  color: var(--color-ink);
 }
 
-.secondary:hover:not(:disabled) {
-  background: var(--surface-sunken);
+.secondary:hover:not(:disabled, [aria-disabled='true']) {
+  background: var(--color-surface-2);
+  color: var(--color-ink);
 }
 
-/* Peligro: solo en el segundo paso de un borrado, nunca como primera pulsacion. */
+.ghost {
+  background: transparent;
+  color: var(--color-ink);
+}
+
+.ghost:hover:not(:disabled, [aria-disabled='true']) {
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+}
+
+/* Solo dentro de una confirmación. */
 .danger {
-  border-color: var(--danger);
-  background: var(--danger);
-  color: var(--on-color);
+  background: var(--color-danger);
+  color: var(--color-on-ink);
 }
 
 .danger:hover:not(:disabled) {
   filter: brightness(0.92);
 }
 
-/* Tamaño compacto para acciones dentro de filas y cabeceras. */
-.small {
-  padding: var(--sp-2) var(--sp-4);
-  font-size: var(--fs-sm);
-}
-
-.primary:disabled,
 .secondary:disabled,
-.danger:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/*
- * Deshabilitado pero enfocable (aria-disabled): el motivo tiene que poder leerse con el
- * teclado. Sin opacidad, para que el texto siga pasando AA.
- */
-.primary[aria-disabled='true'],
+.ghost:disabled,
+.danger:disabled,
 .secondary[aria-disabled='true'],
-.primary[aria-disabled='true']:hover,
-.secondary[aria-disabled='true']:hover {
-  border-color: var(--rule-strong);
-  background: var(--surface);
-  color: var(--ink-faint);
+.ghost[aria-disabled='true'] {
+  color: var(--color-ink-2);
   cursor: not-allowed;
 }
 
-/* Mientras la accion esta en curso: esperar, no prohibido. */
-.primary[aria-busy='true'],
-.secondary[aria-busy='true'],
-.danger[aria-busy='true'] {
-  cursor: progress;
+.danger:disabled {
+  opacity: 0.6;
 }
 
-/* ── Chips de causa: color por lado, azul estudio / rojo ejecucion ────────── */
-
-.chipStudy,
-.chipExec {
-  display: inline-block;
-  padding: 0 var(--sp-3);
-  border: 1px solid;
-  border-radius: var(--radius-pill);
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
-  white-space: nowrap;
+/* Toolbars y filas: 36 px. */
+.compact {
+  height: var(--control-h-compact);
+  padding: 0 var(--space-3);
 }
 
-.chipStudy {
-  background: var(--study-bg);
-  border-color: var(--study-rule);
-  color: var(--study);
+/* Botón de icono. Siempre con `aria-label`. */
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h-compact);
+  height: var(--control-h-compact);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-ink);
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
-.chipExec {
-  background: var(--exec-bg);
-  border-color: var(--exec-rule);
-  color: var(--exec);
+.iconButton:hover:not(:disabled) {
+  background: var(--color-surface-2);
 }
 
-/* Estado frente a un umbral: bien o pendiente de accion. Azul y rojo son de la causa. */
-.stateGood,
-.stateWarn {
-  display: inline-block;
-  padding: 0 var(--sp-3);
-  border: 1px solid;
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-xs);
-  white-space: nowrap;
+.iconButton:disabled {
+  color: var(--color-ink-disabled);
+  cursor: not-allowed;
 }
 
-.stateGood {
-  background: var(--ok-bg);
-  color: var(--ok);
+.iconBordered {
+  border-color: var(--color-rule);
 }
 
-.stateWarn {
-  background: var(--queued-bg);
-  color: var(--queued);
+.iconLarge {
+  width: var(--control-h);
+  height: var(--control-h);
+}
+
+/* Enlace con aspecto de texto: navegación secundaria dentro de una vista. */
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.textLink:hover {
+  color: var(--color-ink);
+}
+
+/* Enlace de regreso: «← Sesiones». */
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ink-2);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--color-ink);
+}
+
+.backHint {
+  color: var(--color-ink-disabled);
+}
+
+/* Acción destructiva escrita, p. ej. «Borrar error…». */
+.dangerLink {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.dangerLink:hover {
+  text-decoration: underline;
 }
 
 /* ── Campos ───────────────────────────────────────────────────────────────── */
 
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font: var(--text-label);
+}
+
 .label {
-  display: block;
-  margin-bottom: var(--sp-1);
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
+  font: var(--text-label);
+  color: var(--color-ink);
 }
 
-.label abbr {
-  color: var(--danger);
-  text-decoration: none;
+.optional {
+  font-weight: 400;
+  color: var(--color-ink-2);
 }
 
-/* Ayuda fija bajo un campo. */
+.input,
+.select,
+.textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-control);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  font: var(--text-field);
+  color: var(--color-ink);
+}
+
+.input,
+.select {
+  height: var(--control-h);
+  padding: 0 10px;
+}
+
+.select {
+  padding: 0 8px;
+}
+
+.textarea {
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.input:disabled,
+.select:disabled,
+.textarea:disabled {
+  background: var(--color-surface-2);
+  color: var(--color-ink-2);
+  cursor: not-allowed;
+}
+
+/* Campo pendiente de completar (no inválido): borde de aviso. */
+.pending {
+  border-color: var(--color-warning);
+}
+
+/* Texto técnico pegado o de datos: monoespaciada. */
+.mono {
+  font: var(--text-data);
+}
+
 .help {
-  display: block;
-  margin-top: var(--sp-1);
-  color: var(--ink-faint);
-  font-size: var(--fs-xs);
+  font: var(--text-aux);
+  color: var(--color-ink-2);
 }
 
-/* Mensaje de error de un campo. Un valor largo sin espacios no puede ensanchar la pagina. */
+.helpInfo {
+  font: var(--text-aux);
+  color: var(--color-info);
+}
+
+.helpWarn {
+  font: var(--text-aux);
+  color: var(--color-warning);
+}
+
 .fieldError {
-  margin: var(--sp-2) 0 0;
-  color: var(--danger);
-  font-size: var(--fs-sm);
+  margin: 0;
+  font: var(--text-aux);
+  color: var(--color-danger);
   overflow-wrap: anywhere;
 }
 
-/* Cada mensaje de un campo en su linea: concatenados se leian como una frase rota. */
 .fieldError > span {
   display: block;
 }
 
 .check {
-  display: flex !important;
+  display: inline-flex;
   align-items: center;
-  gap: var(--sp-3);
-  white-space: nowrap;
+  gap: var(--space-2);
+  min-height: var(--control-h);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
 }
 
 .check input {
-  width: auto !important;
-}
-
-/* ── Texto de apoyo y avisos ──────────────────────────────────────────────── */
-
-/* Pista bajo un titulo de formulario. */
-.hint {
-  margin: var(--sp-2) 0 var(--sp-5);
-  max-width: 70ch;
-  color: var(--ink-soft);
-  font-size: var(--fs-sm);
-}
-
-/* Nota secundaria junto a un dato o un titulo. */
-.note {
+  width: 18px;
+  height: 18px;
   margin: 0;
-  max-width: 70ch;
-  color: var(--ink-faint);
-  font-size: var(--fs-sm);
+  accent-color: var(--color-brand);
 }
 
-/* Resultado de una accion: exito o error, con su propio fondo. */
-.noticeOk,
-.noticeError {
-  margin: var(--sp-4) 0 0;
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid;
-  border-radius: var(--radius);
-  font-size: var(--fs-sm);
+/* ── Texto y avisos ───────────────────────────────────────────────────────── */
+
+.note {
+  font: var(--text-aux);
+  color: var(--color-ink-2);
+}
+
+.lede {
+  margin-top: var(--space-1);
+  color: var(--color-ink-2);
+}
+
+/* Resultado local de una acción, dentro de su contexto. */
+.alert {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  color: var(--color-ink);
   overflow-wrap: anywhere;
 }
 
-.noticeOk {
-  background: var(--ok-bg);
-  border-color: var(--ok);
-  color: var(--ok);
+.alertIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-danger);
 }
 
-.noticeError {
-  background: var(--exec-bg);
-  border-color: var(--exec-rule);
-  color: var(--exec);
+.notice {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
 }
 
-/* Estado vacio: sin datos todavia. Discontinuo, para que no parezca un dato. */
-.empty {
-  margin: 0;
-  padding: var(--sp-5);
-  max-width: 64ch;
-  border: 1px dashed var(--rule-strong);
-  border-radius: var(--radius);
-  color: var(--ink-soft);
+.noticeTitleWarn {
+  color: var(--color-warning);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-/* ── Contenedores ─────────────────────────────────────────────────────────── */
-
-.panel {
-  padding: var(--sp-5);
-  background: var(--surface);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
+.ok {
+  color: var(--color-success);
 }
 
-/* ── Tablas de datos ──────────────────────────────────────────────────────── */
+.warn {
+  color: var(--color-warning);
+}
 
-.tableWrap {
+.dangerText {
+  color: var(--color-danger);
+}
+
+/* ── Superficies ──────────────────────────────────────────────────────────── */
+
+/* Zona de trabajo: blanca, con sombra suave. Una por tarea, no una por dato. */
+.surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-1);
+}
+
+.surfacePad {
+  padding: var(--space-5);
+}
+
+/* ── Cabecera de página ───────────────────────────────────────────────────── */
+
+.pageHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  font: var(--text-page-title);
+  letter-spacing: -0.01em;
+}
+
+.sectionTitle {
+  font: var(--text-section);
+}
+
+.sectionCount {
+  color: var(--color-ink-2);
+  font-weight: 400;
+}
+
+.subTitle {
+  font: var(--text-subtitle);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.stackSm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ── Tablas en rejilla ────────────────────────────────────────────────────── */
+
+/*
+ * Tabla sin tarjeta exterior: filete fuerte arriba, cabecera en tinta secundaria y filas
+ * con separador. Las columnas las fija cada vista con `grid-template-columns`.
+ */
+.table {
+  border-top: 1px solid var(--color-ink);
+}
+
+.thead,
+.tr {
+  display: grid;
+  gap: var(--space-4);
+  padding: 0 var(--space-3);
+  align-items: center;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.thead {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font: var(--text-label);
+  color: var(--color-ink-2);
+}
+
+.tr {
+  min-height: var(--row-h);
+  font-size: 14px;
+}
+
+/* Fila que se abre o se selecciona. */
+.trClickable {
+  cursor: pointer;
+}
+
+.trClickable:hover {
+  background: var(--color-surface-2);
+}
+
+.trSelected,
+.trSelected:hover {
+  background: var(--color-selected);
+  box-shadow: inset 3px 0 0 var(--color-brand);
+}
+
+.right {
+  text-align: right;
+}
+
+.center {
+  text-align: center;
+}
+
+.cellStack {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cellSub {
+  font: var(--text-aux);
+  color: var(--color-ink-2);
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tableEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-3);
+  color: var(--color-ink);
+}
+
+/* Tabla que se desplaza dentro de su contenedor, nunca la página. */
+.scrollX {
   overflow-x: auto;
-  /* Bloque contenedor: sin esto, un hijo absoluto (.sr-only) escapa del scroll. */
   position: relative;
 }
 
-/* Tabla suelta sobre el papel: lleva su propio marco. Dentro de un panel, no. */
-.framed {
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--surface);
+/* ── Pestañas ─────────────────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: var(--space-5);
+  border-bottom: 1px solid var(--color-rule);
+  flex-wrap: wrap;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-sm);
-}
-
-.table th,
-.table td {
-  padding: var(--sp-3) var(--sp-4);
-  text-align: left;
-  border-bottom: 1px solid var(--rule);
-  vertical-align: top;
-}
-
-.table th {
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  font-weight: 600;
-  background: var(--surface-sunken);
+.tab {
+  padding: var(--space-2) 0;
+  color: var(--color-ink-2);
+  font-weight: 500;
+  text-decoration: none;
   white-space: nowrap;
 }
 
-.table tbody tr:last-child td {
-  border-bottom: 0;
+.tab:hover {
+  color: var(--color-ink);
 }
 
-/* Cifras: a la derecha y tabulares, para compararlas en vertical. */
-.num {
-  text-align: right !important;
-  font-family: var(--font-data);
-  font-variant-numeric: tabular-nums;
+.tab[aria-current='page'],
+.tab[aria-current='true'],
+.tab[aria-selected='true'] {
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-brand);
+}
+
+/* ── Segmentado (conmutador de ventana, filtros de estado) ────────────────── */
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--color-control);
+  border-radius: var(--radius-control);
+  flex-shrink: 0;
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  height: calc(var(--control-h-compact) - 2px);
+  padding: 0 14px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
   white-space: nowrap;
+  border: 0;
+  cursor: pointer;
+}
+
+.segment:first-child {
+  border-radius: 3px 0 0 3px;
+}
+
+.segment:last-child {
+  border-radius: 0 3px 3px 0;
+}
+
+.segment:hover {
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+}
+
+.segment[aria-current='true'],
+.segment[aria-checked='true'],
+.segment[aria-pressed='true'] {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+}
+
+.segment:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+/* Filtros sin marco: «Todas · Abiertas (2)». */
+.pills {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h-compact);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pill:hover {
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+}
+
+.pill[aria-current='true'],
+.pill[aria-pressed='true'] {
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+}
+
+/* Chip de filtro activo, con su ×. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 6px 0 12px;
+  border-radius: 16px;
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chipX {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.chipX:hover {
+  background: var(--color-brand-tint-hover);
+  color: var(--color-brand);
+}
+
+/* ── Estado de una sesión: forma + texto ──────────────────────────────────── */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.statusShape {
+  display: block;
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+}
+
+.statusOpen {
+  color: var(--color-warning);
+}
+
+.statusOpen .statusShape {
+  transform: rotate(45deg);
+}
+
+.statusClosed {
+  color: var(--color-ink-2);
+}
+
+/* ── Estado Anki de un error ──────────────────────────────────────────────── */
+
+.ankiPending {
+  color: var(--color-warning);
+  font-weight: 500;
+}
+
+.ankiConverted {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.ankiStale {
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.ankiNone {
+  color: var(--color-ink-2);
+  font-weight: 500;
+}
+
+/* ── Kbd sobre primario ───────────────────────────────────────────────────── */
+
+.kbdOnPrimary {
+  border-color: var(--color-control) !important;
+  background: transparent !important;
+  color: var(--color-rule) !important;
+}
+
+/* ── Desplegables de ayuda ────────────────────────────────────────────────── */
+
+.disclosure > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 14px;
+}
+
+.disclosureBody {
+  margin-top: var(--space-2);
+  max-width: 64ch;
+  color: var(--color-ink-2);
+}
+
+/* ── Esqueleto sin brillo animado ─────────────────────────────────────────── */
+
+.skeleton {
+  display: block;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--color-skeleton);
+}
+
+@media (max-width: 639px) {
+  .primary,
+  .secondary,
+  .ghost,
+  .danger {
+    height: var(--control-h-touch);
+  }
+
+  .input,
+  .select {
+    height: var(--control-h-touch);
+    font-size: 16px;
+  }
+
+  .textarea {
+    font-size: 16px;
+  }
+
+  .iconButton {
+    width: var(--control-h-touch);
+    height: var(--control-h-touch);
+  }
+
+  .pageTitle {
+    font-size: 25px;
+    line-height: 30px;
+  }
 }
