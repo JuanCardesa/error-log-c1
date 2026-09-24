@@ -1,114 +1,8 @@
-.shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.bar {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-6);
-  padding: var(--sp-4) var(--sp-6);
-  background: var(--surface);
-  border-bottom: 1px solid var(--rule-strong);
-}
-
-.brand {
-  font-family: var(--font-data);
-  font-size: var(--fs-base);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-.nav {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-4);
-  flex-wrap: wrap;
-}
-
-.group {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-}
-
-/* Separa el uso diario del detalle sin esconderlo ni sacarlo del orden de tabulacion. */
-.group + .group {
-  padding-left: var(--sp-4);
-  border-left: 1px solid var(--rule);
-}
-
-.link {
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--radius);
-  color: var(--ink-soft);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-/* Detras de .link: con la misma especificidad, el orden decide. Antes quedaba anulado. */
-.secondary {
-  font-size: var(--fs-sm);
-  color: var(--ink-faint);
-}
-
-.link:hover {
-  background: var(--surface-sunken);
-  color: var(--ink);
-}
-
-/* Donde estas: tinta plena, peso y fondo hundido. */
-.link[aria-current='page'] {
-  background: var(--surface-sunken);
-  color: var(--ink);
-  font-weight: 600;
-}
-
-/*
- * Aviso de `pnpm demo`. La base es desechable: sin esto, nada distingue los ejemplos
- * inventados de los datos propios, y lo que se escriba aqui se pierde al reiniciar.
- */
-.demo {
-  padding: var(--sp-3) var(--sp-6);
-  background: var(--queued-bg);
-  color: var(--queued);
-  border-bottom: 1px solid var(--rule-strong);
-  font-size: var(--fs-sm);
-}
-
-.demo strong {
-  font-weight: 600;
-}
-
 .main {
-  flex: 1;
-  padding: var(--sp-6);
-  max-width: 1200px;
   width: 100%;
+  max-width: var(--page-max);
   margin: 0 auto;
-}
-
-/*
- * Salto al contenido. Invisible hasta que recibe foco: sin el, llegar al contenido con
- * el teclado obliga a tabular por toda la navegacion en cada pagina.
- */
-.skip {
-  position: absolute;
-  left: var(--sp-4);
-  top: calc(-1 * var(--sp-7) - var(--sp-5));
-  z-index: 10;
-  padding: var(--sp-3) var(--sp-5);
-  background: var(--ink);
-  color: var(--surface);
-  border-radius: var(--radius);
-  text-decoration: none;
-  transition: top 120ms ease;
-}
-
-.skip:focus-visible {
-  top: var(--sp-4);
+  padding: var(--space-6) var(--page-pad) 96px;
 }
 
 .main:focus {
@@ -116,28 +10,45 @@
 }
 
 /*
- * Estrecho: la marca arriba y la navegacion en una sola fila que se desplaza. Partida en
- * tres filas ocupaba 113 px de cabecera y el filete del segundo grupo cruzaba las filas.
+ * Aviso de `pnpm demo`. La base es desechable: sin esto, nada distingue los ejemplos
+ * inventados de los datos propios, y lo que se escriba aquí se pierde al reiniciar.
  */
-@media (max-width: 620px) {
-  .bar {
-    flex-wrap: wrap;
-    gap: var(--sp-3);
-    padding: var(--sp-4);
-  }
+.demo {
+  max-width: var(--page-max);
+  margin: var(--space-3) auto 0;
+  padding: var(--space-2) var(--page-pad);
+  color: var(--color-warning);
+  font-size: 13px;
+}
 
-  .nav {
-    flex-wrap: nowrap;
-    width: 100%;
-    overflow-x: auto;
-  }
+.demo strong {
+  font-weight: 600;
+}
 
-  .group {
-    flex-wrap: nowrap;
-  }
+/*
+ * Salto al contenido. Invisible hasta que recibe foco: sin él, llegar al contenido con el
+ * teclado obliga a recorrer toda la navegación en cada página.
+ */
+.skip {
+  position: fixed;
+  left: var(--space-4);
+  top: -64px;
+  z-index: calc(var(--z-sticky) + 1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+  text-decoration: none;
+  transition: top var(--dur-fast) ease;
+}
 
-  /* El scroll recorta lo que sale de la caja: aqui el foco va por dentro del enlace. */
-  .link:focus-visible {
-    outline-offset: -2px;
+.skip:focus-visible {
+  top: var(--space-2);
+  color: var(--color-on-ink);
+}
+
+@media (max-width: 639px) {
+  .main {
+    padding-top: var(--space-5);
   }
 }
