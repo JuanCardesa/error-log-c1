@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ImportDraft } from '@/lib/import/errors';
-import { buildImportPayload, missingFields, readRow, snapshotFromDraft, type RowSnapshot } from './reviewRows';
+import { buildImportPayload, missingFields, nextPendingIndex, snapshotFromDraft, type RowSnapshot } from './reviewRows';
 
 const complete: RowSnapshot = {
   itemRef: '4', prompt: 'They called ___ the meeting.', myAnswer: 'of',
@@ -37,49 +37,39 @@ describe('revision de filas pegadas', () => {
     expect(missingFields({ ...complete, correctAnswer: '  ', prompt: '\t ' })).toEqual(['correctAnswer', 'prompt']);
   });
 
-  it('lee los seis campos por id aunque haya huecos entre las filas', () => {
-    const data = new FormData();
-    for (const [field, value] of Object.entries(complete)) data.set(`3.${field}`, value);
-    data.set('0.correctAnswer', 'otra respuesta');
-    expect(readRow(data, 3)).toEqual(complete);
-  });
-
-  it('devuelve vacio para campos ausentes o que no son texto', () => {
-    const data = new FormData();
-    data.set('3.correctAnswer', 'off');
-    data.set('3.prompt', new Blob(['enunciado']));
-    expect(readRow(data, 3)).toEqual({
-      itemRef: '', prompt: '', myAnswer: '', correctAnswer: 'off', category: '', ruleNote: '',
+  it('el siguiente pendiente sigue el orden de la tanda y da la vuelta', () => {
+    const draft = (ruleNote: string): ImportDraft => ({
+      ...complete, ruleNote, cause: 'CONFUSION', confidence: 'SEGURO', subcategory: '', lateInSession: false,
     });
+    const rows = [draft(''), draft(complete.ruleNote), draft(''), draft(complete.ruleNote)];
+    expect(nextPendingIndex(rows, 0)).toBe(2);
+    expect(nextPendingIndex(rows, 2)).toBe(0);
+    expect(nextPendingIndex([draft(complete.ruleNote)], 0)).toBeNull();
   });
 });
 
 describe('contrato del envio de una tanda', () => {
   const header = { date: '2026-09-15', kind: 'DRILL', paper: null, part: null, source: 'LIBRO', sourceRef: 'Sobre', itemsTotal: 8, itemsCorrect: 6, timed: false } as const;
 
-  /** Formulario de revision con las filas 0, 1 y 2; la 1 lleva «al final de la sesion». */
-  const reviewForm = (): FormData => {
-    const data = new FormData();
-    for (const id of [0, 1, 2]) {
-      data.set(`${String(id)}.itemRef`, String(id + 4));
-      data.set(`${String(id)}.prompt`, `Enunciado ${String(id)}`);
-      data.set(`${String(id)}.myAnswer`, 'of');
-      data.set(`${String(id)}.correctAnswer`, 'off');
-      data.set(`${String(id)}.cause`, 'CONFUSION');
-      data.set(`${String(id)}.category`, 'PHRASAL_VERB');
-      data.set(`${String(id)}.subcategory`, '');
-      data.set(`${String(id)}.confidence`, 'SEGURO');
-      data.set(`${String(id)}.ruleNote`, `Regla suficientemente larga ${String(id)}`);
-    }
-    data.set('1.lateInSession', 'on');
-    return data;
-  };
+  /** Borrador de la tanda con las filas 0, 1 y 2; la 1 lleva «al final de la sesion». */
+  const drafts = (): ImportDraft[] => [0, 1, 2].map((id) => ({
+    itemRef: String(id + 4),
+    prompt: `Enunciado ${String(id)}`,
+    myAnswer: 'of',
+    correctAnswer: 'off',
+    cause: 'CONFUSION',
+    category: 'PHRASAL_VERB',
+    subcategory: '',
+    confidence: 'SEGURO',
+    ruleNote: `Regla suficientemente larga ${String(id)}`,
+    lateInSession: id === 1,
+  }));
 
   const json = (payload: FormData, key: string): unknown => JSON.parse(String(payload.get(key)));
 
   it('sin cabecera envia rows con los nombres de cada campo y solo las filas que quedan', () => {
-    // La fila 0 se quito de la tanda: su id ya no esta entre los enviados.
-    const payload = buildImportPayload(reviewForm(), [1, 2], { targetId: 7, importedHeader: undefined });
+    // La fila 0 se quito de la tanda: ya no esta en el borrador que se envia.
+    const payload = buildImportPayload(drafts().slice(1), { targetId: 7, header: undefined });
     expect(payload.get('sessionId')).toBe('7');
     expect(payload.has('envelope')).toBe(false);
     expect(json(payload, 'rows')).toEqual([
@@ -89,11 +79,8 @@ describe('contrato del envio de una tanda', () => {
   });
 
   it('sin destino crea la sesion con la cabecera editada y los minutos', () => {
-    const form = reviewForm();
-    form.set('date', '2026-09-20'); form.set('kind', 'CLASE'); form.set('paper', ''); form.set('part', '');
-    form.set('source', 'TRAINER'); form.set('sourceRef', 'Editada'); form.set('itemsTotal', '10');
-    form.set('itemsCorrect', ''); form.set('timed', 'on'); form.set('durationMin', '17');
-    const payload = buildImportPayload(form, [0], { targetId: null, importedHeader: header });
+    const edited = { date: '2026-09-20', kind: 'CLASE', paper: null, part: null, source: 'TRAINER', sourceRef: 'Editada', itemsTotal: 10, itemsCorrect: null, timed: true } as const;
+    const payload = buildImportPayload(drafts().slice(0, 1), { targetId: null, header: edited, durationMin: 17 });
     expect(payload.has('sessionId')).toBe(false);
     expect(payload.has('rows')).toBe(false);
     expect(payload.get('durationMin')).toBe('17');
@@ -104,11 +91,21 @@ describe('contrato del envio de una tanda', () => {
   });
 
   it('con destino conserva la cabecera del bloque y no manda minutos', () => {
-    const payload = buildImportPayload(reviewForm(), [0, 2], { targetId: 3, importedHeader: header });
+    const rows = drafts();
+    const payload = buildImportPayload([rows[0], rows[2]].filter((row) => row !== undefined), { targetId: 3, header });
     expect(payload.get('sessionId')).toBe('3');
     expect(payload.has('durationMin')).toBe(false);
     const envelope = json(payload, 'envelope') as { session: unknown; errors: { itemRef: string }[] };
     expect(envelope.session).toEqual(header);
     expect(envelope.errors.map((error) => error.itemRef)).toEqual(['4', '6']);
+  });
+});
+
+describe('minutos al crear la sesion', () => {
+  it('sin minutos manda el campo vacio, que el servidor lee como ausente', () => {
+    const header = { date: '2026-09-15', kind: 'DRILL', paper: null, part: null, source: 'LIBRO', sourceRef: null, itemsTotal: 0, itemsCorrect: 0, timed: false } as const;
+    const payload = buildImportPayload([], { targetId: null, header, durationMin: null });
+    expect(payload.get('durationMin')).toBe('');
+    expect(JSON.parse(String(payload.get('envelope')))).toEqual({ session: header, errors: [] });
   });
 });

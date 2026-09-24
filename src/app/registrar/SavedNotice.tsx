@@ -2,20 +2,28 @@
 
 import { useEffect, useRef } from 'react';
 
-import styles from './page.module.css';
-import ui from '../_shared/ui.module.css';
+import { useToast } from '../_shared/Toast';
 
+/**
+ * Aviso de lo que se acaba de guardar al llegar a la sesión (`?aviso=`). Se enseña como
+ * aviso y se quita de la URL para que recargar no lo repita. Solo si seguimos en esta
+ * sesión con el aviso puesto: nunca se reescribe la URL de otra vista.
+ */
 export function SavedNotice({ message, sessionId }: { readonly message: string; readonly sessionId: number }) {
-  const ref = useRef<HTMLParagraphElement>(null);
+  const toast = useToast();
+  const shown = useRef<string | null>(null);
+
   useEffect(() => {
-    ref.current?.focus();
-    // El aviso ya esta pintado: se quita de la URL para que recargar no lo repita. Solo si
-    // seguimos en esta sesion con el aviso puesto: nunca se reescribe la URL de otra vista.
+    if (shown.current !== message) {
+      shown.current = message;
+      toast({ message });
+    }
     const url = new URL(window.location.href);
     if (url.pathname !== '/registrar' || url.searchParams.get('s') !== String(sessionId)) return;
     if (!url.searchParams.has('aviso')) return;
     url.searchParams.delete('aviso');
-    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
-  }, [sessionId]);
-  return <p ref={ref} tabIndex={-1} role="status" className={`${ui.noticeOk} ${styles.savedNotice}`}>{message}</p>;
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [message, sessionId, toast]);
+
+  return null;
 }

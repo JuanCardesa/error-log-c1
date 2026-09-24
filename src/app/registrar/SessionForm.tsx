@@ -1,101 +1,91 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useRef } from 'react';
+import { useActionState, useEffect, useId, useRef } from 'react';
 
-import { SessionFields } from './SessionFields';
 import type { SessionRow } from '@/lib/domain/types';
 import type { ImportedSession } from '@/lib/import/errors';
+import { Drawer } from '../_shared/Drawer';
+import { useToast } from '../_shared/Toast';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { createSessionAction, updateSessionAction } from './actions';
 import { EMPTY_STATE } from './formState';
+import { SessionFields } from './SessionFields';
 import styles from './session.module.css';
 import ui from '../_shared/ui.module.css';
 
-/** Alta y edición comparten campos y validación. */
-
-interface Props {
+/**
+ * Alta y edición de una sesión en el drawer. Comparten campos y validación.
+ *
+ * Crear lleva a la sesión nueva, con la captura abierta: registrar errores es el paso
+ * siguiente. Editar no toca sus errores. El drawer se queda montado al cerrarlo: lo
+ * escrito no se pierde por cerrarlo sin querer.
+ */
+export function SessionDrawer({ open, onClose, today, editing = null, preset, returnTo }: {
+  readonly open: boolean;
+  readonly onClose: () => void;
   readonly today: string;
-  /** Sesion a corregir. `null` para abrir una nueva. */
+  /** Sesión a editar. `null` para abrir una nueva. */
   readonly editing?: SessionRow | null;
-  readonly onDone?: () => void;
   /** Solo al abrir una nueva: valores de partida (p. ej. Writing al venir de /writing). */
   readonly preset?: Partial<ImportedSession>;
-  /** Solo al abrir una nueva: a donde ir tras crearla, en vez de entrar en ella. */
+  /** Solo al abrir una nueva: a dónde ir tras crearla. `{id}` se sustituye por la nueva. */
   readonly returnTo?: string;
-}
-
-export function SessionForm({ today, editing = null, onDone, preset, returnTo }: Props) {
+}) {
   const isEdit = editing !== null;
+  const formId = useId();
   const { formRef, onReset } = usePreservedForm();
-  const [state, formAction, pending] = useActionState(
-    isEdit ? updateSessionAction : createSessionAction,
-    EMPTY_STATE,
-  );
-
+  const [state, formAction, pending] = useActionState(isEdit ? updateSessionAction : createSessionAction, EMPTY_STATE);
   const router = useRouter();
-  const handled = useRef<number | undefined>(undefined);
-
-  // Rechazada: el foco va al primer campo que el servidor ha marcado.
-  useEffect(() => {
-    if (!state.ok) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-  }, [state, formRef]);
+  const toast = useToast();
+  const handled = useRef<typeof state | null>(null);
 
   useEffect(() => {
-    if (!state.ok || state.createdId === undefined) return;
-    if (handled.current === state.createdId) return;
-    handled.current = state.createdId;
-
-    if (isEdit) {
-      onDone?.();
+    if (handled.current === state) return;
+    handled.current = state;
+    if (!state.ok) {
+      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
       return;
     }
-    // Se abre una sesion para volcar errores en ella: entrar es el siguiente paso, no
-    // buscarla luego en la lista.
-    router.push(returnTo ?? `/registrar?s=${String(state.createdId)}`);
-  }, [state, router, isEdit, onDone, returnTo]);
+    if (state.createdId === undefined) return;
+    if (isEdit) {
+      toast({ message: 'Sesión actualizada · sus errores no cambian' });
+      onClose();
+      return;
+    }
+    toast({ message: 'Sesión creada. Añade errores o ciérrala si fue perfecta' });
+    const id = String(state.createdId);
+    router.push(returnTo === undefined ? `/registrar?s=${id}&modo=captura` : returnTo.replace('{id}', id));
+  }, [state, isEdit, onClose, router, toast, returnTo, formRef]);
 
   return (
-    <section className={ui.panel} aria-labelledby="session-heading">
-      <h2 id="session-heading">
-        {isEdit ? `Corregir sesión #${String(editing.id)}` : 'Nueva sesión'}
-      </h2>
-      <p className={ui.hint}>
-        {isEdit
-          ? 'Corregir la cabecera no toca los errores ya registrados. Pasa por la misma validación que el alta.'
-          : 'Una sesión es el denominador. Regístrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
-      </p>
-
-      <form ref={formRef} action={formAction} onReset={onReset} className={styles.form}>
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title={isEdit ? 'Editar sesión' : 'Nueva sesión'}
+      keepMounted
+      footer={(
+        <>
+          <button type="button" className={ui.ghost} onClick={onClose} disabled={pending}>Cancelar</button>
+          <button type="submit" form={formId} className={ui.primary} disabled={pending} aria-busy={pending}>
+            {pending ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear sesión'}
+          </button>
+        </>
+      )}
+    >
+      <form id={formId} ref={formRef} action={formAction} onReset={onReset} className={styles.form}>
         {isEdit && (
           <>
             <input type="hidden" name="id" value={editing.id} />
             <input type="hidden" name="status" value={editing.status} />
+            <p className={styles.editNote}>Editar la sesión no modifica sus errores.</p>
           </>
         )}
-
-        <SessionFields today={today} defaults={editing ?? preset} fieldErrors={state.fieldErrors} idPrefix="s" />
-
-        <div className={styles.actions}>
-          <button type="submit" className={`${ui.primary} ${styles.submit}`} disabled={pending} aria-busy={pending}>
-            {pending ? 'Guardando…' : isEdit ? 'Guardar cabecera' : 'Abrir sesión'}
-          </button>
-          {isEdit && (
-            <button type="button" className={ui.secondary} onClick={onDone}>
-              Cancelar
-            </button>
-          )}
-        </div>
+        <SessionFields today={today} defaults={editing ?? preset} fieldErrors={state.fieldErrors} idPrefix={formId} />
+        {state.message !== null && !state.ok && (
+          <p role="alert" className={ui.fieldError}>{state.message}</p>
+        )}
       </form>
-
-      {state.message !== null && (
-        <p
-          className={state.ok ? ui.noticeOk : ui.noticeError}
-          role={state.ok ? 'status' : 'alert'}
-        >
-          {state.message}
-        </p>
-      )}
-    </section>
+    </Drawer>
   );
 }

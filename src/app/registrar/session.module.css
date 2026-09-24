@@ -1,46 +1,92 @@
-/* Cabecera de sesion: rejilla de campos. Botones, etiquetas y avisos salen de _shared/ui. */
+/* Campos de sesión en grupos: etiqueta de grupo a la izquierda y campos a la derecha. */
 
-.form {
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.group {
   display: grid;
-  gap: var(--sp-4);
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
-  align-items: start;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: var(--space-4);
 }
 
-.form label {
-  display: block;
-  min-width: 0;
+.groupLabel {
+  padding-top: 28px;
+  font: 600 13px/18px var(--font-sans);
+  color: var(--color-ink-2);
 }
 
-.form input,
-.form select {
-  width: 100%;
+.groupNote {
+  padding-top: 28px;
+  font-size: 14px;
+  color: var(--color-ink-2);
 }
 
-.wide {
-  grid-column: span 2;
+.groupStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* La casilla se alinea con la base de los campos vecinos, no con su etiqueta. */
-.checkCell {
-  align-self: end;
-  padding-bottom: var(--sp-3);
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
 }
 
-.actions {
+.gridOrigin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-3);
+}
+
+.timeGroup {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-rule);
+}
+
+.summaryStrong {
+  font-weight: 500;
+}
+
+.timeFields {
   display: flex;
   align-items: flex-end;
-  align-self: end;
-  gap: var(--sp-3);
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-top: var(--space-3);
 }
 
-/* En la rejilla, el boton ocupa su celda entera para alinearse con los campos. */
-.submit {
-  width: 100%;
+.duration {
+  width: 160px;
 }
 
-@media (max-width: 760px) {
-  .wide {
-    grid-column: 1 / -1;
+/* Formulario del drawer: mensajes y aviso de edición. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.editNote {
+  font-size: 14px;
+  color: var(--color-ink-2);
+}
+
+@media (max-width: 639px) {
+  .group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .groupLabel,
+  .groupNote {
+    padding-top: 0;
+  }
+
+  .gridOrigin {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
