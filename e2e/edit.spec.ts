@@ -1,29 +1,34 @@
 import { type Page, expect, test } from '@playwright/test';
 
 /**
- * Corregir lo ya registrado (§6).
- *
- * Es la parte del CRUD que faltaba: se podia crear, cerrar, reabrir y borrar, pero no
- * arreglar un numero mal tecleado ni una regla mal escrita.
+ * Corregir lo ya registrado (§6): leer un error en su detalle y editarlo en el mismo
+ * panel, sin salir de la sesión, y corregir la cabecera en el drawer.
  */
+
+const panel = (page: Page) => page.getByRole('complementary', { name: 'Detalle del error' });
+const editRule = (page: Page) => panel(page).getByRole('textbox', { name: 'Regla', exact: true });
 
 async function openSessionWithError(page: Page, reference: string) {
   await page.goto('/registrar');
-  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
-  await page.getByLabel('Ítems *').fill('8');
-  await page.getByLabel('Aciertos *').fill('5');
+  await page.getByRole('button', { name: /Nueva sesión manual/ }).click();
+  await page.getByLabel('Ítems intentados').fill('8');
+  await page.getByLabel('Aciertos', { exact: true }).fill('5');
   await page.getByLabel('Referencia').fill(reference);
-  await page.getByRole('button', { name: 'Abrir sesión' }).click();
+  await page.getByRole('button', { name: 'Crear sesión' }).click();
   await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeVisible();
 
-  await page.getByLabel('Enunciado *').fill('He ______ up smoking. (GAVE)');
-  await page.getByLabel('Correcta *').fill('gave up');
-  await page.getByLabel('Categoría *').selectOption('PHRASAL_VERB');
-  await page
-    .getByLabel('Regla, con tus palabras *')
-    .fill('give up es separable pero no con pronombre detras');
+  await page.getByLabel('Enunciado', { exact: true }).fill('He ______ up smoking. (GAVE)');
+  await page.getByLabel('Corrección', { exact: true }).fill('gave up');
+  await page.getByLabel('Categoría', { exact: true }).selectOption('PHRASAL_VERB');
+  await page.getByRole('textbox', { name: 'Regla', exact: true }).fill('give up es separable pero no con pronombre detras');
   await page.getByRole('button', { name: 'Guardar y seguir' }).click();
-  await expect(page.getByRole('cell', { name: 'gave up' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Ver error: gave up/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Terminar' }).click();
+}
+
+async function editFirstError(page: Page) {
+  await page.getByRole('button', { name: /Ver error: / }).first().click();
+  await panel(page).getByRole('button', { name: 'Editar error' }).click();
 }
 
 test('conserva el borrador al guardar un error borrado desde otra pestaña', async ({ page, context }) => {
@@ -31,118 +36,125 @@ test('conserva el borrador al guardar un error borrado desde otra pestaña', asy
   const other = await context.newPage();
   try {
     await other.goto(page.url());
-    await page.getByRole('button', { name: 'Editar', exact: true }).first().click();
-    const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
-    await editForm.getByLabel('Correcta *').fill('mi correccion pendiente');
-    const table = other.getByRole('table', { name: 'Errores registrados en esta sesión' });
-    await table.getByRole('button', { name: 'Borrar…', exact: true }).click();
-    await table.getByRole('button', { name: 'Borrar', exact: true }).click();
-    await expect(table).toHaveCount(0);
-    await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+    await editFirstError(page);
+    await panel(page).getByLabel('Corrección', { exact: true }).fill('mi correccion pendiente');
+
+    await editFirstError(other);
+    await panel(other).getByRole('button', { name: 'Borrar error…' }).click();
+    await other.getByRole('alertdialog').getByRole('button', { name: 'Borrar error' }).click();
+    await expect(other.getByRole('button', { name: /Ver error: / })).toHaveCount(0);
+
+    await panel(page).getByRole('button', { name: 'Guardar cambios' }).click();
     await expect(page.getByRole('alert').filter({ hasText: 'ya no existe' })).toBeVisible();
-    await expect(editForm.getByLabel('Correcta *')).toHaveValue('mi correccion pendiente');
+    await expect(panel(page).getByLabel('Corrección', { exact: true })).toHaveValue('mi correccion pendiente');
   } finally { await other.close(); }
 });
 
 test.describe('corregir lo ya registrado', () => {
-  test('corrige una fila de error en su sitio', async ({ page }) => {
+  test('lee el error entero y lo corrige en el panel', async ({ page }) => {
     await openSessionWithError(page, 'Unidad 10, correccion');
 
-    await page.getByRole('button', { name: 'Editar' }).first().click();
+    // Leer no exige editar: el detalle trae enunciado, regla y clasificación.
+    await page.getByRole('button', { name: /Ver error: gave up/ }).click();
+    await expect(panel(page)).toContainText('He ______ up smoking. (GAVE)');
+    await expect(panel(page)).toContainText('give up es separable');
+    await expect(panel(page)).toContainText('Phrasal verb');
 
+    await panel(page).getByRole('button', { name: 'Editar error' }).click();
     // El formulario sale con los valores actuales, no en blanco.
-    const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
-    await expect(editForm.getByLabel('Correcta *')).toHaveValue('gave up');
-    await expect(editForm.getByLabel('Categoría *')).toHaveValue('PHRASAL_VERB');
+    await expect(panel(page).getByLabel('Corrección', { exact: true })).toHaveValue('gave up');
+    await expect(panel(page).getByLabel('Categoría', { exact: true })).toHaveValue('PHRASAL_VERB');
 
-    await editForm.getByLabel('Correcta *').fill('given up');
-    await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+    await panel(page).getByLabel('Corrección', { exact: true }).fill('given up');
+    await panel(page).getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByRole('button', { name: /Ver error: given up/ })).toBeVisible();
+    await expect(panel(page).getByRole('button', { name: 'Editar error' })).toBeFocused();
 
-    await expect(page.getByRole('cell', { name: 'given up' })).toBeVisible();
-
-    // Esc cancela la edicion y el foco vuelve al boton de la fila, no al principio.
-    await page.getByRole('button', { name: 'Editar' }).first().click();
-    await expect(editForm.getByLabel('Ítem', { exact: true })).toBeFocused();
+    // Escape sale de la edición sin guardar y el foco vuelve a «Editar error».
+    await panel(page).getByRole('button', { name: 'Editar error' }).click();
+    await panel(page).getByLabel('Corrección', { exact: true }).fill('otra cosa');
     await page.keyboard.press('Escape');
-    await expect(editForm).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Editar' }).first()).toBeFocused();
-    await expect(page.getByRole('cell', { name: 'gave up', exact: true })).toBeHidden();
+    await expect(panel(page).getByRole('button', { name: 'Guardar cambios' })).toHaveCount(0);
+    await expect(panel(page).getByRole('button', { name: 'Editar error' })).toBeFocused();
+    await expect(page.getByRole('button', { name: /Ver error: given up/ })).toBeVisible();
+
+    // Un segundo Escape cierra el detalle.
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
   });
 
   test('conserva los cambios de un error cuando falla la validacion', async ({ page }) => {
     await openSessionWithError(page, 'Unidad 11, validacion');
+    await editFirstError(page);
 
-    await page.getByRole('button', { name: 'Editar' }).first().click();
-    const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
-
-    // Copiar la respuesta en la regla se rechaza tambien al corregir. Se usa un texto
-    // largo a proposito: con uno corto saltaria antes el minLength nativo del navegador
-    // y no se probaria la regla del servidor.
+    // Copiar la respuesta en la regla se rechaza también al corregir. Texto largo a
+    // propósito: con uno corto saltaría antes el minLength nativo del navegador.
     const answer = 'it was only by his voice that I recognised him';
-    await editForm.getByLabel('Enunciado *').fill('Enunciado corregido');
-    await editForm.getByLabel('Correcta *').fill(answer);
-    await editForm.getByLabel('Regla, con tus palabras *').fill(answer);
-    await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+    await panel(page).getByLabel('Enunciado', { exact: true }).fill('Enunciado corregido');
+    await panel(page).getByLabel('Corrección', { exact: true }).fill(answer);
+    await editRule(page).fill(answer);
+    await panel(page).getByRole('button', { name: 'Guardar cambios' }).click();
 
-    await expect(editForm.locator('[data-field="ruleNote"]')).toContainText(
-      'no puede ser la respuesta correcta',
-    );
-    await expect(editForm.getByLabel('Enunciado *')).toHaveValue('Enunciado corregido');
-    await expect(editForm.getByLabel('Correcta *')).toHaveValue(answer);
-    await expect(editForm.getByLabel('Regla, con tus palabras *')).toHaveValue(answer);
+    await expect(panel(page).locator('[data-field="ruleNote"]')).toContainText('no puede ser la respuesta correcta');
+    await expect(panel(page).getByLabel('Enunciado', { exact: true })).toHaveValue('Enunciado corregido');
+    await expect(panel(page).getByLabel('Corrección', { exact: true })).toHaveValue(answer);
+    await expect(editRule(page)).toHaveValue(answer);
 
     const rule = 'La estructura enfatica destaca la voz como unica pista';
-    await editForm.getByLabel('Regla, con tus palabras *').fill(rule);
-    await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
-    await expect(page.getByRole('cell', { name: answer, exact: true })).toBeVisible();
+    await editRule(page).fill(rule);
+    await panel(page).getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(panel(page)).toContainText(rule);
     await page.reload();
-    await expect(page.getByRole('cell', { name: rule, exact: true })).toBeVisible();
+    await page.getByRole('button', { name: new RegExp(`Ver error: ${answer}`) }).click();
+    await expect(panel(page)).toContainText(rule);
   });
 
-  test('cancelar deja la fila como estaba', async ({ page }) => {
+  test('cancelar deja el error como estaba', async ({ page }) => {
     await openSessionWithError(page, 'Unidad 12, cancelar');
+    await editFirstError(page);
+    await panel(page).getByLabel('Corrección', { exact: true }).fill('otra cosa');
+    await panel(page).getByRole('button', { name: 'Cancelar' }).click();
 
-    await page.getByRole('button', { name: 'Editar' }).first().click();
-    const editForm = page.locator('form').filter({ hasText: 'Guardar cambios' });
-    await editForm.getByLabel('Correcta *').fill('otra cosa');
-    await editForm.getByRole('button', { name: 'Cancelar' }).click();
-
-    await expect(page.getByRole('cell', { name: 'gave up' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Ver error: gave up/ })).toBeVisible();
+    await expect(panel(page)).toContainText('gave up');
   });
 
   test('corrige la cabecera de una sesion pasada', async ({ page }) => {
     await openSessionWithError(page, 'Unidad 13, cabecera');
 
-    await page.getByRole('button', { name: 'Corregir cabecera' }).click();
-    await expect(page.getByRole('heading', { name: /Corregir sesión/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Más acciones de la sesión' }).click();
+    await page.getByRole('menuitem', { name: 'Editar sesión' }).click();
+    await expect(page.getByRole('heading', { name: 'Editar sesión' })).toBeVisible();
 
-    await page.getByLabel('Aciertos *').fill('7');
-    await page.getByRole('button', { name: 'Guardar cabecera' }).click();
+    await page.getByLabel('Aciertos', { exact: true }).fill('7');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
 
-    // Vuelve a la vista de datos con el numero corregido, sin tocar los errores.
-    await expect(page.getByText('7 / 8')).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'gave up' })).toBeVisible();
+    // Vuelve a la sesión con el número corregido, sin tocar los errores.
+    await expect(page.getByText('7 / 8 aciertos', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Ver error: gave up/ })).toBeVisible();
   });
 
   test('conserva la cabecera corregida si los aciertos son invalidos', async ({ page }) => {
     await openSessionWithError(page, 'Unidad 14, cabecera invalida');
 
-    await page.getByRole('button', { name: 'Corregir cabecera' }).click();
-    await page.getByLabel('Aciertos *').fill('99');
+    await page.getByRole('button', { name: 'Más acciones de la sesión' }).click();
+    await page.getByRole('menuitem', { name: 'Editar sesión' }).click();
+    await page.getByLabel('Aciertos', { exact: true }).fill('99');
     await page.getByLabel('Referencia').fill('Referencia corregida');
+    await page.getByText('Tiempo y duración').click();
     await page.getByLabel('Cronometrada').check();
-    await page.getByRole('button', { name: 'Guardar cabecera' }).click();
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
 
-    await expect(page.locator('#s-itemsCorrect-error')).toContainText(
+    await expect(page.locator('[data-field="itemsCorrect"]')).toContainText(
       'No puedes acertar más ítems de los que intentaste',
     );
-    await expect(page.getByLabel('Aciertos *')).toHaveValue('99');
+    await expect(page.getByLabel('Aciertos', { exact: true })).toHaveValue('99');
     await expect(page.getByLabel('Referencia')).toHaveValue('Referencia corregida');
     await expect(page.getByLabel('Cronometrada')).toBeChecked();
-    await page.getByLabel('Aciertos *').fill('7');
-    await page.getByRole('button', { name: 'Guardar cabecera' }).click();
-    await expect(page.getByText('7 / 8', { exact: true })).toBeVisible();
+    await page.getByLabel('Aciertos', { exact: true }).fill('7');
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+    await expect(page.getByText('7 / 8 aciertos', { exact: true })).toBeVisible();
     await page.reload();
-    await expect(page.getByText('Libro · Referencia corregida', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Referencia corregida', level: 1 })).toBeVisible();
   });
 });

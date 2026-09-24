@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { type Page, expect, test } from '@playwright/test';
 
 import { createDb } from '../src/lib/db/client';
 import { listWritingPieces } from '../src/lib/db/repo';
@@ -13,60 +13,83 @@ function readPieces() {
   }
 }
 
-test('conserva Writing cuando otra pestaña ocupa la sesion', async ({ page, context }) => {
+const drawer = (page: Page) => page.getByRole('complementary', { name: /Writing$/ });
+
+async function createWritingSession(page: Page) {
   await page.goto('/registrar');
-  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
+  await page.getByRole('button', { name: /Nueva sesión manual/ }).click();
   await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
-  await page.getByRole('button', { name: 'Abrir sesión' }).click();
+  await page.getByRole('button', { name: 'Crear sesión' }).click();
   await expect(page).toHaveURL(/s=\d+/);
-  const sessionId = new URL(page.url()).searchParams.get('s');
-  if (sessionId === null) throw new Error('Falta la sesion recien creada');
+  const id = new URL(page.url()).searchParams.get('s');
+  if (id === null) throw new Error('Falta la sesion recien creada');
+  return id;
+}
+
+async function openNew(page: Page) {
   await page.goto('/writing');
-  await page.getByRole('combobox', { name: 'Sesión', exact: true }).selectOption(sessionId);
-  await page.getByLabel('Palabras', { exact: true }).fill('271');
+  await page.getByRole('button', { name: 'Registrar Writing' }).click();
+  await expect(page.getByRole('heading', { name: 'Registrar Writing' })).toBeVisible();
+}
+
+async function openDetails(page: Page, summary: string) {
+  const details = drawer(page).locator('details').filter({ hasText: summary });
+  if (await details.getAttribute('open') === null) await details.locator('summary').click();
+}
+
+test('conserva Writing cuando otra pestaña ocupa la sesion', async ({ page, context }) => {
+  const sessionId = await createWritingSession(page);
+  await openNew(page);
+  await drawer(page).getByRole('combobox', { name: 'Sesión Writing libre' }).selectOption(sessionId);
+  await openDetails(page, 'Palabras y duración');
+  await drawer(page).getByLabel('Palabras', { exact: true }).fill('271');
   const other = await context.newPage();
   try {
-    await other.goto('/writing');
-    await other.getByRole('combobox', { name: 'Sesión', exact: true }).selectOption(sessionId);
-    await other.getByLabel('Palabras', { exact: true }).fill('230');
-    await other.getByRole('button', { name: 'Guardar texto', exact: true }).click();
-    await expect(other.getByText(/No hay sesiones de Writing libres/)).toBeVisible();
+    await openNew(other);
+    await drawer(other).getByRole('combobox', { name: 'Sesión Writing libre' }).selectOption(sessionId);
+    await openDetails(other, 'Palabras y duración');
+    await drawer(other).getByLabel('Palabras', { exact: true }).fill('230');
+    await drawer(other).getByRole('button', { name: 'Guardar Writing' }).click();
+    await expect(other.getByRole('status').filter({ hasText: 'Writing guardado' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Guardar texto', exact: true }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'ya tiene un texto' })).toBeVisible();
-    await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('271');
+    await drawer(page).getByRole('button', { name: 'Guardar Writing' }).click();
+    await expect(drawer(page).getByText('ya tiene un texto', { exact: false })).toBeVisible();
+    await expect(drawer(page).getByLabel('Palabras', { exact: true })).toHaveValue('271');
     expect(readPieces().filter((piece) => piece.sessionId === Number(sessionId)))
       .toEqual([expect.objectContaining({ wordCount: 230 })]);
   } finally { await other.close(); }
 });
 
-test('prepara un formulario vacio tras guardar un nuevo texto', async ({ page }) => {
+test('cada alta empieza de cero y sin sesiones libres ofrece crear una', async ({ page }) => {
   const before = readPieces();
-  for (let index = 0; index < 2; index += 1) {
-    await page.goto('/registrar');
-    await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
-    await page.getByRole('combobox', { name: 'Tipo', exact: true }).selectOption('WRITING');
-    await page.getByRole('button', { name: 'Abrir sesión' }).click();
-    await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeVisible();
-  }
+  await createWritingSession(page);
+  await createWritingSession(page);
 
-  await page.getByRole('navigation').getByRole('link', { name: 'Writing', exact: true }).click();
-  await page.getByLabel('Palabras', { exact: true }).fill('250');
-  await page.getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
-  await page.getByLabel('Cronometrado', { exact: true }).check();
-  await page.getByLabel('Es la reescritura de otro texto').check();
-  await expect(page.getByRole('combobox', { name: 'Original', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Guardar texto', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('Texto guardado.');
-  await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('');
-  await expect(page.getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('ESSAY');
-  await expect(page.getByLabel('Cronometrado', { exact: true })).not.toBeChecked();
-  await expect(page.getByLabel('Es la reescritura de otro texto')).not.toBeChecked();
-  await expect(page.getByRole('combobox', { name: 'Original', exact: true })).toHaveCount(0);
+  await openNew(page);
+  await drawer(page).getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
+  await openDetails(page, 'Palabras y duración');
+  await drawer(page).getByLabel('Palabras', { exact: true }).fill('250');
+  await drawer(page).getByLabel('Cronometrado', { exact: true }).check();
+  await drawer(page).getByLabel('Es una reescritura').check();
+  await expect(drawer(page).getByRole('combobox', { name: 'Texto original' })).toBeVisible();
+  await drawer(page).getByLabel('Es una reescritura').uncheck();
+  await drawer(page).getByRole('button', { name: 'Guardar Writing' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Writing guardado' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Registrar Writing' })).toBeHidden();
 
-  await page.getByLabel('Palabras', { exact: true }).fill('251');
-  await page.getByRole('button', { name: 'Guardar texto', exact: true }).click();
-  await expect(page.getByText(/No hay sesiones de Writing libres/)).toBeVisible();
+  await page.getByRole('button', { name: 'Registrar Writing' }).click();
+  await expect(drawer(page).getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('ESSAY');
+  await openDetails(page, 'Palabras y duración');
+  await expect(drawer(page).getByLabel('Palabras', { exact: true })).toHaveValue('');
+  await expect(drawer(page).getByLabel('Es una reescritura')).not.toBeChecked();
+  await drawer(page).getByLabel('Palabras', { exact: true }).fill('251');
+  await drawer(page).getByRole('button', { name: 'Guardar Writing' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Writing guardado' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Registrar Writing' }).click();
+  await expect(drawer(page).getByText(/No hay sesiones de Writing libres/)).toBeVisible();
+  await expect(drawer(page).getByRole('link', { name: 'Crear sesión Writing' })).toHaveAttribute('href', '/registrar?nueva=writing');
+
   const added = readPieces().filter((piece) => !before.some((existing) => existing.id === piece.id));
   expect(added).toHaveLength(2);
   expect(added).toEqual(expect.arrayContaining([
@@ -84,37 +107,37 @@ test('conserva los cambios de Writing al rechazar un ciclo y permite corregirlo'
   }
 
   await page.goto(`/writing?edit=${String(original.id)}`);
-  await page.getByLabel('Palabras', { exact: true }).fill('299');
-  await page.getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
-  await page.getByRole('combobox', { name: 'Corrector', exact: true }).selectOption('IA');
-  await page.getByLabel('Cronometrado', { exact: true }).uncheck();
-  await page.getByLabel('Language', { exact: true }).fill('4');
-  await page.getByLabel('Es la reescritura de otro texto').check();
-  await page.getByRole('combobox', { name: 'Original', exact: true }).selectOption(String(rewrite.id));
-  await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
-  await expect(page.getByText('Ese enlace crearia un ciclo de reescrituras', { exact: true })).toBeVisible();
-  await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('299');
-  await expect(page.getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('REVIEW');
-  await expect(page.getByRole('combobox', { name: 'Corrector', exact: true })).toHaveValue('IA');
-  await expect(page.getByLabel('Cronometrado', { exact: true })).not.toBeChecked();
-  await expect(page.getByLabel('Language', { exact: true })).toHaveValue('4');
-  await expect(page.getByRole('combobox', { name: /^Original\b/ })).toHaveValue(String(rewrite.id));
+  await expect(page.getByRole('heading', { name: 'Editar Writing' })).toBeVisible();
+  await openDetails(page, 'Palabras y duración');
+  await openDetails(page, 'Añadir evaluación');
+  await drawer(page).getByLabel('Palabras', { exact: true }).fill('299');
+  await drawer(page).getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
+  await drawer(page).getByRole('combobox', { name: 'Corrector', exact: true }).selectOption('IA');
+  await drawer(page).getByLabel('Cronometrado', { exact: true }).uncheck();
+  await drawer(page).getByLabel('Language', { exact: true }).fill('4');
+  await drawer(page).getByLabel('Es una reescritura').check();
+  await drawer(page).getByRole('combobox', { name: 'Texto original' }).selectOption(String(rewrite.id));
+  await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(drawer(page).getByText('Ese enlace crearia un ciclo de reescrituras', { exact: true })).toBeVisible();
+  await expect(drawer(page).getByLabel('Palabras', { exact: true })).toHaveValue('299');
+  await expect(drawer(page).getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('REVIEW');
+  await expect(drawer(page).getByRole('combobox', { name: 'Corrector', exact: true })).toHaveValue('IA');
+  await expect(drawer(page).getByLabel('Cronometrado', { exact: true })).not.toBeChecked();
+  await expect(drawer(page).getByLabel('Language', { exact: true })).toHaveValue('4');
+  await expect(drawer(page).getByRole('combobox', { name: 'Texto original' })).toHaveValue(String(rewrite.id));
   expect(readPieces()).toEqual(before);
 
-  await page.getByLabel('Es la reescritura de otro texto').uncheck();
-  await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('Texto actualizado.');
-  await page.reload();
-  await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue('299');
-  await expect(page.getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('REVIEW');
+  await drawer(page).getByLabel('Es una reescritura').uncheck();
+  await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Writing actualizado' })).toBeVisible();
+  // Cerrado el drawer, la URL deja de abrirlo al recargar.
+  await expect(page).toHaveURL(/\/writing$/);
   expect(readPieces().find((piece) => piece.id === original.id)).toEqual({
     ...original, wordCount: 299, genre: 'REVIEW', corrector: 'IA', timed: false, bandLanguage: 4,
   });
 });
 
-test('cambiar de texto carga sus datos y conserva la relacion de reescritura al guardar', async ({
-  page,
-}) => {
+test('editar un texto carga sus datos y conserva la relacion de reescritura al guardar', async ({ page }) => {
   const before = readPieces();
   const rewrite = before.find((piece) => piece.rewriteOf !== null);
   const original = before.find((piece) => piece.id === rewrite?.rewriteOf);
@@ -122,57 +145,42 @@ test('cambiar de texto carga sus datos y conserva la relacion de reescritura al 
     throw new Error('El seed debe incluir un original y su reescritura');
   }
 
-  const texts = page.getByRole('table', { name: 'Textos de Writing con sus bandas' });
-  const rewriteToggle = page.getByLabel('Es la reescritura de otro texto');
-
-  await page.goto(`/writing?edit=${String(original.id)}`);
-  await expect(rewriteToggle).not.toBeChecked();
-
-  // Se ensucian campos no controlados del original antes de navegar con un Link.
-  // Una carga completa de pagina ocultaria el fallo de reutilizacion del formulario.
-  await page.getByLabel('Palabras', { exact: true }).fill('111');
-  await page.getByLabel('Minutos', { exact: true }).fill('99');
-  await page.getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
-  await page.getByRole('combobox', { name: 'Corrector', exact: true }).selectOption('IA');
-  await page.getByLabel('Language', { exact: true }).fill('0');
-  await page.getByLabel('Cronometrado', { exact: true }).uncheck();
+  const texts = page.getByRole('table', { name: 'Textos de Writing con sus cuatro bandas' });
+  await page.goto('/writing');
+  // Bandas nombradas en la cabecera y «Sin evaluar» en vez de cero.
+  await expect(texts.getByRole('columnheader', { name: 'Content' })).toBeVisible();
 
   await texts.locator(`a[href="/writing?edit=${String(rewrite.id)}"]`).click();
-  await expect(page.getByRole('heading', { name: `Editar texto #${String(rewrite.id)}` })).toBeVisible();
-  await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue(String(rewrite.wordCount));
-  await expect(page.getByLabel('Minutos', { exact: true })).toHaveValue(String(rewrite.minutes));
-  await expect(page.getByRole('combobox', { name: 'Género', exact: true })).toHaveValue(rewrite.genre);
-  await expect(page.getByRole('combobox', { name: 'Corrector', exact: true })).toHaveValue(rewrite.corrector ?? '');
-  await expect(page.getByLabel('Language', { exact: true })).toHaveValue(String(rewrite.bandLanguage));
-  await expect(page.getByLabel('Cronometrado', { exact: true })).toBeChecked({ checked: rewrite.timed });
-  await expect(rewriteToggle).toBeChecked();
-  await expect(page.getByRole('combobox', { name: 'Original', exact: true })).toHaveValue(String(original.id));
+  await expect(page.getByRole('heading', { name: 'Editar Writing' })).toBeVisible();
+  await openDetails(page, 'Palabras y duración');
+  await expect(drawer(page).getByLabel('Palabras', { exact: true })).toHaveValue(String(rewrite.wordCount));
+  await expect(drawer(page).getByLabel('Minutos', { exact: true })).toHaveValue(String(rewrite.minutes));
+  await expect(drawer(page).getByRole('combobox', { name: 'Género', exact: true })).toHaveValue(rewrite.genre);
+  await expect(drawer(page).getByLabel('Es una reescritura')).toBeChecked();
+  await expect(drawer(page).getByRole('combobox', { name: 'Texto original' })).toHaveValue(String(original.id));
 
-  await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('Texto actualizado.');
+  await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Writing actualizado' })).toBeVisible();
   expect(readPieces()).toEqual(before);
 
-  // En sentido inverso tampoco se arrastran el checkbox ni el mensaje de guardado.
+  // En sentido inverso no se arrastra la relación del texto anterior.
   await texts.locator(`a[href="/writing?edit=${String(original.id)}"]`).click();
-  await expect(page.getByRole('heading', { name: `Editar texto #${String(original.id)}` })).toBeVisible();
-  await expect(page.getByLabel('Palabras', { exact: true })).toHaveValue(String(original.wordCount));
-  await expect(rewriteToggle).not.toBeChecked();
-  await expect(page.getByRole('combobox', { name: 'Original', exact: true })).toHaveCount(0);
-  await expect(page.getByText('Texto actualizado.', { exact: true })).toHaveCount(0);
-
-  await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
-  await expect(page.getByRole('status')).toHaveText('Texto actualizado.');
+  await expect(page.getByRole('heading', { name: 'Editar Writing' })).toBeVisible();
+  await expect(drawer(page).getByLabel('Es una reescritura')).not.toBeChecked();
+  await expect(drawer(page).getByRole('combobox', { name: 'Texto original' })).toHaveCount(0);
+  await drawer(page).getByRole('button', { name: 'Cancelar' }).click();
   expect(readPieces()).toEqual(before);
 });
 
 test('desde Writing se abre una sesion de Writing y se vuelve con ella lista', async ({ page }) => {
-  // El enlace del aviso de «sin sesiones libres» lleva aqui.
   await page.goto('/registrar?nueva=writing');
-  await expect(page.getByRole('button', { name: 'Nueva sesión a mano' })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByRole('heading', { name: 'Nueva sesión' })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Tipo', exact: true })).toHaveValue('WRITING');
-  await expect(page.getByRole('combobox', { name: 'Paper', exact: true })).toHaveValue('WRITING');
-  await page.getByRole('button', { name: 'Abrir sesión' }).click();
+  await expect(page.getByRole('combobox', { name: 'Formato de examen' })).toHaveValue('WRITING');
+  await page.getByRole('button', { name: 'Crear sesión' }).click();
 
-  await expect(page).toHaveURL(/\/writing$/);
-  await expect(page.getByRole('heading', { name: 'Nuevo texto' })).toBeVisible();
+  await expect(page).toHaveURL(/\/writing\?registrar=1&sesion=\d+/);
+  const sessionId = new URL(page.url()).searchParams.get('sesion') ?? '';
+  await expect(page.getByRole('heading', { name: 'Registrar Writing' })).toBeVisible();
+  await expect(drawer(page).getByRole('combobox', { name: 'Sesión Writing libre' })).toHaveValue(sessionId);
 });

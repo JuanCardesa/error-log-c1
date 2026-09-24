@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
  * bloque contenedor con `position: relative`, se escapaba del scroll y empujaba la pagina.
  */
 
-const ROUTES = ['/registrar', '/informe', '/anki', '/ruoe', '/certezas', '/writing', '/exportar'] as const;
+const ROUTES = ['/registrar', '/errores', '/informe', '/anki', '/anki?tab=repasos', '/ruoe', '/certezas', '/writing', '/exportar'] as const;
 
 test.use({ viewport: { width: 390, height: 844 } });
 
@@ -23,7 +23,7 @@ for (const route of ROUTES) {
 }
 
 test.describe('envoltorios con scroll horizontal', () => {
-  for (const route of ['/informe', '/writing', '/ruoe'] as const) {
+  for (const route of ['/writing', '/ruoe?w=60'] as const) {
     test(`en ${route} recortan lo que posicionan en absoluto`, async ({ page }) => {
       await page.goto(route);
       const wraps = await page.evaluate(() =>

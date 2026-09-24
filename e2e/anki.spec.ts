@@ -5,12 +5,19 @@ import { expect, test } from '@playwright/test';
 test('sin sincronizar: explica cómo conectar y no presenta el vacío como cero fallos', async ({ page }, testInfo) => {
   await page.goto('/anki');
   await expect(page.getByRole('heading', { name: 'Anki', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Repaso en Anki' })).toBeVisible();
-  await expect(page.getByText('Todavía no hay datos importados.', { exact: false })).toBeVisible();
-  await expect(page.getByText('todavía no se ha sincronizado')).toBeVisible();
-  await page.getByText('Cómo conectar Anki', { exact: true }).click();
+  await expect(page.getByText('Sin sincronizar todavía')).toBeVisible();
+  // La cola cuenta todo el historial y se dice así.
+  await expect(page.getByText(/pendientes$/).first()).toBeVisible();
+  await expect(page.getByText('en todo el historial · más antiguos primero')).toBeVisible();
+
+  await page.getByText('Conexión y cómo conectar Anki').click();
   await expect(page.getByRole('link', { name: 'AnkiConnect (2055492159)' })).toBeVisible();
-  await page.getByRole('link', { name: '60 d' }).click();
+
+  await page.getByRole('link', { name: 'Repasos', exact: true }).click();
+  await expect(page).toHaveURL(/tab=repasos/);
+  await expect(page.getByText('Todavía no hay datos importados: no son cero fallos.', { exact: false })).toBeVisible();
+  await page.getByRole('link', { name: '60 días' }).click();
+  await expect(page).toHaveURL(/tab=repasos/);
   await expect(page).toHaveURL(/w=60/);
   await page.screenshot({ path: testInfo.outputPath('anki-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
