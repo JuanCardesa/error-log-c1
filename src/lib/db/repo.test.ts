@@ -10,6 +10,7 @@ import { sessionInputSchema } from '../validation/schemas';
 import { type Db, createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
 import {
+  countOpenSessions,
   createError,
   createSession,
   deleteError,
@@ -21,6 +22,9 @@ import {
   listErrors,
   listOpenSessions,
   listSessions,
+  searchErrors,
+  searchSessions,
+  sessionDeletionImpact,
   createWritingPiece,
   deleteWritingPiece,
   getWritingPiece,
@@ -338,5 +342,78 @@ describe('textos de writing', () => {
     createWritingPiece(db, pieceInput(taken.id, { date: '2026-09-01' }));
 
     expect(writingSessionsWithoutPiece(db).map((s) => s.id)).toEqual([free.id]);
+  });
+});
+
+describe('busqueda del historial', () => {
+  it('filtra por referencia, fuente, estado y formato, con el numero de errores', () => {
+    const unit = createSession(db, sessionInput({ date: '2026-09-12', sourceRef: 'Unidad 4 · ej. 2' }));
+    createSession(db, sessionInput({ date: '2026-09-11', source: 'TRAINER', sourceRef: 'Test 3', status: 'CLOSED' }));
+    createSession(db, sessionInput({ date: '2026-09-10', paper: null, part: null, sourceRef: null }));
+    createError(db, errorInput(unit.id));
+    createError(db, errorInput(unit.id, { itemRef: '4' }));
+
+    const byRef = searchSessions(db, { q: 'UNIDAD 4', limit: 10, offset: 0 });
+    expect(byRef.total).toBe(1);
+    expect(byRef.rows[0]?.errorCount).toBe(2);
+
+    expect(searchSessions(db, { q: 'trainer', sources: ['TRAINER'], limit: 10, offset: 0 }).rows.map((s) => s.sourceRef)).toEqual(['Test 3']);
+    expect(searchSessions(db, { q: '2026-09-10', limit: 10, offset: 0 }).total).toBe(1);
+    expect(searchSessions(db, { status: 'OPEN', limit: 10, offset: 0 }).total).toBe(2);
+    expect(searchSessions(db, { paper: 'NONE', limit: 10, offset: 0 }).rows[0]?.paper).toBeNull();
+    expect(countOpenSessions(db)).toBe(2);
+  });
+
+  it('pagina y ordena por fecha en los dos sentidos', () => {
+    for (const day of ['01', '02', '03']) createSession(db, sessionInput({ date: `2026-09-${day}` }));
+    const first = searchSessions(db, { limit: 2, offset: 0 });
+    expect(first.total).toBe(3);
+    expect(first.rows.map((s) => s.date)).toEqual(['2026-09-03', '2026-09-02']);
+    expect(searchSessions(db, { order: 'asc', limit: 1, offset: 0 }).rows[0]?.date).toBe('2026-09-01');
+  });
+});
+
+describe('busqueda de errores', () => {
+  it('busca en enunciado, respuestas y regla, y filtra por clasificacion y fecha de practica', () => {
+    const early = createSession(db, sessionInput({ date: '2026-09-01' }));
+    const late = createSession(db, sessionInput({ date: '2026-09-12' }));
+    createError(db, errorInput(early.id, { prompt: 'She showed complete ___', correctAnswer: 'disregard', category: 'WORD_FORMATION', cause: 'DESCONOCIMIENTO' }));
+    createError(db, errorInput(late.id, { correctAnswer: 'off', myAnswer: 'of', cause: 'DESPISTE', confidence: 'SEGURO', ruleNote: 'call off lleva doble f siempre' }));
+
+    expect(searchErrors(db, { q: 'DISREGARD', limit: 10, offset: 0 }).rows.map((r) => r.error.correctAnswer)).toEqual(['disregard']);
+    expect(searchErrors(db, { q: 'doble f', limit: 10, offset: 0 }).total).toBe(1);
+    expect(searchErrors(db, { category: 'WORD_FORMATION', limit: 10, offset: 0 }).total).toBe(1);
+    expect(searchErrors(db, { confidence: 'SEGURO', limit: 10, offset: 0 }).rows[0]?.session.id).toBe(late.id);
+    expect(searchErrors(db, { from: '2026-09-05', limit: 10, offset: 0 }).total).toBe(1);
+    expect(searchErrors(db, { anki: 'no-aplica', limit: 10, offset: 0 }).rows[0]?.error.cause).toBe('DESPISTE');
+    expect(searchErrors(db, { anki: 'pendiente', limit: 10, offset: 0 }).rows[0]?.error.cause).toBe('DESCONOCIMIENTO');
+    // Lo mas reciente primero, por fecha de la practica.
+    expect(searchErrors(db, { limit: 10, offset: 0 }).rows.map((r) => r.session.date)).toEqual(['2026-09-12', '2026-09-01']);
+  });
+
+  it('desde Q2 solo cuenta sesiones con items contabilizados', () => {
+    const writing = createSession(db, sessionInput({ kind: 'WRITING', paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null }));
+    const drill = createSession(db, sessionInput());
+    createError(db, errorInput(writing.id));
+    createError(db, errorInput(drill.id));
+    expect(searchErrors(db, { withItemsOnly: true, limit: 10, offset: 0 }).rows.map((r) => r.session.id)).toEqual([drill.id]);
+  });
+});
+
+describe('consecuencias de borrar una sesion', () => {
+  it('cuenta sus errores, los convertidos, su texto y las reescrituras que pierden el vinculo', () => {
+    const essay = createSession(db, sessionInput({ kind: 'WRITING', paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null }));
+    const rewrite = createSession(db, sessionInput({ kind: 'WRITING', paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null }));
+    const piece = createWritingPiece(db, { sessionId: essay.id, date: '2026-09-10', genre: 'ESSAY', wordCount: null, minutes: null, timed: false, rewriteOf: null, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
+    createWritingPiece(db, { sessionId: rewrite.id, date: '2026-09-11', genre: 'ESSAY', wordCount: null, minutes: null, timed: false, rewriteOf: piece.id, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
+    const converted = createError(db, errorInput(essay.id));
+    createError(db, errorInput(essay.id, { itemRef: '9' }));
+    linkAnkiNote(db, converted.id, {
+      noteId: 30, model: 'Error Log C1', label: 'x', tags: [], category: null,
+      firstSeenAt: '2026-09-12T18:00:00.000Z', lastSeenAt: '2026-09-12T18:00:00.000Z',
+    }, '2026-09-12T18:00:00.000Z', 'huella');
+
+    expect(sessionDeletionImpact(db, essay.id)).toEqual({ errors: 2, converted: 1, hasWritingPiece: true, rewrites: 1 });
+    expect(sessionDeletionImpact(db, rewrite.id)).toEqual({ errors: 0, converted: 0, hasWritingPiece: true, rewrites: 0 });
   });
 });
