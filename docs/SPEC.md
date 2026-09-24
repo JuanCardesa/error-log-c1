@@ -255,7 +255,7 @@ formulario manual, avisando al usuario para que los revise. Omite duplicados den
 de la sesión por item, enunciado y ambas respuestas; no sobrescribe filas existentes.
 
 **Importar una tanda con cabecera (2026-09-21):** una sesión representa una tanda de
-estudio completa, acumulada en la bandeja de Macmillan hasta «Copiar todo», no una
+estudio completa, acumulada en la bandeja de Macmillan hasta «Copiar tanda» (y vaciada a mano después), no una
 actividad individual. `/registrar` permite pegar `{ "session": { ... }, "errors": [...] }`,
 editar la cabecera propuesta y revisar los errores, y crear todo en una transacción.
 Un error inválido impide crear la sesión; un fallo de escritura revierte toda la tanda.
