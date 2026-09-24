@@ -1,98 +1,195 @@
-/* Separacion del formulario (o de su aviso vacio) con la tabla de textos. */
-.block {
-  margin-bottom: var(--sp-6);
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
-.form {
-  display: grid;
-  gap: var(--sp-4);
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  align-items: start;
-  margin-top: var(--sp-4);
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.form label {
-  display: block;
-  min-width: 0;
+.empty {
+  padding: var(--space-5) var(--space-3);
+  border-top: 1px solid var(--color-ink);
+  color: var(--color-ink-2);
 }
 
-.form input,
-.form select {
+.scroll {
+  overflow-x: auto;
+  /* Bloque contenedor: el caption .sr-only, absoluto, no escapa del scroll. */
+  position: relative;
+}
+
+.table {
   width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  border-top: 1px solid var(--color-ink);
+  font-size: 14px;
 }
 
-/* La casilla se alinea con la base de los campos vecinos, no con su etiqueta. */
-.checkCell {
-  align-self: end;
-  padding-bottom: var(--sp-3);
-}
-
-.bands,
-.rewrite {
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: var(--sp-4);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-}
-
-.bandGrid {
-  display: grid;
-  gap: var(--sp-4);
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  margin-top: var(--sp-3);
-}
-
-.bandLabel {
-  display: block;
-  font-size: var(--fs-xs);
-  color: var(--ink-soft);
-  margin-bottom: var(--sp-1);
-}
-
-.actions {
-  grid-column: 1 / -1;
-}
-
-.tableGap {
-  margin-top: var(--sp-4);
-}
-
-.emptyText {
-  margin: 0;
-}
-
-/* Enlace con aspecto de boton: lleva a abrir la sesion que falta. */
-.emptyAction {
-  display: inline-block;
-  margin-top: var(--sp-4);
-  text-decoration: none;
-}
-
-.bandsCell {
-  font-family: var(--font-data);
+.table th {
+  padding: 10px var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  color: var(--color-ink-2);
+  font: var(--text-label);
+  text-align: left;
   white-space: nowrap;
 }
 
-/* Neutra: que un texto sea reescritura no es ni bueno ni malo. */
-.rewriteTag {
-  display: inline-block;
-  padding: 0 var(--sp-3);
-  border-radius: var(--radius-pill);
-  background: var(--watch-bg);
-  border: 1px solid var(--watch);
-  color: var(--watch);
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
+.table th abbr {
+  text-decoration: none;
 }
 
-/* Por encima del umbral: pendiente de accion (ocre), no un error de ejecucion (rojo). */
-.repeatBad {
-  color: var(--queued);
+.table td {
+  height: 56px;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-2);
+}
+
+.colDate { width: 72px; }
+.colGenre { width: 84px; }
+.colBand { width: 76px; text-align: center !important; }
+.colCorrector { width: 96px; }
+
+.muted {
+  color: var(--color-ink-2);
+}
+
+.ref {
+  color: var(--color-ink);
+  font: 500 16px/22px var(--font-serif);
+  text-decoration: none;
+}
+
+.ref:hover {
+  color: var(--color-brand);
+  text-decoration: underline;
+}
+
+.unrated {
+  font-size: 12px;
+  color: var(--color-ink-disabled);
+  white-space: nowrap;
+}
+
+/* ── Reescrituras ─────────────────────────────────────────────────────────── */
+
+.rewrites {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 820px;
+}
+
+.rewritesHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.rewritesHead p {
+  flex: 1 1 360px;
+}
+
+.pair {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pairTitle {
+  font: 600 22px/28px var(--font-serif);
+}
+
+.compare {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid var(--color-ink);
+  font-size: 14px;
+}
+
+.compare th,
+.compare td {
+  height: 48px;
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  text-align: left;
+}
+
+.compare thead th {
+  height: auto;
+  padding: 10px var(--space-3);
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.compare tbody th {
+  font-weight: 500;
+}
+
+.center {
+  text-align: center !important;
+}
+
+.rightCell {
+  text-align: right !important;
+  font-weight: 500;
+}
+
+.strong {
   font-weight: 600;
 }
 
-.repeatOk {
-  color: var(--ok);
-  font-weight: 600;
+/* ── Drawer ───────────────────────────────────────────────────────────────── */
+
+.drawerGroups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.fixedSession {
+  padding-top: 26px;
+  font-size: 14px;
+}
+
+.evaluation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.corrector {
+  max-width: 200px;
+}
+
+.rewrite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.moreFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.noSession {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  color: var(--color-ink-2);
 }
