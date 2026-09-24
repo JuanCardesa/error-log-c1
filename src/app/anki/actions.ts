@@ -47,5 +47,5 @@ export async function undoAddedAction(id: number) {
   if (!Number.isSafeInteger(id) || id <= 0) return { ok: false, message: 'Identificador de error inválido.' };
   unmarkAnkiAdded(getDb(), id);
   refreshAnki();
-  return { ok: true, message: 'Devuelto a la cola. La nota sigue en Anki.' };
+  return { ok: true, message: 'Devuelto a pendientes. La nota y su historial siguen en Anki.' };
 }
