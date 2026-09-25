@@ -153,7 +153,7 @@ enunciados y la pareja «Tu respuesta → Corrección»— va en Source Serif 4.
 
 La profundidad no sale de cajas: papel con grano, una zona de trabajo blanca con sombra
 suave donde se edita, y **cristal solo en lo que flota** (cabecera fija, barra inferior de
-la tanda, menús, la paleta ⌘K, avisos y el panel de Macmillan). Nunca en tablas ni datos.
+la tanda, menús, la paleta ⌘K y avisos). Nunca en tablas ni datos.
 
 **Key Characteristics:**
 - Papel `#F6F5F1` con grano SVG al 7 %; superficie blanca para editar y para dialogs.
@@ -239,8 +239,8 @@ sigue siendo el valor interno.
 
 ## Shapes
 
-Radios de 4 px (controles), 6 px (paneles), 8 px (menús y dialogs) y 10 px (⌘K y panel de
-Macmillan). Píldora solo en el chip de filtro activo.
+Radios de 4 px (controles), 6 px (paneles), 8 px (menús y dialogs) y 10 px (⌘K). Píldora solo
+en el chip de filtro activo.
 
 ## Components
 

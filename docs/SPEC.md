@@ -255,7 +255,7 @@ formulario manual, avisando al usuario para que los revise. Omite duplicados den
 de la sesión por item, enunciado y ambas respuestas; no sobrescribe filas existentes.
 
 **Importar una tanda con cabecera (2026-09-21):** una sesión representa una tanda de
-estudio completa, acumulada en la bandeja de Macmillan hasta «Copiar tanda» (y vaciada a mano después), no una
+estudio completa, reunida fuera de la app (por ejemplo, con un capturador externo), no una
 actividad individual. `/registrar` permite pegar `{ "session": { ... }, "errors": [...] }`,
 editar la cabecera propuesta y revisar los errores, y crear todo en una transacción.
 Un error inválido impide crear la sesión; un fallo de escritura revierte toda la tanda.
@@ -265,7 +265,7 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
   `source`, `sourceRef`, `itemsTotal`, `itemsCorrect` y `timed`. Todos deben estar
   presentes, con null donde el modelo lo permita. Se rechazan campos adicionales,
   incluidos `id`, `status` y `durationMin`. El servidor fija `status = OPEN`.
-- La duración solo se puede escribir manualmente en la vista previa. Macmillan propone
+- La duración solo se puede escribir manualmente en la vista previa. Un capturador externo suele proponer
   `kind = DRILL` editable, `paper = part = null`, `source = LIBRO` y `timed = false`.
   Unidad, página y actividad siguen siendo texto en `source_ref`, sin campos nuevos.
 - Una tanda pegada entra siempre pendiente de convertir. Un `ankiAdded` en el bloque se

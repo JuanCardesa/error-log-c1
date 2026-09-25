@@ -10,7 +10,7 @@ web
 
 Una sola persona: Juan, estudiante que prepara el Cambridge C1 Advanced. Registra a
 diario los errores de su práctica y repasa con Anki. Trabaja en escritorio (portátil o
-monitor), con el libro o el curso de Macmillan abierto al lado; el móvil tiene que
+monitor), con el libro o el curso online abierto al lado; el móvil tiene que
 funcionar, pero no es donde se registra.
 
 Valora, por este orden: rapidez al registrar, poco ruido visual y datos legibles. Es
@@ -37,8 +37,8 @@ dashboard. La conversión a Anki solo se sella cuando la tarjeta existe y está 
 
 ## Operating Context
 
-- **Entrada principal:** pegar la tanda de Macmillan («Copiar tanda» del capturador
-  `tools/macmillan-capture`) en Sesiones (`/registrar`), revisar la cabecera propuesta y los
+- **Entrada principal:** pegar la tanda del curso (sesión y errores en JSON, preparados
+  fuera de la app) en Sesiones (`/registrar`), revisar la cabecera propuesta y los
   errores, y guardar todo en una transacción. Le siguen la captura uno a uno por
   teclado y el pegado de varios errores (JSON preparado con IA o celdas de una hoja).
 - **Ritual semanal:** Progreso (la recomendación de la semana), luego Anki (pendientes,
@@ -75,7 +75,7 @@ dashboard. La conversión a Anki solo se sella cuando la tarjeta existe y está 
 ## Product Principles
 
 1. **El registro no espera.** Cada paso sobrante al volcar una tanda se paga todos los
-   días; el camino de Macmillan y el de teclado van por delante de todo lo demás.
+   días; el camino de la tanda pegada y el de teclado van por delante de todo lo demás.
 2. **Una decisión, no un dashboard.** Cada vista de análisis abre con lo que hay que
    hacer y deja las cifras como respaldo.
 3. **El dato manda.** Cifras comparables en vertical, sin decoración que compita con
