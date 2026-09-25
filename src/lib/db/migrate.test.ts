@@ -61,6 +61,10 @@ it('migra todos los datos historicos, relaciones, indices y secuencias sin recla
   const before = snapshot();
   migrate(db);
   expect(snapshot().data).toEqual(before.data);
+  expect(db.$client.prepare('SELECT count(*) AS n FROM session_search_fts').get())
+    .toEqual({ n: before.data.sessions.length });
+  expect(db.$client.prepare('SELECT count(*) AS n FROM error_search_fts').get())
+    .toEqual({ n: before.data.errors.length });
   expect(loadDataset(db).errors.every((row) => row.ankiNoteId === null)).toBe(true);
   expect(snapshot().sequences).toEqual(before.sequences);
   expect(snapshot().schema.filter((row) => (row as { type: string }).type === 'index'))

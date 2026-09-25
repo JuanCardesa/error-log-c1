@@ -86,6 +86,15 @@ export const session = sqliteTable(
   ],
 );
 
+/** Recibos permanentes: un reintento no recrea una tanda aunque se haya borrado la sesión. */
+export const sessionImportReceipt = sqliteTable('session_import_receipt', {
+  importId: text('import_id').primaryKey(),
+  payloadHash: text('payload_hash').notNull(),
+  sessionId: integer('session_id').notNull(),
+  created: integer('created').notNull(),
+  skipped: integer('skipped').notNull(),
+});
+
 export const errorRow = sqliteTable(
   'error_row',
   {

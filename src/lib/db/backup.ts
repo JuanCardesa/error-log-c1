@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 
-import { ankiCard, ankiNote, ankiReview, ankiSync, errorRow, session, writingPiece } from './schema';
+import { ankiCard, ankiNote, ankiReview, ankiSync, errorRow, session, sessionImportReceipt, writingPiece } from './schema';
 
 function requireNewDestination(file: string): void {
   for (const suffix of ['', '-wal', '-shm', '-journal']) {
@@ -39,12 +39,15 @@ function checkDatabase(sqlite: Database.Database, requireCurrentSchema: boolean)
   // El espejo de Anki entra aqui desde 0002: media migracion no la ve integrity_check.
   const db = drizzle(sqlite);
   db.select().from(session).limit(0).all();
+  db.select().from(sessionImportReceipt).limit(0).all();
   db.select().from(errorRow).limit(0).all();
   db.select().from(writingPiece).limit(0).all();
   db.select().from(ankiNote).limit(0).all();
   db.select().from(ankiCard).limit(0).all();
   db.select().from(ankiReview).limit(0).all();
   db.select().from(ankiSync).limit(0).all();
+  sqlite.prepare('SELECT rowid FROM session_search_fts LIMIT 0').all();
+  sqlite.prepare('SELECT rowid FROM error_search_fts LIMIT 0').all();
 }
 
 /** Un fichero que no es SQLite falla con «file is not a database»; aqui se dice cual y por que. */

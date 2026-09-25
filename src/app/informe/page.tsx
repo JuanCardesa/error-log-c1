@@ -1,217 +1,310 @@
+import { ArrowRight, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+
 import { getDb } from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
+import { listSessions } from '@/lib/db/repo';
 import { CAUSE_META } from '@/lib/domain/enums';
-import { ANKI_TARGET_PCT } from '@/lib/domain/thresholds';
+import { MIN_N } from '@/lib/domain/thresholds';
 import { q1CauseSplit } from '@/lib/queries/q1CauseSplit';
 import { q2CategoryRate } from '@/lib/queries/q2CategoryRate';
+import { q3RuoeAccuracy } from '@/lib/queries/q3RuoeAccuracy';
 import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
+import { sliceWindow } from '@/lib/queries/window';
 import { runRules } from '@/lib/rules';
-import { WindowSwitch } from '../_shared/WindowSwitch';
-import shared from '../_shared/report.module.css';
+import { toIsoDate, windowStart } from '@/lib/time/dates';
+import { dateRange, decimal, percent, score, sessionTitle, shortDate } from '../_shared/format';
+import { CATEGORY_LABELS, CAUSE_LABELS, RULE_STATUS_LABELS } from '../_shared/labels';
+import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
-import { CATEGORY_LABELS, CAUSE_LABELS, SIDE_LABELS } from '../_shared/labels';
-import { RulesTable } from './RulesTable';
+import { WindowSwitch } from '../_shared/WindowSwitch';
+import { windowWeeks } from '../_shared/weeks';
+import { recommend, recommendationTitle } from './recommendation';
+import { RulesDetails } from './RulesTable';
+import styles from './progreso.module.css';
 
-/** Informe de reglas, práctica y repaso. */
+/**
+ * Progreso: una decisión arriba y su respaldo debajo. Qué practicar, dónde se concentran
+ * los errores, por qué ocurren y cómo evoluciona cada part. No hay nota global ni índice
+ * agregado: cada cifra dice su denominador.
+ */
 
 export const dynamic = 'force-dynamic';
 
-export default async function InformePage({
-  searchParams,
-}: {
-  readonly searchParams: Promise<SearchParams>;
-}) {
+const TOP_CATEGORIES = 5;
+const MULTIPLE_WEEKS = 4;
+const BAR_MAX_PX = 56;
+
+export default async function InformePage({ searchParams }: { readonly searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
   const windowDays = parseWindow(params['w']);
-  const options = { now: new Date(), windowDays };
+  const now = new Date();
+  const options = { now, windowDays };
 
-  const data = loadDataset(getDb());
+  const db = getDb();
+  const data = loadDataset(db);
+  const slice = sliceWindow(data, now, windowDays);
   const q1 = q1CauseSplit(data, options);
   const q2 = q2CategoryRate(data, options);
+  const q3 = q3RuoeAccuracy(data, options);
   const q5 = q5AnkiDebt(data, options);
   const report = runRules(data, options);
+  const rec = recommend(report, q5, q1.total, windowDays);
+  const w = windowDays === 30 ? '' : `?w=${String(windowDays)}`;
+
+  const head = (
+    <div className={styles.head}>
+      <div className={ui.pageHead}>
+        <h1 className={ui.pageTitle}>Progreso</h1>
+        <WindowSwitch current={windowDays} basePath="/informe" />
+      </div>
+      <RouteTabs
+        label="Vistas de progreso"
+        items={[
+          { href: `/informe${w}`, label: 'Resumen', current: true },
+          { href: `/ruoe${w}`, label: 'Reading & Use of English', current: false },
+        ]}
+      />
+    </div>
+  );
+
+  if (data.sessions.length === 0) {
+    return (
+      <div className={styles.page}>
+        {head}
+        <section className={styles.emptyState}>
+          <h2 className={styles.recoTitle}>Registra tu primera práctica</h2>
+          <p>Las recomendaciones, categorías y causas aparecen cuando hay sesiones en el periodo. Sin datos no se saca ninguna conclusión.</p>
+          <Link href="/registrar" className={ui.primary}>Ir a Sesiones</Link>
+        </section>
+      </div>
+    );
+  }
+
+  const writingErrors = q2.excludedErrors;
+  const weeks = windowWeeks(now, windowDays).slice(-MULTIPLE_WEEKS);
+  const recent = listSessions(db, 3);
+  const others = report.rules.filter((rule) => rule.status === 'QUEUED' || rule.status === 'WATCH');
+  const maxCause = Math.max(1, ...q1.rows.map((row) => row.n));
+  const topCategories = q2.rows.slice(0, TOP_CATEGORIES);
+  const restCategories = q2.rows.slice(TOP_CATEGORIES);
+  const categoryHref = (category: string) =>
+    `/errores?cat=${category}&w=${String(windowDays)}&items=1`;
 
   return (
-    <div>
-      <header className={shared.head}>
-        <div>
-          <h1>Informe</h1>
-          <p className={shared.lede}>
-            Últimos {windowDays} días. {q1.total} error{q1.total === 1 ? '' : 'es'} sobre{' '}
-            {q2.itemsAttempted} ítems intentados.
-          </p>
+    <div className={styles.page}>
+      {head}
+
+      <section className={styles.reco} aria-labelledby="reco-title">
+        <span className={styles.kicker}>{rec.kicker}</span>
+        <h2 id="reco-title" className={styles.recoTitle}>
+          {slice.sessions.length === 0 ? 'Sin práctica registrada en este periodo' : rec.title}
+        </h2>
+        <p className={styles.evidence}>
+          {slice.sessions.length === 0
+            ? `No hay sesiones en los últimos ${String(windowDays)} días. Registra una práctica o amplía el periodo.`
+            : rec.evidence}
+        </p>
+        {(rec.action !== null || rec.why !== null) && slice.sessions.length > 0 && (
+          <div className={styles.recoActions}>
+            {rec.action !== null && <Link href={rec.action.href} className={ui.primary}>{rec.action.label}</Link>}
+            {rec.why !== null && (
+              <details className={ui.disclosure}>
+                <summary>
+                  <ChevronRight size={14} className="chevron" aria-hidden="true" />
+                  Por qué esta recomendación
+                </summary>
+                <p className={ui.disclosureBody}>{rec.why}</p>
+              </details>
+            )}
+          </div>
+        )}
+        <div className={styles.coverage}>
+          <span>Periodo: {dateRange(windowStart(now, windowDays), toIsoDate(now))}</span>
+          <span>{slice.sessions.length} {slice.sessions.length === 1 ? 'sesión' : 'sesiones'}</span>
+          <span>{q2.itemsAttempted} ítems contabilizados (excluye Writing)</span>
+          <span>
+            {q1.total} {q1.total === 1 ? 'error' : 'errores'}
+            {writingErrors > 0 ? `, ${String(writingErrors)} de ellos en Writing` : ''}
+          </span>
         </div>
-        <WindowSwitch current={windowDays} basePath="/informe" />
-      </header>
+      </section>
 
-      <RulesTable report={report} pendingAnki={q5.pending} />
+      {q1.total > 0 && q1.total < MIN_N && (
+        <p className={styles.smallSample}>
+          <strong>Muestra pequeña</strong>
+          <span>{q1.total} {q1.total === 1 ? 'error' : 'errores'} en {windowDays} días. Léelo como orientación: todavía no es un patrón.</span>
+        </p>
+      )}
 
-      <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q1-heading">
-        <div className={shared.panelHead}>
-          <h2 id="q1-heading">Reparto de causas</h2>
-          <p className={ui.note}>
-            Estudio {q1.bySide.study}% · ejecución {q1.bySide.exec}%
-          </p>
-        </div>
+      <div className={styles.columns}>
+        <section className={styles.block} aria-labelledby="cat-heading">
+          <h2 id="cat-heading" className={ui.sectionTitle}>Dónde se concentran los errores</h2>
+          {q2.rows.length === 0 ? (
+            <p className={styles.blockEmpty}>Sin errores en sesiones con ítems contabilizados en este periodo.</p>
+          ) : (
+            <>
+              <table className={styles.catTable}>
+                <caption className="sr-only">Categorías por errores cada 100 ítems</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Categoría</th>
+                    <th scope="col" className={styles.num}>Errores</th>
+                    <th scope="col" className={styles.num}>Por 100 ítems</th>
+                    <th scope="col"><span className="sr-only">Ver errores</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topCategories.map((row) => (
+                    <tr key={row.category}>
+                      <td>
+                        <Link href={categoryHref(row.category)} className={styles.catLink}>{CATEGORY_LABELS[row.category]}</Link>
+                      </td>
+                      <td className={styles.num}>{row.errors}</td>
+                      <td className={styles.num}>{decimal(row.ratePer100, 2)}</td>
+                      <td className={styles.arrowCell} aria-hidden="true"><ArrowRight size={14} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {restCategories.length > 0 && (
+                <details className={ui.disclosure}>
+                  <summary>
+                    <ChevronRight size={14} className="chevron" aria-hidden="true" />
+                    Ver las otras {restCategories.length} categorías
+                  </summary>
+                  <ul className={styles.restList}>
+                    {restCategories.map((row) => (
+                      <li key={row.category}>
+                        <Link href={categoryHref(row.category)}>{CATEGORY_LABELS[row.category]}</Link>
+                        <span className="num">{row.errors} · {decimal(row.ratePer100, 2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              <span className={ui.help}>Errores por cada 100 ítems contabilizados en total, no tasa de fallo dentro de la categoría.</span>
+            </>
+          )}
+        </section>
 
-        {q1.total === 0 ? (
-          <p className={ui.empty}>Sin errores en la ventana.</p>
-        ) : (
-          <div className={ui.tableWrap}>
-            <table className={ui.table}>
-              <caption className="sr-only">Errores por causa</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Causa</th>
-                  <th scope="col">Lado</th>
-                  <th scope="col" className={ui.num}>
-                    n
-                  </th>
-                  <th scope="col" className={ui.num}>
-                    %
-                  </th>
-                  <th scope="col" className={shared.barCell}>
-                    <span className="sr-only">Proporción</span>
-                  </th>
-                  <th scope="col" className={shared.remedyCell}>Remedio</th>
-                </tr>
-              </thead>
-              <tbody>
+        <section className={styles.block} aria-labelledby="cause-heading">
+          <h2 id="cause-heading" className={ui.sectionTitle}>Por qué ocurren</h2>
+          {q1.total === 0 ? (
+            <p className={styles.blockEmpty}>No hay errores registrados en este periodo. Eso no demuestra dominio: solo que no hay datos que leer.</p>
+          ) : (
+            <>
+              <div className={styles.causes}>
                 {q1.rows.map((row) => (
-                  <tr key={row.cause}>
-                    <td>{CAUSE_LABELS[row.cause]}</td>
-                    <td>
-                      <span
-                        className={row.side === 'study' ? ui.chipStudy : ui.chipExec}
-                      >
-                        {SIDE_LABELS[row.side]}
+                  <details key={row.cause} className={styles.cause}>
+                    <summary className={styles.causeSummary}>
+                      <span className={styles.causeName}>{CAUSE_LABELS[row.cause]}</span>
+                      <span className={styles.barTrack} aria-hidden="true">
+                        <span
+                          className={row.side === 'study' ? styles.barStudy : styles.barExec}
+                          style={{ width: `${String((row.n / maxCause) * 100)}%` }}
+                        />
                       </span>
-                    </td>
-                    <td className={ui.num}>{row.n}</td>
-                    <td className={ui.num}>{row.pct}%</td>
-                    <td className={shared.barCell}>
-                      <span
-                        className={`${shared.bar} ${row.side === 'study' ? shared.barStudy : shared.barExec}`}
-                        style={{ width: `${String(row.pct)}%` }}
-                      />
-                    </td>
-                    <td className={`${ui.note} ${shared.remedyCell}`}>{CAUSE_META[row.cause].remedy}</td>
-                  </tr>
+                      <span className={styles.causeValue}>{percent(row.pct)} · {row.n}</span>
+                    </summary>
+                    <p className={styles.causeBody}>{CAUSE_META[row.cause].meaning}. {CAUSE_META[row.cause].remedy}.</p>
+                  </details>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+              <span className={styles.legend}>
+                <span><span className={styles.swatchStudy} aria-hidden="true" />Se estudia</span>
+                <span><span className={styles.swatchExec} aria-hidden="true" />Se corrige con el protocolo de examen</span>
+              </span>
+            </>
+          )}
+        </section>
+      </div>
+
+      <section className={styles.block} aria-labelledby="evo-heading">
+        <div className={styles.blockHead}>
+          <h2 id="evo-heading" className={ui.sectionTitle}>Evolución por part</h2>
+          <Link href={`/ruoe${w}`} className={styles.moreLink}>
+            Ver matriz completa <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
+        {q3.rows.length === 0 ? (
+          <p className={styles.blockEmpty}>Sin sesiones de Reading & Use of English con ítems en este periodo.</p>
+        ) : (
+          <>
+            <div className={styles.multiples}>
+              {q3.rows.map((row) => {
+                const cells = weeks.map((week) => {
+                  const index = q3.weeks.indexOf(week.iso);
+                  return index < 0 ? null : row.cells[index] ?? null;
+                });
+                const latest = [...cells].reverse().find((cell) => cell !== null) ?? null;
+                return (
+                  <div key={row.part} className={styles.multiple}>
+                    <span className={styles.multipleHead}>
+                      <span className={styles.multiplePart}>Part {row.part}</span>
+                      <span className={styles.mono}>{latest === null ? '—' : percent(latest.pct)}</span>
+                    </span>
+                    <div className={styles.bars} role="img" aria-label={`Part ${String(row.part)}: ${cells.map((cell, i) => `${weeks[i]?.range ?? ''} ${cell === null ? 'sin práctica' : percent(cell.pct)}`).join(', ')}`}>
+                      {cells.map((cell, index) => (
+                        <span
+                          key={weeks[index]?.iso ?? index}
+                          className={cell === null ? styles.barNone : index === cells.length - 1 ? styles.barLast : styles.barPast}
+                          style={cell === null ? undefined : { height: `${String(Math.max(2, Math.round((cell.pct / 100) * BAR_MAX_PX)))}px` }}
+                        />
+                      ))}
+                    </div>
+                    <span className={styles.ratios}>
+                      {cells.map((cell) => (cell === null ? '—' : `${String(cell.correct)}/${String(cell.total)}`)).join(' · ')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <span className={ui.help}>
+              Últimas {weeks.length} semanas ({weeks[0]?.range ?? ''} a {weeks.at(-1)?.range ?? ''}); la última resaltada. — sin práctica esa semana; la altura es la precisión de la semana.
+            </span>
+          </>
         )}
       </section>
 
-      <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q2-heading">
-        <div className={shared.panelHead}>
-          <h2 id="q2-heading">Categorías por tasa</h2>
-          <p className={ui.note}>
-            Normalizado por ítems intentados. Es el temario de los próximos sábados.
-          </p>
-        </div>
+      <div className={styles.columns}>
+        <section className={styles.block} aria-labelledby="recent-heading">
+          <h2 id="recent-heading" className={ui.sectionTitle}>Actividad reciente</h2>
+          <ul className={styles.recent}>
+            {recent.map((session) => (
+              <li key={session.id}>
+                <Link href={`/registrar?s=${String(session.id)}`} className={styles.recentLink}>
+                  <span><span className={styles.recentDate}>{shortDate(session.date)}</span>{sessionTitle(session)}</span>
+                  <span className={styles.recentScore}>{session.itemsTotal === null ? 'Writing' : score(session, '/')}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-        {q2.rows.length === 0 ? (
-          <p className={ui.empty}>
-            Sin errores en sesiones con ítems contabilizados.
-          </p>
-        ) : (
-          <div className={ui.tableWrap}>
-            <table className={ui.table}>
-              <caption className="sr-only">Categorías ordenadas por tasa</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Categoría</th>
-                  <th scope="col" className={ui.num}>
-                    Errores
-                  </th>
-                  <th scope="col" className={ui.num}>
-                    Por 100 ítems
-                  </th>
-                  <th scope="col" className={shared.barCell}>
-                    <span className="sr-only">Proporción</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {q2.rows.map((row, index) => (
-                  <tr key={row.category}>
-                    <td>{CATEGORY_LABELS[row.category]}</td>
-                    <td className={ui.num}>{row.errors}</td>
-                    <td className={ui.num}>{row.ratePer100}</td>
-                    <td className={shared.barCell}>
-                      <span
-                        className={shared.bar}
-                        style={{
-                          // Relativo a la peor categoria: compara entre si, no con 100.
-                          width: `${String(
-                            index === 0
-                              ? 100
-                              : Math.round(
-                                  (row.ratePer100 / (q2.rows[0]?.ratePer100 ?? 1)) * 100,
-                                ),
-                          )}%`,
-                        }}
-                      />
-                    </td>
-                  </tr>
+        <section className={styles.block} aria-labelledby="others-heading">
+          <h2 id="others-heading" className={ui.sectionTitle}>Otras recomendaciones</h2>
+          <details className={`${ui.disclosure} ${styles.othersBox}`}>
+            <summary>
+              <ChevronRight size={14} className="chevron" aria-hidden="true" />
+              {others.length === 0
+                ? 'Ninguna otra regla se dispara ni está en vigilancia'
+                : `Otras ${String(others.length)} ${others.length === 1 ? 'recomendación' : 'recomendaciones'} · ver detalle`}
+            </summary>
+            {others.length > 0 && (
+              <ol className={styles.othersList}>
+                {others.map((rule) => (
+                  <li key={rule.id}>
+                    <strong>{RULE_STATUS_LABELS[rule.status]}</strong> · {recommendationTitle(rule)}.
+                  </li>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {q2.excludedErrors > 0 && (
-          <p className={`${ui.note} ${shared.noteAfter}`}>
-            {q2.excludedErrors} error{q2.excludedErrors === 1 ? '' : 'es'} de Writing fuera
-            del cálculo: esas sesiones no tienen ítems que contar.
-          </p>
-        )}
-      </section>
-
-      <section className={`${ui.panel} ${shared.section}`} aria-labelledby="q5-heading">
-        <div className={shared.panelHead}>
-          <h2 id="q5-heading">Deuda de Anki</h2>
-          <p className={ui.note}>Umbral {ANKI_TARGET_PCT}%</p>
-        </div>
-
-        {q5.pctConverted === null ? (
-          <p className={ui.empty}>
-            Ningún error de la ventana genera tarjeta. No hay deuda que medir.
-          </p>
-        ) : (
-          <dl className={`${shared.panelHead} ${shared.figures}`}>
-            <div>
-              <dt className={ui.note}>Convertidos</dt>
-              <dd className={`data ${shared.figureLead}`}>
-                {q5.pctConverted}%
-              </dd>
-            </div>
-            <div>
-              <dt className={ui.note}>Elegibles</dt>
-              <dd className="data">
-                {q5.eligible}
-              </dd>
-            </div>
-            <div>
-              <dt className={ui.note}>Pendientes</dt>
-              <dd className="data">
-                {q5.pending}
-              </dd>
-            </div>
-            <div>
-              <dt className={ui.note}>Objetivo</dt>
-              <dd>
-                <span className={q5.meetsTarget === true ? ui.stateGood : ui.stateWarn}>
-                  {q5.meetsTarget === true ? 'cumplido' : 'por debajo'}
-                </span>
-              </dd>
-            </div>
-          </dl>
-        )}
-      </section>
+              </ol>
+            )}
+          </details>
+          <RulesDetails report={report} />
+        </section>
+      </div>
     </div>
   );
 }

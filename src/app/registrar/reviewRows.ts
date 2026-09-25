@@ -2,6 +2,13 @@ import { CATEGORIES } from '@/lib/domain/enums';
 import type { ImportDraft, ImportedSession } from '@/lib/import/errors';
 import { RULE_NOTE_MIN_LENGTH } from '@/lib/validation/schemas';
 
+/**
+ * Revisión de una tanda sin React: qué le falta a cada fila y cómo se empaqueta el envío.
+ *
+ * El borrador de la tanda vive en un estado por id de fila, no en los campos montados:
+ * el editor enseña una fila cada vez y las demás tienen que seguir enviándose enteras.
+ */
+
 export interface RowSnapshot {
   readonly itemRef: string;
   readonly prompt: string;
@@ -14,7 +21,7 @@ export interface RowSnapshot {
 export type MissingField = 'correctAnswer' | 'category' | 'ruleNote' | 'prompt';
 
 export const MISSING_LABELS: Readonly<Record<MissingField, string>> = {
-  correctAnswer: 'correcta',
+  correctAnswer: 'corrección',
   category: 'categoría',
   ruleNote: 'regla',
   prompt: 'enunciado',
@@ -23,21 +30,6 @@ export const MISSING_LABELS: Readonly<Record<MissingField, string>> = {
 export function snapshotFromDraft(draft: ImportDraft): RowSnapshot {
   const { itemRef, prompt, myAnswer, correctAnswer, category, ruleNote } = draft;
   return { itemRef, prompt, myAnswer, correctAnswer, category, ruleNote };
-}
-
-export function readRow(data: FormData, id: number): RowSnapshot {
-  const read = (field: keyof RowSnapshot): string => {
-    const value = data.get(`${String(id)}.${field}`);
-    return typeof value === 'string' ? value : '';
-  };
-  return {
-    itemRef: read('itemRef'),
-    prompt: read('prompt'),
-    myAnswer: read('myAnswer'),
-    correctAnswer: read('correctAnswer'),
-    category: read('category'),
-    ruleNote: read('ruleNote'),
-  };
 }
 
 export function missingFields(row: RowSnapshot): MissingField[] {
@@ -49,38 +41,51 @@ export function missingFields(row: RowSnapshot): MissingField[] {
   return missing;
 }
 
-/** Campos de texto de cada fila, en el orden en que viajan. */
-const ROW_TEXT_FIELDS = ['itemRef', 'prompt', 'myAnswer', 'correctAnswer', 'cause', 'category', 'subcategory', 'confidence', 'ruleNote'] as const;
+/** Una fila de la tanda con id estable: quitar otra no la desplaza. */
+export interface DraftRow extends ImportDraft {
+  readonly id: number;
+}
+
+/** Campos de cada fila, en el orden en que viajan. */
+const ROW_FIELDS = ['itemRef', 'prompt', 'myAnswer', 'correctAnswer', 'cause', 'category', 'subcategory', 'confidence', 'ruleNote'] as const;
 
 /**
- * Lo que se envia al servidor desde la revision de una tanda. Es el contrato con
- * importSessionAction e importErrorsAction: los campos de cada fila se leen por su nombre
- * `N.campo`, y el paquete lleva `envelope` (con cabecera) o `rows` (sin ella), mas
- * `sessionId` cuando hay destino. Vive aqui, sin React, para poder probarlo sin navegador.
+ * Lo que se envía al servidor desde la revisión de una tanda. Es el contrato con
+ * importSessionAction e importErrorsAction: el paquete lleva `envelope` (con cabecera) o
+ * `rows` (sin ella), más `sessionId` cuando hay destino y `durationMin` al crear sesión.
+ *
+ * - Sin destino, `header` es la cabecera ya editada y se crea la sesión con ella.
+ * - Con destino, `header` es la del bloque tal como llegó: la sesión conserva la suya.
  */
-export function buildImportPayload(form: FormData, rowIds: readonly number[], options: {
+export function buildImportPayload(rows: readonly ImportDraft[], options: {
   readonly targetId: number | null;
-  readonly importedHeader: ImportedSession | undefined;
+  readonly header: ImportedSession | undefined;
+  readonly durationMin?: number | null;
+  readonly importId?: string;
 }): FormData {
-  const values = rowIds.map((id) => {
-    const prefix = `${String(id)}.`;
-    return {
-      ...Object.fromEntries(ROW_TEXT_FIELDS.map((field) => [field, form.get(`${prefix}${field}`)])),
-      lateInSession: form.has(`${prefix}lateInSession`),
-    };
-  });
+  const values = rows.map((row) => ({
+    ...Object.fromEntries(ROW_FIELDS.map((field) => [field, row[field]])),
+    lateInSession: row.lateInSession,
+  }));
   const payload = new FormData();
   if (options.targetId !== null) payload.set('sessionId', String(options.targetId));
-  if (options.importedHeader !== undefined) {
-    const number = (key: string) => form.get(key) === null || form.get(key) === '' ? null : Number(form.get(key));
-    // Sin destino se crea la sesion con la cabecera editada; con destino se conserva la suya.
-    const header = options.targetId === null ? {
-      date: form.get('date'), kind: form.get('kind'), paper: form.get('paper') || null,
-      part: number('part'), source: form.get('source'), sourceRef: form.get('sourceRef'),
-      itemsTotal: number('itemsTotal'), itemsCorrect: number('itemsCorrect'), timed: form.has('timed'),
-    } : options.importedHeader;
-    payload.set('envelope', JSON.stringify({ session: header, errors: values }));
-    if (options.targetId === null) payload.set('durationMin', String(form.get('durationMin') ?? ''));
+  if (options.header !== undefined) {
+    payload.set('envelope', JSON.stringify({ session: options.header, errors: values }));
+    if (options.targetId === null) {
+      if (options.importId !== undefined) payload.set('importId', options.importId);
+      payload.set('durationMin', options.durationMin === null || options.durationMin === undefined ? '' : String(options.durationMin));
+    }
   } else payload.set('rows', JSON.stringify(values));
   return payload;
+}
+
+/** Siguiente fila pendiente después de `fromIndex`, dando la vuelta. `null` si no queda ninguna. */
+export function nextPendingIndex(rows: readonly ImportDraft[], fromIndex: number): number | null {
+  const n = rows.length;
+  for (let step = 1; step <= n; step += 1) {
+    const index = (fromIndex + step) % n;
+    const row = rows[index];
+    if (row !== undefined && missingFields(snapshotFromDraft(row)).length > 0) return index;
+  }
+  return null;
 }

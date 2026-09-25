@@ -69,7 +69,7 @@ test('la extension entra en el iframe del reproductor y tambien en uno servido d
       // Los locators esperan la inyeccion y atraviesan el shadow root del panel.
       const panel = page.frameLocator(selector).locator('[data-errorlog-ui]');
       await expect(panel.locator('.toggle'), `sin boton en ${selector}`).toBeVisible();
-      await expect(panel.locator('.toggle')).toContainText('Errores');
+      await expect(panel.locator('.toggle')).toContainText('Error Log');
       await panel.locator('.toggle').click();
       await expect(panel.locator('.status')).toBeVisible();
       await expect(panel.locator('.status')).toContainText('fallo');

@@ -24,6 +24,28 @@ it('crea una sesión OPEN y sus errores, con duración solo si se escribe aparte
   expect(result.message).toBe('Sesión creada con 1 error. 1 repetido omitido.');
 });
 
+it('un reintento con la misma identidad devuelve la sesión original sin duplicar filas', () => {
+  const importId = '4b796a25-a7ec-4671-9c66-48443dff8297';
+  const first = importSessionWithErrors(db, { session, errors: [row] }, { ...options, importId });
+  const retry = importSessionWithErrors(db, { session, errors: [row] }, { ...options, importId });
+  expect(first.ok).toBe(true);
+  expect(retry.ok).toBe(true);
+  expect(retry.createdId).toBe(first.createdId);
+  expect(countSessions(db)).toBe(1);
+  expect(listErrors(db, first.createdId!)).toHaveLength(1);
+});
+
+it('una identidad ya confirmada no acepta datos distintos ni recrea una sesión borrada', () => {
+  const importId = '47b1c096-4419-496b-8573-9354279a7d2e';
+  const first = importSessionWithErrors(db, { session, errors: [row] }, { ...options, importId });
+  const changed = importSessionWithErrors(db, { session, errors: [{ ...row, itemRef: '2' }] }, { ...options, importId });
+  expect(changed.ok).toBe(false);
+  db.$client.prepare('DELETE FROM session WHERE id = ?').run(first.createdId);
+  const deleted = importSessionWithErrors(db, { session, errors: [row] }, { ...options, importId });
+  expect(deleted.ok).toBe(false);
+  expect(countSessions(db)).toBe(0);
+});
+
 it.each([3.5, -1, 'abc', NaN, undefined])('rechaza durationMin inválido (%s) sin escribir', (durationMin) => {
   const result = importSessionWithErrors(db, { session, errors: [row] }, { ...options, durationMin });
   expect(result.fieldErrors['session.durationMin']).toEqual(['Los minutos deben ser un entero no negativo o quedar vacíos.']);

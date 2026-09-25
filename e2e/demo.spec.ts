@@ -38,40 +38,40 @@ test('recorrido de registro e informe para el README', async ({ page }) => {
   mkdirSync('docs/media', { recursive: true });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/registrar');
-  await page.getByRole('button', { name: 'Nueva sesión a mano' }).click();
-  await page.getByLabel('Ítems *').fill('8');
-  await page.getByLabel('Aciertos *').fill('6');
+  await page.getByRole('button', { name: /Nueva sesión manual/ }).click();
+  await page.getByLabel('Ítems intentados').fill('8');
+  await page.getByLabel('Aciertos', { exact: true }).fill('6');
   await page.getByLabel('Referencia').fill('Práctica semanal · datos de ejemplo');
   await frame(page, 1, 'Empieza por tu sesión', 'Los intentos también cuentan: 2 errores sobre 8 ejercicios.');
 
-  await page.getByRole('button', { name: 'Abrir sesión', exact: true }).click();
-  await page.getByRole('button', { name: 'Pegar varios errores', exact: true }).click();
-  await page.getByLabel('Errores para importar').fill(
+  await page.getByRole('button', { name: 'Crear sesión', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Añadir error' })).toBeVisible();
+  await page.getByRole('button', { name: 'Pegar varios' }).click();
+  await page.getByLabel('Errores para añadir a esta sesión').fill(
     'Item\tEnunciado\tMi respuesta\tCorrecta\tCategoria\tRegla\n'
     + '4\tThey called ___ the meeting.\tof\toff\tPHRASAL_VERB\tCall off significa cancelar una actividad.\n'
     + '5\tShe is interested ___ music.\ton\tin\tPREPOSICION_DEPENDIENTE\tInterested se construye con in.',
   );
-  await page.getByLabel('Errores para importar').scrollIntoViewIfNeeded();
   await frame(page, 2, 'Pega tus correcciones', 'Desde una tabla o una respuesta de IA, sin transcribir cada campo.');
 
-  await page.getByRole('button', { name: 'Preparar vista previa', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Revisar 2 errores' })).toBeVisible();
-  const first = page.getByRole('group', { name: 'Error 1', exact: true });
-  await first.getByRole('combobox', { name: /^Causa/ }).selectOption('CONFUSION');
-  await first.getByRole('combobox', { name: 'Confianza', exact: true }).selectOption('SEGURO');
-  await first.scrollIntoViewIfNeeded();
-  await frame(page, 3, 'Revisa qué falló y por qué', 'Ajusta causa, confianza y regla antes de guardar la tanda.');
+  await page.getByRole('button', { name: 'Revisar importación', exact: true }).click();
+  const review = page.getByRole('region', { name: 'Revisar importación' });
+  await expect(review).toBeVisible();
+  await review.getByRole('combobox', { name: 'Causa' }).selectOption('CONFUSION');
+  await review.getByRole('combobox', { name: 'Confianza' }).selectOption('SEGURO');
+  // El aviso de la sesión recién creada taparía la barra de guardado.
+  const created = page.getByRole('button', { name: 'Cerrar aviso' });
+  if (await created.isVisible()) await created.click();
+  await frame(page, 3, 'Revisa qué falló y por qué', 'Un error cada vez: ajusta causa, confianza y regla antes de guardar la tanda.');
 
-  await page.getByRole('button', { name: 'Guardar 2 errores', exact: true }).click();
+  await review.getByRole('button', { name: /^Guardar 2 errores en esta sesión/ }).click();
   await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
-  const table = page.getByRole('table', { name: 'Errores registrados en esta sesión' });
-  await expect(table.locator('tbody tr')).toHaveCount(2);
-  await table.scrollIntoViewIfNeeded();
-  await frame(page, 4, 'Tus errores, guardados', 'La tanda se guarda completa; los duplicados de la misma sesión se omiten.');
+  await page.getByRole('button', { name: /^Ver error 4/ }).click();
+  await frame(page, 4, 'Tus errores, guardados', 'La tanda se guarda completa; cada error se lee entero en su detalle.');
 
   await page.goto('/informe');
-  // La captura muestra lo que se ve al abrir: la accion destacada y sus cifras. La tabla
+  // La captura muestra lo que se ve al abrir: la recomendación y su evidencia. La tabla
   // de las siete reglas queda plegada, que es su estado real por defecto.
-  await expect(page.getByText('Haz esto').first()).toBeVisible();
-  await frame(page, 5, 'Elige una acción para esta semana', 'El informe prioriza el siguiente paso y muestra la cifra que lo justifica.');
+  await expect(page.getByText('Recomendación principal · esta semana')).toBeVisible();
+  await frame(page, 5, 'Elige una acción para esta semana', 'Progreso prioriza el siguiente paso y muestra la cifra que lo justifica.');
 });

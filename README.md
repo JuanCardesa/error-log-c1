@@ -80,12 +80,14 @@ solo en `127.0.0.1`; la app no está preparada para exponerse directamente a Int
 
 ## Pegar correcciones
 
-1. Abre una sesión en **Registrar** y pulsa **Pegar varios errores**.
+1. En **Sesiones**, pega en **Pegar correcciones**; para añadir a una sesión abierta,
+   ábrela y pulsa **Pegar varios**.
 2. Pega celdas con las cabeceras de la plantilla o un JSON de errores. Si partes de
-   correcciones en texto o fotos, copia las instrucciones de **Convertir mis correcciones
+   correcciones en texto o fotos, copia las instrucciones de **Preparar correcciones
    con IA** y úsalas en la herramienta que prefieras.
-3. Prepara la vista previa, comprueba cada respuesta y ajusta causa y confianza.
-4. Guarda la tanda. Un error repetido en la misma sesión no se duplica ni modifica el anterior.
+3. Pulsa **Revisar importación**: un índice con el estado de cada error y un editor para
+   el elegido. Completa lo pendiente (Alt+↓ salta al siguiente) y ajusta causa y confianza.
+4. Guarda la tanda (Ctrl+Intro). Un error repetido en la misma sesión no se duplica ni modifica el anterior.
 
 La app no conecta con una IA ni lee fotos directamente. Si utilizas una herramienta
 externa, las correcciones se las facilitas tú. Revisa su respuesta: puede interpretar mal
@@ -93,10 +95,11 @@ el ejercicio. Cuando faltan causa y confianza se proponen `DESCONOCIMIENTO` y `D
 
 Una sesión con cero errores también cuenta: es parte del denominador. Las ventanas
 del informe son de 30 y 60 días; Falsas certezas usa siempre 30 días.
-En Registrar, **Más antiguas** y **Más recientes** permiten recorrer todas tus sesiones.
+En Sesiones puedes buscar por referencia, fuente o fecha y filtrar por estado y práctica;
+**Errores** busca en todos tus fallos, y Ctrl/⌘+K abre la búsqueda global.
 
 Para ejercicios del libro que no siguen una tarea de Cambridge, elige **Sin formato de
-examen** en Paper. No tendrás que indicar Part; sí los ítems y aciertos. Indica unidad,
+examen** en Formato de examen. No tendrás que indicar Part; sí los ítems y aciertos. Indica unidad,
 página y ejercicio en Referencia. Estas sesiones cuentan en el informe general y Anki,
 y quedan fuera de la precisión RUOE. Un ejercicio del libro con formato de examen
 puede seguir usando su paper y part correspondientes.
@@ -158,9 +161,9 @@ Si esa ruta predeterminada no existe, puedes restaurar directamente a ella omiti
 el segundo argumento. Una exportación JSON sirve para portabilidad; aún no hay importación
 del volcado completo ni restauración desde la interfaz.
 
-## Informe y Anki
+## Progreso y Anki
 
-El informe prioriza una acción con siete reglas. Las reglas de porcentaje exigen al
+Progreso prioriza una acción con siete reglas. Las reglas de porcentaje exigen al
 menos 15 observaciones en su propio denominador; las falsas certezas usan 30 días.
 [Consultas, umbrales y decisiones](docs/SPEC.md#4-consultas-q1q6-del-mvp-y-q7-de-anki).
 
@@ -170,6 +173,12 @@ sincronizar el historial. La conversión solo se sella tras verificar la tarjeta
 [Instalación, configuración, funcionamiento y límites](docs/ANKI.md).
 
 ## Desarrollo
+
+La búsqueda de texto de sesiones y errores usa coincidencia de subcadenas. Para consultas
+de tres caracteres o más, un índice FTS5 de trigramas reduce las filas candidatas; el
+filtro original comprueba el resultado exacto. Las consultas más cortas todavía recorren
+las filas, y las listas paginadas calculan el total. La paleta muestra hasta cinco errores
+y tres sesiones sin calcular ese total. Las entradas se limitan a 200 caracteres.
 
 Next.js (App Router), TypeScript strict, SQLite con Drizzle, Zod, Vitest y Playwright.
 CSS Modules, sin librería de componentes. El dominio, las consultas y las reglas son

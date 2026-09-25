@@ -37,12 +37,14 @@ dashboard. La conversión a Anki solo se sella cuando la tarjeta existe y está 
 
 ## Operating Context
 
-- **Entrada principal:** pegar la tanda de Macmillan («Copiar todo» del capturador
-  `tools/macmillan-capture`) en `/registrar`, revisar la cabecera propuesta y los
+- **Entrada principal:** pegar la tanda de Macmillan («Copiar tanda» del capturador
+  `tools/macmillan-capture`) en Sesiones (`/registrar`), revisar la cabecera propuesta y los
   errores, y guardar todo en una transacción. Le siguen la captura uno a uno por
   teclado y el pegado de varios errores (JSON preparado con IA o celdas de una hoja).
-- **Ritual semanal:** Informe (acción de la semana), luego Anki (cola de conversión y
-  sincronización manual de repasos), RUOE y Falsas certezas.
+- **Ritual semanal:** Progreso (la recomendación de la semana), luego Anki (pendientes,
+  convertidas y repasos), la matriz de Reading & Use of English y Falsas certezas.
+- **Consulta:** Errores (`/errores`) y la búsqueda Ctrl/⌘+K encuentran un fallo sin
+  recordar su sesión.
 - **Anki** corre en el mismo equipo con AnkiConnect; puede estar cerrado, y la app
   tiene que decirlo y seguir siendo útil.
 - Uso local y monousuario en `127.0.0.1`, sin cuenta. `pnpm demo` levanta una base

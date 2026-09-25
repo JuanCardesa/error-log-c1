@@ -50,12 +50,12 @@ El panel aparece abajo a la derecha, dentro del marco del ejercicio.
    escribir, si el ejercicio sustituye tu respuesta por la solución, solo se conserva si
    el guion ya estaba activo. No recupera lo que se sobrescribió antes de cargarlo.
 2. Responde y pulsa el botón de corregir de Macmillan. Los fallos entran solos en la
-   bandeja. El botón flotante lleva la cuenta: «Errores (7)».
+   bandeja. El botón flotante lleva la cuenta: «Error Log · 7 errores».
 3. Sigue con los demás ejercicios de la unidad. La bandeja acumula y aguanta cambios de
    actividad y recargas.
-4. Al terminar, abre el panel y pulsa **Copiar todo**.
-5. Pega el bloque en **Registrar → Pegar sesión y errores**, revisa la cabecera y los
-   errores y guarda. La sesión y todas sus filas se crean juntas; si algo no valida,
+4. Al terminar, abre el panel y pulsa **Copiar tanda**.
+5. Pega el bloque en **Sesiones → Pegar correcciones** (o pulsa Ctrl+V fuera de un campo),
+   revisa la cabecera y los errores y guarda. La sesión y todas sus filas se crean juntas; si algo no valida,
    no se crea nada y se conserva la vista previa.
 
 El panel muestra **respuestas comprobadas y aciertos de toda la tanda**, también de
@@ -106,12 +106,16 @@ Cada fallo se identifica por actividad, item, enunciado y tu respuesta. Con eso:
   hueco como correcto con el valor bueno dentro, y eso es su veredicto, no una deducción
   nuestra. El hueco se reconoce por `data-rcfid`, que no cambia entre intentos. Si vuelves
   a fallar, no se rellena nada.
-- **Vaciar la bandeja** descarta errores y recuentos y no los vuelve a recoger solos.
-- **Olvidar lo exportado** reinicia la memoria de errores y recuentos ya exportados.
-  Sirve para recuperar una tanda copiada que no llegaste a pegar: recoge la actividad
-  actual y, al volver a abrir las demás actividades, recoge también sus errores y recuentos.
+- **Copiar tanda** entrega toda la tanda en un solo sobre y **no la vacía**: copiada no
+  significa guardada. La bandeja y los recuentos siguen hasta que los vacías.
+- **Volver a copiar la última** recupera el último bloque copiado, incluso tras vaciar.
+- **Vaciar…** pide confirmación y dice qué se descarta (errores y recuentos). Lo vaciado no
+  se vuelve a recoger solo. Vacía la bandeja cuando hayas guardado la tanda en Error Log:
+  si no, la siguiente copia volvería a llevar los mismos errores.
+- En **···**: **Copiar muestra técnica** y **Olvidar lo exportado**, que reinicia la memoria
+  de lo ya vaciado. Sirve para recuperar una tanda vaciada que no llegaste a guardar:
+  recoge la actividad actual y, al volver a abrir las demás, también sus errores y recuentos.
 
-«Copiar todo» entrega toda la tanda en un solo sobre y reinicia errores y recuentos.
 El tope de la bandeja son trescientos fallos; al llenarse avisa. Si el texto supera
 200 000 caracteres incluso en JSON compacto, se conservan la bandeja y los recuentos.
 El panel muestra el bloque completo para copiarlo a un editor y acortar los enunciados

@@ -7,6 +7,7 @@ import { test } from '@playwright/test';
 
 const SHOTS = [
   { path: '/registrar', file: 'registrar.png' },
+  { path: '/errores', file: 'errores.png' },
   { path: '/informe', file: 'informe.png' },
   { path: '/ruoe', file: 'ruoe.png' },
   { path: '/anki', file: 'anki.png' },

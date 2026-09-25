@@ -11,6 +11,7 @@ import {
   getError,
   getSession,
   hasWritingPiece,
+  sessionDeletionImpact,
   setSessionStatus,
   updateError,
   updateSession,
@@ -19,7 +20,7 @@ import { generatesCard } from '@/lib/domain/enums';
 import { toIsoDate } from '@/lib/time/dates';
 import { errorInputSchema, sessionInputSchema } from '@/lib/validation/schemas';
 import { checkbox, collectIssues, integer, isValidId, text } from '../_shared/formData';
-import type { FormState } from './formState';
+import type { ActionResult, FormState } from './formState';
 
 /**
  * Acciones de servidor de la vista Registrar.
@@ -60,7 +61,7 @@ export async function createSessionAction(
   }
 
   const created = createSession(getDb(), parsed.data);
-  revalidatePath('/registrar');
+  revalidatePath('/', 'layout');
 
   return {
     ok: true,
@@ -138,7 +139,7 @@ export async function addErrorAction(
   }
 
   const created = createError(getDb(), parsed.data);
-  revalidatePath('/registrar');
+  revalidatePath('/', 'layout');
 
   return { ok: true, fieldErrors: {}, message: null, createdId: created.id };
 }
@@ -181,8 +182,7 @@ export async function updateErrorAction(
   if (!updateError(getDb(), id, parsed.data)) {
     return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe. Tus cambios siguen en el formulario.' };
   }
-  revalidatePath('/registrar');
-  revalidatePath('/informe');
+  revalidatePath('/', 'layout');
   return { ok: true, fieldErrors: {}, message: 'Error corregido.', createdId: id };
 }
 
@@ -212,25 +212,46 @@ export async function updateSessionAction(
   if (!updateSession(getDb(), id, parsed.data)) {
     return { ok: false, fieldErrors: {}, message: 'Esa sesión ya no existe. Tus cambios siguen en el formulario.' };
   }
-  revalidatePath('/registrar');
-  revalidatePath('/informe');
+  revalidatePath('/', 'layout');
   return { ok: true, fieldErrors: {}, message: 'Cabecera corregida.', createdId: id };
 }
 
-export async function deleteErrorAction(id: number): Promise<void> {
-  deleteError(getDb(), id);
-  revalidatePath('/registrar');
+export async function deleteErrorAction(id: number): Promise<ActionResult> {
+  if (!isValidId(id)) return { ok: false, message: 'Falta el error a borrar.' };
+  try {
+    if (!deleteError(getDb(), id)) return { ok: false, message: 'Ese error ya no existe; actualiza la vista.' };
+  } catch {
+    return { ok: false, message: 'No se pudo borrar el error. Vuelve a intentarlo.' };
+  }
+  revalidatePath('/', 'layout');
+  return { ok: true, message: 'Error borrado.' };
 }
 
 export async function setSessionStatusAction(
   id: number,
   status: 'OPEN' | 'CLOSED',
-): Promise<void> {
+): Promise<ActionResult> {
+  if (!isValidId(id)) return { ok: false, message: 'Falta la sesión.' };
+  if (getSession(getDb(), id) === null) return { ok: false, message: 'Esa sesión ya no existe.' };
   setSessionStatus(getDb(), id, status);
-  revalidatePath('/registrar');
+  revalidatePath('/', 'layout');
+  return { ok: true, message: status === 'CLOSED' ? 'Sesión cerrada.' : 'Sesión reabierta para añadir errores.' };
 }
 
-export async function deleteSessionAction(id: number): Promise<void> {
-  deleteSession(getDb(), id);
-  revalidatePath('/registrar');
+export async function deleteSessionAction(id: number): Promise<ActionResult> {
+  if (!isValidId(id)) return { ok: false, message: 'Falta la sesión.' };
+  const db = getDb();
+  if (getSession(db, id) === null) return { ok: false, message: 'Esa sesión ya no existe.' };
+  const impact = sessionDeletionImpact(db, id);
+  try {
+    deleteSession(db, id);
+  } catch {
+    return { ok: false, message: 'No se pudo borrar la sesión. Vuelve a intentarlo.' };
+  }
+  revalidatePath('/', 'layout');
+  const errors = `${String(impact.errors)} ${impact.errors === 1 ? 'error eliminado' : 'errores eliminados'}`;
+  return {
+    ok: true,
+    message: `Sesión borrada · ${errors}${impact.hasWritingPiece ? ' y su registro de Writing' : ''}.`,
+  };
 }

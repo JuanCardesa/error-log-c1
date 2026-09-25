@@ -89,7 +89,7 @@ export function describe(state) {
   return {
     tone: 'good',
     title: `${String(fresh)} ${fresh === 1 ? 'fallo guardado' : 'fallos guardados'} de esta actividad`,
-    detail: `De ${String(checked)} respuestas comprobadas. Sigue con los siguientes ejercicios y pulsa «Copiar todo» al acabar.`,
+    detail: `De ${String(checked)} respuestas comprobadas. Sigue con los siguientes ejercicios y pulsa «Copiar tanda» al acabar.`,
     canExport: true,
   };
 }

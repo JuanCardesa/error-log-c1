@@ -1,0 +1,417 @@
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.back {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 14px;
+}
+
+.dest {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--color-ink-2);
+}
+
+.dest strong {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.destSelect {
+  max-width: 560px;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2) 20px;
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  font-size: 14px;
+}
+
+.summaryRef {
+  font-weight: 600;
+}
+
+.summaryEdit {
+  margin-left: auto;
+}
+
+.headerEditor {
+  padding: var(--space-5);
+}
+
+.headerEditor[hidden] {
+  display: none;
+}
+
+/* ── Progreso segmentado ─────────────────────────────────────────────────── */
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.segments {
+  display: flex;
+  flex: 1;
+  gap: 3px;
+  min-width: 0;
+}
+
+.segment {
+  flex: 1;
+  height: 6px;
+  border-radius: 1px;
+  cursor: pointer;
+}
+
+.segDone {
+  background: var(--color-success);
+}
+
+.segPending {
+  background: var(--color-warning-soft);
+}
+
+.segActive {
+  box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 3px var(--color-brand);
+}
+
+.progressText {
+  font: var(--text-data);
+  white-space: nowrap;
+}
+
+/* ── Índice + editor ──────────────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.index {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--color-rule);
+}
+
+.indexHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.indexCount {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.smallPill {
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.indexList {
+  flex: 1;
+  max-height: 720px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.indexRow {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--color-surface-2);
+  background: none;
+  color: var(--color-ink);
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.indexRow:hover {
+  background: var(--color-surface-2);
+}
+
+.indexRow:focus-visible {
+  outline-offset: -2px;
+}
+
+.indexActive,
+.indexActive:hover {
+  background: var(--color-selected);
+  box-shadow: inset 3px 0 0 var(--color-brand);
+}
+
+.indexN {
+  font-size: 13px;
+  color: var(--color-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.indexCorrect {
+  overflow: hidden;
+  font: var(--text-data);
+  text-overflow: ellipsis;
+}
+
+.indexState {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.editorPane {
+  min-width: 0;
+  padding: var(--space-5) var(--space-6);
+}
+
+.mobilePicker {
+  display: none;
+}
+
+.noRows {
+  max-width: 48ch;
+  color: var(--color-ink-2);
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.editor > * {
+  max-width: var(--reading-max);
+}
+
+.editorHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  max-width: none;
+}
+
+.editorTitle {
+  white-space: nowrap;
+}
+
+.editorNav {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.remove {
+  color: var(--color-ink-2);
+}
+
+.promptBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prompt {
+  font: var(--text-prompt-lg);
+  overflow-wrap: anywhere;
+}
+
+.promptMissing {
+  font-size: 15px;
+}
+
+.answers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.mineBox {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-h);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-bg);
+  font: 400 19px/26px var(--font-serif);
+  color: var(--color-ink-2);
+  text-decoration-line: line-through;
+  text-decoration-color: var(--color-danger);
+  text-decoration-thickness: 1.5px;
+  overflow-wrap: anywhere;
+}
+
+.mineMissing {
+  font-style: italic;
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.correctInput {
+  font: 600 18px/26px var(--font-serif);
+}
+
+.triple {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.causeHelp {
+  margin-top: calc(-1 * var(--space-2));
+}
+
+.more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.moreGrid {
+  display: grid;
+  grid-template-columns: 96px repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.alertText {
+  display: flex;
+  flex: 1 1 320px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ── Barra inferior fija, en cristal ──────────────────────────────────────── */
+
+.bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin: 0 calc(-1 * var(--page-pad));
+  padding: var(--space-4) var(--page-pad);
+  background: var(--glass-footer-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--glass-border);
+}
+
+.barText {
+  font-weight: 500;
+}
+
+@media (max-width: 1023px) {
+  .grid {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .editorPane {
+    padding: var(--space-5);
+  }
+}
+
+/* Móvil: un error por pantalla, selector «Error N de M» y la barra con lo esencial. */
+@media (max-width: 639px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .index {
+    display: none;
+  }
+
+  .mobilePicker {
+    display: flex;
+    margin-bottom: var(--space-4);
+  }
+
+  .editorPane {
+    padding: var(--space-4);
+  }
+
+  .answers,
+  .triple,
+  .moreGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .prompt {
+    font: var(--text-prompt);
+  }
+
+  .bar {
+    gap: var(--space-2);
+  }
+
+  .bar kbd,
+  .remove kbd {
+    display: none;
+  }
+
+  /* El selector «Error N de M» ya lo dice. */
+  .editorTitle {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .editorHead {
+    justify-content: flex-end;
+  }
+
+  .barText {
+    flex-basis: 100%;
+    font-size: 13px;
+  }
+}
+
+.rule {
+  max-width: var(--reading-max);
+}

@@ -2,38 +2,44 @@ import Link from 'next/link';
 
 import { getDb } from '@/lib/db/client';
 import {
+  countOpenSessions,
   distinctSubcategories,
-  countSessions,
   getSession,
   lastUsedCategory,
   listErrors,
-  listSessions,
   listOpenSessions,
+  searchSessions,
+  sessionDeletionImpact,
 } from '@/lib/db/repo';
+import { PAPERS, SOURCES } from '@/lib/domain/enums';
 import type { SessionRow } from '@/lib/domain/types';
-import { KIND_LABELS, PAPER_LABELS, STATUS_LABELS } from '../_shared/labels';
 import { toIsoDate } from '@/lib/time/dates';
-import { CaptureForm } from './CaptureForm';
-import { ErrorList } from './ErrorList';
-import { SessionPanel } from './SessionPanel';
-import { SessionImport } from './SessionImport';
+import { Kbd } from '../_shared/Kbd';
+import { longDate, practiceLabel, practiceLongLabel, score, sessionTitle, shortDate } from '../_shared/format';
+import { SOURCE_LABELS } from '../_shared/labels';
+import { StatusText } from '../_shared/StatusText';
+import ui from '../_shared/ui.module.css';
+import type { SearchParams } from '../_shared/window';
+import { BackToList, RememberList } from './BackToList';
+import { ImportHost } from './ImportHost';
+import { type ListParams, hasFilters, listHref, parseListParams } from './listParams';
 import { ManualSession } from './ManualSession';
+import { PasteEntry } from './PasteEntry';
 import { SavedNotice } from './SavedNotice';
-import styles from './page.module.css';
+import { SessionControls } from './SessionControls';
+import { SessionErrors } from './SessionErrors';
+import { SessionTable } from './SessionTable';
+import { SessionsToolbar } from './SessionsToolbar';
+import styles from './sessions.module.css';
 
 /**
- * Vista Registrar. Componente de servidor: lee de SQLite y baja a cliente solo los
- * formularios, que son lo unico que necesita estado.
- *
- * El flujo respeta §6.1: primero una cabecera valida, y solo entonces aparece la
- * entrada de errores.
+ * Sesiones: registrar la práctica terminada y encontrar cualquier sesión anterior.
+ * Con `?s=ID`, el detalle de una sesión y sus errores.
  */
 
 export const dynamic = 'force-dynamic';
 
-interface Props {
-  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
+const PAGE_SIZE = 12;
 
 function parseId(value: string | string[] | undefined): number | null {
   if (typeof value !== 'string') return null;
@@ -41,164 +47,182 @@ function parseId(value: string | string[] | undefined): number | null {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-export default async function RegistrarPage({ searchParams }: Props) {
+export default async function RegistrarPage({ searchParams }: { readonly searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
-  const db = getDb();
-
-  const activeId = parseId(params['s']);
-  const active = activeId === null ? null : getSession(db, activeId);
   const today = toIsoDate(new Date());
+  const rawId = params['s'];
 
-  if (active === null) {
-    const pageSize = 12;
-    const total = countSessions(db);
-    const pages = Math.max(1, Math.ceil(total / pageSize));
-    const page = Math.min(parseId(params['p']) ?? 1, pages);
-    const recent = listSessions(db, pageSize, (page - 1) * pageSize);
-    const open = listOpenSessions(db);
-    // Desde /writing, sin sesion libre: se abre el alta con Writing puesto y se vuelve alli.
-    const fromWriting = params['nueva'] === 'writing';
-    return (
+  if (rawId !== undefined) {
+    const id = parseId(rawId);
+    const session = id === null ? null : getSession(getDb(), id);
+    if (session === null) return <SessionNotFound />;
+    return <SessionDetail session={session} params={params} today={today} />;
+  }
+  return <SessionList params={parseListParams(params)} fromWriting={params['nueva'] === 'writing'} newSession={params['nueva'] === '1'} today={today} />;
+}
+
+function SessionList({ params, fromWriting, newSession, today }: {
+  readonly params: ListParams;
+  readonly fromWriting: boolean;
+  readonly newSession: boolean;
+  readonly today: string;
+}) {
+  const db = getDb();
+  const q = params.q.toLowerCase();
+  const sources = q === '' ? [] : SOURCES.filter((source) => SOURCE_LABELS[source].toLowerCase().includes(q));
+  const paper = params.practica === 'libre' ? 'NONE' as const : PAPERS.find((value) => value === params.practica);
+  const filters = {
+    q: params.q,
+    sources,
+    status: params.estado === 'abiertas' ? 'OPEN' as const : undefined,
+    paper,
+    order: params.orden === 'asc' ? 'asc' as const : 'desc' as const,
+  };
+  const firstPass = searchSessions(db, { ...filters, limit: PAGE_SIZE, offset: (params.p - 1) * PAGE_SIZE });
+  const pages = Math.max(1, Math.ceil(firstPass.total / PAGE_SIZE));
+  const page = Math.min(params.p, pages);
+  const { rows, total } = page === params.p ? firstPass : searchSessions(db, { ...filters, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE });
+  const openCount = countOpenSessions(db);
+  const filtered = hasFilters(params);
+  const empty = total === 0 && !filtered;
+
+  return (
+    <ImportHost key="lista" today={today} openSessions={listOpenSessions(db)} subcategorySuggestions={distinctSubcategories(db)}>
+      <RememberList />
       <div className={styles.page}>
-        <header className={styles.head}>
-          <h1>Registrar</h1>
-          <p className={styles.lede}>
-            Abre una sesión y vuelca los errores. El objetivo es que cada error cueste
-            menos de 30 segundos.
-          </p>
+        <header className={ui.pageHead}>
+          <div>
+            <h1 className={ui.pageTitle}>Sesiones</h1>
+            <p className={ui.lede}>Registrar práctica y consultar tu historial</p>
+          </div>
+          <ManualSession
+            today={today}
+            shortcut
+            initiallyOpen={fromWriting || newSession}
+            preset={fromWriting ? { kind: 'WRITING', paper: 'WRITING', part: 1 } : undefined}
+            returnTo={fromWriting ? '/writing?registrar=1&sesion={id}' : undefined}
+          />
         </header>
 
-        {/* Por orden de uso: retomar lo abierto, pegar la tanda de Macmillan y, a un
-            clic, la sesion a mano. Mientras se revisa una tanda, solo queda la revision. */}
-        <div className={styles.entry}>
-          {page === 1 && open.length > 0 && (
-            <section className={`${styles.openBlock} ${styles.idleOnly}`} aria-labelledby="open-heading">
-              <h2 id="open-heading">Sesiones abiertas</h2>
-              <ul className={styles.sessions}>
-                {open.map((session) => (
-                  <li key={session.id}>
-                    {/* Al formulario de captura: retomar una abierta es seguir volcando. */}
-                    <SessionLink session={session} href={`/registrar?s=${String(session.id)}#captura`} action="Continuar →" />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+        <section id="pegar" aria-label="Importar correcciones">
+          <PasteEntry variant="entry" globalPaste />
+        </section>
 
-          <SessionImport today={today} openSessions={open} subcategorySuggestions={distinctSubcategories(db)} />
-
-          <div className={styles.idleOnly}>
-            <ManualSession
-              today={today}
-              initiallyOpen={fromWriting}
-              preset={fromWriting ? { kind: 'WRITING', paper: 'WRITING', part: 1 } : undefined}
-              returnTo={fromWriting ? '/writing' : undefined}
-            />
-          </div>
-        </div>
-
-        {recent.length > 0 && (
-          <section className={`${styles.recent} ${styles.idleOnly}`} aria-labelledby="recent-heading">
-            <h2 id="recent-heading">{page === 1 ? 'Sesiones recientes' : 'Historial de sesiones'}</h2>
-            <ul className={styles.sessions}>
-              {recent.map((session) => (
-                <li key={session.id}>
-                  <SessionLink session={session} href={`/registrar?s=${String(session.id)}`} />
-                </li>
-              ))}
-            </ul>
+        {empty ? (
+          <section className={styles.empty} aria-labelledby="empty-heading">
+            <h2 id="empty-heading" className={ui.sectionTitle}>Aún no hay sesiones</h2>
+            <p>Pega una tanda corregida o crea una sesión manual. Las sesiones sin errores también cuentan.</p>
+          </section>
+        ) : (
+          <section className={styles.history} aria-label="Historial de sesiones">
+            <SessionsToolbar params={params} openCount={openCount} />
+            {rows.length === 0 ? (
+              <div className={`${ui.tableEmpty} ${styles.table}`}>
+                <span>{params.q === '' ? 'Ninguna sesión coincide con los filtros.' : `Ninguna sesión coincide con «${params.q}».`}</span>
+                <Link href="/registrar" className={ui.textLink}>Limpiar búsqueda</Link>
+              </div>
+            ) : (
+              <SessionTable rows={rows.map((row) => ({
+                id: row.id,
+                href: `/registrar?s=${String(row.id)}`,
+                date: shortDate(row.date),
+                title: sessionTitle(row),
+                source: SOURCE_LABELS[row.source],
+                practice: practiceLabel(row),
+                score: score(row),
+                errors: row.errorCount,
+                status: row.status,
+              }))} />
+            )}
             {pages > 1 && (
               <nav className={styles.pagination} aria-label="Páginas de sesiones">
-                {page > 1 && (
-                  <Link href={page === 2 ? '/registrar' : `/registrar?p=${String(page - 1)}`}>
-                    ← Más recientes
-                  </Link>
-                )}
-                <span>Página {page} de {pages} · {total} sesiones</span>
-                {page < pages && (
-                  <Link href={`/registrar?p=${String(page + 1)}`}>Más antiguas →</Link>
-                )}
+                {page > 1
+                  ? <Link href={listHref(params, { p: page - 1 })}>Anteriores</Link>
+                  : <span className={styles.pageDisabled}>Anteriores</span>}
+                <span className={styles.pageNow}>{page} / {pages}</span>
+                {page < pages
+                  ? <Link href={listHref(params, { p: page + 1 })}>Siguientes</Link>
+                  : <span className={styles.pageDisabled}>Siguientes</span>}
               </nav>
             )}
+            <div className={styles.shortcuts} aria-hidden="true">
+              <span><Kbd>J</Kbd><Kbd>K</Kbd>moverse</span>
+              <span><Kbd>↵</Kbd>abrir</span>
+              <span><Kbd>N</Kbd>nueva sesión</span>
+              <span><Kbd>G</Kbd><Kbd>E</Kbd>ir a Errores</span>
+            </div>
           </section>
         )}
       </div>
-    );
-  }
-
-  const errors = listErrors(db, active.id);
-  const subcategories = distinctSubcategories(db);
-  const rawNotice = params['aviso'];
-  const aviso = typeof rawNotice === 'string' ? rawNotice.trim().slice(0, 300) || null : null;
-
-  return (
-    <div className={styles.page}>
-      <header className={styles.head}>
-        <div className={styles.crumb}>
-          <Link href="/registrar">← Todas las sesiones</Link>
-        </div>
-
-        <h1>
-          <span className="data">{active.date}</span>{' '}
-          <span className={styles.title}>
-            {active.paper === null ? 'Sin formato de examen' : `${PAPER_LABELS[active.paper]} Part ${String(active.part)}`} · {KIND_LABELS[active.kind]}
-          </span>
-        </h1>
-
-        <SessionPanel session={active} errorCount={errors.length} today={today} />
-      </header>
-
-      {aviso !== null && <SavedNotice message={aviso} sessionId={active.id} />}
-      {active.status === 'OPEN' ? (
-        <CaptureForm
-          session={active}
-          subcategorySuggestions={subcategories}
-          lastCategory={lastUsedCategory(db)}
-          autoFocusFirstField={aviso === null}
-        />
-      ) : (
-        <p className={styles.closed}>
-          Sesión cerrada. Reábrela para corregirla o añadir errores que faltaran.
-        </p>
-      )}
-
-      <ErrorList
-        errors={errors}
-        session={active}
-        subcategorySuggestions={subcategories}
-      />
-    </div>
+    </ImportHost>
   );
 }
 
-/**
- * Una sesion en una lista. En el historial, la fila acaba en su estado; en las abiertas,
- * en la accion que lleva a seguir con ella.
- */
-function SessionLink({ session, href, action }: {
+function SessionDetail({ session, params, today }: {
   readonly session: SessionRow;
-  readonly href: string;
-  readonly action?: string;
+  readonly params: SearchParams;
+  readonly today: string;
 }) {
+  const db = getDb();
+  const errors = listErrors(db, session.id);
+  const subcategories = distinctSubcategories(db);
+  const rawNotice = params['aviso'];
+  const notice = typeof rawNotice === 'string' ? rawNotice.trim().slice(0, 300) || null : null;
+  const errorId = parseId(params['error']);
+  const capture = params['modo'] === 'captura';
+  const open = session.status === 'OPEN';
+
   return (
-    <Link className={styles.sessionLink} href={href}>
-      <span className="data">{session.date}</span>
-      <span className={styles.meta}>
-        {session.paper === null ? 'Sin formato de examen' : `${PAPER_LABELS[session.paper]} P${String(session.part)}`} · {KIND_LABELS[session.kind]}
-        {action !== undefined && session.sourceRef !== null && ` · ${session.sourceRef}`}
-      </span>
-      <span className="data">
-        {session.itemsTotal === null
-          ? '—'
-          : `${String(session.itemsCorrect ?? 0)}/${String(session.itemsTotal)}`}
-      </span>
-      {action === undefined ? (
-        <span className={session.status === 'OPEN' ? styles.badgeOpen : styles.badgeClosed}>
-          {STATUS_LABELS[session.status]}
-        </span>
-      ) : (
-        <span className={styles.action}>{action}</span>
-      )}
-    </Link>
+    <ImportHost
+      key={`s${String(session.id)}`}
+      today={today}
+      openSessions={[]}
+      fixedTarget={open ? session : null}
+      subcategorySuggestions={subcategories}
+    >
+      <div className={styles.detail}>
+        <BackToList />
+        <header className={styles.detailHead}>
+          <div className={styles.titleBlock}>
+            <div className={styles.titleRow}>
+              <h1 className={ui.pageTitle}>{sessionTitle(session)}</h1>
+              <StatusText status={session.status} />
+            </div>
+            <div className={styles.facts}>
+              <span>{longDate(session.date)}</span>
+              <span>{practiceLongLabel(session)}</span>
+              <span>{SOURCE_LABELS[session.source]}</span>
+              <span className={styles.factStrong}>
+                {session.itemsTotal === null ? 'Sin recuento de ítems (Writing)' : `${score(session)} aciertos`}
+              </span>
+            </div>
+            {!open && <span className={ui.help}>Cerrada para añadir. Puedes corregir los datos existentes.</span>}
+          </div>
+          <SessionControls session={session} impact={sessionDeletionImpact(db, session.id)} today={today} />
+        </header>
+
+        {notice !== null && <SavedNotice message={notice} sessionId={session.id} />}
+
+        <SessionErrors
+          session={session}
+          rows={errors.map((error) => ({ error, session }))}
+          subcategorySuggestions={subcategories}
+          lastCategory={lastUsedCategory(db)}
+          initialMode={capture ? 'capture' : null}
+          initialErrorId={errorId}
+        />
+      </div>
+    </ImportHost>
+  );
+}
+
+function SessionNotFound() {
+  return (
+    <div className={styles.notFound}>
+      <BackToList />
+      <h1 className={ui.pageTitle}>No encontramos esta sesión</h1>
+      <p>Puede que se haya borrado o que el enlace esté incompleto. Tus demás sesiones siguen en el historial.</p>
+      <Link href="/registrar" className={ui.secondary}>Ir a Sesiones</Link>
+    </div>
   );
 }

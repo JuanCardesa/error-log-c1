@@ -1,362 +1,299 @@
 ---
 name: Error Log C1
-description: Registro personal de errores para el Cambridge C1, denso y orientado a datos.
+description: Registro personal de errores para el Cambridge C1. Herramienta para trabajar, papel para leer.
 colors:
-  paper: "#f2efe6"
-  sheet: "#fbf9f4"
-  sheet-sunken: "#ebe7db"
-  rule: "#d9d2c2"
-  rule-strong: "#b9b09b"
-  rule-field: "#8b8270"
-  ink: "#1b1915"
-  ink-soft: "#5b564b"
-  ink-faint: "#6d6757"
-  ink-hover: "#000000"
-  on-color: "#ffffff"
-  study-blue: "#1d4ed8"
-  study-blue-wash: "#e3ecfd"
-  study-blue-rule: "#b6ccf7"
-  exec-red: "#b4231d"
-  exec-red-wash: "#fbe7e5"
-  exec-red-rule: "#f3c2bd"
-  queued-ochre: "#7a5f17"
-  queued-ochre-wash: "#faf0d6"
-  watch-taupe: "#6b6352"
-  watch-taupe-wash: "#efebe0"
-  ok-green: "#2f6b43"
-  ok-green-wash: "#e4f0e7"
-  tier-high: "#dcefe2"
-  tier-mid: "#eaf0d9"
-  tier-low: "#faeed2"
-  tier-bad: "#f8dcd8"
+  paper: "#f6f5f1"
+  surface: "#ffffff"
+  surface-2: "#ecedea"
+  skeleton: "#e4e5e0"
+  selected: "#e6ece8"
+  brand-tint: "#e3eae6"
+  ink: "#20231f"
+  ink-2: "#5b6259"
+  ink-disabled: "#a5aba2"
+  primary-hover: "#383c36"
+  primary-blocked: "#8d928a"
+  rule: "#daddd5"
+  control: "#7c847a"
+  brand: "#304f46"
+  success: "#276544"
+  warning: "#805509"
+  warning-soft: "#e2c98f"
+  danger: "#b23830"
+  danger-soft: "#f7e9e7"
+  info: "#315f83"
+  viz-study: "#315f83"
+  viz-exec: "#9aa396"
+  viz-bar-past: "#9fbdb0"
+  viz-acc-85: "#c9dcd3"
+  viz-acc-70: "#dfe9e3"
+  viz-acc-55: "#ecedea"
+  viz-acc-low: "#f1e9da"
 typography:
   page-title:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+    fontFamily: "Source Serif 4"
+    fontSize: "30px"
+    fontWeight: 600
+    lineHeight: "36px"
+    letterSpacing: "-0.01em"
+  reco-title:
+    fontFamily: "Source Serif 4"
+    fontSize: "30px"
+    fontWeight: 600
+    lineHeight: "38px"
+  prompt:
+    fontFamily: "Source Serif 4"
+    fontSize: "19px"
+    fontWeight: 400
+    lineHeight: "28px"
+  prompt-lg:
+    fontFamily: "Source Serif 4"
     fontSize: "22px"
+    fontWeight: 400
+    lineHeight: "32px"
+  correction:
+    fontFamily: "Source Serif 4"
+    fontSize: "18px"
     fontWeight: 600
-    lineHeight: 1.25
-    letterSpacing: "-0.01em"
+    lineHeight: "26px"
   section:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-    fontSize: "16px"
+    fontFamily: "IBM Plex Sans"
+    fontSize: "18px"
     fontWeight: 600
-    lineHeight: 1.3
-    letterSpacing: "-0.01em"
+    lineHeight: "24px"
   body:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-    fontSize: "13px"
+    fontFamily: "IBM Plex Sans"
+    fontSize: "14px"
     fontWeight: 400
-    lineHeight: 1.45
-  small:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-    fontSize: "12px"
+    lineHeight: "20px"
+  field:
+    fontFamily: "IBM Plex Sans"
+    fontSize: "15px"
     fontWeight: 400
-    lineHeight: 1.45
+    lineHeight: "22px"
   label:
-    fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
-    fontSize: "11px"
-    fontWeight: 400
-    letterSpacing: "0.04em"
+    fontFamily: "IBM Plex Sans"
+    fontSize: "13px"
+    fontWeight: 500
+    lineHeight: "18px"
   data:
-    fontFamily: "ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas, monospace"
+    fontFamily: "IBM Plex Mono"
     fontSize: "13px"
     fontWeight: 400
+    lineHeight: "20px"
     fontFeature: "tnum"
+  kbd:
+    fontFamily: "IBM Plex Mono"
+    fontSize: "11px"
+    fontWeight: 500
+    lineHeight: "16px"
 rounded:
-  sm: "3px"
-  pill: "999px"
+  control: "4px"
+  panel: "6px"
+  overlay: "8px"
+  float: "10px"
 spacing:
-  sp-1: "2px"
-  sp-2: "4px"
-  sp-3: "6px"
-  sp-4: "10px"
-  sp-5: "14px"
-  sp-6: "20px"
-  sp-7: "28px"
+  space-1: "4px"
+  space-2: "8px"
+  space-3: "12px"
+  space-4: "16px"
+  space-5: "24px"
+  space-6: "32px"
+  space-7: "48px"
 components:
   button-primary:
     backgroundColor: "{colors.ink}"
-    textColor: "{colors.sheet}"
-    rounded: "{rounded.sm}"
-    padding: "6px 14px"
+    textColor: "{colors.surface}"
+    rounded: "{rounded.control}"
+    height: "40px"
   button-primary-hover:
-    backgroundColor: "{colors.ink-hover}"
+    backgroundColor: "{colors.primary-hover}"
+  button-primary-blocked:
+    backgroundColor: "{colors.primary-blocked}"
   button-secondary:
-    backgroundColor: "{colors.sheet}"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.sm}"
-    padding: "6px 14px"
+    borderColor: "{colors.control}"
+    rounded: "{rounded.control}"
+    height: "40px"
   button-danger:
-    backgroundColor: "{colors.exec-red}"
-    textColor: "{colors.on-color}"
-    rounded: "{rounded.sm}"
-    padding: "4px 10px"
-  button-unavailable:
-    backgroundColor: "{colors.sheet}"
-    textColor: "{colors.ink-faint}"
-    rounded: "{rounded.sm}"
+    backgroundColor: "{colors.danger}"
+    textColor: "{colors.surface}"
+    rounded: "{rounded.control}"
   input:
-    backgroundColor: "{colors.sheet}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.sm}"
-    padding: "6px 10px"
-  chip-study:
-    backgroundColor: "{colors.study-blue-wash}"
-    textColor: "{colors.study-blue}"
-    rounded: "{rounded.pill}"
-    padding: "0 6px"
-  chip-exec:
-    backgroundColor: "{colors.exec-red-wash}"
-    textColor: "{colors.exec-red}"
-    rounded: "{rounded.pill}"
-    padding: "0 6px"
-  state-good:
-    backgroundColor: "{colors.ok-green-wash}"
-    textColor: "{colors.ok-green}"
-    rounded: "{rounded.pill}"
-    padding: "0 6px"
-  state-warn:
-    backgroundColor: "{colors.queued-ochre-wash}"
-    textColor: "{colors.queued-ochre}"
-    rounded: "{rounded.pill}"
-    padding: "0 6px"
-  panel:
-    backgroundColor: "{colors.sheet}"
-    rounded: "{rounded.sm}"
-    padding: "14px"
+    backgroundColor: "{colors.surface}"
+    borderColor: "{colors.control}"
+    rounded: "{rounded.control}"
+    height: "40px"
+  segmented-on:
+    backgroundColor: "{colors.brand-tint}"
+    textColor: "{colors.brand}"
+  row-selected:
+    backgroundColor: "{colors.selected}"
+    borderLeft: "3px {colors.brand}"
+  surface:
+    backgroundColor: "{colors.surface}"
+    rounded: "{rounded.panel}"
 ---
 
-<!-- Sistema tras el rediseño de feature/ui-redesign (23-sep-2026). Los tokens viven en
-     src/app/globals.css y las primitivas en src/app/_shared/ui.module.css. -->
+<!-- Sistema del rediseño v5 (feature/ui-v5, 24-sep-2026), recreado desde
+     «Error Log C1 v5.dc.html» de Claude Design. Los tokens viven en src/app/globals.css,
+     las primitivas en src/app/_shared/ui.module.css y las capas en overlay.module.css. -->
 
 # Design System: Error Log C1
 
 ## Overview
 
-**Creative North Star: "El cuaderno corregido"**
+**Creative North Star: "Plex para trabajar, serif para leer"**
 
-Una hoja de ejercicios después de pasar por el profesor: papel claro, tinta negra para lo
-escrito, azul y rojo para las correcciones. Todo lo visual sirve a dos cosas: volcar una
-tanda deprisa y leer datos en columna. No hay imágenes, ilustraciones, sombras ni
-movimiento más allá del foco.
+Un cuaderno de trabajo editorial, preciso y tranquilo. La interfaz es de herramienta
+(IBM Plex Sans y Plex Mono, filas de 44 px, atajos de teclado visibles y búsqueda global
+con Ctrl/⌘+K). Lo que se lee —títulos de página, la recomendación de Progreso, los
+enunciados y la pareja «Tu respuesta → Corrección»— va en Source Serif 4.
 
-La densidad es alta a propósito: el cuerpo va a 13 px y el espaciado en pasos de 2 a 28 px.
-Los paneles llevan un borde fino. La monoespaciada lleva todo lo que se compara (fechas,
-respuestas, cifras); la sans del sistema lleva la interfaz, la prosa y las etiquetas de las
-taxonomías, que se leen como palabras («Preposición dependiente»), nunca como códigos. El
-color es semántico y tiene dos escalas separadas:
-- el **lado de la causa**: estudio en azul, ejecución en rojo;
-- el **estado frente a un umbral**: bien en verde, pendiente en ocre, vigilar en topo.
+La profundidad no sale de cajas: papel con grano, una zona de trabajo blanca con sombra
+suave donde se edita, y **cristal solo en lo que flota** (cabecera fija, barra inferior de
+la tanda, menús, la paleta ⌘K, avisos y el panel de Macmillan). Nunca en tablas ni datos.
 
 **Key Characteristics:**
-- Papel hueso con hojas algo más claras encima; la profundidad sale solo del tono y el borde.
-- Monoespaciada tabular para todo dato comparable; texto legible para toda etiqueta.
-- Azul y rojo reservados al lado de la causa; los umbrales usan la escala de estados.
-- Negro de tinta para la acción primaria; sin color de marca.
-- Esquinas casi rectas (3 px); píldoras para chips y estados.
-- Todo texto de lectura pasa AA sobre las tres superficies; el foco es un contorno azul de
-  2 px.
+- Papel `#F6F5F1` con grano SVG al 7 %; superficie blanca para editar y para dialogs.
+- Una acción primaria por tarea visible, en tinta; un verde de marca (`#304F46`) para foco,
+  selección e identidad, no para la acción.
+- Tablas abiertas: filete de tinta arriba, cabecera en tinta secundaria, filas separadas.
+- Estados siempre con texto o forma, nunca solo color. Rojo reservado al daño y al error.
+- Iconos Lucide (`lucide-react`), 16 px en controles y 18 en botones de icono.
+- Todo el texto funcional pasa 4,5:1 sobre papel, superficie y superficie-2.
 
 ## Colors
 
-Neutros cálidos de papel y tinta, con dos plumas de corrección y una escala de estados.
-
 ### Primary
-- **Tinta** (`ink`): texto principal, botón primario, conmutadores activos. La acción
-  principal no lleva color de marca: es tinta. Al pasar el ratón oscurece a `ink-hover`.
+- **Tinta** (`ink`): texto y botón primario. Hover `primary-hover`; con `aria-disabled`,
+  `primary-blocked` y el motivo en `aria-describedby`.
 
-### Secondary
-- **Azul de estudio** (`study-blue`, con `study-blue-wash` y `study-blue-rule`): causas que
-  se arreglan estudiando (Desconocimiento, Confusión, Ortografía), sus chips y sus barras.
-  También es el anillo de foco (`--accent`).
-
-### Tertiary
-- **Rojo de ejecución** (`exec-red` y sus derivados): causas de ejecución (Despiste,
-  Formato, Tiempo), la respuesta equivocada tachada, errores de validación, borrado y
-  «Haz esto».
-
-### Neutral
-- **Papel** (`paper`): fondo de página.
-- **Hoja** (`sheet`): paneles, tablas y campos.
-- **Hoja hundida** (`sheet-sunken`): cabeceras de tabla, hover, página actual en la barra y
-  campos deshabilitados.
-- **Filete** (`rule`) y **filete marcado** (`rule-strong`): separadores y bordes de panel,
-  que son decorativos.
-- **Borde de campo** (`rule-field`): el único borde que delimita un control. Da 3,3:1
-  (WCAG 1.4.11).
-- **Tinta suave** (`ink-soft`) y **tinta tenue** (`ink-faint`): texto secundario. La tenue
-  da 4,56–5,35:1 sobre las tres superficies.
+### Brand
+- **Verde tinta** (`brand`): anillo de foco (2 px, desplazamiento 2), fila seleccionada
+  (barra de 3 px sobre `selected`), pestaña activa (subrayado de 2 px), segmentado o filtro
+  activo (`brand-tint` con texto `brand`) y el cuadrado de la marca.
 
 ### Estados
-- **Bien** (`ok-green`): umbral cumplido, sesión abierta, mensajes de éxito, «Disponible».
-- **Pendiente** (`queued-ochre`, 5,32:1): por debajo de un umbral, «En cola», marca de valor
-  heredado, Anki no disponible.
-- **Vigilar** (`watch-taupe`): reglas en vigilancia y marcas neutras (reescritura de).
-- **Tramos de RUOE** (`tier-*`): solo como fondo de celda; el número manda y hay leyenda.
+- **Éxito** (`success`): guardado, verificado, «Listo», «Disponible».
+- **Aviso** (`warning`): pendiente, incompleto, sesión abierta (rombo), muestra pequeña,
+  «Siempre 30 días». Un campo pendiente de completar lleva el borde en este color.
+- **Error / destructivo** (`danger`): validación, confirmación de borrado, tarjeta
+  desactualizada, respuesta propia tachada.
+- **Información** (`info`): ayuda contextual (qué genera una causa, cabecera que no suma).
+
+### Visualización
+- **Causas**: `viz-study` las que se estudian, `viz-exec` las de protocolo de examen.
+- **RUOE**: `viz-acc-*` como fondo de celda por tramo; el número y la ratio mandan.
+- **Evolución por part**: semanas previas en `viz-bar-past`, la última en `brand`, sin
+  práctica = 2 px de `rule`.
 
 ### Named Rules
-**The Two Pens Rule.** Azul y rojo pertenecen a la causa: estudio y ejecución. Un umbral
-cumplido o no cumplido usa la escala de estados, nunca las plumas.
+**The Glass Rule.** El cristal es para lo que flota sobre la página. Lo que se lee o se
+edita (tablas, editores, drawer, panel de detalle, dialogs) va en blanco sólido.
 
-**The Readable Ink Rule.** Ningún texto que haya que leer baja de 4,5:1. Un control
-inactivo que tenga que explicarse no se atenúa con opacidad: pasa a tinta tenue.
+**The Readable Ink Rule.** `ink-disabled` solo para «—» o texto deshabilitado; nunca para
+algo que haya que leer.
 
 ## Typography
 
-**Display Font:** ninguna; no hay titular de exhibición.
-**Body Font:** sans del sistema (`ui-sans-serif`, `system-ui`, Segoe UI en Windows).
-**Label/Mono Font:** monoespaciada del sistema (`ui-monospace`, Cascadia Mono en Windows)
-con cifras tabulares.
+- **Page title** (Serif 600, 30/36, −0,01 em): h1 de cada vista. 25/30 en móvil.
+- **Reco title** (Serif 600, 30/38): la recomendación de Progreso.
+- **Prompt** (Serif 400, 19/28; 22/32 en el editor de la tanda): enunciados.
+- **Correction** (Serif 600, 18/26): la corrección; la respuesta propia en Serif 400
+  tachada en `danger` (1,5 px).
+- **Section** (Sans 600, 18/24) y **Subtitle** (Sans 600, 16/22).
+- **Body** (Sans 400, 14/20). **Field** (15/22; 16 en móvil). **Label** (500, 13/18).
+- **Data** (Mono 13, tabular): fechas, ratios, respuestas en listas. **Kbd** (Mono 500 11/16).
 
-**Character:** tipografía de herramienta, sin voz propia. La personalidad sale del
-contraste entre la sans de la interfaz y la mono de los datos.
-
-### Hierarchy
-- **Page title** (600, 22 px, 1,25): h1 de cada vista.
-- **Section** (600, 16 px, 1,3): h2 de panel.
-- **Body** (400, 13 px, 1,45): texto base, celdas y campos.
-- **Small** (400, 12 px): notas, pistas, tablas y navegación secundaria.
-- **Label** (400, 11 px, mayúsculas, +0,04 em): etiquetas de campo, cabeceras de tabla y
-  etiquetas de dato en las tarjetas móviles.
-- **Data** (mono, 13 px, tabular): fechas, respuestas y cifras.
+Las fuentes se sirven desde el propio origen (`next/font/local`, ficheros en
+`src/app/fonts/`, licencia OFL): ni el build ni el navegador piden nada a la red.
 
 ### Named Rules
-**The Column Rule.** Si un valor se compara en vertical, va en monoespaciada tabular y, si
-es un número, alineado a la derecha. Una etiqueta de taxonomía es una palabra, no un dato,
-y va en la sans.
-
 **The Spoken Label Rule.** Ningún valor interno se muestra en crudo: `CONFUSION` se lee
-«Confusión» y `DO NOW`, «Haz esto». Las etiquetas viven en `src/app/_shared/labels.ts`; lo
-guardado y lo exportado sigue siendo el valor interno.
+«Confusión». Las etiquetas viven en `src/app/_shared/labels.ts`; lo guardado y lo exportado
+sigue siendo el valor interno.
 
 ## Layout
 
-Una columna central de hasta 1200 px con 20 px de margen, bajo una barra superior. La
-navegación va en dos grupos, uso diario y detalle, y marca la página actual. Las vistas se
-componen apilando paneles con 20 px entre ellos. No hay rejilla de página ni barra lateral.
-
-**Orden por uso.** Cada vista abre con lo que se hace más a menudo: Registrar empieza por
-las sesiones abiertas y la tanda de Macmillan, con la sesión manual plegada; el Informe,
-por la acción de la semana.
-
-**Captura:** rejilla de cinco columnas con áreas nombradas. Ítem es estrecho y Causa ocupa
-dos columnas. **Revisión de tanda:** filas compactas con los cuatro campos que hay que
-completar a la vista y el resto plegado; una barra fija al pie cuenta lo pendiente.
-
-**Puntos de ruptura:** dos.
-- **760 px:** los formularios pasan a una columna.
-- **620 px:**
-  - la navegación ocupa una fila con desplazamiento;
-  - las filas de sesión pasan a dos líneas;
-  - la tabla de errores se convierte en tarjetas etiquetadas;
-  - las barras del Informe se ocultan.
+- Página de 1200 px de contenido (1264 con márgenes), padding 32/32/96; 24 en tableta y 16
+  en móvil. Cabecera fija de 56 px en cristal (dos filas en móvil).
+- Navegación: **Sesiones · Errores · Progreso · Anki · Más ▾** (Writing, Exportar datos) y
+  el botón Buscar con su atajo.
+- Listado + detalle: rejilla `minmax(0,1fr) 360px` con el panel pegado arriba. Con el
+  panel abierto, la tabla retira columnas (Causa y Anki, o Contexto).
+- **Puntos de ruptura:** < 640 móvil (dos filas de cabecera, controles de 44 px, detalle y
+  editores a pantalla completa); 640–1023 una columna con el detalle como pantalla;
+  ≥ 1024 listado y panel lado a lado. Nunca scroll horizontal de página: las tablas y
+  matrices anchas se desplazan dentro de su contenedor (con `position: relative`, para que
+  el `caption` accesible no escape).
 
 ## Elevation & Depth
 
-Plano. No hay sombras. La profundidad se expresa con tres tonos (papel, hoja, hoja hundida)
-y bordes de 1 px; el recuadro de «Haz esto» es el único borde de 2 px. La barra fija de la
-revisión de tanda se separa con un filete superior, no con sombra.
-
-### Named Rules
-**The Flat Sheet Rule.** Nada flota. Lo que tiene que destacar cambia de tono o de borde,
-no de altura.
+- `--shadow-1` para superficies de trabajo (editor, panel de detalle, recomendación).
+- Menús, dialog, paleta y drawer tienen su propia sombra.
+- Cristal: cabecera y barra inferior `rgba(246,245,241,.74–.76)` con `blur(16px)`; menús y
+  combobox en blanco al 84–92 %; paleta al 90 % con `blur(20px)`; avisos en tinta al 84 %.
+  Fallback sólido con `@supports not (backdrop-filter)`.
 
 ## Shapes
 
-Esquinas casi rectas (3 px) en paneles, campos y botones; píldora completa (`rounded.pill`)
-en chips de causa, chips de estado y barras de proporción. Bordes continuos de 1 px, y
-discontinuos solo para estados vacíos y la sesión cerrada.
+Radios de 4 px (controles), 6 px (paneles), 8 px (menús y dialogs) y 10 px (⌘K y panel de
+Macmillan). Píldora solo en el chip de filtro activo.
 
 ## Components
 
-Todas las primitivas se definen una sola vez en `src/app/_shared/ui.module.css` y no llevan
-margen exterior: el espacio alrededor lo decide cada vista.
+Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
+`overlay.module.css`.
 
 ### Buttons
-- **Primario** (`ui.primary`): tinta sobre hoja, 6 × 14 px. Es la acción que avanza la
-  tarea; uno por formulario o por tarjeta. Un enlace que lleva a hacer algo («Ir a la cola
-  de Anki», «Abrir una sesión de Writing») usa la misma forma.
-- **Secundario** (`ui.secondary`): hoja con filete marcado, para acciones de apoyo,
-  cancelar o cambiar de estado. Lo que solo lee («Sincronizar») es secundario; lo que
-  escribe («Crear en Anki») es primario.
-- **Peligro** (`ui.danger`): rojo de ejecución, solo en el segundo paso de un borrado.
-- **Compacto** (`ui.small`): 4 × 10 px y 12 px, para acciones dentro de filas.
-- **Estados:**
-  - `disabled`: al 55 % de opacidad y cursor de prohibido;
-  - `aria-busy`: cursor de espera;
-  - `aria-disabled`: sigue enfocable, en tinta tenue y sin opacidad, con `aria-describedby`
-    hacia el aviso que explica el motivo.
+- **Primario** (`ui.primary`), **secundario** (`ui.secondary`), **ghost** (`ui.ghost`),
+  **destructivo** (`ui.danger`, solo dentro de una confirmación); `ui.compact` a 36 px.
+- **Icono** (`ui.iconButton`, 36×36, 44 en táctil) con `aria-label` específico.
+- **Kbd** junto a la acción que tiene atajo; las etiquetas salen de `useShortcutLabels()`
+  (⌘ en Mac, Ctrl en el resto) y el gestor acepta ambos modificadores.
 
-### Chips
-- **Causa** (`ui.chipStudy`, `ui.chipExec`): píldora mono de 11 px con el lavado del color
-  de su lado.
-- **Estado** (`ui.stateGood`, `ui.stateWarn`): la misma forma, con la escala de estados.
-  Se usa para umbrales, la disponibilidad de Anki y el estado de cada fila de una tanda.
+### Navegación y filtros
+- **Tabs** (`ui.tabs`/`ui.tab`): enlaces con `aria-current`, subrayado de marca.
+- **Segmentado** (`ui.segmented`): conmutador 30/60 días; conserva los demás parámetros.
+- **Pills** (`ui.pills`) para Todas/Abiertas y **chip** (`ui.chip`) para un filtro activo.
 
-### Cards / Containers
-- **Panel** (`ui.panel`): hoja sobre papel, 1 px de filete marcado, 14 px de relleno.
-- **Vacío** (`ui.empty`): discontinuo, 64ch como máximo. Vacío no es cero: sin datos se
-  escribe «—», no 0.
-- **Avisos** (`ui.noticeOk`, `ui.noticeError`): el resultado de una acción, con su fondo.
-  Un aviso que sigue a una navegación recibe el foco.
+### Datos
+- **Tablas** reales (`<table>` con `caption`) y columnas fijas; fila clicable con un
+  botón o enlace dentro para el teclado. Seleccionada: `selected` + barra de marca.
+- **StatusText**: rombo «Abierta» en aviso, cuadrado «Cerrada» en tinta secundaria.
+- **CorrectionPair**: en línea (mono) para listas; en detalle (serif, dos filas). Sin
+  respuesta propia: «Mi respuesta no registrada», en cursiva y sin tachar.
 
-### Inputs / Fields
-- **Estilo:** hoja, borde de campo (3,3:1), 3 px; la etiqueta (`ui.label`) va encima.
-- **Foco:** contorno azul de 2 px con desplazamiento de 2 px. Funciona en el modo de alto
-  contraste de Windows. Donde un contenedor con desplazamiento lo recortaría, va hacia
-  dentro.
-- **Error:** borde rojo con `aria-invalid` y un mensaje por línea debajo (`ui.fieldError`),
-  enlazado con `aria-describedby` y sin `role="alert"`. El foco va al primer campo
-  rechazado.
-- **Heredado:** un valor que pasa de un error al siguiente lleva la marca «heredada» en ocre
-  junto a su etiqueta hasta que se toca.
-- **Taxonomías cerradas:** siempre desplegable, nunca texto libre.
-
-### Navigation
-- Enlaces de 13 px en tinta suave; el grupo de detalle, a 12 px en tinta tenue, separado
-  por un filete vertical.
-- **Página actual:** `aria-current="page"`, tinta plena, peso 600 y hoja hundida.
-- A 620 px, una sola fila con desplazamiento.
-
-### Tabla de datos
-- `ui.table`: cabecera en etiqueta de 11 px sobre hoja hundida, celdas de 12 px y filete
-  entre filas. Suelta sobre el papel lleva marco (`ui.framed`); dentro de un panel, no.
-- A 620 px, la tabla de errores de una sesión pasa a tarjetas con cada dato etiquetado
-  (`data-label`). Los roles ARIA explícitos mantienen la tabla para el lector de pantalla y la
-  etiqueta visual lleva texto alternativo vacío.
-
-### Tarjeta de corrección (firma del sistema)
-- La respuesta equivocada tachada en rojo, una flecha y la correcta en negrita, en mono de
-  15 px, con la regla debajo.
-- Se usa en la cola de Anki y en Falsas certezas.
-- La fecha enlaza a la sesión del error.
+### Capas
+- **Toast** (`useToast`): abajo al centro, 5 s, «Deshacer» opcional; fuera de las filas que
+  se desmontan. `role=status`.
+- **ConfirmDialog**: `<dialog>` modal, foco en Cancelar, nombra el objeto y todas sus
+  consecuencias.
+- **Drawer**: derecha, 520 px, blanco sólido, no modal; Escape cierra y devuelve el foco.
+- **Menu**: flechas, Escape y clic fuera.
+- **CommandPalette** (Ctrl/⌘+K): errores (máx. 5) y sesiones (máx. 3) buscados en el
+  servidor, y acciones con sus atajos.
 
 ### Revisión de tanda
-- **Filas:** cada error es un `fieldset` con su chip de estado («Listo para enviar», «Falta: …»
-  o «Rechazado») y un resumen de solo lectura. «Listo para enviar» no es «validado»: las
-  reglas de negocio las comprueba el servidor.
-- **A la vista:** Correcta, Causa, Categoría, Confianza y Regla. El resto va plegado.
-- **Barra fija:** «Faltan N de M», «Ir al siguiente pendiente» y guardar. No se envía nada
-  mientras quede algo por completar.
+Índice de 300 px (nº · corrección · Listo/Falta) + un solo editor para la fila elegida,
+progreso segmentado y barra inferior en cristal. El borrador vive en el estado por fila y
+en el navegador hasta que el servidor confirma; el envío mantiene el contrato de siempre.
+Un fallo de transporte se dice como «No pudimos confirmar el guardado», nunca como «no se
+ha guardado nada».
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** usar monoespaciada tabular para fechas, cifras y respuestas, y la sans para
-  etiquetas.
-- **Do** mostrar cada valor de taxonomía con su etiqueta de `labels.ts`.
-- **Do** usar la escala de estados para umbrales y disponibilidad.
-- **Do** expresar profundidad con tono y filete, nunca con sombra.
-- **Do** escribir «—» donde no hay datos.
-- **Do** dar a cada vista su orden por uso: lo diario, primero; lo demás, plegado o a un
-  clic.
+- **Do** usar Serif solo para leer y Plex para trabajar.
+- **Do** dar a cada cifra su denominador y a cada vacío su «—» o su frase; vacío no es cero.
+- **Do** confirmar con el servidor antes de anunciar éxito (guardar, importar, Anki).
 - **Do** usar las primitivas de `ui.module.css` antes de crear una clase nueva.
 
 ### Don't:
-- **Don't** escribir colores, radios o tamaños literales en los módulos: todo sale de
-  `:root`.
-- **Don't** usar azul o rojo para decir «bien» o «mal» frente a un umbral.
-- **Don't** mostrar un valor interno en mayúsculas en la interfaz.
-- **Don't** usar `overflow: hidden` en un contenedor de controles: recorta el foco.
-- **Don't** usar bordes laterales de color, sombras ni `window.confirm`.
-- **Don't** añadir un color de marca a la acción primaria.
+- **Don't** escribir colores, radios o tamaños literales en los módulos: todo sale de `:root`.
+- **Don't** poner cristal en tablas, listas, editores ni en el panel de detalle.
+- **Don't** usar color como única señal de estado.
+- **Don't** usar `window.confirm`: las confirmaciones son `ConfirmDialog`.
+- **Don't** poner más de un primario por tarea visible.

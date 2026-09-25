@@ -71,6 +71,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Flujos end-to-end
+        env:
+          ERRORLOG_E2E: '1'
         run: pnpm test:e2e
 
       - name: Herramienta de Macmillan · captura en navegador
