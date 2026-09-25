@@ -9,7 +9,7 @@ import type {
   WritingPieceInput,
 } from '../validation/schemas';
 import type { Db } from './client';
-import { errorRow, session, writingPiece } from './schema';
+import { errorRow, session, sessionImportReceipt, writingPiece } from './schema';
 
 /**
  * Acceso a datos. Aqui vive el SQL; la logica de negocio esta en queries/ y rules/,
@@ -41,7 +41,11 @@ export function countOpenSessions(db: Db): number {
 }
 
 /** Texto de búsqueda normalizado: sin espacios alrededor y en minúsculas. */
-const needle = (q: string | undefined): string => (q ?? '').trim().toLowerCase();
+const needle = (q: string | undefined): string => (q ?? '').trim().slice(0, 200).toLowerCase();
+
+/** FTS5 needs three Unicode characters. Short searches retain the exact scan. */
+const indexedNeedle = (q: string): boolean => [...q].length >= 3 && !q.includes('\0');
+const ftsPhrase = (q: string): string => `"${q.replaceAll('"', '""')}"`;
 
 export interface SessionSearch {
   /** Busca en la referencia y la fecha ISO. */
@@ -54,6 +58,8 @@ export interface SessionSearch {
   readonly order?: 'desc' | 'asc';
   readonly limit: number;
   readonly offset: number;
+  /** La paleta solo muestra unos pocos resultados y no necesita el recuento global. */
+  readonly includeTotal?: boolean;
 }
 
 export type SessionListRow = SessionRow & { readonly errorCount: number };
@@ -66,10 +72,14 @@ export function searchSessions(db: Db, filters: SessionSearch): { rows: SessionL
   const conditions: SQL[] = [];
   const q = needle(filters.q);
   if (q !== '') {
-    const matches: SQL[] = [
+    const textMatches = or(
       sql`instr(lower(coalesce(${session.sourceRef}, '')), ${q}) > 0`,
       sql`instr(${session.date}, ${q}) > 0`,
-    ];
+    );
+    const indexedMatches = indexedNeedle(q)
+      ? and(sql`${session.id} IN (SELECT rowid FROM session_search_fts WHERE session_search_fts MATCH ${ftsPhrase(q)})`, textMatches)
+      : textMatches;
+    const matches: SQL[] = indexedMatches === undefined ? [] : [indexedMatches];
     if (filters.sources !== undefined && filters.sources.length > 0) {
       matches.push(inArray(session.source, [...filters.sources]));
     }
@@ -95,7 +105,7 @@ export function searchSessions(db: Db, filters: SessionSearch): { rows: SessionL
     .offset(filters.offset)
     .all()
     .map(({ row, errorCount: n }) => ({ ...withSessionFormat(row), errorCount: n }));
-  const total = db.select({ n: sql<number>`count(*)` }).from(session).where(where).get()?.n ?? 0;
+  const total = filters.includeTotal === false ? rows.length : db.select({ n: sql<number>`count(*)` }).from(session).where(where).get()?.n ?? 0;
   return { rows, total };
 }
 
@@ -118,6 +128,7 @@ export interface ErrorSearch {
   readonly withItemsOnly?: boolean;
   readonly limit: number;
   readonly offset: number;
+  readonly includeTotal?: boolean;
 }
 
 export interface ErrorWithSession {
@@ -132,6 +143,7 @@ export function searchErrors(db: Db, filters: ErrorSearch): { rows: ErrorWithSes
   const conditions: SQL[] = [];
   const q = needle(filters.q);
   if (q !== '') {
+    if (indexedNeedle(q)) conditions.push(sql`${errorRow.id} IN (SELECT rowid FROM error_search_fts WHERE error_search_fts MATCH ${ftsPhrase(q)})`);
     conditions.push(sql`instr(lower(${errorRow.prompt} || ' ' || coalesce(${errorRow.myAnswer}, '') || ' ' || ${errorRow.correctAnswer} || ' ' || ${errorRow.ruleNote}), ${q}) > 0`);
   }
   if (filters.category !== undefined) conditions.push(eq(errorRow.category, filters.category));
@@ -155,7 +167,7 @@ export function searchErrors(db: Db, filters: ErrorSearch): { rows: ErrorWithSes
     .offset(filters.offset)
     .all()
     .map((row) => ({ error: row.error, session: withSessionFormat(row.session) }));
-  const total = db
+  const total = filters.includeTotal === false ? rows.length : db
     .select({ n: sql<number>`count(*)` })
     .from(errorRow)
     .innerJoin(session, eq(errorRow.sessionId, session.id))
@@ -256,8 +268,18 @@ export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorIn
 }
 
 /** Cabecera y filas comparten una única transacción SQLite. */
-export function createSessionWithErrors(db: Db, header: SessionInput, inputs: readonly ErrorInput[]) {
+export function createSessionWithErrors(db: Db, header: SessionInput, inputs: readonly ErrorInput[], receipt?: { importId: string; payloadHash: string }) {
   return db.transaction((tx) => {
+    if (receipt !== undefined) {
+      const prior = tx.select().from(sessionImportReceipt).where(eq(sessionImportReceipt.importId, receipt.importId)).get();
+      if (prior !== undefined) {
+        if (prior.payloadHash !== receipt.payloadHash) return { ok: false, reason: 'changed' } as const;
+        if (tx.select({ id: session.id }).from(session).where(eq(session.id, prior.sessionId)).get() === undefined) {
+          return { ok: false, reason: 'deleted' } as const;
+        }
+        return { ok: true, sessionId: prior.sessionId, created: prior.created, skipped: prior.skipped, repeated: true } as const;
+      }
+    }
     const createdSession = tx.insert(session).values({ ...header, status: 'OPEN' }).returning().get();
     if (createdSession === undefined) throw new Error('No se pudo crear la sesión.');
     const seen = new Set<string>();
@@ -269,7 +291,11 @@ export function createSessionWithErrors(db: Db, header: SessionInput, inputs: re
       seen.add(key);
       created += 1;
     }
-    return { sessionId: createdSession.id, created, skipped: inputs.length - created };
+    const skipped = inputs.length - created;
+    if (receipt !== undefined) tx.insert(sessionImportReceipt).values({
+      importId: receipt.importId, payloadHash: receipt.payloadHash, sessionId: createdSession.id, created, skipped,
+    }).run();
+    return { ok: true, sessionId: createdSession.id, created, skipped, repeated: false } as const;
   });
 }
 
@@ -296,8 +322,8 @@ export function updateError(db: Db, id: number, input: ErrorInput): boolean {
     .where(eq(errorRow.id, id)).run().changes > 0;
 }
 
-export function deleteError(db: Db, id: number): void {
-  db.delete(errorRow).where(eq(errorRow.id, id)).run();
+export function deleteError(db: Db, id: number): boolean {
+  return db.delete(errorRow).where(eq(errorRow.id, id)).run().changes > 0;
 }
 
 export function unmarkAnkiAdded(db: Db, id: number): void {

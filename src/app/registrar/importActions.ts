@@ -56,6 +56,10 @@ export async function importErrorsAction(_previous: FormState, form: FormData): 
 
 export async function importSessionAction(_previous: FormState, form: FormData): Promise<FormState> {
   // TODO(auth): autorizar el alta cuando exista autenticación.
+  const importId = form.get('importId');
+  if (typeof importId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(importId)) {
+    return { ok: false, fieldErrors: {}, message: 'Falta la identidad de la tanda. Prepara de nuevo la vista previa.' };
+  }
   const raw = form.get('envelope');
   if (typeof raw !== 'string' || raw.length > MAX_IMPORT_LENGTH) {
     return { ok: false, fieldErrors: {}, message: 'El sobre es demasiado grande o está ausente.' };
@@ -67,11 +71,13 @@ export async function importSessionAction(_previous: FormState, form: FormData):
   const durationMin = minutes === null || minutes === '' ? null : typeof minutes === 'string' ? Number(minutes) : Number.NaN;
   try {
     const result = importSessionWithErrors(getDb(), value, {
-      today: toIsoDate(new Date()), durationMin,
+      today: toIsoDate(new Date()), durationMin, importId,
     });
     if (result.ok) revalidatePath('/', 'layout');
     return result;
   } catch {
-    return { ok: false, fieldErrors: {}, message: 'No se pudo guardar. No se ha creado ninguna sesión ni guardado ningún error. Conservamos la vista previa.' };
+    // La transacción puede haber confirmado antes de que falle la revalidación o el transporte.
+    // La identidad persistida permite repetir la operación sin crear otra sesión.
+    throw new Error('No se pudo confirmar el guardado de la tanda.');
   }
 }

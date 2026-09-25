@@ -55,12 +55,12 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {/* La región existe siempre: un lector anuncia lo que entra en ella. */}
-      <div className={styles.toastRegion} role="status" aria-live="polite">
+      {/* Solo el texto se anuncia; Deshacer y Cerrar son controles hermanos. */}
+      <div className={styles.toastRegion}>
         {toast !== null && (
           <div key={toast.id} className={`${styles.toast} ${toast.tone === 'error' ? styles.toastError : ''}`}>
             {toast.tone !== 'error' && <Check size={16} className={styles.toastCheck} aria-hidden="true" />}
-            <span>{toast.message}</span>
+            <span role="status" aria-live="polite">{toast.message}</span>
             {toast.undo !== undefined && (
               <button
                 type="button"

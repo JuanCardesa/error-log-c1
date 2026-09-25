@@ -23,6 +23,8 @@ export type HeaderDraft = ImportedSession & { readonly durationMin: number | nul
 export interface TandaDraft {
   readonly v: 1;
   readonly savedAt: string;
+  /** Identidad estable de la creación, conservada entre recargas y reintentos. */
+  readonly importId?: string;
   /** Sesión abierta de destino, o `null` para crear una nueva con `header`. */
   readonly targetId: number | null;
   readonly header: HeaderDraft;
@@ -47,6 +49,7 @@ const headerSchema = z.object({
 const draftSchema = z.object({
   v: z.literal(1),
   savedAt: z.string(),
+  importId: z.uuid().optional(),
   targetId: z.number().int().positive().nullable(),
   header: headerSchema.extend({ durationMin: z.number().int().nullable() }),
   importedHeader: headerSchema.nullable(),
@@ -111,8 +114,8 @@ export function blankHeader(today: string): HeaderDraft {
   return {
     date: today,
     kind: 'DRILL',
-    paper: 'RUOE',
-    part: 1,
+    paper: null,
+    part: null,
     source: 'LIBRO',
     sourceRef: null,
     itemsTotal: null,

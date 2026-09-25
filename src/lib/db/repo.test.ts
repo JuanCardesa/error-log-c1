@@ -174,7 +174,8 @@ describe('errores', () => {
     updateError(db, created.id, errorInput(session.id, { correctAnswer: 'incurred' }));
     expect(listErrors(db, session.id)[0]?.correctAnswer).toBe('incurred');
 
-    deleteError(db, created.id);
+    expect(deleteError(db, created.id)).toBe(true);
+    expect(deleteError(db, created.id)).toBe(false);
     expect(listErrors(db, session.id)).toEqual([]);
   });
 });
@@ -346,6 +347,18 @@ describe('textos de writing', () => {
 });
 
 describe('busqueda del historial', () => {
+  it('usa el índice de trigramas sin cambiar las coincidencias ni dejar referencias obsoletas', () => {
+    const found = createSession(db, sessionInput({ sourceRef: 'Capítulo "especial" a_b' }));
+    expect(searchSessions(db, { q: '"especial"', limit: 10, offset: 0 }).rows.map((row) => row.id)).toEqual([found.id]);
+    expect(searchSessions(db, { q: 'a_b', limit: 10, offset: 0 }).total).toBe(1);
+    expect(searchSessions(db, { q: 'ap', limit: 10, offset: 0 }).total).toBe(1);
+    db.$client.prepare('UPDATE session SET source_ref = ? WHERE id = ?').run('Otro capítulo', found.id);
+    expect(searchSessions(db, { q: 'especial', limit: 10, offset: 0 }).total).toBe(0);
+    expect(searchSessions(db, { q: 'capítulo', limit: 10, offset: 0 }).total).toBe(1);
+    db.$client.prepare('DELETE FROM session WHERE id = ?').run(found.id);
+    expect(db.$client.prepare('SELECT rowid FROM session_search_fts WHERE rowid = ?').all(found.id)).toEqual([]);
+  });
+
   it('filtra por referencia, fuente, estado y formato, con el numero de errores', () => {
     const unit = createSession(db, sessionInput({ date: '2026-09-12', sourceRef: 'Unidad 4 · ej. 2' }));
     createSession(db, sessionInput({ date: '2026-09-11', source: 'TRAINER', sourceRef: 'Test 3', status: 'CLOSED' }));
@@ -374,6 +387,21 @@ describe('busqueda del historial', () => {
 });
 
 describe('busqueda de errores', () => {
+  it('mantiene el índice de texto al corregir, borrar y borrar la sesión', () => {
+    const practice = createSession(db, sessionInput());
+    const first = createError(db, errorInput(practice.id, { prompt: 'She said "hello" here' }));
+    expect(searchErrors(db, { q: '"hello"', limit: 10, offset: 0 }).rows.map((row) => row.error.id)).toEqual([first.id]);
+    expect(searchErrors(db, { q: 'he', limit: 10, offset: 0 }).total).toBe(1);
+    db.$client.prepare('UPDATE error_row SET prompt = ? WHERE id = ?').run('A different prompt', first.id);
+    expect(searchErrors(db, { q: 'hello', limit: 10, offset: 0 }).total).toBe(0);
+    expect(searchErrors(db, { q: 'different', limit: 10, offset: 0 }).total).toBe(1);
+    deleteError(db, first.id);
+    expect(db.$client.prepare('SELECT rowid FROM error_search_fts WHERE rowid = ?').all(first.id)).toEqual([]);
+    const second = createError(db, errorInput(practice.id));
+    db.$client.prepare('DELETE FROM session WHERE id = ?').run(practice.id);
+    expect(db.$client.prepare('SELECT rowid FROM error_search_fts WHERE rowid = ?').all(second.id)).toEqual([]);
+  });
+
   it('busca en enunciado, respuestas y regla, y filtra por clasificacion y fecha de practica', () => {
     const early = createSession(db, sessionInput({ date: '2026-09-01' }));
     const late = createSession(db, sessionInput({ date: '2026-09-12' }));

@@ -39,14 +39,14 @@ export async function searchPaletteAction(query: string): Promise<PaletteResults
   const lower = q.toLowerCase();
   const sources = SOURCES.filter((source) => SOURCE_LABELS[source].toLowerCase().includes(lower));
 
-  const errors = searchErrors(db, { q, limit: 5, offset: 0 }).rows.map(({ error, session }) => ({
+  const errors = searchErrors(db, { q, limit: 5, offset: 0, includeTotal: false }).rows.map(({ error, session }) => ({
     id: error.id,
     sessionId: session.id,
     mine: error.myAnswer,
     correct: error.correctAnswer,
     sub: `${CATEGORY_LABELS[error.category]} · ${sessionTitle(session)} · ${shortDate(session.date)}`,
   }));
-  const sessions = searchSessions(db, { q, sources, limit: 3, offset: 0 }).rows.map((session) => ({
+  const sessions = searchSessions(db, { q, sources, limit: 3, offset: 0, includeTotal: false }).rows.map((session) => ({
     id: session.id,
     title: sessionTitle(session),
     sub: `${shortDate(session.date)} · ${practiceLabel(session)}`,

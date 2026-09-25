@@ -78,6 +78,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
   const headingRef = useRef<HTMLHeadingElement>(null);
   const headerForm = useRef<HTMLFormElement>(null);
   const finished = useRef(false);
+  const importId = useRef(initial.importId ?? crypto.randomUUID());
 
   const target = fixedTarget ?? openSessions.find((session) => session.id === targetId) ?? null;
   const timed = target?.timed ?? header.timed;
@@ -97,6 +98,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
   const persist = useCallback(() => {
     if (finished.current) return;
     writeDraft({
+      importId: importId.current,
       targetId: fixedTarget?.id ?? targetId,
       header,
       importedHeader: initial.importedHeader,
@@ -168,6 +170,11 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
       toast({ message: 'Esta tanda no tiene errores que añadir a la sesión.', tone: 'error' });
       return;
     }
+    if (target === null && headerIncomplete) {
+      setHeaderOpen(true);
+      toast({ message: 'Completa los ítems y aciertos de la sesión antes de guardar.', tone: 'error' });
+      return;
+    }
     // Sin esperar al guardado diferido: si la respuesta no llega, el borrador ya está.
     persist();
     const sent = rows.map((row) => row.id);
@@ -175,6 +182,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
       targetId: target?.id ?? null,
       header: target === null ? toImportedSession(header) : initial.importedHeader ?? undefined,
       durationMin: header.durationMin,
+      importId: importId.current,
     });
     startSaving(async () => {
       let result: typeof EMPTY_STATE;
@@ -435,7 +443,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
           <div className={styles.alertText}>
             <strong>No pudimos confirmar el guardado</strong>
             <span className={ui.help}>
-              Puede que la sesión se haya creado. Consulta Sesiones antes de repetir para no duplicarla. Tu borrador se conserva.
+              Puede que la sesión se haya creado. Reintentar recuperará esa misma sesión si el guardado llegó al servidor. Tu borrador se conserva.
             </span>
           </div>
           <Link href="/registrar" className={ui.secondary}>Consultar sesiones</Link>
@@ -446,7 +454,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
         <div role="alert" className={ui.alert}>
           <CircleAlert size={20} className={ui.alertIcon} aria-hidden="true" />
           <div className={styles.alertText}>
-            <strong>No se ha guardado nada</strong>
+            <strong>No se pudo guardar esta revisión</strong>
             <span className={ui.help}>{save.message}</span>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import type { ErrorRow, SessionRow } from '@/lib/domain/types';
 import { CorrectionPair } from '../CorrectionPair';
@@ -44,6 +44,7 @@ export function ErrorExplorer({
   readonly caption: string;
 }) {
   const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId);
+  const openerId = useRef<number | null>(null);
 
   const index = rows.findIndex((row) => row.error.id === selectedId);
   const selected = index >= 0 ? rows[index] : outsideSelected?.error.id === selectedId ? outsideSelected : undefined;
@@ -102,7 +103,7 @@ export function ErrorExplorer({
               const { error, session } = row;
               const isSelected = error.id === selectedId;
               const state = ankiState(error);
-              const select = () => { setSelectedId(error.id); };
+              const select = () => { openerId.current = error.id; setSelectedId(error.id); };
               const label = error.itemRef === null ? `Ver error: ${error.correctAnswer}` : `Ver error ${error.itemRef}: ${error.correctAnswer}`;
               return (
                 <tr
@@ -158,9 +159,13 @@ export function ErrorExplorer({
           onNext={() => { step(1); }}
           onClose={() => {
             // El foco vuelve a la fila de la que salió el detalle.
-            const id = selected.error.id;
+            const id = openerId.current ?? selected.error.id;
+            openerId.current = null;
             setSelectedId(null);
-            requestAnimationFrame(() => { document.querySelector<HTMLElement>(`[data-error-row="${String(id)}"]`)?.focus(); });
+            requestAnimationFrame(() => {
+              const row = document.querySelector<HTMLElement>(`[data-error-row="${String(id)}"]`);
+              (row ?? document.querySelector<HTMLElement>('[data-error-row]'))?.focus();
+            });
           }}
           onDeleted={afterDelete}
           subcategorySuggestions={subcategorySuggestions}

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createHash } from 'node:crypto';
 import { importEnvelopeSchema, importIssues, importParseOptions } from '../import/errors';
 import { validateImportRows } from '../import/validateRows';
 import { sessionInputSchema } from '../validation/schemas';
@@ -7,8 +8,11 @@ import { createSessionWithErrors } from './repo';
 
 /** Entrada no confiable, incluso si el navegador ya preparó la vista previa. */
 export function importSessionWithErrors(db: Db, value: unknown, options: {
-  today: string; durationMin: unknown;
+  today: string; durationMin: unknown; importId?: string;
 }) {
+  if (options.importId !== undefined && !z.uuid().safeParse(options.importId).success) return {
+    ok: false, fieldErrors: {}, message: 'La identidad de la tanda no es válida. Prepara de nuevo la vista previa.',
+  };
   const envelope = importEnvelopeSchema(options.today).safeParse(value, importParseOptions);
   const duration = z.number().int().nonnegative().nullable().safeParse(options.durationMin);
   const fieldErrors: Record<string, string[]> = {};
@@ -33,7 +37,14 @@ export function importSessionWithErrors(db: Db, value: unknown, options: {
     ok: false, fieldErrors: validated.fieldErrors,
     message: 'Revisa los campos señalados. No se ha creado ninguna sesión ni guardado ningún error.',
   };
-  const result = createSessionWithErrors(db, header.data, validated.inputs);
+  const receipt = options.importId === undefined ? undefined : {
+    importId: options.importId,
+    payloadHash: createHash('sha256').update(JSON.stringify([header.data, validated.inputs])).digest('hex'),
+  };
+  const result = createSessionWithErrors(db, header.data, validated.inputs, receipt);
+  if (!result.ok) return { ok: false, fieldErrors: {}, message: result.reason === 'changed'
+    ? 'Esta tanda ya se guardó con otros datos. Inicia una revisión nueva para guardar los cambios.'
+    : 'Esta tanda ya se guardó, pero la sesión fue borrada. Inicia una revisión nueva si quieres volver a crearla.' };
   return { ok: true, fieldErrors, createdId: result.sessionId,
-    message: `Sesión creada con ${String(result.created)} ${result.created === 1 ? 'error' : 'errores'}.${result.skipped > 0 ? ` ${result.skipped === 1 ? '1 repetido omitido' : `${String(result.skipped)} repetidos omitidos`}.` : ''}` };
+    message: `${result.repeated ? 'Tanda ya guardada' : 'Sesión creada'} con ${String(result.created)} ${result.created === 1 ? 'error' : 'errores'}.${result.skipped > 0 ? ` ${result.skipped === 1 ? '1 repetido omitido' : `${String(result.skipped)} repetidos omitidos`}.` : ''}` };
 }

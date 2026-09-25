@@ -61,6 +61,7 @@ export function buildImportPayload(rows: readonly ImportDraft[], options: {
   readonly targetId: number | null;
   readonly header: ImportedSession | undefined;
   readonly durationMin?: number | null;
+  readonly importId?: string;
 }): FormData {
   const values = rows.map((row) => ({
     ...Object.fromEntries(ROW_FIELDS.map((field) => [field, row[field]])),
@@ -71,6 +72,7 @@ export function buildImportPayload(rows: readonly ImportDraft[], options: {
   if (options.header !== undefined) {
     payload.set('envelope', JSON.stringify({ session: options.header, errors: values }));
     if (options.targetId === null) {
+      if (options.importId !== undefined) payload.set('importId', options.importId);
       payload.set('durationMin', options.durationMin === null || options.durationMin === undefined ? '' : String(options.durationMin));
     }
   } else payload.set('rows', JSON.stringify(values));

@@ -126,7 +126,10 @@ describe('copias y restauracion', () => {
     const old = open(legacy);
     migrate(old, { migrationsFolder: MIGRATIONS_DIR });
     old.$client.pragma('foreign_keys = OFF');
-    for (const table of ['anki_review', 'anki_card', 'anki_note', 'anki_sync']) old.$client.exec(`DROP TABLE ${table}`);
+    for (const trigger of ['session_search_insert', 'session_search_update', 'session_search_delete',
+      'error_search_insert', 'error_search_update', 'error_search_delete']) old.$client.exec(`DROP TRIGGER ${trigger}`);
+    for (const table of ['session_search_fts', 'error_search_fts']) old.$client.exec(`DROP TABLE ${table}`);
+    for (const table of ['anki_review', 'anki_card', 'anki_note', 'anki_sync', 'session_import_receipt']) old.$client.exec(`DROP TABLE ${table}`);
     old.$client.exec('ALTER TABLE error_row DROP COLUMN anki_note_id');
     old.$client.exec('ALTER TABLE error_row DROP COLUMN anki_content_hash');
     old.$client.exec(`DELETE FROM __drizzle_migrations WHERE created_at NOT IN

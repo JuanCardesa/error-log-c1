@@ -70,6 +70,7 @@ export function ImportHost({ today, openSessions, fixedTarget = null, subcategor
       setReviewing({
         v: 1,
         savedAt: '',
+        importId: crypto.randomUUID(),
         targetId: fixedTarget?.id ?? null,
         header: batch.session === null ? blankHeader(today) : { ...batch.session, durationMin: null },
         importedHeader: batch.session,

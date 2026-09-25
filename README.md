@@ -174,6 +174,12 @@ sincronizar el historial. La conversión solo se sella tras verificar la tarjeta
 
 ## Desarrollo
 
+La búsqueda de texto de sesiones y errores usa coincidencia de subcadenas. Para consultas
+de tres caracteres o más, un índice FTS5 de trigramas reduce las filas candidatas; el
+filtro original comprueba el resultado exacto. Las consultas más cortas todavía recorren
+las filas, y las listas paginadas calculan el total. La paleta muestra hasta cinco errores
+y tres sesiones sin calcular ese total. Las entradas se limitan a 200 caracteres.
+
 Next.js (App Router), TypeScript strict, SQLite con Drizzle, Zod, Vitest y Playwright.
 CSS Modules, sin librería de componentes. El dominio, las consultas y las reglas son
 funciones puras con el reloj inyectado; `src/lib/db/` contiene los adaptadores de persistencia.

@@ -8,7 +8,7 @@ import { MIGRATIONS_DIR } from '@/lib/db/paths';
 import { deleteError, deleteSession, deleteWritingPiece, getError, getSession, listErrors, listWritingPieces } from '@/lib/db/repo';
 import { linkAnkiNote } from '@/lib/db/ankiRepo';
 import { seed } from '@/lib/db/seed';
-import { addErrorAction, createSessionAction, updateErrorAction, updateSessionAction } from './registrar/actions';
+import { addErrorAction, createSessionAction, deleteErrorAction, updateErrorAction, updateSessionAction } from './registrar/actions';
 import { EMPTY_STATE } from './registrar/formState';
 import { importErrorsAction } from './registrar/importActions';
 import { MAX_IMPORT_ROWS, MAX_SESSION_IMPORT_ROWS } from '@/lib/import/errors';
@@ -28,6 +28,15 @@ beforeEach(() => {
   vi.mocked(getDb).mockReturnValue(db);
 });
 afterEach(() => db.$client.close());
+
+it('solo confirma un borrado cuando elimina una fila', async () => {
+  const id = loadDataset(db).errors[0]?.id;
+  expect(id).toBeDefined();
+  expect((await deleteErrorAction(id!)).ok).toBe(true);
+  const repeated = await deleteErrorAction(id!);
+  expect(repeated.ok).toBe(false);
+  expect(repeated.message).toContain('ya no existe');
+});
 
 function form(values: object): FormData {
   const result = new FormData();

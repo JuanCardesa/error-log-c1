@@ -122,6 +122,7 @@ test('un bloque con solo errores abre la revisión y pide completar la sesión n
   await expect(workspace(page)).toContainText('Destino: sesión nueva');
   // Sin cabecera, faltan ítems y aciertos: el editor de la sesión se abre solo.
   await expect(headerEditor(page)).toBeVisible();
+  await expect(headerEditor(page).getByRole('combobox', { name: 'Formato de examen' })).toHaveValue('');
   await headerEditor(page).getByLabel('Ítems intentados').fill('6');
   await headerEditor(page).getByLabel('Aciertos', { exact: true }).fill('5');
   await headerEditor(page).getByLabel('Referencia').fill('Solo errores, sesión completada');
@@ -129,7 +130,26 @@ test('un bloque con solo errores abre la revisión y pide completar la sesión n
   await expect(page).toHaveURL(/registrar\?s=\d+/);
   expect(withDb(countSessions)).toBe(before + 1);
   const id = Number(new URL(page.url()).searchParams.get('s'));
-  expect(withDb((db) => getSession(db, id))).toMatchObject({ itemsTotal: 6, itemsCorrect: 5, sourceRef: 'Solo errores, sesión completada' });
+  expect(withDb((db) => getSession(db, id))).toMatchObject({ paper: null, part: null, itemsTotal: 6, itemsCorrect: 5, sourceRef: 'Solo errores, sesión completada' });
+});
+
+test('una respuesta perdida después del commit permite reintentar sin duplicar sesión', async ({ page }) => {
+  const before = withDb(countSessions);
+  await preview(page, { session, errors: [row] });
+  await page.route('**/registrar**', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await route.fetch();
+    await route.abort('connectionreset');
+  });
+  await workspace(page).getByRole('button', { name: /^Crear sesión y guardar 1 error/ }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'No pudimos confirmar el guardado' })).toBeVisible();
+  expect(withDb(countSessions)).toBe(before + 1);
+  await page.unroute('**/registrar**');
+  await workspace(page).getByRole('button', { name: 'Reintentar' }).click();
+  await expect(page).toHaveURL(/registrar\?s=\d+/);
+  expect(withDb(countSessions)).toBe(before + 1);
+  const id = Number(new URL(page.url()).searchParams.get('s'));
+  expect(withDb((db) => listErrors(db, id))).toHaveLength(1);
 });
 
 test('confirma una tanda sin errores y no repite el aviso al recargar', async ({ page }) => {

@@ -219,7 +219,7 @@ export async function updateSessionAction(
 export async function deleteErrorAction(id: number): Promise<ActionResult> {
   if (!isValidId(id)) return { ok: false, message: 'Falta el error a borrar.' };
   try {
-    deleteError(getDb(), id);
+    if (!deleteError(getDb(), id)) return { ok: false, message: 'Ese error ya no existe; actualiza la vista.' };
   } catch {
     return { ok: false, message: 'No se pudo borrar el error. Vuelve a intentarlo.' };
   }

@@ -56,6 +56,7 @@ test.describe('corregir lo ya registrado', () => {
 
     // Leer no exige editar: el detalle trae enunciado, regla y clasificación.
     await page.getByRole('button', { name: /Ver error: gave up/ }).click();
+    await expect(panel(page).getByRole('button', { name: 'Cerrar detalle' })).toBeFocused();
     await expect(panel(page)).toContainText('He ______ up smoking. (GAVE)');
     await expect(panel(page)).toContainText('give up es separable');
     await expect(panel(page)).toContainText('Phrasal verb');
@@ -81,6 +82,7 @@ test.describe('corregir lo ya registrado', () => {
     // Un segundo Escape cierra el detalle.
     await page.keyboard.press('Escape');
     await expect(panel(page)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Ver error: given up/ })).toBeFocused();
   });
 
   test('conserva los cambios de un error cuando falla la validacion', async ({ page }) => {

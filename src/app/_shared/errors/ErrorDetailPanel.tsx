@@ -50,8 +50,11 @@ export function ErrorDetailPanel({
   const [editing, setEditing] = useState(false);
   const [editingId, setEditingId] = useState(error.id);
   const panelRef = useRef<HTMLElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(false);
+
+  useEffect(() => { closeButton.current?.focus(); }, [error.id]);
 
   // Cambiar de error sale de la edición: el formulario era del anterior.
   if (editingId !== error.id) {
@@ -93,7 +96,7 @@ export function ErrorDetailPanel({
         <button type="button" className={ui.iconButton} aria-label="Error siguiente" onClick={onNext} disabled={!canStep}>
           <ChevronRight size={18} aria-hidden="true" />
         </button>
-        <button type="button" className={ui.iconButton} aria-label="Cerrar detalle" onClick={onClose}>
+        <button ref={closeButton} type="button" className={ui.iconButton} aria-label="Cerrar detalle" onClick={onClose}>
           <X size={18} aria-hidden="true" />
         </button>
       </div>
