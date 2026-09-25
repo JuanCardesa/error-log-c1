@@ -1,12 +1,9 @@
-import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { rcfActivityPage } from '../tools/macmillan-capture/e2e/rcf-fixture.mjs';
 import { parseImportedBatch } from '../src/lib/import/errors';
 import { createDb } from '../src/lib/db/client';
 import { countSessions, getSession, listErrors } from '../src/lib/db/repo';
 import { E2E_DB } from './globalSetup';
 
-const script = readFileSync('tools/macmillan-capture/dist/errorlog-macmillan.user.js', 'utf8');
 const session = { date: '2026-09-15', kind: 'DRILL', paper: null, part: null, source: 'LIBRO', sourceRef: 'Importación sobre e2e', itemsTotal: 8, itemsCorrect: 6, timed: false };
 const row = { prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off', category: 'PHRASAL_VERB', ruleNote: 'Call off significa cancelar una actividad.' };
 function withDb(read) { const db = createDb(E2E_DB); try { return read(db); } finally { db.$client.close(); } }
@@ -27,24 +24,19 @@ async function pickCategory(page, text) {
   await page.keyboard.press('Enter');
 }
 
-test('round-trip del userscript real: varias actividades, vista previa editable y sesión atómica', async ({ page }) => {
-  await page.route('https://mee.macmillaneducation.com/**', (route) => {
-    const second = route.request().url().endsWith('segunda');
-    const html = rcfActivityPage({ activityId: second ? 'act-dos' : 'act-uno',
-      ...(second ? { items: [{ ref: '1', lines: ['draw a'], id: 'one', answer: 'conclusion', verdict: 'correct' }] } : {}),
-    }).replace('<body>', `<body><span data-book-title="Ready for C1 Advanced"></span><span data-page-number="${second ? 7 : 6}"></span><span data-activity-number="${second ? 2 : 1}"></span>`);
-    return route.fulfill({ contentType: 'text/html', body: html });
-  });
-  for (const path of ['primera', 'segunda']) {
-    await page.goto(`https://mee.macmillaneducation.com/${path}`);
-    await page.addScriptTag({ content: script });
-    await page.getByRole('button', { name: /Error Log/ }).click();
-  }
-  await expect(page.locator('.counts')).toContainText('3 / 4 respuestas correctas');
-  await page.getByRole('button', { name: 'Copiar tanda' }).click();
-  const json = await page.getByLabel('Bloque para copiar').inputValue();
+/**
+ * Una tanda tal como la genera un capturador externo: cabecera de sesión sin duración y
+ * un error cuya solución, categoría y regla quedan por completar en la revisión.
+ */
+const capturedBatch = {
+  session: { date: '2026-09-15', kind: 'DRILL', paper: null, part: null, source: 'LIBRO', sourceRef: 'Libro · págs. 6-7 · actividades 1-2', itemsTotal: 4, itemsCorrect: 3, timed: false },
+  errors: [{ itemRef: '3', prompt: 'She paid me a ___ on my essay.', myAnswer: 'visit', correctAnswer: '', category: '', ruleNote: '', subcategory: '' }],
+};
+
+test('una tanda con cabecera y campos pendientes: vista previa editable y sesión atómica', async ({ page }) => {
+  const json = JSON.stringify(capturedBatch);
   const parsed = parseImportedBatch(json);
-  expect(parsed.session).toMatchObject({ itemsTotal: 4, itemsCorrect: 3, sourceRef: 'Ready for C1 Advanced · págs. 6-7 · actividades 1-2' });
+  expect(parsed.session).toMatchObject({ itemsTotal: 4, itemsCorrect: 3, sourceRef: 'Libro · págs. 6-7 · actividades 1-2' });
   expect(parsed.errors).toHaveLength(1);
   expect(parsed.session).not.toHaveProperty('durationMin');
 
@@ -52,7 +44,7 @@ test('round-trip del userscript real: varias actividades, vista previa editable 
   await preview(page, json);
   await expect(workspace(page)).toBeVisible();
   // La cabecera propuesta se resume y se edita a demanda.
-  await expect(workspace(page)).toContainText('Ready for C1 Advanced · págs. 6-7 · actividades 1-2');
+  await expect(workspace(page)).toContainText('Libro · págs. 6-7 · actividades 1-2');
   await workspace(page).getByRole('button', { name: 'Editar sesión' }).click();
   await expect(headerEditor(page).getByRole('combobox', { name: 'Formato de examen' })).toHaveValue('');
   await expect(headerEditor(page).getByLabel('Ítems intentados')).toHaveValue('4');
