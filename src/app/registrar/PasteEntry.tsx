@@ -105,7 +105,7 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
           }
         }}
         placeholder={variant === 'entry'
-          ? 'Pega aquí la tanda copiada desde Macmillan, JSON o TSV'
+          ? 'Pega aquí la tanda: sesión y errores en JSON, o TSV'
           : 'JSON, TSV o una fila por error (1–100 errores)'}
         aria-invalid={problem !== '' || undefined}
         aria-describedby={`${id}-detect${problem === '' ? '' : ` ${id}-problem`}`}
@@ -138,7 +138,7 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
           </summary>
           <div className={ui.disclosureBody}>
             <p>
-              El bloque «Copiar tanda» del capturador de Macmillan trae sesión y errores (hasta 300). También vale un
+              Un bloque JSON con cabecera de sesión trae la tanda completa (hasta 300 errores). También vale un
               JSON solo con errores o filas copiadas de una hoja de cálculo con cabeceras (hasta 100). Máximo 200.000
               caracteres. La app no lee imágenes.
             </p>
@@ -152,7 +152,7 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
           <div className={`${ui.disclosureBody} ${styles.helpBody}`}>
             <ol className={styles.steps}>
               <li>Copia estas instrucciones en la IA que uses y pega tus correcciones, o adjunta fotos si esa IA admite imágenes.</li>
-              <li>En las fotos, incluye el ejercicio, tu respuesta y la corrección. Usa imágenes de una sola sesión.</li>
+              <li>En las fotos, recorta solo los ítems que fallaste: su frase, tu respuesta y la corrección. Usa imágenes de una sola sesión.</li>
               <li>Pega aquí el bloque que te devuelva y revisa la importación.</li>
             </ol>
             <button type="button" className={`${ui.secondary} ${ui.compact}`} onClick={() => {
