@@ -103,5 +103,8 @@ export function startFakeAnki(fake: FakeAnki = fakeCollection(), port = FAKE_ANK
       }
     })();
   });
-  return new Promise((resolve) => { server.listen(port, '127.0.0.1', () => { resolve(server); }); });
+  return new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, '127.0.0.1', () => { resolve(server); });
+  });
 }
