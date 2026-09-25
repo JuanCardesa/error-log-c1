@@ -28,6 +28,9 @@ playwright-report/
 test-results/
 .playwright/
 
+# documentos de terceros (condiciones, libros, fichas): nunca en el repo
+*.pdf
+
 # env
 .env
 .env.*

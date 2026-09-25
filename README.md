@@ -197,5 +197,13 @@ La suite prueba también que el seed respeta los datos existentes y que una copi
 se restaura conservando filas, relaciones y migraciones. La cobertura de `src/lib/` exige
 un mínimo del 90 % en líneas, sentencias, funciones y ramas.
 
+## Aviso
+
+Error Log C1 es un proyecto personal e independiente. No está afiliado, patrocinado ni
+respaldado por Cambridge University Press & Assessment ni por ninguna editorial.
+«Cambridge» y «C1 Advanced» son marcas de sus titulares y se citan solo para indicar el
+examen al que se orienta la herramienta. El repositorio no incluye ejercicios de terceros:
+la demo, las capturas y los tests usan contenido inventado.
+
 [Contribuir](CONTRIBUTING.md) · [Contrato del producto](docs/SPEC.md) ·
 [Regenerar la demo y las capturas](docs/DEMO.md) · [Licencia MIT](LICENSE)
