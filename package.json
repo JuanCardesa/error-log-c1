@@ -2,7 +2,11 @@
   "name": "error-log-c1",
   "version": "2.0.0",
   "private": true,
-  "description": "Registro de errores para la preparacion del Cambridge C1 Advanced",
+  "description": "Registro de errores para la preparación del Cambridge C1 Advanced",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JuanCardesa/error-log-c1.git"
+  },
   "license": "MIT",
   "type": "module",
   "engines": {
