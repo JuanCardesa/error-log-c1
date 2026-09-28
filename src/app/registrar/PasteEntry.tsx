@@ -152,7 +152,7 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
           <div className={`${ui.disclosureBody} ${styles.helpBody}`}>
             <ol className={styles.steps}>
               <li>Copia estas instrucciones en la IA que uses y pega tus correcciones, o adjunta fotos si esa IA admite imágenes.</li>
-              <li>En las fotos, recorta solo los ítems que fallaste: su frase, tu respuesta y la corrección. Usa imágenes de una sola sesión.</li>
+              <li>En las fotos, recorta solo los ítems que fallaste: su frase, tu respuesta y la corrección. Usa imágenes de una sola sesión. Los ítems y aciertos totales no salen en los recortes: díselos a la IA o complétalos al revisar.</li>
               <li>Pega aquí el bloque que te devuelva y revisa la importación.</li>
             </ol>
             <button type="button" className={`${ui.secondary} ${ui.compact}`} onClick={() => {

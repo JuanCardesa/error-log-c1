@@ -67,6 +67,26 @@ test('una tanda con cabecera y campos pendientes: vista previa editable y sesió
   expect(withDb((db) => listErrors(db, id))).toHaveLength(1);
 });
 
+test('una tanda sin ítems ni aciertos abre la revisión y los pide antes de crear la sesión', async ({ page }) => {
+  // Así llega si la IA solo ha visto recortes de los ítems fallados.
+  const before = withDb(countSessions);
+  await preview(page, { session: { ...session, sourceRef: 'Tanda sin recuentos e2e', itemsTotal: null, itemsCorrect: null }, errors: [row] });
+  await expect(workspace(page)).toBeVisible();
+  await expect(headerEditor(page)).toBeVisible();
+  await expect(headerEditor(page).getByLabel('Ítems intentados')).toHaveValue('');
+
+  await workspace(page).getByRole('button', { name: /^Crear sesión y guardar 1 error/ }).click();
+  await expect(page.getByText('Completa los ítems y aciertos de la sesión antes de guardar.')).toBeVisible();
+  expect(withDb(countSessions)).toBe(before);
+
+  await headerEditor(page).getByLabel('Ítems intentados').fill('12');
+  await headerEditor(page).getByLabel('Aciertos', { exact: true }).fill('9');
+  await workspace(page).getByRole('button', { name: /^Crear sesión y guardar 1 error/ }).click();
+  await expect(page).toHaveURL(/registrar\?s=\d+/);
+  const id = Number(new URL(page.url()).searchParams.get('s'));
+  expect(withDb((db) => getSession(db, id))).toMatchObject({ sourceRef: 'Tanda sin recuentos e2e', itemsTotal: 12, itemsCorrect: 9 });
+});
+
 test('un error inválido no crea sesión; conserva la revisión y permite corregirla', async ({ page }) => {
   const before = withDb(countSessions);
   await preview(page, { session, errors: [row, { ...row, itemRef: '2', ruleNote: row.correctAnswer.repeat(8), correctAnswer: row.correctAnswer.repeat(8) }] });

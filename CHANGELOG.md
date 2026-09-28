@@ -30,7 +30,8 @@ funciones y exportaciones, y la interfaz es nueva de arriba abajo.
   Exportación Q7 con los repasos y fallos por categoría.
 - **Importar una tanda con cabecera:** pegar sesión y errores juntos (hasta 300), revisar la
   cabecera propuesta y los errores, y crear todo en una sola transacción. Si se reintenta
-  el guardado, la tanda no se duplica.
+  el guardado, la tanda no se duplica. Si faltan los ítems y aciertos, la revisión los pide
+  antes de guardar.
 - **Sesiones sin formato de examen** para ejercicios del libro que no siguen una tarea de
   Cambridge: sin Part, cuentan en el informe y en Anki, y quedan fuera de la precisión RUOE.
 - **Vista Errores** para buscar en todos los fallos, y búsqueda global con Ctrl/⌘+K.

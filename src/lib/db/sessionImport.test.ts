@@ -24,6 +24,14 @@ it('crea una sesión OPEN y sus errores, con duración solo si se escribe aparte
   expect(result.message).toBe('Sesión creada con 1 error. 1 repetido omitido.');
 });
 
+it('no crea la sesión si siguen faltando ítems y aciertos al guardar', () => {
+  const result = importSessionWithErrors(db, { session: { ...session, itemsTotal: null, itemsCorrect: null }, errors: [row] }, options);
+  expect(result.ok).toBe(false);
+  expect(result.fieldErrors).toHaveProperty(['session.itemsTotal']);
+  expect(result.fieldErrors).toHaveProperty(['session.itemsCorrect']);
+  expect(countSessions(db)).toBe(0);
+});
+
 it('un reintento con la misma identidad devuelve la sesión original sin duplicar filas', () => {
   const importId = '4b796a25-a7ec-4671-9c66-48443dff8297';
   const first = importSessionWithErrors(db, { session, errors: [row] }, { ...options, importId });

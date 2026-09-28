@@ -265,6 +265,9 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
   `source`, `sourceRef`, `itemsTotal`, `itemsCorrect` y `timed`. Todos deben estar
   presentes, con null donde el modelo lo permita. Se rechazan campos adicionales,
   incluidos `id`, `status` y `durationMin`. El servidor fija `status = OPEN`.
+- `itemsTotal` e `itemsCorrect` pueden llegar a null aunque no sea Writing: quien solo
+  ve los ítems fallados no los conoce. La revisión los pide y no deja crear la sesión
+  sin ellos; el servidor vuelve a exigirlos al guardar.
 - La duración solo se puede escribir manualmente en la vista previa. Un capturador externo suele proponer
   `kind = DRILL` editable, `paper = part = null`, `source = LIBRO` y `timed = false`.
   Unidad, página y actividad siguen siendo texto en `source_ref`, sin campos nuevos.
