@@ -1,7 +1,7 @@
 # Error Log C1 en cinco pasos
 
-Este recorrido muestra la app real con datos ficticios. Las mismas imágenes forman el
-[GIF del README](media/demo.gif); aquí puedes leerlas a tu ritmo.
+Este recorrido muestra la app real con datos ficticios. Las mismas imágenes forman un
+[GIF de 20 segundos](media/demo.gif); aquí puedes leerlas a tu ritmo.
 
 ## 1. Abrir una sesión
 
@@ -55,3 +55,7 @@ python scripts/make-demo.py
 
 El GIF dura 20 segundos, conserva las capturas completas y no necesita servicios externos.
 Revisa las imágenes antes de subirlas: usa siempre ejemplos, sin correcciones personales.
+
+El vídeo del README no sale de estos comandos: se grabó aparte con datos ficticios y se
+subió a GitHub arrastrándolo a un comentario, que es lo que permite reproducirlo en la
+página. Para cambiarlo, sube el nuevo igual y sustituye el enlace `user-attachments`.
