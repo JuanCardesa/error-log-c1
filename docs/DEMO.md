@@ -56,6 +56,15 @@ python scripts/make-demo.py
 El GIF dura 20 segundos, conserva las capturas completas y no necesita servicios externos.
 Revisa las imágenes antes de subirlas: usa siempre ejemplos, sin correcciones personales.
 
-El vídeo del README no sale de estos comandos: se grabó aparte con datos ficticios y se
-subió a GitHub arrastrándolo a un comentario, que es lo que permite reproducirlo en la
-página. Para cambiarlo, sube el nuevo igual y sustituye el enlace `user-attachments`.
+La animación de la cabecera del README (`docs/media/demo.webp`) sale del vídeo de la demo,
+grabado aparte con datos ficticios. GitHub no deja que un vídeo se reproduzca solo, pero
+sí una imagen animada. Con ffmpeg:
+
+```bash
+ffmpeg -i demo.mp4 -vf "fps=12,scale=1280:-1:flags=lanczos" -c:v libwebp_anim -lossless 0   -quality 70 -compression_level 6 -loop 0 -an docs/media/demo.webp
+ffmpeg -ss 0.5 -i demo.mp4 -frames:v 1 -vf "scale=1280:-1:flags=lanczos" -c:v libwebp   -quality 85 docs/media/demo-poster.webp
+```
+
+`demo-poster.webp` es la imagen fija para quien tiene activado reducir el movimiento. El
+vídeo completo del enlace está subido a GitHub arrastrándolo a un comentario; para
+cambiarlo, sube el nuevo igual y sustituye el enlace `user-attachments`.
