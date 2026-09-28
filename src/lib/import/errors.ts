@@ -188,7 +188,7 @@ Devuelve exclusivamente este objeto JSON, sin Markdown, sin bloques de codigo y 
     "paper": null,
     "part": null,
     "source": "LIBRO",
-    "sourceRef": "Ready for C1 Advanced, pag. 6, ejercicios 1-5",
+    "sourceRef": "Unidad 1, pag. 6, ejercicios 1-5",
     "itemsTotal": 8,
     "itemsCorrect": 6,
     "timed": false

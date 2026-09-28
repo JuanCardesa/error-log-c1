@@ -10,7 +10,7 @@ const example = {
 };
 
 const session = { date: '2026-09-15', kind: 'DRILL', paper: null, part: null, source: 'LIBRO',
-  sourceRef: 'Ready for C1 Advanced · págs. 6-7 · actividades 1-5', itemsTotal: 8, itemsCorrect: 6, timed: false };
+  sourceRef: 'Libro de prueba · págs. 6-7 · actividades 1-5', itemsTotal: 8, itemsCorrect: 6, timed: false };
 
 it('reconoce el sobre sin convertirlo en una fila vacía', () => {
   expect(draftsOf(JSON.stringify({ session, errors: [example] }))[0]?.prompt).toBe(example.prompt);
