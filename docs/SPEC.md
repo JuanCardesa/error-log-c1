@@ -280,14 +280,6 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
   **no se suman automáticamente los recuentos** y se avisa de ello. El servidor vuelve
   a comprobar que la sesión siga abierta al guardar. La captura dentro de la sesión
   sigue disponible.
-- El capturador acumula los huecos comprobados de todas las actividades, incluidas
-  las perfectas. Conserva el primer veredicto observado de cada hueco: recorrer el
-  DOM, recargar o reintentar no infla los recuentos ni borra los fallos anteriores.
-  Copiar o vaciar descarta juntos errores y acumulador; no los vuelve a recoger solos.
-- `sourceRef` agrupa libro, páginas y actividades legibles. Omite datos no disponibles
-  y no deduce páginas o números de actividad de identificadores opacos. Las tandas
-  de una versión antigua sin recuentos completos se exportan como array compatible
-  para completar la cabecera manualmente, sin inventar el denominador.
 
 1. **Registrar** — cabecera de sesión + entrada rápida de errores en un único formulario,
    denso y con teclado, que pasa a una columna cuando no cabe a lo ancho; pegar una tanda

@@ -68,7 +68,7 @@ dashboard. La conversión a Anki solo se sella cuando la tarjeta existe y está 
 ## Evidence on Hand
 
 - Demo reproducible con datos inventados: `pnpm demo` (`src/lib/db/demo.ts`).
-- Capturas del estado previo al rediseño: `docs/ui-review/before/`.
+- Capturas actuales de la app con datos inventados: `docs/screenshots/` y `docs/media/`.
 - Especificación funcional: `docs/SPEC.md`; integración con Anki: `docs/ANKI.md`.
 - No hay usuarios externos, testimonios ni métricas de uso; no inventarlos.
 

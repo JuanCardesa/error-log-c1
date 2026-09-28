@@ -18,8 +18,9 @@ funciones y exportaciones, y la interfaz es nueva de arriba abajo.
   error (`secs` queda a `NULL` en los errores nuevos) y la marca manual de tarjeta.
 - **Exportaciones:** desaparecen los dos CSV que eran una sola fila de totales, y el
   volcado JSON guarda solo datos, sin resultados recalculables.
-- **El capturador de Macmillan sale del repositorio.** La app sigue aceptando el mismo
-  JSON de sesión y errores, venga de donde venga.
+- **La herramienta de captura externa ya no forma parte del repositorio**, y con ella sus
+  scripts de `package.json`. La app sigue aceptando el mismo JSON de sesión y errores,
+  venga de donde venga.
 
 ### Añadido
 
