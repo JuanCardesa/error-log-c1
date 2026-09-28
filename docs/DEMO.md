@@ -58,12 +58,18 @@ Revisa las imágenes antes de subirlas: usa siempre ejemplos, sin correcciones p
 
 La animación de la cabecera del README (`docs/media/demo.webp`) sale del vídeo de la demo,
 grabado aparte con datos ficticios. GitHub no deja que un vídeo se reproduzca solo, pero
-sí una imagen animada. Con ffmpeg:
+sí una imagen animada. Se saca con ffmpeg y se codifica con `img2webp` de
+[libwebp](https://developers.google.com/speed/webp/download):
 
 ```bash
-ffmpeg -i demo.mp4 -vf "fps=12,scale=1280:-1:flags=lanczos" -c:v libwebp_anim -lossless 0   -quality 70 -compression_level 6 -loop 0 -an docs/media/demo.webp
-ffmpeg -ss 0.5 -i demo.mp4 -frames:v 1 -vf "scale=1280:-1:flags=lanczos" -c:v libwebp   -quality 85 docs/media/demo-poster.webp
+ffmpeg -i demo.mp4 -vf "fps=12.5,scale=1280:-1:flags=lanczos" frames/%05d.png
+img2webp -loop 0 -lossy -q 70 -m 4 -kmin 6 -kmax 12 -d 80 frames/*.png -o docs/media/demo.webp
+ffmpeg -ss 0.5 -i demo.mp4 -frames:v 1 -vf "scale=1280:-1:flags=lanczos" -c:v libwebp -quality 85 docs/media/demo-poster.webp
 ```
+
+No uses el codificador WebP animado de ffmpeg: tras los cambios de pantalla deja restos de la
+anterior. `img2webp` con `-kmax 12` pinta un fotograma completo al menos cada 12, y a 12,5
+fotogramas por segundo cada uno dura 80 ms exactos, así que la animación no se desfasa del vídeo.
 
 `demo-poster.webp` es la imagen fija para quien tiene activado reducir el movimiento. El
 vídeo completo del enlace está subido a GitHub arrastrándolo a un comentario; para
