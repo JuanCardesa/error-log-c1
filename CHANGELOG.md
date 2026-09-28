@@ -3,7 +3,7 @@
 Formato inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Cada
 versión corresponde a un tag `vX.Y` en `main`; `package.json` lleva el mismo número.
 
-## [2.0] — pendiente de publicar
+## [2.0] — 2026-09-28
 
 Versión mayor: cambia el modelo de datos (migraciones que reconstruyen tablas), se retiran
 funciones y exportaciones, y la interfaz es nueva de arriba abajo.
