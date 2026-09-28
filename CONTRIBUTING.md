@@ -10,8 +10,28 @@ main                 solo releases. Se toca al cerrar una fase, nunca antes.
 
 - Todo cambio entra por `feature/<slug>` → PR a `develop`. Nunca commits directos a
   `develop` ni a `main`.
-- `develop` → `main` solo al cerrar una version, y con su tag `vX.Y.Z`.
+- `develop` → `main` solo al cerrar una versión, y con su tag `vX.Y`.
 - El PR no se mergea si CI está en rojo.
+
+## Publicar una versión
+
+La versión mayor sube cuando cambia el modelo de datos o se retira algo; la menor, con
+funciones nuevas compatibles.
+
+1. En una `feature/`, subir `version` en `package.json` a `X.Y.0` y pasar la entrada de
+   [CHANGELOG.md](CHANGELOG.md) de «pendiente de publicar» a la fecha del día. PR a `develop`.
+2. Con CI en verde, **merge local** de `develop` en `main`. No con el botón de GitHub: su
+   mensaje por defecto rompe el patrón y la versión se queda sin tag.
+
+```bash
+git checkout main && git pull
+git merge --no-ff develop -m "chore(release): vX.Y — resumen en una línea"
+git tag -a vX.Y -m "vX.Y: qué aporta"
+git push origin main vX.Y
+gh release create vX.Y --title "vX.Y" --notes-file <(sed -n '/^## \[X.Y\]/,/^## \[/p' CHANGELOG.md | sed '$d')
+```
+
+El número de `package.json` y el del tag coinciden siempre.
 
 ```bash
 git checkout develop && git pull

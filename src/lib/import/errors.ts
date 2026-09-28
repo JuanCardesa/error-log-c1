@@ -21,11 +21,23 @@ export const importedSessionSchema = z.strictObject({
 });
 export type ImportedSession = z.infer<typeof importedSessionSchema>;
 
+/**
+ * Ítems y aciertos que llegan a null: quien solo ve los ítems fallados no los conoce. La
+ * revisión los pide antes de guardar y el servidor vuelve a exigirlos al crear la sesión.
+ */
+function pendingCount(value: ImportedSession, path: readonly PropertyKey[]): boolean {
+  const [field] = path;
+  return (field === 'itemsTotal' || field === 'itemsCorrect') && value[field] === null;
+}
+
 export function importEnvelopeSchema(today: string) {
   return z.strictObject({
     session: importedSessionSchema.superRefine((value, ctx) => {
       const parsed = sessionInputSchema({ today }).safeParse(value, importParseOptions);
-      if (!parsed.success) for (const issue of parsed.error.issues) ctx.addIssue({ code: 'custom', path: issue.path, message: issue.message });
+      if (!parsed.success) for (const issue of parsed.error.issues) {
+        if (pendingCount(value, issue.path)) continue;
+        ctx.addIssue({ code: 'custom', path: issue.path, message: issue.message });
+      }
     }),
     errors: sessionImportRowsSchema,
   });
@@ -188,7 +200,7 @@ Devuelve exclusivamente este objeto JSON, sin Markdown, sin bloques de codigo y 
     "paper": null,
     "part": null,
     "source": "LIBRO",
-    "sourceRef": "Ready for C1 Advanced, pag. 6, ejercicios 1-5",
+    "sourceRef": "Unidad 1, pag. 6, ejercicios 1-5",
     "itemsTotal": 8,
     "itemsCorrect": 6,
     "timed": false

@@ -10,7 +10,7 @@ const example = {
 };
 
 const session = { date: '2026-09-15', kind: 'DRILL', paper: null, part: null, source: 'LIBRO',
-  sourceRef: 'Ready for C1 Advanced · págs. 6-7 · actividades 1-5', itemsTotal: 8, itemsCorrect: 6, timed: false };
+  sourceRef: 'Libro de prueba · págs. 6-7 · actividades 1-5', itemsTotal: 8, itemsCorrect: 6, timed: false };
 
 it('reconoce el sobre sin convertirlo en una fila vacía', () => {
   expect(draftsOf(JSON.stringify({ session, errors: [example] }))[0]?.prompt).toBe(example.prompt);
@@ -21,13 +21,19 @@ it.each([
   [{ session: { ...session, status: 'CLOSED' }, errors: [example] }, 'status'],
   [{ session: { ...session, durationMin: 10 }, errors: [example] }, 'durationMin'],
   [{ session: { ...session, timed: 'false' }, errors: [example] }, 'timed'],
-  [{ session: { ...session, itemsTotal: null }, errors: [example] }, 'itemsTotal'],
+  [{ session: { ...session, itemsCorrect: 9 }, errors: [example] }, 'itemsCorrect'],
   [{ session: { ...session, part: 1 }, errors: [example] }, 'part'],
   [{ session: { ...session, date: '2999-01-01' }, errors: [example] }, 'futura'],
   [{ session }, 'errors'],
   [{ session, errors: 'incorrecto' }, 'errors'],
 ])('rechaza un sobre incompleto o manipulado con el campo concreto', (value, message) => {
   expect(() => draftsOf(JSON.stringify(value))).toThrow(message);
+});
+
+it('acepta un sobre sin ítems ni aciertos: quien solo ve los fallos no los sabe', () => {
+  const parsed = parseImportedBatch(JSON.stringify({ session: { ...session, itemsTotal: null, itemsCorrect: null }, errors: [example] }));
+  expect(parsed.session).toMatchObject({ itemsTotal: null, itemsCorrect: null });
+  expect(parsed.errors).toHaveLength(1);
 });
 
 describe('pegar errores', () => {

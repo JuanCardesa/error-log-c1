@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * La entrada de Sesiones: pegar la tanda de Macmillan es lo primero; la sesión manual va
+ * La entrada de Sesiones: pegar una tanda es lo primero; la sesión manual va
  * a un clic (o la tecla N) en un drawer, y la revisión de una tanda sustituye la vista.
  */
 

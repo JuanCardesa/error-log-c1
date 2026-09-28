@@ -9,7 +9,7 @@ const complete: RowSnapshot = {
 };
 
 describe('revision de filas pegadas', () => {
-  it('detecta lo que falta en un borrador de Macmillan y solo copia los campos del resumen', () => {
+  it('detecta lo que falta en un borrador pegado y solo copia los campos del resumen', () => {
     const draft: ImportDraft = {
       ...complete, correctAnswer: '', category: '', ruleNote: '',
       cause: 'DESCONOCIMIENTO', confidence: 'DUDABA', subcategory: '', lateInSession: false,

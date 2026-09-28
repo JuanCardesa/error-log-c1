@@ -1,6 +1,6 @@
 {
   "name": "error-log-c1",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Registro de errores para la preparacion del Cambridge C1 Advanced",
   "license": "MIT",
@@ -25,10 +25,7 @@
     "db:seed": "tsx src/lib/db/seed.run.ts",
     "db:backup": "tsx src/lib/db/backup.run.ts",
     "db:restore": "tsx src/lib/db/restore.run.ts",
-    "screenshots": "node scripts/screenshots.mjs",
-    "macmillan:build": "node tools/macmillan-capture/build.mjs",
-    "macmillan:test": "vitest run --root tools/macmillan-capture",
-    "macmillan:e2e": "playwright test --config tools/macmillan-capture/playwright.config.mjs"
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
