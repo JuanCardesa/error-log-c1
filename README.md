@@ -9,9 +9,13 @@ Un registro personal para preparar Cambridge C1 Advanced: guarda qué fallaste y
 revisa tus patrones y elige **una acción para esta semana**. Funciona en tu equipo,
 sin cuenta y con tus datos en SQLite.
 
-![Demo: abrir una sesión, pegar correcciones, revisarlas, guardarlas y consultar el informe](docs/media/demo.gif)
+<picture>
+  <source media="(prefers-reduced-motion: reduce)" srcset="docs/media/demo-poster.webp">
+  <img src="docs/media/demo.webp" alt="Demo de Error Log C1: pegar una tanda, revisarla y guardarla, y consultar el progreso y la cola de Anki">
+</picture>
 
-La demo usa datos ficticios. [Ver el recorrido en imágenes estáticas](docs/DEMO.md).
+Demo de 57 segundos con datos ficticios. [Vídeo completo](https://github.com/user-attachments/assets/d72fba4a-1ee2-4e8e-8c22-70c82d64b71a) ·
+[Recorrido en imágenes estáticas](docs/DEMO.md).
 
 ## Qué puedes hacer
 
