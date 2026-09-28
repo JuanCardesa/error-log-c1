@@ -23,12 +23,14 @@ La demo usa datos ficticios. [Ver el recorrido en imágenes estáticas](docs/DEM
   la dispara y un mínimo de muestra para las reglas de porcentaje.
 - **Cerrar el ciclo.** Revisa las tarjetas pendientes de Anki, las falsas certezas y
   los errores que reaparecen al reescribir un texto.
-- **Llevarte tus datos.** Exporta las seis consultas a CSV, las filas a JSON o una
+- **Conectar el repaso.** Crea tarjetas en Anki y consulta los fallos por categoría con
+  AnkiConnect, mediante sincronización manual.
+- **Llevarte tus datos.** Exporta las consultas a CSV, las filas a JSON o una
   copia SQLite restaurable.
 
 | Informe semanal | Evolución de Reading & Use of English |
 | --- | --- |
-| ![Informe con la acción prioritaria y sus reglas](docs/screenshots/informe.png) | ![Precisión por part y semana, con celdas sin datos diferenciadas](docs/screenshots/ruoe.png) |
+| ![Informe con la acción prioritaria y las cifras que la justifican](docs/screenshots/informe.png) | ![Precisión por part y semana, con celdas sin datos diferenciadas](docs/screenshots/ruoe.png) |
 
 ## Empezar
 
@@ -64,6 +66,12 @@ pnpm dev
 Abre **http://127.0.0.1:3000**. Tus datos se guardan en `data/errorlog.db`, fuera de Git.
 Para ejecutar la versión compilada: `pnpm build` y después `pnpm start`.
 
+Para actualizar una base existente, detén la app y ejecuta `pnpm db:migrate`. Antes de
+tocar nada guarda una copia verificada en `data/backups/previa-a-migrar-<fecha>.db`; si
+esa copia falla, no migra. Usa este comando también para las migraciones que reconstruyen
+tablas: conserva las relaciones y verifica la integridad antes de confirmar los cambios.
+No hay migraciones inversas: para volver atrás se restaura esa copia con `pnpm db:restore`.
+
 `pnpm db:seed` sigue disponible para cargar ejemplos en una base **vacía y migrada**.
 Si encuentra datos, se detiene sin cambiarlos. Para probar la app, usa `pnpm demo`.
 
@@ -72,12 +80,14 @@ solo en `127.0.0.1`; la app no está preparada para exponerse directamente a Int
 
 ## Pegar correcciones
 
-1. Abre una sesión en **Registrar** y pulsa **Pegar varios errores**.
+1. En **Sesiones**, pega en **Pegar correcciones**; para añadir a una sesión abierta,
+   ábrela y pulsa **Pegar varios**.
 2. Pega celdas con las cabeceras de la plantilla o un JSON de errores. Si partes de
-   correcciones en texto o fotos, copia las instrucciones de **Convertir mis correcciones
+   correcciones en texto o fotos, copia las instrucciones de **Preparar correcciones
    con IA** y úsalas en la herramienta que prefieras.
-3. Prepara la vista previa, comprueba cada respuesta y ajusta causa y confianza.
-4. Guarda la tanda. Un error repetido en la misma sesión no se duplica ni modifica el anterior.
+3. Pulsa **Revisar importación**: un índice con el estado de cada error y un editor para
+   el elegido. Completa lo pendiente (Alt+↓ salta al siguiente) y ajusta causa y confianza.
+4. Guarda la tanda (Ctrl+Intro). Un error repetido en la misma sesión no se duplica ni modifica el anterior.
 
 La app no conecta con una IA ni lee fotos directamente. Si utilizas una herramienta
 externa, las correcciones se las facilitas tú. Revisa su respuesta: puede interpretar mal
@@ -85,7 +95,14 @@ el ejercicio. Cuando faltan causa y confianza se proponen `DESCONOCIMIENTO` y `D
 
 Una sesión con cero errores también cuenta: es parte del denominador. Las ventanas
 del informe son de 30 y 60 días; Falsas certezas usa siempre 30 días.
-En Registrar, **Más antiguas** y **Más recientes** permiten recorrer todas tus sesiones.
+En Sesiones puedes buscar por referencia, fuente o fecha y filtrar por estado y práctica;
+**Errores** busca en todos tus fallos, y Ctrl/⌘+K abre la búsqueda global.
+
+Para ejercicios del libro que no siguen una tarea de Cambridge, elige **Sin formato de
+examen** en Formato de examen. No tendrás que indicar Part; sí los ítems y aciertos. Indica unidad,
+página y ejercicio en Referencia. Estas sesiones cuentan en el informe general y Anki,
+y quedan fuera de la precisión RUOE. Un ejercicio del libro con formato de examen
+puede seguir usando su paper y part correspondientes.
 
 Los CSV incluyen la marca UTF-8 para conservar los acentos en Excel. Lo que Excel
 evaluaría como fórmula sale con un tabulador protector dentro del campo entrecomillado;
@@ -144,23 +161,24 @@ Si esa ruta predeterminada no existe, puedes restaurar directamente a ella omiti
 el segundo argumento. Una exportación JSON sirve para portabilidad; aún no hay importación
 del volcado completo ni restauración desde la interfaz.
 
-## Cómo decide el informe
+## Progreso y Anki
 
-| Consulta | Para qué sirve |
-| --- | --- |
-| Reparto de causas | Distinguir conocimiento y ejecución |
-| Categorías por tasa | Comparar errores por ítems intentados |
-| Precisión RUOE | Seguir cada part por semana ISO |
-| Falsas certezas | Revisar fallos cometidos con `SEGURO` |
-| Deuda de Anki | Ver qué errores siguen sin convertirse en tarjetas |
-| Eficacia del rewrite | Comprobar si reaparecen errores del original |
+Progreso prioriza una acción con siete reglas. Las reglas de porcentaje exigen al
+menos 15 observaciones en su propio denominador; las falsas certezas usan 30 días.
+[Consultas, umbrales y decisiones](docs/SPEC.md#4-consultas-q1q6-del-mvp-y-q7-de-anki).
 
-Las reglas de porcentaje necesitan al menos 15 observaciones en **su propio denominador**.
-`needs n ≥ 15` indica muestra insuficiente y `n/a`, ausencia de datos aplicables.
-La cola de Anki incluye desconocimiento, confusión y ortografía; marcar una tarjeta
-como añadida es manual, sin sincronización con Anki.
+Para crear tarjetas y leer repasos, instala AnkiConnect y deja Anki abierto.
+La app permite crear, actualizar explícitamente y deshacer vínculos, además de
+sincronizar el historial. La conversión solo se sella tras verificar la tarjeta.
+[Instalación, configuración, funcionamiento y límites](docs/ANKI.md).
 
 ## Desarrollo
+
+La búsqueda de texto de sesiones y errores usa coincidencia de subcadenas. Para consultas
+de tres caracteres o más, un índice FTS5 de trigramas reduce las filas candidatas; el
+filtro original comprueba el resultado exacto. Las consultas más cortas todavía recorren
+las filas, y las listas paginadas calculan el total. La paleta muestra hasta cinco errores
+y tres sesiones sin calcular ese total. Las entradas se limitan a 200 caracteres.
 
 Next.js (App Router), TypeScript strict, SQLite con Drizzle, Zod, Vitest y Playwright.
 CSS Modules, sin librería de componentes. El dominio, las consultas y las reglas son
@@ -179,6 +197,13 @@ La suite prueba también que el seed respeta los datos existentes y que una copi
 se restaura conservando filas, relaciones y migraciones. La cobertura de `src/lib/` exige
 un mínimo del 90 % en líneas, sentencias, funciones y ramas.
 
+## Aviso
+
+Error Log C1 es un proyecto personal e independiente. No está afiliado, patrocinado ni
+respaldado por Cambridge University Press & Assessment ni por ninguna editorial.
+«Cambridge» y «C1 Advanced» son marcas de sus titulares y se citan solo para indicar el
+examen al que se orienta la herramienta. El repositorio no incluye ejercicios de terceros:
+la demo, las capturas y los tests usan contenido inventado.
+
 [Contribuir](CONTRIBUTING.md) · [Contrato del producto](docs/SPEC.md) ·
-[Plan de implementación](docs/PLAN.md) ·
 [Regenerar la demo y las capturas](docs/DEMO.md) · [Licencia MIT](LICENSE)

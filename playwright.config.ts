@@ -1,7 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-import { E2E_DB } from './e2e/globalSetup';
-
 const PORT = 3210;
 
 export default defineConfig({
@@ -21,12 +19,4 @@ export default defineConfig({
 
   globalSetup: './e2e/globalSetup.ts',
 
-  webServer: {
-    command: `pnpm build && pnpm exec next start --hostname 127.0.0.1 --port ${String(PORT)}`,
-    port: PORT,
-    reuseExistingServer: false,
-    timeout: 180_000,
-    // La app sirve la base desechable, no la del usuario.
-    env: { DB_FILE_OVERRIDE: E2E_DB, ERRORLOG_E2E: '1' },
-  },
 });

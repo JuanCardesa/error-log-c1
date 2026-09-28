@@ -1,266 +1,91 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useRef, useState } from 'react';
+import { useActionState, useEffect, useId, useRef } from 'react';
 
-import { MAX_PART, PAPERS, SESSION_KINDS, SOURCES, partsFor } from '@/lib/domain/enums';
-import type { Paper } from '@/lib/domain/enums';
 import type { SessionRow } from '@/lib/domain/types';
+import type { ImportedSession } from '@/lib/import/errors';
+import { Drawer } from '../_shared/Drawer';
+import { useToast } from '../_shared/Toast';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { createSessionAction, updateSessionAction } from './actions';
 import { EMPTY_STATE } from './formState';
+import { SessionFields } from './SessionFields';
 import styles from './session.module.css';
+import ui from '../_shared/ui.module.css';
 
 /**
- * Cabecera de sesion, para abrirla y para corregirla despues.
+ * Alta y edición de una sesión en el drawer. Comparten campos y validación.
  *
- * §6.1 pide validarla **antes** de aceptar errores y enseñar el error concreto: hasta
- * que esta no se guarda, no aparece el formulario de captura. Corregir una sesion pasada
- * pasa por la misma validacion, porque las reglas no cambian por ser una correccion.
- *
- * El paper condiciona dos cosas en vivo: cuantas parts hay, y si los items son
- * opcionales. Solo el Writing puede quedarse sin items, porque no se mide por aciertos.
+ * Crear lleva a la sesión nueva, con la captura abierta: registrar errores es el paso
+ * siguiente. Editar no toca sus errores. El drawer se queda montado al cerrarlo: lo
+ * escrito no se pierde por cerrarlo sin querer.
  */
-
-interface Props {
+export function SessionDrawer({ open, onClose, today, editing = null, preset, returnTo }: {
+  readonly open: boolean;
+  readonly onClose: () => void;
   readonly today: string;
-  /** Sesion a corregir. `null` para abrir una nueva. */
+  /** Sesión a editar. `null` para abrir una nueva. */
   readonly editing?: SessionRow | null;
-  readonly onDone?: () => void;
-}
-
-export function SessionForm({ today, editing = null, onDone }: Props) {
+  /** Solo al abrir una nueva: valores de partida (p. ej. Writing al venir de /writing). */
+  readonly preset?: Partial<ImportedSession>;
+  /** Solo al abrir una nueva: a dónde ir tras crearla. `{id}` se sustituye por la nueva. */
+  readonly returnTo?: string;
+}) {
   const isEdit = editing !== null;
+  const formId = useId();
   const { formRef, onReset } = usePreservedForm();
-  const [state, formAction, pending] = useActionState(
-    isEdit ? updateSessionAction : createSessionAction,
-    EMPTY_STATE,
-  );
-
-  const [paper, setPaper] = useState<Paper>(editing?.paper ?? 'RUOE');
-  const [kind, setKind] = useState<string>(editing?.kind ?? 'DRILL');
-
+  const [state, formAction, pending] = useActionState(isEdit ? updateSessionAction : createSessionAction, EMPTY_STATE);
   const router = useRouter();
-  const handled = useRef<number | undefined>(undefined);
+  const toast = useToast();
+  const handled = useRef<typeof state | null>(null);
 
   useEffect(() => {
-    if (!state.ok || state.createdId === undefined) return;
-    if (handled.current === state.createdId) return;
-    handled.current = state.createdId;
-
-    if (isEdit) {
-      onDone?.();
+    if (handled.current === state) return;
+    handled.current = state;
+    if (!state.ok) {
+      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
       return;
     }
-    // Se abre una sesion para volcar errores en ella: entrar es el siguiente paso, no
-    // buscarla luego en la lista.
-    router.push(`/registrar?s=${String(state.createdId)}`);
-  }, [state, router, isEdit, onDone]);
-
-  const isWriting = paper === 'WRITING';
-
-  const errorsFor = (field: string): string[] => state.fieldErrors[field] ?? [];
-  const invalid = (field: string): boolean => errorsFor(field).length > 0;
-
-  const fieldError = (field: string) => {
-    const messages = errorsFor(field);
-    if (messages.length === 0) return null;
-    return (
-      <p className={styles.fieldError} id={`s-${field}-error`} role="alert">
-        {messages.join(' ')}
-      </p>
-    );
-  };
+    if (state.createdId === undefined) return;
+    if (isEdit) {
+      toast({ message: 'Sesión actualizada · sus errores no cambian' });
+      onClose();
+      return;
+    }
+    toast({ message: 'Sesión creada. Añade errores o ciérrala si fue perfecta' });
+    const id = String(state.createdId);
+    router.push(returnTo === undefined ? `/registrar?s=${id}&modo=captura` : returnTo.replace('{id}', id));
+  }, [state, isEdit, onClose, router, toast, returnTo, formRef]);
 
   return (
-    <section className={styles.panel} aria-labelledby="session-heading">
-      <h2 id="session-heading">
-        {isEdit ? `Corregir sesion #${String(editing.id)}` : 'Nueva sesion'}
-      </h2>
-      <p className={styles.hint}>
-        {isEdit
-          ? 'Corregir la cabecera no toca los errores ya registrados. Pasa por la misma validacion que el alta.'
-          : 'Una sesion es el denominador. Registrala aunque no hayas fallado nada: sin ella, las tasas mienten al alza.'}
-      </p>
-
-      <form ref={formRef} action={formAction} onReset={onReset} className={styles.form}>
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title={isEdit ? 'Editar sesión' : 'Nueva sesión'}
+      keepMounted
+      footer={(
+        <>
+          <button type="button" className={ui.ghost} onClick={onClose} disabled={pending}>Cancelar</button>
+          <button type="submit" form={formId} className={ui.primary} disabled={pending} aria-busy={pending}>
+            {pending ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear sesión'}
+          </button>
+        </>
+      )}
+    >
+      <form id={formId} ref={formRef} action={formAction} onReset={onReset} className={styles.form}>
         {isEdit && (
           <>
             <input type="hidden" name="id" value={editing.id} />
             <input type="hidden" name="status" value={editing.status} />
+            <p className={styles.editNote}>Editar la sesión no modifica sus errores.</p>
           </>
         )}
-
-        <label>
-          <span className={styles.label}>Fecha</span>
-          <input
-            type="date"
-            name="date"
-            defaultValue={editing?.date ?? today}
-            max={today}
-            required
-            className="data"
-            aria-invalid={invalid('date')}
-            aria-describedby={invalid('date') ? 's-date-error' : undefined}
-          />
-          {fieldError('date')}
-        </label>
-
-        <label>
-          <span className={styles.label}>Tipo</span>
-          <select
-            name="kind"
-            value={kind}
-            onChange={(event) => {
-              const next = event.target.value;
-              setKind(next);
-              // kind = WRITING obliga a paper = WRITING (implicacion, decision P4).
-              if (next === 'WRITING') setPaper('WRITING');
-            }}
-          >
-            {SESSION_KINDS.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label>
-          <span className={styles.label}>Paper</span>
-          <select
-            name="paper"
-            value={paper}
-            onChange={(event) => {
-              setPaper(event.target.value as Paper);
-            }}
-            aria-invalid={invalid('paper')}
-            aria-describedby={invalid('paper') ? 's-paper-error' : undefined}
-          >
-            {PAPERS.map((value) => (
-              <option
-                key={value}
-                value={value}
-                disabled={kind === 'WRITING' && value !== 'WRITING'}
-              >
-                {value}
-              </option>
-            ))}
-          </select>
-          {fieldError('paper')}
-        </label>
-
-        <label>
-          <span className={styles.label}>Part</span>
-          <select
-            name="part"
-            defaultValue={String(editing?.part ?? 1)}
-            key={paper}
-            aria-invalid={invalid('part')}
-            aria-describedby={invalid('part') ? 's-part-error' : undefined}
-          >
-            {partsFor(paper).map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-          <span className={styles.help}>
-            {paper} llega a {MAX_PART[paper]}
-          </span>
-          {fieldError('part')}
-        </label>
-
-        <label>
-          <span className={styles.label}>Fuente</span>
-          <select name="source" defaultValue={editing?.source ?? 'LIBRO'}>
-            {SOURCES.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className={styles.wide}>
-          <span className={styles.label}>Referencia</span>
-          <input
-            name="sourceRef"
-            autoComplete="off"
-            placeholder="Unidad 1, ej. 5"
-            defaultValue={editing?.sourceRef ?? ''}
-          />
-        </label>
-
-        <label>
-          <span className={styles.label}>Items{isWriting ? '' : ' *'}</span>
-          <input
-            type="number"
-            name="itemsTotal"
-            min={0}
-            className="data"
-            required={!isWriting}
-            disabled={isWriting}
-            defaultValue={editing?.itemsTotal ?? ''}
-            aria-invalid={invalid('itemsTotal')}
-            aria-describedby={invalid('itemsTotal') ? 's-itemsTotal-error' : undefined}
-          />
-          {fieldError('itemsTotal')}
-        </label>
-
-        <label>
-          <span className={styles.label}>Aciertos{isWriting ? '' : ' *'}</span>
-          <input
-            type="number"
-            name="itemsCorrect"
-            min={0}
-            className="data"
-            required={!isWriting}
-            disabled={isWriting}
-            defaultValue={editing?.itemsCorrect ?? ''}
-            aria-invalid={invalid('itemsCorrect')}
-            aria-describedby={invalid('itemsCorrect') ? 's-itemsCorrect-error' : undefined}
-          />
-          {fieldError('itemsCorrect')}
-          {isWriting && <span className={styles.help}>El Writing no se mide por items.</span>}
-        </label>
-
-        <label>
-          <span className={styles.label}>Minutos</span>
-          <input
-            type="number"
-            name="durationMin"
-            min={0}
-            className="data"
-            defaultValue={editing?.durationMin ?? ''}
-          />
-        </label>
-
-        <label className={styles.check}>
-          <input type="checkbox" name="timed" defaultChecked={editing?.timed ?? false} />
-          <span>Cronometrada</span>
-        </label>
-
-        <div className={styles.actions}>
-          <button type="submit" className={styles.primary} disabled={pending}>
-            {pending ? 'Guardando…' : isEdit ? 'Guardar cabecera' : 'Abrir sesion'}
-          </button>
-          {isEdit && (
-            <button type="button" className={styles.secondary} onClick={onDone}>
-              Cancelar
-            </button>
-          )}
-        </div>
+        <SessionFields today={today} defaults={editing ?? preset} fieldErrors={state.fieldErrors} idPrefix={formId} />
+        {state.message !== null && !state.ok && (
+          <p role="alert" className={ui.fieldError}>{state.message}</p>
+        )}
       </form>
-
-      {state.message !== null && (
-        <p
-          className={state.ok ? styles.ok : styles.formError}
-          role={state.ok ? 'status' : 'alert'}
-        >
-          {state.message}
-        </p>
-      )}
-    </section>
+    </Drawer>
   );
 }

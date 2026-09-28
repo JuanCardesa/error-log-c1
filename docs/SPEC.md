@@ -1,10 +1,7 @@
 # Error Log C1 — especificación
 
-Transcripción del briefing de encargo. Es la fuente de verdad del proyecto: si el código
-y este documento discrepan, discrepa el código.
-
-El antecedente de este briefing es [`error-log-spec.md`](reference/error-log-spec.md) (documento de diseño original).
-Donde ambos difieren, **manda este documento**. Ver §10.
+Contrato vigente del producto. La causa orienta el remedio; las sesiones aportan el
+denominador y registrar un error debe costar menos de 30 segundos.
 
 ---
 
@@ -29,8 +26,8 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 | `id` | PK | |
 | `date` | ISO date | no puede ser futura |
 | `kind` | enum | `DRILL` `PARCIAL` `SIMULACRO` `CLASE` `WRITING` |
-| `paper` | enum | `RUOE` `WRITING` `LISTENING` `SPEAKING` |
-| `part` | int | dentro del máximo del paper |
+| `paper` | enum, nullable | `RUOE` `WRITING` `LISTENING` `SPEAKING`; null si no tiene formato de examen |
+| `part` | int, nullable | dentro del máximo del paper; null exactamente cuando `paper` es null |
 | `source` | enum | `LIBRO` `WORKBOOK` `TRAINER` `PAST_PAPER` `ONLINE` `ACADEMIA` |
 | `source_ref` | texto | |
 | `items_total` | int | **nullable solo si `paper = WRITING`** |
@@ -57,7 +54,8 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 | `rule_note` | texto | **obligatorio** |
 | `anki_added` | bool | |
 | `anki_added_at` | timestamp, nullable | |
-| `secs` | int | segundos que costó registrarlo |
+| `anki_note_id` | FK → anki_note.note_id, nullable | vínculo verificado; NULL en marcas manuales antiguas |
+| `secs` | int | histórico: segundos que costó registrarlo. Ya no se mide; se conserva lo guardado |
 | `created_at` | timestamp | |
 
 ### `writing_piece` — un texto de Writing.
@@ -78,11 +76,49 @@ Donde ambos difieren, **manda este documento**. Ver §10.
 | `band_organisation` | int 0–5, nullable | |
 | `band_language` | int 0–5, nullable | |
 
+### Espejo de Anki (2026-09-22)
+
+| tabla | campos y relaciones |
+| --- | --- |
+| `anki_note` | `note_id` PK de Anki, `model`, `label` de texto, `tags` JSON, `category` nullable, `first_seen_at`, `last_seen_at` |
+| `anki_card` | `card_id` PK, `note_id` FK → anki_note (CASCADE), `deck`, `template_ord`, `lapses`, `reps`, `queue`, `interval_days` |
+| `anki_review` | `review_id` PK (epoch ms), `card_id` FK → anki_card (CASCADE), `reviewed_at` ISO, `review_date` según el corte de Anki en la zona local, `ease`, `interval`, `last_interval`, `factor`, `time_ms`, `type` |
+| `anki_sync` | fila única `id=1`, `namespace` UUID de esta base, `profile`, `url`, `source_deck`, `target_deck`, `last_synced_at` nullable, `notes_seen` |
+
+`error_row.anki_note_id` es el único vínculo con el error, con `ON DELETE SET NULL`.
+Una sincronización confirma por ID las notas vinculadas, incluso fuera del mazo origen;
+si una ya no existe, limpia también `anki_added` y `anki_added_at`. Moverla no devuelve
+la deuda. Las marcas manuales de versiones anteriores quedan con `anki_note_id = NULL`
+y se muestran sin verificar; ya no se pueden crear nuevas.
+
+Cada snapshot completo validado se aplica en una transacción. Repetirlo es idempotente;
+se incluyen repasos importados antiguos y se retiran del espejo los repasos deshechos y
+las cartas que ya no pertenecen al alcance. No se borran notas de la colección de Anki.
+Perfil y mazos quedan fijados por base para impedir mezclas accidentales. Los datos de
+Anki se exportan también en el dump JSON, separados del `Dataset` original.
+
+La creación usa el tipo propio **Error Log C1** con `ErrorLogId`, `Prompt`, `MyAnswer`,
+`Correct`, `Rule`, `Meta`. La identidad estable permite recuperar un reintento tras un
+timeout; no se usa el enunciado como identidad. Solo se marca una conversión verificada
+si Anki devuelve una nota con al menos una tarjeta. Las notas anteriores y sus modelos
+se conservan; no se actualizan automáticamente al editar después el error en la app.
+
 ### Reglas invariantes (en Zod **y** en constraints de la DB)
 
 - `items_correct <= items_total`, ambos `>= 0`.
 - `part` dentro del máximo del paper: `RUOE:8`, `WRITING:2`, `LISTENING:4`, `SPEAKING:4`.
+- **Práctica sin formato de examen (2026-09-18):** `paper` y `part` son ambos nulos
+  o ambos están informados. Null significa «no aplica», no «pendiente de rellenar».
+  Se rechazan pares parcialmente nulos, papers desconocidos y parts no enteras.
+  El enum de papers conserva los cuatro valores de Cambridge.
+- Fuente y formato son independientes: `LIBRO` puede contener ejercicios libres o
+  tareas de examen. Unidad, página y ejercicio se indican en `source_ref`. Las sesiones
+  sin formato siguen necesitando `items_total` e `items_correct`, incluidos los ceros;
+  la excepción de ítems nulos sigue siendo exclusiva de `paper = WRITING`.
 - `date` no puede ser futura.
+  «Hoy» es el día del reloj local del servidor. Las ventanas de 30/60 días terminan
+  en ese mismo día local; la aritmética posterior de fechas civiles sigue en UTC para
+  que los cambios de hora no alteren sus límites.
 - `kind = WRITING` → `paper = WRITING`. **Resuelto (P4, 2026-09-14):** el briefing escribía
   un bicondicional, que impedía registrar el Writing de un `SIMULACRO` o de una `CLASE`.
   Queda como implicación simple: `paper = WRITING` admite cualquier `kind`.
@@ -121,7 +157,7 @@ problema no es de estudio.
 
 ---
 
-## 4. Las seis queries (todas en el MVP)
+## 4. Consultas (Q1–Q6 del MVP y Q7 de Anki)
 
 Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura en
 `/src/lib/queries/` con test unitario y fixtures deterministas.
@@ -136,12 +172,35 @@ Ventana por defecto **30 días**, conmutable a 60. Cada una es una función pura
   **Resuelto (P2, 2026-09-14):** Q4 usa 30 días fijos, no la ventana conmutable — igual que
   la regla 2, cuyo umbral absoluto de 5 está calibrado para 30 días.
 - **Q5 · Deuda de Anki** — `pct_convertidos = anki_added / errores que generan tarjeta`.
-  Umbral 80%.
+  Umbral 80%. Incluye las creaciones verificadas y las marcas manuales heredadas;
+  no representa exclusivamente notas verificadas. El motor conserva su contrato.
+  Las cifras usan la ventana; la cola de pendientes no caduca con ella.
 - **Q6 · Eficacia del rewrite** — de los errores del texto original, cuántos reaparecen en
   su rewrite. Umbral 50%. Empareja por `rewrite_of` y compara
   `(category, subcategory, correct_answer)`.
+- **Q7 · Repaso en Anki** — número de repasos y cartas distintas, fallos `ease=1`,
+  aciertos `ease=2/3/4`, porcentaje nullable si no hay repasos, y notas falladas por
+  categoría principal. Solo tipos 0–3 (aprendizaje, repaso, reaprendizaje y filtrado);
+  manual y reprogramado quedan fuera. Ventana 30/60 por el día de Anki, usando el
+  corte horario configurado o el valor predeterminado de 4:00. Los lapsos (Again de
+  tipo 1) se separan de los demás fallos. La categoría de una nota vinculada sale de su
+  error local; las demás, de sus tags, y los tags sin mapeo forman un grupo propio.
 
-Cada query exporta también a **CSV** (comillas escapadas correctamente).
+Q7 no alimenta ninguna regla ni se cruza con los errores de práctica: sus denominadores
+no son equiparables. La falta de sincronización se distingue de una ventana sincronizada
+sin repasos.
+
+Las queries que devuelven una tabla exportan también a **CSV** (comillas escapadas
+correctamente). Q5 y Q6 devuelven una única fila de totales y no tienen descarga propia:
+su resultado se lee en pantalla.
+
+Los informes generales y las reglas incluyen la práctica sin formato de examen en su
+universo habitual: describen el estudio global, no exclusivamente el rendimiento en
+examen. Q2 incluye sus ítems y errores correspondientes, también las sesiones sin
+errores en el denominador. Q3 incluye exclusivamente `paper = RUOE`; Writing y Q6
+conservan sus requisitos actuales. Las agrupaciones generales por paper deben mostrar
+el grupo «Sin formato de examen»; cualquier filtro por formato debe restringir por
+igual sesiones, errores y denominadores. El dump JSON conserva ambos campos como null.
 
 ---
 
@@ -195,53 +254,80 @@ no inventa correcciones ausentes. Causa y confianza ausentes usan los valores de
 formulario manual, avisando al usuario para que los revise. Omite duplicados dentro
 de la sesión por item, enunciado y ambas respuestas; no sobrescribe filas existentes.
 
-1. **Registrar** — cabecera de sesión + entrada rápida de errores, en dos variantes
-   conmutables: **grid** (tabla, teclado, para volcar diez errores seguidos) y **card**
-   (un error a la vez, campos grandes). `category` con autocompletado y última usada
+**Importar una tanda con cabecera (2026-09-21):** una sesión representa una tanda de
+estudio completa, reunida fuera de la app (por ejemplo, con un capturador externo), no una
+actividad individual. `/registrar` permite pegar `{ "session": { ... }, "errors": [...] }`,
+editar la cabecera propuesta y revisar los errores, y crear todo en una transacción.
+Un error inválido impide crear la sesión; un fallo de escritura revierte toda la tanda.
+La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
+
+- `session` es un objeto estricto validado con Zod: `date`, `kind`, `paper`, `part`,
+  `source`, `sourceRef`, `itemsTotal`, `itemsCorrect` y `timed`. Todos deben estar
+  presentes, con null donde el modelo lo permita. Se rechazan campos adicionales,
+  incluidos `id`, `status` y `durationMin`. El servidor fija `status = OPEN`.
+- `itemsTotal` e `itemsCorrect` pueden llegar a null aunque no sea Writing: quien solo
+  ve los ítems fallados no los conoce. La revisión los pide y no deja crear la sesión
+  sin ellos; el servidor vuelve a exigirlos al guardar.
+- La duración solo se puede escribir manualmente en la vista previa. Un capturador externo suele proponer
+  `kind = DRILL` editable, `paper = part = null`, `source = LIBRO` y `timed = false`.
+  Unidad, página y actividad siguen siendo texto en `source_ref`, sin campos nuevos.
+- Una tanda pegada entra siempre pendiente de convertir. Un `ankiAdded` en el bloque se
+  descarta como cualquier clave que no esté en el borrador: el sello de conversión solo
+  lo pone crear la nota en Anki y verificarla.
+- Se conservan el array de errores, el objeto de error individual y el TSV anteriores
+  para añadir a una sesión existente. Su límite sigue siendo 100 filas. El sobre admite
+  0–300 errores para conservar la tanda completa, con un máximo de 200 000 caracteres.
+  Cero errores es válido y conserva el denominador de las actividades acertadas.
+- Si hay sesiones abiertas, la vista previa ofrece crear una nueva o añadir a una de
+  ellas, identificadas por id, fecha y referencia. Al añadir se conserva su cabecera;
+  **no se suman automáticamente los recuentos** y se avisa de ello. El servidor vuelve
+  a comprobar que la sesión siga abierta al guardar. La captura dentro de la sesión
+  sigue disponible.
+
+1. **Registrar** — cabecera de sesión + entrada rápida de errores en un único formulario,
+   denso y con teclado, que pasa a una columna cuando no cabe a lo ancho; pegar una tanda
+   es una opción aparte. `category` con autocompletado y última usada
    preseleccionada; `subcategory` texto libre con sugerencias de lo ya escrito.
    `late_in_session` deshabilitado si la sesión no es `timed`. Valida la cabecera **antes**
    de aceptar errores y muestra el error concreto.
+   Paper ofrece «Sin formato de examen», que oculta Part y guarda ambos campos como
+   null. Al editar se conserva esa elección; cabeceras e historial muestran esa etiqueta
+   sin una part ficticia. Elegir el tipo `WRITING` sigue exigiendo paper `WRITING`.
 2. **Informe** — Q1, Q2, Q5 y la tabla de reglas de decisión con el `DO NOW` destacado.
 3. **RUOE** — Q3.
-4. **Anki** — cola de pendientes con botón «añadida» que sella `anki_added_at`.
+4. **Anki** — cola de pendientes con creación verificada mediante AnkiConnect,
+   actualización y deshacer explícitos, y consulta de repasos/fallos por categoría (Q7).
+   No hay marca manual: una conversión solo se sella tras verificar la tarjeta.
 5. **Falsas certezas** — Q4.
 6. **Writing** — alta y edición de `writing_piece` con las cuatro bandas, y Q6.
-7. **Exportar** — un CSV por query, más un dump completo en JSON.
+7. **Exportar** — un CSV por cada query que sea una tabla (Q1–Q4 y Q7), más un dump JSON
+   con solo los datos: filas y espejo de Anki, sin agregaciones ni ventana.
 
 CRUD completo: crear sesión, cerrarla, reabrirla, corregir sesiones pasadas, editar y
 borrar filas de error. Borrado con confirmación. Nada de datos irrecuperables por un clic.
 
-`Error Log C1.dc.html` es la **referencia visual y de comportamiento**: densidad de
-información, monoespaciada para datos, chips de causa con color por lado (`study` azul /
-`exec` rojo), fondo hueso. Se copia a `/docs/reference/` y se respeta. No es código a
-reutilizar — se reimplementa bien.
+## 7. Decisiones técnicas
 
----
-
-## 7. Fases de entrega
-
-Una rama, un PR y un tag por fase. Al cerrar cada fase, merge a `main` y tag `v0.x`.
-
-- **Fase 1 — `feature/schema-and-core`**: schema Drizzle, migraciones, Zod, seed con datos
-  de ejemplo realistas, queries Q1–Q6 puras con tests. Sin UI. Tag `v0.1`.
-- **Fase 2 — `feature/rules-engine`**: motor de reglas con guardas y prioridad, test
-  completo. Tag `v0.2`.
-- **Fase 3 — `feature/capture-ui`**: vista Registrar con ambas variantes y validación.
-  Tag `v0.3`.
-- **Fase 4 — `feature/report-views`**: Informe, RUOE, Anki, Falsas certezas. Tag `v0.4`.
-- **Fase 5 — `feature/writing-and-export`**: Writing, Q6, CSV/JSON. Tag `v0.5`.
-- **Fase 6 — `feature/polish`**: e2e Playwright, README con capturas, accesibilidad de
-  teclado. Tag `v1.0`.
-
----
+- Consultas y reglas puras sobre filas en memoria, con reloj inyectado y fixtures.
+  `src/lib/db/` concentra el acceso a SQLite y ficheros.
+- Enums y umbrales compartidos; Zod valida entradas y SQLite protege la integridad.
+- Semana ISO propia, comprobada en cambios de año; CSS Modules sin librería de UI.
+- P1: una pieza por sesión; P2: Q4 y regla 2 usan 30 días; P3: la regla 5 usa
+  errores de sesiones cronometradas; P4: Writing obliga al paper, no a la inversa.
+- La referencia visual externa del briefing no está disponible en el repositorio.
+  Se mantiene la interfaz existente como base para los cambios aprobados.
 
 ## 8. Definition of done
 
 - `pnpm typecheck && pnpm lint && pnpm test && pnpm build` en verde.
 - Cobertura de tests en `/src/lib/` por encima del 90%.
-- Ninguna regla puede dispararse por debajo de `MIN_N`, y nunca hay dos `DO NOW`.
-- `README.md` explica en cinco líneas qué hace la app y cómo arrancarla.
+- Las reglas 0, 1, 3, 5 y 6 respetan `MIN_N` en su denominador; nunca hay dos `DO NOW`.
+- `README.md` explica el arranque, la recuperación y enlaza el contrato de Anki.
 - Cero `any` y cero `@ts-ignore`.
+- Práctica sin formato: probar alta y edición, rechazo de pares parcialmente nulos en
+  Zod y SQLite, ítems obligatorios, exclusión de Q3 e inclusión correcta en Q2.
+  La migración debe preservar sesiones, errores, textos, IDs, relaciones y secuencias
+  autoincrementales, sin reclasificar datos históricos; verificar rollback ante fallos.
 
 ---
 
@@ -255,24 +341,3 @@ resumen de tres líneas: qué cambió y qué falta.
 Flujo de git: rama `feature/<slug>` → PR a `develop`; `develop` → `main` solo al cerrar
 fase. Conventional Commits, un commit por unidad lógica. CI (`typecheck`, `lint`, `test`,
 `build`) en push y PR a `develop` y `main`; el PR no se mergea si CI falla.
-
----
-
-## 10. Relación con `error-log-spec.md`
-
-El [documento de diseño original](reference/error-log-spec.md) queda **superado** por este briefing en estos puntos:
-
-| punto | spec original | este briefing (manda) |
-|---|---|---|
-| nombre de tabla | `error_entry` | `error_row` |
-| campos nuevos | — | `session.status`, `error_row.secs`, `error_row.subcategory` |
-| `items_total` | `NOT NULL`, `> 0` | nullable si `paper = WRITING` |
-| enum `source` | incluye `OTRO` | seis valores, sin `OTRO` |
-| enum `corrector` | `PROFESOR/WRITE_AND_IMPROVE/AUTO/NINGUNO` | `PROFESOR/YO/IA` |
-| alcance MVP | Q1, Q2, Q5; sin `writing_piece` | las seis queries y `writing_piece` dentro |
-| entrega | script local, 6–8 h | Next.js, seis fases, CI, e2e |
-| reglas de decisión | siete señales, sin mecánica | + `MIN_N`, WATCH, prioridad, estados |
-
-Lo que el original aporta y sigue vigente: el porqué del diseño (la causa es el campo que
-trabaja; sin denominador los errores no significan nada; registrar un error debe costar
-menos de 30 segundos).

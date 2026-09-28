@@ -37,6 +37,27 @@ function issuePaths(result: { success: boolean; error?: { issues: { path: Proper
 }
 
 describe('sesion', () => {
+  it('acepta practica sin formato con items, incluidos cero intentos', () => {
+    for (const items of [0, 6]) {
+      expect(session.parse({ ...validSession(), paper: null, part: null, itemsTotal: items, itemsCorrect: 0 }))
+        .toMatchObject({ paper: null, part: null, itemsTotal: items });
+    }
+  });
+
+  it.each([
+    { paper: null, part: 1 },
+    { paper: 'RUOE', part: null },
+    { paper: 'NINGUNO', part: 1 },
+    { paper: undefined, part: null },
+    { paper: null, part: undefined },
+    { paper: null, part: null, kind: 'WRITING' },
+    { paper: null, part: null, itemsTotal: null },
+    { paper: null, part: null, itemsCorrect: null },
+    { paper: 'RUOE', part: 1.5 },
+  ])('rechaza una clasificacion o denominador incompletos: %j', (overrides) => {
+    expect(session.safeParse({ ...validSession(), ...overrides }).success).toBe(false);
+  });
+
   it('acepta una sesion valida y aplica los defaults', () => {
     const result = session.safeParse(validSession());
     expect(result.success).toBe(true);

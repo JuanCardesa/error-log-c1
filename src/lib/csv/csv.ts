@@ -22,8 +22,17 @@ const FORMULA_START = /^[\s﻿]*[=+@＝＋＠]/u;
 const DASH_START = /^[\s﻿]*[-－]/u;
 const PLAIN_TEXT = /^[\p{L}\p{M}\p{N}\p{Zs}\s'’´`.,;:()[\]{}?!¿¡"«»&#%_/-]*$/u;
 
+/**
+ * Aritmetica pura tras el guion: `-1/1`, `-2+3`, `-1*(2)`. `PLAIN_TEXT` la dejaba pasar
+ * cuando solo llevaba cifras y barras, y Excel la evalua igual. Exige al menos un
+ * operador para no atrapar un numero negativo suelto, que sale como numero de todos modos.
+ */
+const DASH_ARITHMETIC = /^[\s﻿]*[-－][\d\s.,()]*[+\-*/^%][\d\s.,()+\-*/^%]*$/u;
+
 function opensFormula(text: string): boolean {
-  return FORMULA_START.test(text) || (DASH_START.test(text) && !PLAIN_TEXT.test(text));
+  if (FORMULA_START.test(text)) return true;
+  if (!DASH_START.test(text)) return false;
+  return !PLAIN_TEXT.test(text) || DASH_ARITHMETIC.test(text);
 }
 
 /** RFC 4180: el separador de linea es CRLF, que es ademas lo que espera Excel. */

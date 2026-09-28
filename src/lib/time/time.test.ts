@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { addDays, inWindow, isIsoDate, parseIsoDate, toIsoDate, windowStart } from './dates';
+import { addDays, inWindow, isIsoDate, parseIsoDate, toUtcIsoDate, windowStart } from './dates';
 import { formatIsoWeek, isoWeekOf } from './isoWeek';
 
 describe('fechas civiles', () => {
@@ -18,17 +18,17 @@ describe('fechas civiles', () => {
   });
 
   it('va y vuelve sin desplazarse de dia', () => {
-    expect(toIsoDate(parseIsoDate('2026-09-14'))).toBe('2026-09-14');
+    expect(toUtcIsoDate(parseIsoDate('2026-09-14'))).toBe('2026-09-14');
   });
 
   it('suma y resta dias cruzando el cambio de mes y de año', () => {
-    expect(toIsoDate(addDays(parseIsoDate('2026-01-31'), 1))).toBe('2026-02-01');
-    expect(toIsoDate(addDays(parseIsoDate('2026-01-01'), -1))).toBe('2025-12-31');
+    expect(toUtcIsoDate(addDays(parseIsoDate('2026-01-31'), 1))).toBe('2026-02-01');
+    expect(toUtcIsoDate(addDays(parseIsoDate('2026-01-01'), -1))).toBe('2025-12-31');
   });
 });
 
 describe('ventana de analisis', () => {
-  const now = new Date('2026-09-14T22:30:00Z');
+  const now = new Date(2026, 8, 14, 22, 30);
 
   it('es inclusiva en los dos extremos', () => {
     // 30 dias = hoy mas los 29 anteriores.
@@ -49,8 +49,8 @@ describe('ventana de analisis', () => {
   });
 
   it('no depende de la hora del dia', () => {
-    const early = new Date('2026-09-14T00:00:01Z');
-    const late = new Date('2026-09-14T23:59:59Z');
+    const early = new Date(2026, 8, 14, 0, 0, 1);
+    const late = new Date(2026, 8, 14, 23, 59, 59);
     expect(windowStart(early, 30)).toBe(windowStart(late, 30));
   });
 });

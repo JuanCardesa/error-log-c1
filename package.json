@@ -1,6 +1,6 @@
 {
   "name": "error-log-c1",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Registro de errores para la preparacion del Cambridge C1 Advanced",
   "license": "MIT",
@@ -18,21 +18,19 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
+    "test:e2e": "pnpm build && playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/lib/db/migrate.run.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/lib/db/seed.run.ts",
     "db:backup": "tsx src/lib/db/backup.run.ts",
     "db:restore": "tsx src/lib/db/restore.run.ts",
-    "screenshots": "node scripts/screenshots.mjs",
-    "macmillan:build": "node tools/macmillan-capture/build.mjs",
-    "macmillan:test": "vitest run --root tools/macmillan-capture",
-    "macmillan:e2e": "playwright test --config tools/macmillan-capture/playwright.config.mjs"
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.2",
+    "lucide-react": "^1.48.0",
     "next": "^16.3.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -54,6 +52,9 @@
     "vitest": "^5.0.0"
   },
   "pnpm": {
+    "overrides": {
+      "@esbuild-kit/core-utils>esbuild": "0.25.12"
+    },
     "onlyBuiltDependencies": [
       "better-sqlite3",
       "esbuild",

@@ -1,0 +1,127 @@
+.explorer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.withPanel {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid var(--color-ink);
+  font-size: 14px;
+  table-layout: fixed;
+}
+
+.table th {
+  padding: 10px var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  color: var(--color-ink-2);
+  font: var(--text-label);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.table tbody tr {
+  cursor: pointer;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-2);
+}
+
+.table tbody tr.selected {
+  background: var(--color-selected);
+  box-shadow: inset 3px 0 0 var(--color-brand);
+}
+
+/* Anchos del modo sesión: Ítem · pareja · Categoría · Causa · Anki. */
+.sessionMode .colItem { width: 56px; }
+.sessionMode .colCategory { width: 22%; }
+.sessionMode .colCause { width: 130px; }
+.sessionMode .colAnki { width: 120px; white-space: nowrap; }
+
+/* Modo global: Corrección · Contexto · Sesión · Anki. */
+.globalMode .colCorrection { width: 26%; }
+.globalMode .colSession { width: 24%; }
+.globalMode .colAnki { width: 120px; white-space: nowrap; }
+
+/* Con el panel abierto, fuera lo que no cabe: Causa y Anki, o Contexto. */
+.narrow .wide {
+  display: none;
+}
+
+.sessionMode.narrow .colItem { width: 44px; }
+.sessionMode.narrow .colCategory { width: 38%; }
+.globalMode.narrow .colCorrection { width: 44%; }
+.globalMode.narrow .colAnki { width: 96px; }
+
+.mono {
+  font: var(--text-data);
+  color: var(--color-ink-2);
+}
+
+.correctMono {
+  display: block;
+  font: 600 13px/20px var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.context {
+  color: var(--color-ink-2);
+}
+
+.context > span {
+  display: block;
+}
+
+/* La fila es clicable; el botón da la misma acción por teclado sin parecer otro control. */
+.rowButton {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+
+.rowButton:focus-visible {
+  outline-offset: 4px;
+}
+
+@media (max-width: 1023px) {
+  .withPanel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .narrow .wide {
+    display: table-cell;
+  }
+}
+
+@media (max-width: 639px) {
+  .sessionMode .colCause,
+  .sessionMode .colAnki,
+  .globalMode .wide {
+    display: none;
+  }
+
+  .sessionMode .colCategory { width: 34%; }
+  .globalMode .colCorrection { width: 44%; }
+  .globalMode .colAnki { width: 88px; }
+}

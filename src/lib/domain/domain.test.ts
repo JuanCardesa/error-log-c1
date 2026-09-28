@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  CARD_GENERATING_CAUSES,
   CATEGORIES,
   CAUSES,
   CAUSE_META,
   MAX_PART,
   PAPERS,
-  causeSide,
   generatesCard,
   partsFor,
 } from './enums';
@@ -27,7 +25,7 @@ describe('taxonomia de causas', () => {
   });
 
   it('solo generan tarjeta desconocimiento, confusion y ortografia', () => {
-    expect([...CARD_GENERATING_CAUSES]).toEqual([
+    expect(CAUSES.filter(generatesCard)).toEqual([
       'DESCONOCIMIENTO',
       'CONFUSION',
       'ORTOGRAFIA',
@@ -39,15 +37,15 @@ describe('taxonomia de causas', () => {
   });
 
   it('el despiste es de ejecucion y no se estudia', () => {
-    expect(causeSide('DESPISTE')).toBe('exec');
-    expect(causeSide('TIEMPO')).toBe('exec');
-    expect(causeSide('DESCONOCIMIENTO')).toBe('study');
+    expect(CAUSE_META.DESPISTE.side).toBe('exec');
+    expect(CAUSE_META.TIEMPO.side).toBe('exec');
+    expect(CAUSE_META.DESCONOCIMIENTO.side).toBe('study');
   });
 
   it('toda causa que genera tarjeta es del lado study', () => {
     // Si esto se rompe, el remedio y el lado han dejado de concordar.
     for (const cause of CAUSES) {
-      if (generatesCard(cause)) expect(causeSide(cause)).toBe('study');
+      if (generatesCard(cause)) expect(CAUSE_META[cause].side).toBe('study');
     }
   });
 });

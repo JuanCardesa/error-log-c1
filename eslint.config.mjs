@@ -47,8 +47,8 @@ export default tseslint.config(
   },
 
   {
-    // Seed and migration runners are CLI scripts: printing is the point.
-    files: ['src/lib/db/*.run.ts', 'src/lib/db/seed.ts'],
+    // Seed, migration and test-double runners are CLI scripts: printing is the point.
+    files: ['src/lib/db/*.run.ts', 'src/lib/db/seed.ts', 'e2e/*.run.ts'],
     rules: { 'no-console': 'off' },
   },
 );

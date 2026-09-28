@@ -1,0 +1,199 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: var(--glass-bar-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  max-width: var(--page-max);
+  height: var(--header-h);
+  margin: 0 auto;
+  padding: 0 var(--page-pad);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  color: var(--color-ink);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.brand:hover {
+  color: var(--color-ink);
+}
+
+.brandMark {
+  display: block;
+  width: 10px;
+  height: 10px;
+  background: var(--color-brand);
+}
+
+.navGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 100%;
+}
+
+.nav {
+  display: flex;
+  gap: var(--space-1);
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: none;
+  color: var(--color-ink-2);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.navLink:hover {
+  color: var(--color-ink);
+}
+
+.navLink[aria-current='page'],
+.moreButton[data-active='true'] {
+  color: var(--color-ink);
+  box-shadow: inset 0 -2px 0 var(--color-brand);
+}
+
+/* El foco no puede salirse de la barra: va por dentro del enlace. */
+.navLink:focus-visible {
+  outline-offset: -4px;
+}
+
+.moreButton {
+  height: var(--header-h);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 1 300px;
+  min-width: 44px;
+  height: 34px;
+  padding: 0 var(--space-2) 0 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-control);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-ink-2);
+  font-size: 14px;
+}
+
+.search:hover {
+  background: var(--color-surface);
+}
+
+.searchText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1023px) {
+  .inner {
+    gap: var(--space-4);
+  }
+
+  .searchText {
+    display: none;
+  }
+
+  .search {
+    flex: 0 0 auto;
+  }
+}
+
+/*
+ * Móvil: dos filas. Marca, Más y buscar arriba; los cuatro destinos repartidos debajo, sin
+ * scroll horizontal y con la sección activa siempre a la vista.
+ */
+@media (max-width: 639px) {
+  .inner {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    grid-template-rows: 48px 44px;
+    gap: 0 var(--space-2);
+    height: var(--header-h);
+    padding: 0 var(--space-2) 0 var(--space-4);
+  }
+
+  .brand {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  /* En dos filas cada pieza se coloca sola en la rejilla. */
+  .navGroup {
+    display: contents;
+  }
+
+  .search {
+    grid-row: 1;
+    grid-column: 3;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  .search kbd {
+    display: none;
+  }
+
+  .nav {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin: 0 calc(-1 * var(--space-2)) 0 calc(-1 * var(--space-4));
+    height: 44px;
+  }
+
+  .navLink {
+    justify-content: center;
+    padding: 0;
+    font-size: 14px;
+  }
+
+  .moreButton {
+    height: 44px;
+  }
+}

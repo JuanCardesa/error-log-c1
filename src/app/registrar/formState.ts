@@ -15,3 +15,9 @@ export interface FormState {
 }
 
 export const EMPTY_STATE: FormState = { ok: false, fieldErrors: {}, message: null };
+
+/** Resultado de una acción sin formulario: se muestra en un aviso, nunca se da por hecho. */
+export interface ActionResult {
+  readonly ok: boolean;
+  readonly message: string;
+}

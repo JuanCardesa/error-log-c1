@@ -1,0 +1,916 @@
+{
+  "id": "c590177e-1a76-4d15-9520-0125d5522f0b",
+  "prevId": "92fa7c88-1dda-42a0-bf89-72e27ad3d968",
+  "version": "6",
+  "dialect": "sqlite",
+  "tables": {
+    "anki_card": {
+      "name": "anki_card",
+      "columns": {
+        "card_id": {
+          "name": "card_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "note_id": {
+          "name": "note_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "deck": {
+          "name": "deck",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "template_ord": {
+          "name": "template_ord",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lapses": {
+          "name": "lapses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reps": {
+          "name": "reps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "queue": {
+          "name": "queue",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "interval_days": {
+          "name": "interval_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "anki_card_note_idx": {
+          "name": "anki_card_note_idx",
+          "columns": [
+            "note_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "anki_card_note_id_anki_note_note_id_fk": {
+          "name": "anki_card_note_id_anki_note_note_id_fk",
+          "tableFrom": "anki_card",
+          "columnsFrom": [
+            "note_id"
+          ],
+          "tableTo": "anki_note",
+          "columnsTo": [
+            "note_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "anki_note": {
+      "name": "anki_note",
+      "columns": {
+        "note_id": {
+          "name": "note_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "anki_review": {
+      "name": "anki_review",
+      "columns": {
+        "review_id": {
+          "name": "review_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "card_id": {
+          "name": "card_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "review_date": {
+          "name": "review_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ease": {
+          "name": "ease",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "interval": {
+          "name": "interval",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_interval": {
+          "name": "last_interval",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "factor": {
+          "name": "factor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "time_ms": {
+          "name": "time_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "anki_review_date_idx": {
+          "name": "anki_review_date_idx",
+          "columns": [
+            "review_date"
+          ],
+          "isUnique": false
+        },
+        "anki_review_card_idx": {
+          "name": "anki_review_card_idx",
+          "columns": [
+            "card_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "anki_review_card_id_anki_card_card_id_fk": {
+          "name": "anki_review_card_id_anki_card_card_id_fk",
+          "tableFrom": "anki_review",
+          "columnsFrom": [
+            "card_id"
+          ],
+          "tableTo": "anki_card",
+          "columnsTo": [
+            "card_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "anki_review_answer": {
+          "name": "anki_review_answer",
+          "value": "\"anki_review\".\"ease\" BETWEEN 1 AND 4 AND \"anki_review\".\"type\" BETWEEN 0 AND 3 AND \"anki_review\".\"time_ms\" >= 0"
+        }
+      }
+    },
+    "anki_sync": {
+      "name": "anki_sync",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "namespace": {
+          "name": "namespace",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "profile": {
+          "name": "profile",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "url": {
+          "name": "url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_deck": {
+          "name": "source_deck",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_deck": {
+          "name": "target_deck",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_synced_at": {
+          "name": "last_synced_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes_seen": {
+          "name": "notes_seen",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "rollover_hour": {
+          "name": "rollover_hour",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rollover_source": {
+          "name": "rollover_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "anki_sync_singleton": {
+          "name": "anki_sync_singleton",
+          "value": "\"anki_sync\".\"id\" = 1"
+        },
+        "anki_sync_rollover": {
+          "name": "anki_sync_rollover",
+          "value": "\"anki_sync\".\"rollover_hour\" IS NULL OR \"anki_sync\".\"rollover_hour\" BETWEEN 0 AND 23"
+        }
+      }
+    },
+    "error_row": {
+      "name": "error_row",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "item_ref": {
+          "name": "item_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "prompt": {
+          "name": "prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "my_answer": {
+          "name": "my_answer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "correct_answer": {
+          "name": "correct_answer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cause": {
+          "name": "cause",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subcategory": {
+          "name": "subcategory",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "late_in_session": {
+          "name": "late_in_session",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "rule_note": {
+          "name": "rule_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "anki_added": {
+          "name": "anki_added",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "anki_added_at": {
+          "name": "anki_added_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "anki_note_id": {
+          "name": "anki_note_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "anki_content_hash": {
+          "name": "anki_content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "secs": {
+          "name": "secs",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ','now'))"
+        }
+      },
+      "indexes": {
+        "error_session_idx": {
+          "name": "error_session_idx",
+          "columns": [
+            "session_id"
+          ],
+          "isUnique": false
+        },
+        "error_cause_idx": {
+          "name": "error_cause_idx",
+          "columns": [
+            "cause"
+          ],
+          "isUnique": false
+        },
+        "error_category_idx": {
+          "name": "error_category_idx",
+          "columns": [
+            "category"
+          ],
+          "isUnique": false
+        },
+        "error_confidence_idx": {
+          "name": "error_confidence_idx",
+          "columns": [
+            "confidence"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "error_row_session_id_session_id_fk": {
+          "name": "error_row_session_id_session_id_fk",
+          "tableFrom": "error_row",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "tableTo": "session",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "error_row_anki_note_id_anki_note_note_id_fk": {
+          "name": "error_row_anki_note_id_anki_note_note_id_fk",
+          "tableFrom": "error_row",
+          "columnsFrom": [
+            "anki_note_id"
+          ],
+          "tableTo": "anki_note",
+          "columnsTo": [
+            "note_id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "error_rule_note_min_length": {
+          "name": "error_rule_note_min_length",
+          "value": "length(trim(\"error_row\".\"rule_note\")) >= 15"
+        },
+        "error_rule_note_is_not_the_answer": {
+          "name": "error_rule_note_is_not_the_answer",
+          "value": "\n      lower(trim(\"error_row\".\"rule_note\")) <> lower(trim(\"error_row\".\"correct_answer\"))\n    "
+        },
+        "error_secs_non_negative": {
+          "name": "error_secs_non_negative",
+          "value": "\"error_row\".\"secs\" IS NULL OR \"error_row\".\"secs\" >= 0"
+        },
+        "error_anki_added_at_consistent": {
+          "name": "error_anki_added_at_consistent",
+          "value": "\n      (\"error_row\".\"anki_added\" = 0 AND \"error_row\".\"anki_added_at\" IS NULL)\n      OR (\"error_row\".\"anki_added\" = 1 AND \"error_row\".\"anki_added_at\" IS NOT NULL)\n    "
+        }
+      }
+    },
+    "session": {
+      "name": "session",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "paper": {
+          "name": "paper",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "part": {
+          "name": "part",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_ref": {
+          "name": "source_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "items_total": {
+          "name": "items_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "items_correct": {
+          "name": "items_correct",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "duration_min": {
+          "name": "duration_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "timed": {
+          "name": "timed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'OPEN'"
+        }
+      },
+      "indexes": {
+        "session_date_idx": {
+          "name": "session_date_idx",
+          "columns": [
+            "date"
+          ],
+          "isUnique": false
+        },
+        "session_paper_part_idx": {
+          "name": "session_paper_part_idx",
+          "columns": [
+            "paper",
+            "part"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "session_items_non_negative": {
+          "name": "session_items_non_negative",
+          "value": "\n      (\"session\".\"items_total\" IS NULL OR \"session\".\"items_total\" >= 0)\n      AND (\"session\".\"items_correct\" IS NULL OR \"session\".\"items_correct\" >= 0)\n    "
+        },
+        "session_items_correct_le_total": {
+          "name": "session_items_correct_le_total",
+          "value": "\n      \"session\".\"items_correct\" IS NULL\n      OR \"session\".\"items_total\" IS NULL\n      OR \"session\".\"items_correct\" <= \"session\".\"items_total\"\n    "
+        },
+        "session_items_required_outside_writing": {
+          "name": "session_items_required_outside_writing",
+          "value": "\n      \"session\".\"paper\" IS 'WRITING'\n      OR (\"session\".\"items_total\" IS NOT NULL AND \"session\".\"items_correct\" IS NOT NULL)\n    "
+        },
+        "session_part_within_paper": {
+          "name": "session_part_within_paper",
+          "value": "\n      (\"session\".\"paper\" IS NULL AND \"session\".\"part\" IS NULL)\n      OR (\n        \"session\".\"paper\" IS NOT NULL AND \"session\".\"part\" IS NOT NULL\n        AND typeof(\"session\".\"part\") = 'integer'\n        AND \"session\".\"part\" >= 1 AND \"session\".\"part\" <= CASE \"session\".\"paper\"\n          WHEN 'RUOE' THEN 8\n          WHEN 'WRITING' THEN 2\n          WHEN 'LISTENING' THEN 4\n          WHEN 'SPEAKING' THEN 4\n          ELSE 0\n        END\n      )\n    "
+        },
+        "session_writing_kind_implies_writing_paper": {
+          "name": "session_writing_kind_implies_writing_paper",
+          "value": "\n      \"session\".\"kind\" <> 'WRITING' OR \"session\".\"paper\" IS 'WRITING'\n    "
+        }
+      }
+    },
+    "session_import_receipt": {
+      "name": "session_import_receipt",
+      "columns": {
+        "import_id": {
+          "name": "import_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created": {
+          "name": "created",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "skipped": {
+          "name": "skipped",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "writing_piece": {
+      "name": "writing_piece",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "genre": {
+          "name": "genre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "word_count": {
+          "name": "word_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "minutes": {
+          "name": "minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "timed": {
+          "name": "timed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "rewrite_of": {
+          "name": "rewrite_of",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "corrector": {
+          "name": "corrector",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "band_content": {
+          "name": "band_content",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "band_communicative": {
+          "name": "band_communicative",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "band_organisation": {
+          "name": "band_organisation",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "band_language": {
+          "name": "band_language",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "writing_piece_session_id_unique": {
+          "name": "writing_piece_session_id_unique",
+          "columns": [
+            "session_id"
+          ],
+          "isUnique": true
+        },
+        "writing_rewrite_of_idx": {
+          "name": "writing_rewrite_of_idx",
+          "columns": [
+            "rewrite_of"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "writing_piece_session_id_session_id_fk": {
+          "name": "writing_piece_session_id_session_id_fk",
+          "tableFrom": "writing_piece",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "tableTo": "session",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "writing_piece_rewrite_of_writing_piece_id_fk": {
+          "name": "writing_piece_rewrite_of_writing_piece_id_fk",
+          "tableFrom": "writing_piece",
+          "columnsFrom": [
+            "rewrite_of"
+          ],
+          "tableTo": "writing_piece",
+          "columnsTo": [
+            "id"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "writing_no_self_rewrite": {
+          "name": "writing_no_self_rewrite",
+          "value": "\n      \"writing_piece\".\"rewrite_of\" IS NULL OR \"writing_piece\".\"rewrite_of\" <> \"writing_piece\".\"id\"\n    "
+        },
+        "writing_bands_in_range": {
+          "name": "writing_bands_in_range",
+          "value": "\n      (\"writing_piece\".\"band_content\" IS NULL OR \"writing_piece\".\"band_content\" BETWEEN 0 AND 5)\n      AND (\"writing_piece\".\"band_communicative\" IS NULL OR \"writing_piece\".\"band_communicative\" BETWEEN 0 AND 5)\n      AND (\"writing_piece\".\"band_organisation\" IS NULL OR \"writing_piece\".\"band_organisation\" BETWEEN 0 AND 5)\n      AND (\"writing_piece\".\"band_language\" IS NULL OR \"writing_piece\".\"band_language\" BETWEEN 0 AND 5)\n    "
+        },
+        "writing_counts_non_negative": {
+          "name": "writing_counts_non_negative",
+          "value": "\n      (\"writing_piece\".\"word_count\" IS NULL OR \"writing_piece\".\"word_count\" >= 0)\n      AND (\"writing_piece\".\"minutes\" IS NULL OR \"writing_piece\".\"minutes\" >= 0)\n    "
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

@@ -1,0 +1,118 @@
+/* Detalle de error: columna lateral blanca, sin cristal. */
+
+.panel {
+  position: sticky;
+  top: calc(var(--header-h) + var(--space-6));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: calc(100vh - var(--header-h) - 56px);
+  padding: var(--space-5);
+  overflow: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-1);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.context {
+  flex: 1;
+  min-width: 0;
+  font: var(--text-aux);
+  color: var(--color-ink-2);
+}
+
+.position {
+  white-space: nowrap;
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.prompt {
+  font: var(--text-prompt);
+  overflow-wrap: anywhere;
+}
+
+.rule {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ruleLabel {
+  font: var(--text-label);
+  color: var(--color-ink-2);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 6px var(--space-3);
+  margin: 0;
+  font-size: 14px;
+}
+
+.facts dt {
+  color: var(--color-ink-2);
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.editActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-top: var(--space-1);
+}
+
+/* Por debajo de 1024 px el detalle es una pantalla: ocupa todo bajo la cabecera. */
+@media (max-width: 1023px) {
+  .panel {
+    position: fixed;
+    inset: var(--header-h) 0 0;
+    z-index: var(--z-drawer);
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: var(--space-5) var(--page-pad) 96px;
+    animation: el-fade 120ms ease-out;
+  }
+
+  .head {
+    position: sticky;
+    top: calc(-1 * var(--space-5));
+    margin: calc(-1 * var(--space-5)) calc(-1 * var(--page-pad)) 0;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--page-pad);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-rule);
+  }
+}

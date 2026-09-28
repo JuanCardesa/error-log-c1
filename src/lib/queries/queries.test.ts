@@ -20,6 +20,25 @@ import { q6RewriteEfficacy } from './q6RewriteEfficacy';
 
 const opts: QueryOptions = { now: NOW, windowDays: 30 };
 
+it('incluye practica libre en el informe global sin alterar RUOE ni perder sesiones perfectas', () => {
+  const exam = makeSession({ id: 101, itemsTotal: 8, itemsCorrect: 6 });
+  const free = makeSession({ id: 102, paper: null, part: null, itemsTotal: 10, itemsCorrect: 9 });
+  const perfect = makeSession({ id: 103, paper: null, part: null, itemsTotal: 2, itemsCorrect: 2 });
+  const base = makeDataset({ sessions: [exam], errors: [makeError({ sessionId: 101, category: 'LEXICO' })] });
+  const data = makeDataset({
+    sessions: [exam, free, perfect],
+    errors: [...base.errors, makeError({ sessionId: 102, category: 'LEXICO', confidence: 'SEGURO' })],
+  });
+  expect(q3RuoeAccuracy(data, opts)).toEqual(q3RuoeAccuracy(base, opts));
+  expect(q2CategoryRate(data, opts)).toEqual({
+    itemsAttempted: 20, excludedErrors: 0,
+    rows: [{ category: 'LEXICO', errors: 2, ratePer100: 10 }],
+  });
+  expect(q4FalseCertainties(data, { now: NOW })).toHaveLength(1);
+  expect(q1CauseSplit(data, opts).total).toBe(2);
+  expect(q5AnkiDebt(data, opts)).toMatchObject({ eligible: 2, added: 0, pending: 2 });
+});
+
 beforeEach(() => {
   resetIds();
 });
@@ -322,6 +341,36 @@ describe('Q5 · deuda de Anki', () => {
     expect(result.meetsTarget).toBe(false);
   });
 
+  it('la cola no caduca con la ventana, pero las cifras si', () => {
+    // Un pendiente de hace 90 dias salia de la ventana de 30 y de la de 60: desaparecia
+    // de todas las vistas disponibles sin convertirse y sin forma de recuperarlo.
+    const data = makeDataset({
+      sessions: [makeSession({ id: 1, date: daysAgo(2) }), makeSession({ id: 2, date: daysAgo(90) })],
+      errors: [
+        makeError({ id: 10, sessionId: 1, cause: 'CONFUSION', ankiAdded: false }),
+        makeError({ id: 11, sessionId: 2, cause: 'DESCONOCIMIENTO', ankiAdded: false }),
+      ],
+    });
+
+    const result = q5AnkiDebt(data, opts);
+    // Las cifras siguen siendo las de la ventana: no se mezclan denominadores.
+    expect(result).toMatchObject({ eligible: 1, added: 0, pending: 1 });
+    // La cola los trae ambos, el mas antiguo primero.
+    expect(result.queue.map((error) => error.id)).toEqual([11, 10]);
+  });
+
+  it('no pone en cola lo ya convertido aunque sea anterior a la ventana', () => {
+    const data = makeDataset({
+      sessions: [makeSession({ id: 1, date: daysAgo(120) })],
+      errors: [
+        makeError({ id: 20, sessionId: 1, cause: 'CONFUSION', ankiAdded: true }),
+        makeError({ id: 21, sessionId: 1, cause: 'DESPISTE', ankiAdded: false }),
+      ],
+    });
+
+    expect(q5AnkiDebt(data, opts).queue).toEqual([]);
+  });
+
   it('marca el objetivo cumplido justo en el 80%', () => {
     const data = makeDataset({
       sessions: [makeSession({ id: 1 })],
@@ -466,6 +515,17 @@ describe('Q6 · eficacia del rewrite', () => {
     });
 
     expect(q6RewriteEfficacy(data, opts).pairs[0]?.repeatedErrors).toBe(0);
+  });
+
+  it('no confunde separadores de campos con barras dentro de la respuesta o subcategoría', () => {
+    const data = makeDataset({
+      ...writingPair(),
+      errors: [
+        makeError({ sessionId: 1, category: 'LEXICO', subcategory: 'a|b', correctAnswer: 'c' }),
+        makeError({ sessionId: 2, category: 'LEXICO', subcategory: 'a', correctAnswer: 'b|c' }),
+      ],
+    });
+    expect(q6RewriteEfficacy(data, opts)).toMatchObject({ totalOriginalErrors: 1, totalRepeated: 0, pctRepeated: 0 });
   });
 
   it('sin pares devuelve agregado nulo', () => {

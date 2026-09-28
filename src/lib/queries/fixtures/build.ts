@@ -5,6 +5,7 @@ import type {
   WritingPieceRow,
 } from '../../domain/types';
 import { addDays, toIsoDate } from '../../time/dates';
+import { withSessionFormat } from '../../domain/session';
 
 /**
  * Constructores de fixtures. Deterministas: reloj fijo, ids explicitos, sin aleatoriedad.
@@ -29,27 +30,28 @@ function autoId(): number {
 }
 
 export function makeSession(overrides: Partial<SessionRow> = {}): SessionRow {
-  return {
+  return withSessionFormat({
     id: overrides.id ?? autoId(),
     date: daysAgo(1),
-    kind: 'DRILL',
-    paper: 'RUOE',
+    kind: 'DRILL' as const,
+    paper: 'RUOE' as const,
     part: 1,
-    source: 'LIBRO',
+    source: 'LIBRO' as const,
     sourceRef: null,
     itemsTotal: 8,
     itemsCorrect: 6,
     durationMin: 20,
     timed: false,
-    status: 'CLOSED',
+    status: 'CLOSED' as const,
     ...overrides,
-  };
+  });
 }
 
 export function makeError(overrides: Partial<ErrorRow> = {}): ErrorRow {
   return {
     id: overrides.id ?? autoId(),
     sessionId: 1,
+    ankiContentHash: null,
     itemRef: null,
     prompt: 'The speaker says the survey was carried out by ______',
     myAnswer: 'volunters',
@@ -62,6 +64,7 @@ export function makeError(overrides: Partial<ErrorRow> = {}): ErrorRow {
     ruleNote: 'Regla escrita con mis palabras para poder repasarla luego',
     ankiAdded: false,
     ankiAddedAt: null,
+    ankiNoteId: null,
     secs: 20,
     createdAt: '2026-09-13T10:00:00.000Z',
     ...overrides,

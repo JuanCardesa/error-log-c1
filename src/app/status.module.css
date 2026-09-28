@@ -1,0 +1,11 @@
+.status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: 560px;
+}
+
+.status p {
+  color: var(--color-ink-2);
+}

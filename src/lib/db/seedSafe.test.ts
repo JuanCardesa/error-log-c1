@@ -1,4 +1,4 @@
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from './migrate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { type Db, createDb } from './client';

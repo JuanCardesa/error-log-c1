@@ -9,6 +9,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
+    // Varios tests son legitimamente pesados —aritmetica civil cruzando cambios de hora,
+    // tandas del tamano maximo contra SQLite real, copias de ficheros— y rondan los 2 s
+    // en solitario. Con 30 workers en paralelo e instrumentacion de cobertura, el limite
+    // por defecto de 5 s los tumbaba de forma intermitente y en un fichero distinto cada
+    // vez. El margen amplio no tapa nada: un cuelgue de verdad sigue fallando.
+    testTimeout: 20_000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

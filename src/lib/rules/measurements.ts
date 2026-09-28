@@ -1,5 +1,4 @@
 import type { Category } from '../domain/enums';
-import { FIXED_WINDOW_DAYS } from '../domain/thresholds';
 import type { Dataset, QueryOptions } from '../domain/types';
 import { q4FalseCertainties } from '../queries/q4FalseCertainties';
 import { q5AnkiDebt } from '../queries/q5AnkiDebt';
@@ -83,6 +82,3 @@ export function measure(data: Dataset, options: QueryOptions): RuleMeasurements 
     rewriteRepeatedPct: rewrite.pctRepeated,
   };
 }
-
-/** Solo para que los mensajes puedan decir de cuantos dias hablan. */
-export const SEGURO_WINDOW_DAYS = FIXED_WINDOW_DAYS;

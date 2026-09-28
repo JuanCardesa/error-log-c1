@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import type { z } from 'zod';
 
 import { getDb } from '@/lib/db/client';
 import {
@@ -12,6 +11,7 @@ import {
   getError,
   getSession,
   hasWritingPiece,
+  sessionDeletionImpact,
   setSessionStatus,
   updateError,
   updateSession,
@@ -19,7 +19,8 @@ import {
 import { generatesCard } from '@/lib/domain/enums';
 import { toIsoDate } from '@/lib/time/dates';
 import { errorInputSchema, sessionInputSchema } from '@/lib/validation/schemas';
-import type { FormState } from './formState';
+import { checkbox, collectIssues, integer, isValidId, text } from '../_shared/formData';
+import type { ActionResult, FormState } from './formState';
 
 /**
  * Acciones de servidor de la vista Registrar.
@@ -28,46 +29,12 @@ import type { FormState } from './formState';
  * como ultima linea, pero el mensaje util para la persona sale de aqui.
  */
 
-function collectIssues(error: z.ZodError): Record<string, string[]> {
-  const fieldErrors: Record<string, string[]> = {};
-  for (const issue of error.issues) {
-    const key = issue.path.length > 0 ? issue.path.join('.') : '_';
-    const bucket = fieldErrors[key];
-    if (bucket === undefined) fieldErrors[key] = [issue.message];
-    else bucket.push(issue.message);
-  }
-  return fieldErrors;
-}
-
-function text(form: FormData, key: string): string {
-  const value = form.get(key);
-  return typeof value === 'string' ? value : '';
-}
-
-/** `''` se trata como ausente, que es lo que manda un input numerico vacio. */
-function integer(form: FormData, key: string): number | null {
-  const raw = text(form, key).trim();
-  if (raw === '') return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : Number.NaN;
-}
-
-function checkbox(form: FormData, key: string): boolean {
-  return form.get(key) !== null;
-}
-
-function today(): string {
-  return toIsoDate(new Date());
-}
-
-export async function createSessionAction(
-  _previous: FormState,
-  form: FormData,
-): Promise<FormState> {
-  const parsed = sessionInputSchema({ today: today() }).safeParse({
+/** Cabecera de sesion: la comparten el alta y la correccion, con el mismo Zod. */
+function parseSessionForm(form: FormData, status: 'OPEN' | 'CLOSED') {
+  return sessionInputSchema({ today: toIsoDate(new Date()) }).safeParse({
     date: text(form, 'date'),
     kind: text(form, 'kind'),
-    paper: text(form, 'paper'),
+    paper: text(form, 'paper') === '' && form.has('paper') ? null : text(form, 'paper'),
     part: integer(form, 'part'),
     source: text(form, 'source'),
     sourceRef: text(form, 'sourceRef'),
@@ -75,36 +42,45 @@ export async function createSessionAction(
     itemsCorrect: integer(form, 'itemsCorrect'),
     durationMin: integer(form, 'durationMin'),
     timed: checkbox(form, 'timed'),
-    status: 'OPEN',
+    status,
   });
+}
+
+export async function createSessionAction(
+  _previous: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const parsed = parseSessionForm(form, 'OPEN');
 
   if (!parsed.success) {
     return {
       ok: false,
       fieldErrors: collectIssues(parsed.error),
-      message: 'Revisa la cabecera: no se aceptan errores hasta que sea valida.',
+      message: 'Revisa la cabecera: no se aceptan errores hasta que sea válida.',
     };
   }
 
   const created = createSession(getDb(), parsed.data);
-  revalidatePath('/registrar');
+  revalidatePath('/', 'layout');
 
   return {
     ok: true,
     fieldErrors: {},
-    message: `Sesion #${String(created.id)} abierta.`,
+    message: `Sesión #${String(created.id)} abierta.`,
     createdId: created.id,
   };
 }
 
 /**
- * Lee y valida un error del formulario. La comparten el alta y la edicion para que las
- * reglas no puedan divergir entre crear y corregir.
+ * Los campos de un error tal y como se teclean. La comparten el alta y la edicion para
+ * que las reglas no puedan divergir entre crear y corregir.
+ *
+ * Nada de Anki ni de `secs` sale de aqui: el formulario no los trae, y lo que decide si
+ * un error esta convertido es la fila guardada, no un campo oculto que cualquier POST
+ * puede omitir.
  */
-function parseErrorForm(form: FormData, sessionTimed: boolean, addedAt: string | null = null) {
-  const ankiAdded = checkbox(form, 'ankiAdded');
-
-  return errorInputSchema().safeParse({
+function errorFormValues(form: FormData, sessionTimed: boolean) {
+  return {
     sessionId: integer(form, 'sessionId'),
     itemRef: text(form, 'itemRef'),
     prompt: text(form, 'prompt'),
@@ -117,10 +93,7 @@ function parseErrorForm(form: FormData, sessionTimed: boolean, addedAt: string |
     // `late_in_session` solo significa algo con cronometro (§3 del spec original).
     lateInSession: sessionTimed ? checkbox(form, 'lateInSession') : false,
     ruleNote: text(form, 'ruleNote'),
-    ankiAdded,
-    ankiAddedAt: ankiAdded ? addedAt ?? new Date().toISOString() : null,
-    secs: integer(form, 'secs'),
-  });
+  };
 }
 
 /** Un despiste no se arregla estudiando: convertirlo en tarjeta es el error clasico. */
@@ -144,31 +117,29 @@ export async function addErrorAction(
 ): Promise<FormState> {
   const sessionId = integer(form, 'sessionId');
   if (sessionId === null || Number.isNaN(sessionId)) {
-    return { ok: false, fieldErrors: {}, message: 'Falta la sesion.' };
+    return { ok: false, fieldErrors: {}, message: 'Falta la sesión.' };
   }
 
   const session = getSession(getDb(), sessionId);
   if (session === null) {
-    return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe.' };
+    return { ok: false, fieldErrors: {}, message: 'Esa sesión ya no existe.' };
   }
   if (session.status === 'CLOSED') {
     return {
       ok: false,
       fieldErrors: {},
-      message: 'La sesion esta cerrada. Reabrela para seguir añadiendo errores.',
+      message: 'La sesión está cerrada. Reábrela para seguir añadiendo errores.',
     };
   }
 
-  const parsed = parseErrorForm(form, session.timed);
+  // Un error nace sin convertir: la conversion se sella al crear la nota en Anki.
+  const parsed = errorInputSchema().safeParse(errorFormValues(form, session.timed));
   if (!parsed.success) {
     return { ok: false, fieldErrors: collectIssues(parsed.error), message: null };
   }
 
-  const impossible = rejectImpossibleCard(parsed.data.cause, parsed.data.ankiAdded);
-  if (impossible !== null) return impossible;
-
   const created = createError(getDb(), parsed.data);
-  revalidatePath('/registrar');
+  revalidatePath('/', 'layout');
 
   return { ok: true, fieldErrors: {}, message: null, createdId: created.id };
 }
@@ -179,38 +150,39 @@ export async function updateErrorAction(
   form: FormData,
 ): Promise<FormState> {
   const id = integer(form, 'id');
-  if (id === null || !Number.isSafeInteger(id) || id <= 0) {
+  if (!isValidId(id)) {
     return { ok: false, fieldErrors: {}, message: 'Falta el error a corregir.' };
   }
 
   const sessionId = integer(form, 'sessionId');
   if (sessionId === null || Number.isNaN(sessionId)) {
-    return { ok: false, fieldErrors: {}, message: 'Falta la sesion.' };
+    return { ok: false, fieldErrors: {}, message: 'Falta la sesión.' };
   }
 
   const session = getSession(getDb(), sessionId);
   if (session === null) {
-    return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe.' };
+    return { ok: false, fieldErrors: {}, message: 'Esa sesión ya no existe.' };
   }
 
   const original = getError(getDb(), id);
   if (original === null || original.sessionId !== sessionId) {
-    return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe en esta sesion. Tus cambios siguen en el formulario.' };
+    return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe en esta sesión. Tus cambios siguen en el formulario.' };
   }
 
-  const parsed = parseErrorForm(form, session.timed, original.ankiAddedAt);
+  const parsed = errorInputSchema().safeParse(errorFormValues(form, session.timed));
   if (!parsed.success) {
     return { ok: false, fieldErrors: collectIssues(parsed.error), message: null };
   }
 
-  const impossible = rejectImpossibleCard(parsed.data.cause, parsed.data.ankiAdded);
+  // Si esta convertido lo dice la fila, no el formulario: cambiar la causa de un error
+  // que ya tiene tarjeta sigue teniendo que poder rechazarse.
+  const impossible = rejectImpossibleCard(parsed.data.cause, original.ankiAdded);
   if (impossible !== null) return impossible;
 
   if (!updateError(getDb(), id, parsed.data)) {
     return { ok: false, fieldErrors: {}, message: 'Ese error ya no existe. Tus cambios siguen en el formulario.' };
   }
-  revalidatePath('/registrar');
-  revalidatePath('/informe');
+  revalidatePath('/', 'layout');
   return { ok: true, fieldErrors: {}, message: 'Error corregido.', createdId: id };
 }
 
@@ -220,23 +192,11 @@ export async function updateSessionAction(
   form: FormData,
 ): Promise<FormState> {
   const id = integer(form, 'id');
-  if (id === null || !Number.isSafeInteger(id) || id <= 0) {
-    return { ok: false, fieldErrors: {}, message: 'Falta la sesion a corregir.' };
+  if (!isValidId(id)) {
+    return { ok: false, fieldErrors: {}, message: 'Falta la sesión a corregir.' };
   }
 
-  const parsed = sessionInputSchema({ today: today() }).safeParse({
-    date: text(form, 'date'),
-    kind: text(form, 'kind'),
-    paper: text(form, 'paper'),
-    part: integer(form, 'part'),
-    source: text(form, 'source'),
-    sourceRef: text(form, 'sourceRef'),
-    itemsTotal: integer(form, 'itemsTotal'),
-    itemsCorrect: integer(form, 'itemsCorrect'),
-    durationMin: integer(form, 'durationMin'),
-    timed: checkbox(form, 'timed'),
-    status: text(form, 'status') === 'CLOSED' ? 'CLOSED' : 'OPEN',
-  });
+  const parsed = parseSessionForm(form, text(form, 'status') === 'CLOSED' ? 'CLOSED' : 'OPEN');
 
   if (!parsed.success) {
     return {
@@ -247,30 +207,51 @@ export async function updateSessionAction(
   }
 
   if (parsed.data.paper !== 'WRITING' && hasWritingPiece(getDb(), id)) {
-    return { ok: false, fieldErrors: { paper: ['Esta sesion tiene un texto asociado y debe seguir siendo de Writing.'] }, message: null };
+    return { ok: false, fieldErrors: { paper: ['Esta sesión tiene un texto asociado y debe seguir siendo de Writing.'] }, message: null };
   }
   if (!updateSession(getDb(), id, parsed.data)) {
-    return { ok: false, fieldErrors: {}, message: 'Esa sesion ya no existe. Tus cambios siguen en el formulario.' };
+    return { ok: false, fieldErrors: {}, message: 'Esa sesión ya no existe. Tus cambios siguen en el formulario.' };
   }
-  revalidatePath('/registrar');
-  revalidatePath('/informe');
+  revalidatePath('/', 'layout');
   return { ok: true, fieldErrors: {}, message: 'Cabecera corregida.', createdId: id };
 }
 
-export async function deleteErrorAction(id: number): Promise<void> {
-  deleteError(getDb(), id);
-  revalidatePath('/registrar');
+export async function deleteErrorAction(id: number): Promise<ActionResult> {
+  if (!isValidId(id)) return { ok: false, message: 'Falta el error a borrar.' };
+  try {
+    if (!deleteError(getDb(), id)) return { ok: false, message: 'Ese error ya no existe; actualiza la vista.' };
+  } catch {
+    return { ok: false, message: 'No se pudo borrar el error. Vuelve a intentarlo.' };
+  }
+  revalidatePath('/', 'layout');
+  return { ok: true, message: 'Error borrado.' };
 }
 
 export async function setSessionStatusAction(
   id: number,
   status: 'OPEN' | 'CLOSED',
-): Promise<void> {
+): Promise<ActionResult> {
+  if (!isValidId(id)) return { ok: false, message: 'Falta la sesión.' };
+  if (getSession(getDb(), id) === null) return { ok: false, message: 'Esa sesión ya no existe.' };
   setSessionStatus(getDb(), id, status);
-  revalidatePath('/registrar');
+  revalidatePath('/', 'layout');
+  return { ok: true, message: status === 'CLOSED' ? 'Sesión cerrada.' : 'Sesión reabierta para añadir errores.' };
 }
 
-export async function deleteSessionAction(id: number): Promise<void> {
-  deleteSession(getDb(), id);
-  revalidatePath('/registrar');
+export async function deleteSessionAction(id: number): Promise<ActionResult> {
+  if (!isValidId(id)) return { ok: false, message: 'Falta la sesión.' };
+  const db = getDb();
+  if (getSession(db, id) === null) return { ok: false, message: 'Esa sesión ya no existe.' };
+  const impact = sessionDeletionImpact(db, id);
+  try {
+    deleteSession(db, id);
+  } catch {
+    return { ok: false, message: 'No se pudo borrar la sesión. Vuelve a intentarlo.' };
+  }
+  revalidatePath('/', 'layout');
+  const errors = `${String(impact.errors)} ${impact.errors === 1 ? 'error eliminado' : 'errores eliminados'}`;
+  return {
+    ok: true,
+    message: `Sesión borrada · ${errors}${impact.hasWritingPiece ? ' y su registro de Writing' : ''}.`,
+  };
 }

@@ -1,0 +1,68 @@
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.help {
+  display: flex;
+  gap: var(--space-2) var(--space-5);
+  flex-wrap: wrap;
+}
+
+.help > details {
+  flex: 0 1 auto;
+}
+
+.help > details[open] {
+  flex-basis: 100%;
+}
+
+.infoIcon {
+  color: var(--color-info);
+}
+
+.helpBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.helpBody textarea {
+  max-width: 64ch;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.stored {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.storedText {
+  flex: 1 1 320px;
+  color: var(--color-ink-2);
+}
+
+.storedActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* El atajo de pegar solo existe con teclado físico. */
+@media (max-width: 639px) {
+  .keyHint {
+    display: none;
+  }
+}

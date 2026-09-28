@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { migrate } from './migrate';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { q1CauseSplit } from '../queries/q1CauseSplit';
@@ -57,6 +57,24 @@ describe('migraciones', () => {
 });
 
 describe('invariantes de session en la propia base', () => {
+  it('acepta practica sin formato, tambien con cero items', () => {
+    expect(() => insertSession({ paper: null, part: null })).not.toThrow();
+    expect(() => insertSession({ paper: null, part: null, itemsTotal: 0, itemsCorrect: 0 })).not.toThrow();
+  });
+
+  it.each([
+    { paper: null, part: 1 },
+    { paper: 'RUOE', part: null },
+    { paper: 'NINGUNO', part: 1 },
+    { paper: 'NINGUNO', part: null },
+    { paper: null, part: null, kind: 'WRITING' },
+    { paper: null, part: null, itemsTotal: null },
+    { paper: null, part: null, itemsCorrect: null },
+    { paper: 'RUOE', part: 1.5 },
+  ])('rechaza tambien sin Zod los datos invalidos: %j', (overrides) => {
+    expect(() => insertSession(overrides)).toThrow(/CHECK/i);
+  });
+
   it('rechaza acertar mas items de los intentados', () => {
     expect(() => insertSession({ itemsTotal: 6, itemsCorrect: 7 })).toThrow(/CHECK/i);
   });

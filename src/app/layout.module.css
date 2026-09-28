@@ -1,95 +1,54 @@
-.shell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+.main {
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--space-6) var(--page-pad) 96px;
 }
 
-.bar {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-6);
-  padding: var(--sp-4) var(--sp-6);
-  background: var(--surface);
-  border-bottom: 1px solid var(--rule-strong);
-}
-
-.brand {
-  font-family: var(--font-data);
-  font-size: var(--fs-base);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-
-.nav {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-}
-
-.link {
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--radius);
-  color: var(--ink-soft);
-  text-decoration: none;
-}
-
-.link:hover {
-  background: var(--surface-sunken);
-  color: var(--ink);
+.main:focus {
+  outline: none;
 }
 
 /*
  * Aviso de `pnpm demo`. La base es desechable: sin esto, nada distingue los ejemplos
- * inventados de los datos propios, y lo que se escriba aqui se pierde al reiniciar.
+ * inventados de los datos propios, y lo que se escriba aquí se pierde al reiniciar.
  */
 .demo {
-  padding: var(--sp-3) var(--sp-6);
-  background: var(--queued-bg);
-  color: var(--queued);
-  border-bottom: 1px solid var(--rule-strong);
-  font-size: var(--fs-sm);
+  max-width: var(--page-max);
+  margin: var(--space-3) auto 0;
+  padding: var(--space-2) var(--page-pad);
+  color: var(--color-warning);
+  font-size: 13px;
 }
 
 .demo strong {
   font-weight: 600;
 }
 
-.main {
-  flex: 1;
-  padding: var(--sp-6);
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.pending {
-  margin-left: auto;
-  font-size: var(--fs-xs);
-  color: var(--ink-faint);
-}
-
 /*
- * Salto al contenido. Invisible hasta que recibe foco: sin el, llegar al contenido con
- * el teclado obliga a tabular por los siete enlaces de navegacion en cada pagina.
+ * Salto al contenido. Invisible hasta que recibe foco: sin él, llegar al contenido con el
+ * teclado obliga a recorrer toda la navegación en cada página.
  */
 .skip {
-  position: absolute;
-  left: var(--sp-4);
-  top: calc(-1 * var(--sp-7) - var(--sp-5));
-  z-index: 10;
-  padding: var(--sp-3) var(--sp-5);
-  background: var(--ink);
-  color: var(--surface);
-  border-radius: var(--radius);
+  position: fixed;
+  left: var(--space-4);
+  top: -64px;
+  z-index: calc(var(--z-sticky) + 1);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-ink);
+  color: var(--color-on-ink);
   text-decoration: none;
-  transition: top 120ms ease;
+  transition: top var(--dur-fast) ease;
 }
 
 .skip:focus-visible {
-  top: var(--sp-4);
+  top: var(--space-2);
+  color: var(--color-on-ink);
 }
 
-.main:focus {
-  outline: none;
+@media (max-width: 639px) {
+  .main {
+    padding-top: var(--space-5);
+  }
 }

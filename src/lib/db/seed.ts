@@ -553,8 +553,7 @@ export interface SeedResult {
 
 export function seed(db: Db, today: Date): SeedResult {
   const isoDate = (daysAgo: number): string => toIsoDate(addDays(today, -daysAgo));
-  const stamp = (daysAgo: number): string =>
-    `${isoDate(daysAgo)}T19:00:00.000Z`;
+  const stamp = (daysAgo: number): string => addDays(today, -daysAgo).toISOString();
 
   let errorCount = 0;
   const writingSessionIds: { daysAgo: number; sessionId: number }[] = [];

@@ -1,0 +1,259 @@
+/*
+ * Capas que flotan sobre la vista: avisos, diálogos, drawer y menús. Es el único sitio
+ * con cristal; lo que se lee o se edita (drawer, dialog) va en blanco sólido.
+ */
+
+/* ── Aviso ────────────────────────────────────────────────────────────────── */
+
+.toastRegion {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  z-index: var(--z-toast);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 10px var(--space-4);
+  border-radius: var(--radius-overlay);
+  background: var(--glass-toast-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--color-on-ink);
+  font-size: 14px;
+  box-shadow: var(--shadow-toast);
+  pointer-events: auto;
+  animation: el-pop 160ms var(--ease-out);
+}
+
+.toastError {
+  box-shadow: inset 3px 0 0 var(--color-danger), var(--shadow-toast);
+}
+
+.toastCheck {
+  flex-shrink: 0;
+  color: var(--color-toast-check);
+}
+
+.toastUndo {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-on-ink);
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+.toastClose {
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-toast-muted);
+}
+
+.toastClose:hover {
+  color: var(--color-on-ink);
+}
+
+.toastUndo:focus-visible,
+.toastClose:focus-visible {
+  outline-color: var(--color-on-ink);
+}
+
+/* ── Diálogo de confirmación ──────────────────────────────────────────────── */
+
+.dialog {
+  width: calc(100% - 48px);
+  max-width: 460px;
+  max-height: calc(100vh - 48px);
+  padding: var(--space-5);
+  border: 0;
+  border-radius: var(--radius-overlay);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-dialog);
+  overflow: auto;
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: el-pop 160ms var(--ease-out);
+}
+
+.dialog::backdrop {
+  background: rgba(32, 35, 31, 0.32);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: el-fade 140ms ease-out;
+}
+
+.dialogTitle {
+  font: var(--text-section);
+}
+
+.dialogAside {
+  color: var(--color-ink-2);
+  font-size: 14px;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+
+/* ── Drawer ───────────────────────────────────────────────────────────────── */
+
+.drawer {
+  position: fixed;
+  top: var(--header-h);
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 100vw);
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-rule);
+  box-shadow: var(--shadow-drawer);
+  animation: el-slide 160ms var(--ease-out);
+}
+
+.drawer[hidden] {
+  display: none;
+}
+
+.drawerHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.drawerTitle {
+  flex: 1;
+  font: var(--text-section);
+}
+
+.drawerBody {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-5);
+}
+
+.drawerFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-rule);
+}
+
+@media (max-width: 639px) {
+  .drawer {
+    width: 100vw;
+    border-left: 0;
+  }
+
+  .drawerBody {
+    padding: var(--space-4);
+  }
+}
+
+/* ── Menú ─────────────────────────────────────────────────────────────────── */
+
+.menuWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: var(--z-sticky);
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid rgba(124, 132, 122, 0.3);
+  border-radius: var(--radius-overlay);
+  background: var(--glass-menu-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-menu);
+  animation: el-pop 140ms ease-out;
+  transform-origin: top left;
+}
+
+.menu[hidden] {
+  display: none;
+}
+
+.menuEnd {
+  right: 0;
+}
+
+.menuStart {
+  left: 0;
+}
+
+.menuItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-ink);
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  outline-offset: -2px;
+}
+
+.menuItem[aria-current='page'] {
+  font-weight: 600;
+}
+
+.menuItemSub {
+  font: var(--text-aux);
+  color: var(--color-ink-2);
+}
+
+.menuItemDanger {
+  color: var(--color-danger);
+}
+
+.menuItemDanger:hover,
+.menuItemDanger:focus-visible {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.menuSep {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--color-rule);
+}

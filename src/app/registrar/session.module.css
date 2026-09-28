@@ -1,139 +1,92 @@
-.panel {
-  padding: var(--sp-5);
-  background: var(--surface);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
+/* Campos de sesión en grupos: etiqueta de grupo a la izquierda y campos a la derecha. */
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
-.hint {
-  margin: var(--sp-2) 0 var(--sp-5);
-  color: var(--ink-soft);
-  font-size: var(--fs-sm);
-  max-width: 52ch;
-}
-
-.form {
+.group {
   display: grid;
-  gap: var(--sp-4);
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
-  align-items: start;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: var(--space-4);
 }
 
-.form label {
-  display: block;
-  min-width: 0;
+.groupLabel {
+  padding-top: 28px;
+  font: 600 13px/18px var(--font-sans);
+  color: var(--color-ink-2);
 }
 
-.form input,
-.form select {
-  width: 100%;
+.groupNote {
+  padding-top: 28px;
+  font-size: 14px;
+  color: var(--color-ink-2);
 }
 
-.wide {
-  grid-column: span 2;
+.groupStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.label {
-  display: block;
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
-  margin-bottom: var(--sp-1);
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
 }
 
-.help {
-  display: block;
-  margin-top: var(--sp-1);
-  color: var(--ink-faint);
-  font-size: var(--fs-xs);
+.gridOrigin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-3);
 }
 
-.check {
-  display: flex !important;
-  align-items: center;
-  gap: var(--sp-3);
-  align-self: end;
-  padding-bottom: var(--sp-3);
-  white-space: nowrap;
+.timeGroup {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-rule);
 }
 
-.check input {
-  width: auto !important;
+.summaryStrong {
+  font-weight: 500;
 }
 
-.actions {
+.timeFields {
   display: flex;
   align-items: flex-end;
-  align-self: end;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-top: var(--space-3);
 }
 
-.primary {
-  padding: var(--sp-3) var(--sp-6);
-  border: 1px solid var(--ink);
-  border-radius: var(--radius);
-  background: var(--ink);
-  color: var(--surface);
-  cursor: pointer;
-  white-space: nowrap;
-  width: 100%;
+.duration {
+  width: 160px;
 }
 
-.primary:hover:not(:disabled) {
-  background: #000;
-}
-
-.primary:disabled {
-  opacity: 0.55;
-  cursor: progress;
-}
-
-.fieldError {
-  margin: var(--sp-2) 0 0;
-  color: var(--danger);
-  font-size: var(--fs-sm);
-}
-
-.formError,
-.ok {
-  margin: var(--sp-5) 0 0;
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--radius);
-  font-size: var(--fs-sm);
-}
-
-.formError {
-  background: var(--exec-bg);
-  border: 1px solid var(--exec-rule);
-  color: var(--exec);
-}
-
-.ok {
-  background: var(--ok-bg);
-  border: 1px solid var(--ok);
-  color: var(--ok);
-}
-
-@media (max-width: 760px) {
-  .wide {
-    grid-column: 1 / -1;
-  }
-}
-
-.actions {
+/* Formulario del drawer: mensajes y aviso de edición. */
+.form {
   display: flex;
-  gap: var(--sp-3);
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
-.secondary {
-  padding: var(--sp-3) var(--sp-5);
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  background: var(--surface);
-  cursor: pointer;
-  white-space: nowrap;
+.editNote {
+  font-size: 14px;
+  color: var(--color-ink-2);
 }
 
-.secondary:hover {
-  background: var(--surface-sunken);
+@media (max-width: 639px) {
+  .group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .groupLabel,
+  .groupNote {
+    padding-top: 0;
+  }
+
+  .gridOrigin {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -1,0 +1,493 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "099b05ea-c8b3-4419-a41b-07f3f9e099f0",
+  "prevId": "f5cb765f-1e88-4aac-b09c-65c68a4837a8",
+  "tables": {
+    "error_row": {
+      "name": "error_row",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "item_ref": {
+          "name": "item_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "prompt": {
+          "name": "prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "my_answer": {
+          "name": "my_answer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "correct_answer": {
+          "name": "correct_answer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cause": {
+          "name": "cause",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subcategory": {
+          "name": "subcategory",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "late_in_session": {
+          "name": "late_in_session",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "rule_note": {
+          "name": "rule_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "anki_added": {
+          "name": "anki_added",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "anki_added_at": {
+          "name": "anki_added_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "secs": {
+          "name": "secs",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ','now'))"
+        }
+      },
+      "indexes": {
+        "error_session_idx": {
+          "name": "error_session_idx",
+          "columns": [
+            "session_id"
+          ],
+          "isUnique": false
+        },
+        "error_cause_idx": {
+          "name": "error_cause_idx",
+          "columns": [
+            "cause"
+          ],
+          "isUnique": false
+        },
+        "error_category_idx": {
+          "name": "error_category_idx",
+          "columns": [
+            "category"
+          ],
+          "isUnique": false
+        },
+        "error_confidence_idx": {
+          "name": "error_confidence_idx",
+          "columns": [
+            "confidence"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "error_row_session_id_session_id_fk": {
+          "name": "error_row_session_id_session_id_fk",
+          "tableFrom": "error_row",
+          "tableTo": "session",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "error_rule_note_min_length": {
+          "name": "error_rule_note_min_length",
+          "value": "length(trim(\"error_row\".\"rule_note\")) >= 15"
+        },
+        "error_rule_note_is_not_the_answer": {
+          "name": "error_rule_note_is_not_the_answer",
+          "value": "\n      lower(trim(\"error_row\".\"rule_note\")) <> lower(trim(\"error_row\".\"correct_answer\"))\n    "
+        },
+        "error_secs_non_negative": {
+          "name": "error_secs_non_negative",
+          "value": "\"error_row\".\"secs\" IS NULL OR \"error_row\".\"secs\" >= 0"
+        },
+        "error_anki_added_at_consistent": {
+          "name": "error_anki_added_at_consistent",
+          "value": "\n      (\"error_row\".\"anki_added\" = 0 AND \"error_row\".\"anki_added_at\" IS NULL)\n      OR (\"error_row\".\"anki_added\" = 1 AND \"error_row\".\"anki_added_at\" IS NOT NULL)\n    "
+        }
+      }
+    },
+    "session": {
+      "name": "session",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "paper": {
+          "name": "paper",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "part": {
+          "name": "part",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_ref": {
+          "name": "source_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "items_total": {
+          "name": "items_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "items_correct": {
+          "name": "items_correct",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "duration_min": {
+          "name": "duration_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "timed": {
+          "name": "timed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'OPEN'"
+        }
+      },
+      "indexes": {
+        "session_date_idx": {
+          "name": "session_date_idx",
+          "columns": [
+            "date"
+          ],
+          "isUnique": false
+        },
+        "session_paper_part_idx": {
+          "name": "session_paper_part_idx",
+          "columns": [
+            "paper",
+            "part"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "session_items_non_negative": {
+          "name": "session_items_non_negative",
+          "value": "\n      (\"session\".\"items_total\" IS NULL OR \"session\".\"items_total\" >= 0)\n      AND (\"session\".\"items_correct\" IS NULL OR \"session\".\"items_correct\" >= 0)\n    "
+        },
+        "session_items_correct_le_total": {
+          "name": "session_items_correct_le_total",
+          "value": "\n      \"session\".\"items_correct\" IS NULL\n      OR \"session\".\"items_total\" IS NULL\n      OR \"session\".\"items_correct\" <= \"session\".\"items_total\"\n    "
+        },
+        "session_items_required_outside_writing": {
+          "name": "session_items_required_outside_writing",
+          "value": "\n      \"session\".\"paper\" IS 'WRITING'\n      OR (\"session\".\"items_total\" IS NOT NULL AND \"session\".\"items_correct\" IS NOT NULL)\n    "
+        },
+        "session_part_within_paper": {
+          "name": "session_part_within_paper",
+          "value": "\n      (\"session\".\"paper\" IS NULL AND \"session\".\"part\" IS NULL)\n      OR (\n        \"session\".\"paper\" IS NOT NULL AND \"session\".\"part\" IS NOT NULL\n        AND typeof(\"session\".\"part\") = 'integer'\n        AND \"session\".\"part\" >= 1 AND \"session\".\"part\" <= CASE \"session\".\"paper\"\n          WHEN 'RUOE' THEN 8\n          WHEN 'WRITING' THEN 2\n          WHEN 'LISTENING' THEN 4\n          WHEN 'SPEAKING' THEN 4\n          ELSE 0\n        END\n      )\n    "
+        },
+        "session_writing_kind_implies_writing_paper": {
+          "name": "session_writing_kind_implies_writing_paper",
+          "value": "\n      \"session\".\"kind\" <> 'WRITING' OR \"session\".\"paper\" IS 'WRITING'\n    "
+        }
+      }
+    },
+    "writing_piece": {
+      "name": "writing_piece",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "genre": {
+          "name": "genre",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "word_count": {
+          "name": "word_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "minutes": {
+          "name": "minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "timed": {
+          "name": "timed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "rewrite_of": {
+          "name": "rewrite_of",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "corrector": {
+          "name": "corrector",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "band_content": {
+          "name": "band_content",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "band_communicative": {
+          "name": "band_communicative",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "band_organisation": {
+          "name": "band_organisation",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "band_language": {
+          "name": "band_language",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "writing_piece_session_id_unique": {
+          "name": "writing_piece_session_id_unique",
+          "columns": [
+            "session_id"
+          ],
+          "isUnique": true
+        },
+        "writing_rewrite_of_idx": {
+          "name": "writing_rewrite_of_idx",
+          "columns": [
+            "rewrite_of"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "writing_piece_session_id_session_id_fk": {
+          "name": "writing_piece_session_id_session_id_fk",
+          "tableFrom": "writing_piece",
+          "tableTo": "session",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "writing_piece_rewrite_of_writing_piece_id_fk": {
+          "name": "writing_piece_rewrite_of_writing_piece_id_fk",
+          "tableFrom": "writing_piece",
+          "tableTo": "writing_piece",
+          "columnsFrom": [
+            "rewrite_of"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "writing_no_self_rewrite": {
+          "name": "writing_no_self_rewrite",
+          "value": "\n      \"writing_piece\".\"rewrite_of\" IS NULL OR \"writing_piece\".\"rewrite_of\" <> \"writing_piece\".\"id\"\n    "
+        },
+        "writing_bands_in_range": {
+          "name": "writing_bands_in_range",
+          "value": "\n      (\"writing_piece\".\"band_content\" IS NULL OR \"writing_piece\".\"band_content\" BETWEEN 0 AND 5)\n      AND (\"writing_piece\".\"band_communicative\" IS NULL OR \"writing_piece\".\"band_communicative\" BETWEEN 0 AND 5)\n      AND (\"writing_piece\".\"band_organisation\" IS NULL OR \"writing_piece\".\"band_organisation\" BETWEEN 0 AND 5)\n      AND (\"writing_piece\".\"band_language\" IS NULL OR \"writing_piece\".\"band_language\" BETWEEN 0 AND 5)\n    "
+        },
+        "writing_counts_non_negative": {
+          "name": "writing_counts_non_negative",
+          "value": "\n      (\"writing_piece\".\"word_count\" IS NULL OR \"writing_piece\".\"word_count\" >= 0)\n      AND (\"writing_piece\".\"minutes\" IS NULL OR \"writing_piece\".\"minutes\" >= 0)\n    "
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
