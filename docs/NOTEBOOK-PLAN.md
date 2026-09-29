@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **18 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 5.1**, implementar repositorio de vínculos.
+> Estado: **19 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 5.2**, integrar el selector en el detalle del error.
 
 ## Cómo continuar
 
@@ -772,7 +772,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
 
 ### PHASE 5 — Relaciones con errores
 
-- [ ] **TASK 5.1 — Implementar repositorio de vínculos.**
+- [x] **TASK 5.1 — Implementar repositorio de vínculos.**
   Relación, eliminación, consulta inversa y apartados.
   **Files affected:** repositorio Notebook, acciones y tests.
   **Dependencies:** 2.6, 3.3. **Tests:** extremos borrados, apartados obsoletos y cascadas.
@@ -930,5 +930,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | 2026-09-29 | TASK 4.2: borradores locales versionados por UID y pestaña, escritura diferida y vaciado al abandonar, recuperación/descarga/descarte en editor y portada, aviso de cuota y protección de la revisión base al recuperar. Commit: `feat(notebook): recover local drafts`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (716 pruebas), build E2E y 15 E2E de Notebook correctos con Node 23.7.0. Siguiente TASK 4.3. |
 | 2026-09-29 | TASK 4.3: autosave al segundo, cola de una escritura, guardado manual, CAS, reconciliación de respuestas perdidas por ID/UID y resolución explícita de conflicto, borrado o alta incierta sin perder el borrador local. Commit: `feat(notebook): autosave and reconcile writes`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (720 pruebas), build E2E y pruebas de editor, borradores y autosave correctos con Node 23.7.0. Siguiente TASK 4.4. |
 | 2026-09-29 | TASK 4.4: finalización explícita que espera el guardado, verifica UID/revisión e invalida listado y rutas actual/anterior del lector; navegación de salida con borrador recuperable y copia local ante conflicto final. Commit: `feat(notebook): finish editing and refresh reader`. | `pnpm typecheck`, `pnpm lint`, 721 pruebas unitarias y E2E de salida, regreso, recarga y lector visitado correctos con Node 23.7.0. Siguiente TASK 5.1. |
+| 2026-09-29 | TASK 5.1: repositorio y acciones para vincular errores con apuntes o apartados, actualizar/desvincular el par, consultar desde ambos extremos con paginación inversa y detectar encabezados cambiados o ambiguos. La tabla y cascadas ya estaban migradas. Commit: `feat(notebook): link notes to errors`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y `pnpm build` correctos con Node 23.7.0. Siguiente TASK 5.2. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.

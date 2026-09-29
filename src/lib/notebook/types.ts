@@ -1,3 +1,5 @@
+import type { ErrorRow } from '../domain/types';
+
 /** Filas de Notebook independientes de Drizzle y de los formularios. */
 export interface NotebookFolder {
   readonly id: number;
@@ -49,6 +51,20 @@ export interface NotebookErrorLink {
   readonly headingSlug: string | null;
   readonly headingText: string | null;
   readonly createdAt: string;
+}
+
+export type NotebookLinkHeadingStatus = 'none' | 'valid' | 'changed';
+
+export interface NotebookLinkedNote {
+  readonly link: NotebookErrorLink;
+  readonly note: NotebookNoteSummary;
+  readonly headingStatus: NotebookLinkHeadingStatus;
+}
+
+export interface NotebookLinkedError {
+  readonly link: NotebookErrorLink;
+  readonly error: ErrorRow;
+  readonly headingStatus: NotebookLinkHeadingStatus;
 }
 
 export interface NotebookPage<T> {

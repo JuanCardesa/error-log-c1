@@ -5,6 +5,9 @@ import type { z } from 'zod';
 
 import { getDb } from '@/lib/db/client';
 import {
+  getErrorNoteLinks, listNoteErrorLinks, removeErrorNoteLink, setErrorNoteLink,
+} from '@/lib/db/notebookLinkRepo';
+import {
   NotebookRepoError,
   createNotebookFolder,
   createNotebookNote,
@@ -23,15 +26,20 @@ import {
   deleteNotebookFolderSchema,
   deleteNotebookNoteSchema,
   finishNotebookEditingSchema,
+  getErrorNoteLinksSchema,
+  getNoteErrorLinksSchema,
   getNotebookNoteSchema,
   getNotebookNoteByUidSchema,
   getNotebookOutlineSchema,
+  removeErrorNoteLinkSchema,
   saveNotebookNoteSchema,
   searchNotebookSchema,
+  setErrorNoteLinkSchema,
   updateNotebookFolderSchema,
 } from '@/lib/notebook/schemas';
 import type {
-  NotebookCreateResult, NotebookFolder, NotebookNote, NotebookNoteSummary,
+  NotebookCreateResult, NotebookErrorLink, NotebookFolder, NotebookLinkedError, NotebookLinkedNote,
+  NotebookNote, NotebookNoteSummary,
   NotebookOutline, NotebookPage, NotebookResult,
 } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
@@ -156,5 +164,33 @@ export async function getNoteOutlineAction(raw: unknown): Promise<NotebookResult
     const note = getNotebookNote(getDb(), id);
     if (note === null) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
     return { revision: note.revision, headings: analyzeNotebookMarkdown(note.contentMarkdown).headings };
+  });
+}
+
+export async function getErrorNoteLinksAction(raw: unknown): Promise<NotebookResult<readonly NotebookLinkedNote[]>> {
+  return validated(getErrorNoteLinksSchema, raw, ({ errorId }) => getErrorNoteLinks(getDb(), errorId));
+}
+
+export async function getNoteErrorLinksAction(raw: unknown): Promise<NotebookResult<NotebookPage<NotebookLinkedError>>> {
+  return validated(getNoteErrorLinksSchema, raw, ({ noteId, page }) => listNoteErrorLinks(getDb(), noteId, page));
+}
+
+export async function setErrorNoteLinkAction(raw: unknown): Promise<NotebookResult<NotebookErrorLink>> {
+  return validated(setErrorNoteLinkSchema, raw, (input) => {
+    const db = getDb();
+    const link = setErrorNoteLink(db, input, new Date().toISOString());
+    const note = getNotebookNote(db, input.noteId);
+    if (note !== null) revalidatePath(notebookNoteHref(note));
+    return link;
+  });
+}
+
+export async function removeErrorNoteLinkAction(raw: unknown): Promise<NotebookResult<NotebookErrorLink>> {
+  return validated(removeErrorNoteLinkSchema, raw, (input) => {
+    const db = getDb();
+    const link = removeErrorNoteLink(db, input);
+    const note = getNotebookNote(db, input.noteId);
+    if (note !== null) revalidatePath(notebookNoteHref(note));
+    return link;
   });
 }

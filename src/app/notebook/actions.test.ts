@@ -12,11 +12,15 @@ import {
   deleteFolderAction,
   deleteNoteAction,
   finishEditingAction,
+  getErrorNoteLinksAction,
   getNoteAction,
   getNoteByUidAction,
+  getNoteErrorLinksAction,
   getNoteOutlineAction,
   saveNoteAction,
   searchNotesAction,
+  removeErrorNoteLinkAction,
+  setErrorNoteLinkAction,
   updateFolderAction,
 } from './actions';
 
@@ -129,6 +133,41 @@ describe('Server Actions Notebook', () => {
       .toEqual({ ok: true, data: { id } });
     expect(await deleteNoteAction({ id, uid: UID, expectedRevision: 2 }))
       .toMatchObject({ ok: false, code: 'NOT_FOUND' });
+  });
+
+  it('valida y expone los vínculos con apartados sin aceptar metadatos del cliente', async () => {
+    const created = await createNoteAction(note());
+    if (!created.ok) throw new Error('No se creó el apunte');
+    const sessionId = Number(db.$client.prepare(`INSERT INTO session
+      (date, kind, paper, part, source, items_total, items_correct)
+      VALUES ('2026-09-29', 'DRILL', 'RUOE', 4, 'LIBRO', 5, 4)`).run().lastInsertRowid);
+    const errorId = Number(db.$client.prepare(`INSERT INTO error_row
+      (session_id, prompt, correct_answer, cause, category, confidence, rule_note)
+      VALUES (?, 'I must have...', 'must have', 'DESCONOCIMIENTO', 'ESTRUCTURA',
+        'DUDABA', 'Usar modal perfecto para deducciones pasadas')`).run(sessionId).lastInsertRowid);
+    const noteId = created.data.note.id;
+    vi.mocked(revalidatePath).mockClear();
+    expect(await setErrorNoteLinkAction({ errorId, noteId, headingSlug: 'nb-must-have', headingText: 'Falso' }))
+      .toMatchObject({ ok: false, code: 'VALIDATION' });
+    expect(await setErrorNoteLinkAction({ errorId, noteId, headingSlug: 'nb-inexistente' }))
+      .toMatchObject({ ok: false, code: 'VALIDATION' });
+    expect(await setErrorNoteLinkAction({ errorId: 9999, noteId, headingSlug: null }))
+      .toMatchObject({ ok: false, code: 'NOT_FOUND' });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    const linked = await setErrorNoteLinkAction({ errorId, noteId, headingSlug: 'nb-must-have' });
+    expect(linked).toMatchObject({ ok: true, data: { headingSlug: 'nb-must-have', headingText: 'Must have' } });
+    expect(revalidatePath).toHaveBeenCalledWith(notebookNoteHref(created.data.note));
+    expect(await getErrorNoteLinksAction({ errorId })).toMatchObject({
+      ok: true, data: [{ headingStatus: 'valid', note: { id: noteId } }],
+    });
+    expect(await getNoteErrorLinksAction({ noteId, page: 1 })).toMatchObject({
+      ok: true, data: { items: [{ error: { id: errorId }, headingStatus: 'valid' }], hasMore: false },
+    });
+    expect(await removeErrorNoteLinkAction({ errorId, noteId })).toMatchObject({
+      ok: true, data: { errorId, noteId },
+    });
+    expect(await getErrorNoteLinksAction({ errorId })).toEqual({ ok: true, data: [] });
+    expect(await removeErrorNoteLinkAction({ errorId, noteId })).toMatchObject({ ok: false, code: 'NOT_FOUND' });
   });
 
   it('crea, mueve y borra carpetas solo cuando están vacías', async () => {

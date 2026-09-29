@@ -100,6 +100,14 @@ export const finishNotebookEditingSchema = z.strictObject({
   previousTitle: notebookTitleSchema.optional(),
 });
 export const getNotebookOutlineSchema = z.strictObject({ id: safeId });
+export const getErrorNoteLinksSchema = z.strictObject({ errorId: safeId });
+export const getNoteErrorLinksSchema = z.strictObject({ noteId: safeId, page: safeId.default(1) });
+export const setErrorNoteLinkSchema = z.strictObject({
+  errorId: safeId,
+  noteId: safeId,
+  headingSlug: z.string().startsWith('nb-').max(NOTEBOOK_LIMITS.contentBytes).nullable().default(null),
+});
+export const removeErrorNoteLinkSchema = z.strictObject({ errorId: safeId, noteId: safeId });
 
 export const createNotebookFolderSchema = z.strictObject({
   name: notebookFolderNameSchema,
@@ -131,3 +139,5 @@ export type DeleteNotebookNoteInput = z.output<typeof deleteNotebookNoteSchema>;
 export type CreateNotebookFolderInput = z.output<typeof createNotebookFolderSchema>;
 export type UpdateNotebookFolderInput = z.output<typeof updateNotebookFolderSchema>;
 export type SearchNotebookInput = z.output<typeof searchNotebookSchema>;
+export type SetErrorNoteLinkInput = z.output<typeof setErrorNoteLinkSchema>;
+export type RemoveErrorNoteLinkInput = z.output<typeof removeErrorNoteLinkSchema>;
