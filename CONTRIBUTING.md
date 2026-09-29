@@ -63,6 +63,22 @@ Para la cobertura de `src/lib/` (umbral 90%, ver `vitest.config.ts`):
 pnpm test:coverage
 ```
 
+Las E2E se sirven desde `.next-e2e`, no desde `.next`: en local, compila como CI.
+
+```bash
+ERRORLOG_E2E=1 pnpm test:e2e
+```
+
+Para medir Notebook a 50, 500 y 5.000 apuntes sobre una base temporal (no toca
+`data/errorlog.db`), con la compilación normal:
+
+```bash
+pnpm build && pnpm bench:notebook            # --sizes 50,500 · --runs 15 · --json fichero.json
+```
+
+No forma parte de CI: los tiempos dependen del equipo. Lo que sí vigilan las pruebas son
+las cotas que no dependen del reloj (`notebookScale.test.ts`, `notebookBundle.spec.ts`).
+
 ## Reglas que el linter no puede comprobar
 
 - **Cero `any` y cero `@ts-ignore`.** ESLint los marca como error y CI además hace un grep

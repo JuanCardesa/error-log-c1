@@ -1,24 +1,26 @@
-import { z } from 'zod';
+// `zod/mini` y no `zod`: el aviso de borradores de la portada importa este módulo, y con
+// la API de métodos de zod la portada descargaba unos 350 KiB de JS que el lector no trae.
+import * as z from 'zod/mini';
 
 export const NOTEBOOK_DRAFT_PREFIX = 'errorlog:notebook:draft:';
 export const NOTEBOOK_DRAFT_EVENT = 'errorlog:notebook:drafts';
 const TAB_PREFIX = 'errorlog:notebook:tab:';
 const MAX_RAW_LENGTH = 8 * 1024 * 1024;
 
-const id = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
+const id = z.int().check(z.positive(), z.maximum(Number.MAX_SAFE_INTEGER));
 const draftSchema = z.strictObject({
   v: z.literal(1),
   uid: z.uuid(),
   tabId: z.uuid(),
-  noteId: id.nullable(),
-  baseRevision: id.nullable(),
-  title: z.string().max(1000),
-  folderId: id.nullable(),
-  tagsText: z.string().max(10_000),
-  contentMarkdown: z.string().max(4 * 1024 * 1024),
-  createAttempted: z.boolean().optional(),
+  noteId: z.nullable(id),
+  baseRevision: z.nullable(id),
+  title: z.string().check(z.maxLength(1000)),
+  folderId: z.nullable(id),
+  tagsText: z.string().check(z.maxLength(10_000)),
+  contentMarkdown: z.string().check(z.maxLength(4 * 1024 * 1024)),
+  createAttempted: z.optional(z.boolean()),
   savedAt: z.iso.datetime(),
-}).refine((draft) => (draft.noteId === null) === (draft.baseRevision === null));
+}).check(z.refine((draft) => (draft.noteId === null) === (draft.baseRevision === null)));
 
 export type NotebookDraft = z.output<typeof draftSchema>;
 export type NotebookDraftFields = Pick<NotebookDraft, 'title' | 'folderId' | 'tagsText' | 'contentMarkdown'>;

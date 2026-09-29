@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import Markdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
+import { analyzeNotebookMarkdown, type NotebookMarkdownAnalysis } from '@/lib/notebook/markdown';
 import { classifyNotebookUrl } from '@/lib/notebook/urls';
 import styles from './markdown.module.css';
 
@@ -16,13 +16,15 @@ const remarkPlugins = [remarkGfm];
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 /** Una única política para lectura y futura vista previa. Nunca interpreta HTML ni carga imágenes. */
-export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH1 = false }: {
+export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH1 = false, analysis: given }: {
   readonly markdown: string;
   readonly basePath?: string;
   /** El lector coloca el mismo anchor en el título cuando el primer H1 lo repite. */
   readonly hideFirstH1?: boolean;
+  /** El lector ya analizó este Markdown para el índice: sin repetirlo, un parseo menos por visita. */
+  readonly analysis?: NotebookMarkdownAnalysis;
 }) {
-  const analysis = analyzeNotebookMarkdown(markdown);
+  const analysis = given ?? analyzeNotebookMarkdown(markdown);
   const headingByOffset = new Map(analysis.headingOffsets.map((offset, index) => [offset, analysis.headings[index]?.slug]));
 
   const renderHeading = (Tag: HeadingTag) => function NotebookHeading({ node, children }: {

@@ -530,12 +530,13 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
       </div>
 
       <div id="notebook-panel-preview" role="tabpanel" aria-labelledby="notebook-tab-preview" hidden={activeTab !== 'preview'}>
-        <article className={styles.preview}>
+        {/* Oculta no se pinta: parsear el Markdown entero en cada pulsación frenaba la escritura en apuntes largos. */}
+        {activeTab === 'preview' && <article className={styles.preview}>
           <h1 id={hideFirstH1 ? firstHeading?.slug : undefined} className={styles.previewTitle}>{form.title.trim() || 'Sin título'}</h1>
           {form.contentMarkdown === '' ? <p className={ui.help}>Todavía no hay contenido para mostrar.</p> : (
             <MarkdownRenderer markdown={form.contentMarkdown} basePath={savedNote === undefined ? '/notebook/' : readerHref} hideFirstH1={hideFirstH1} />
           )}
-        </article>
+        </article>}
       </div>
 
       <div className={styles.actions}>

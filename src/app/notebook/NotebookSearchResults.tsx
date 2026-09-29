@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import type { NotebookSearchHit } from '@/lib/db/notebookSearch';
-import { findNotebookTextMatch, type NotebookTextMatch } from '@/lib/notebook/markdown';
+import { findNotebookTextMatch, type NotebookTextMatch } from '@/lib/notebook/searchText';
 import type { NotebookFolder } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import styles from './notebook.module.css';

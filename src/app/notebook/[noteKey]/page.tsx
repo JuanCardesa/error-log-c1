@@ -25,7 +25,8 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
   const folders = listNotebookFolders(db);
   const folder = folders.find((item) => item.id === note.folderId);
   const parent = folders.find((item) => item.id === folder?.parentId);
-  const headings = analyzeNotebookMarkdown(note.contentMarkdown).headings;
+  const analysis = analyzeNotebookMarkdown(note.contentMarkdown);
+  const { headings } = analysis;
   const titleHeading = headings[0]?.depth === 1 && headings[0].text === note.title ? headings[0] : null;
 
   return (
@@ -62,7 +63,7 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
           {note.contentMarkdown === '' ? (
             <div className={styles.empty}><p>Este apunte todavía no tiene contenido.</p></div>
           ) : (
-            <MarkdownRenderer markdown={note.contentMarkdown} basePath={notebookNoteHref(note)} hideFirstH1={titleHeading !== null} />
+            <MarkdownRenderer markdown={note.contentMarkdown} analysis={analysis} basePath={notebookNoteHref(note)} hideFirstH1={titleHeading !== null} />
           )}
           <NotebookRelatedErrors key={note.id} noteId={note.id} />
         </article>

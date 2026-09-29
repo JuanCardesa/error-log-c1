@@ -7,7 +7,7 @@ import {
   getErrorNoteLinksAction, getNoteOutlineAction, removeErrorNoteLinkAction,
   searchNotesAction, setErrorNoteLinkAction,
 } from '@/app/notebook/actions';
-import { normalizeNotebookSearchText } from '@/lib/notebook/markdown';
+import { normalizeNotebookSearchText } from '@/lib/notebook/searchText';
 import type { NotebookHeading, NotebookLinkedNote, NotebookNoteSummary, NotebookPage } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import ui from '../ui.module.css';

@@ -104,6 +104,11 @@ export function rewriteNotebookLinks(markdown: string, options: {
   readonly fromPath: string;
   readonly pathOf: (noteId: number) => string | undefined;
 }): NotebookLinkRewrite {
+  // Solo se reescriben destinos internos, y esos solo pueden venir de `[texto](destino)` o
+  // de una definición `[ref]: destino`. Las URL sueltas y `<https://…>` son siempre externas.
+  // Sin `](` ni `]:` no hay nada que tocar, y el ZIP se ahorra parsear casi todo el cuaderno.
+  if (!markdown.includes('](') && !markdown.includes(']:')) return { markdown, rewritten: 0, unresolved: 0 };
+
   let unresolved = 0;
   const edits: Array<{ start: number; end: number; text: string }> = [];
 
