@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **22 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 6.2**, exportar un apunte.
+> Estado: **23 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 6.3**, exportar cuaderno y JSON.
 
 ## Cómo continuar
 
@@ -798,7 +798,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
   **Dependencies:** 1.3, 2.6, 4.1. **Tests:** UTF-8, tamaños, YAML, campos desconocidos y títulos.
   **Difficulty:** MEDIUM. **Risk:** MEDIUM.
 
-- [ ] **TASK 6.2 — Exportar un apunte.**
+- [x] **TASK 6.2 — Exportar un apunte.**
   Markdown y frontmatter preservando el cuerpo.
   **Files affected:** exportador y descarga.
   **Dependencies:** 6.1. **Tests:** contenido y metadata.
@@ -934,5 +934,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | 2026-09-29 | TASK 5.2: selector de apuntes dentro del panel de detalle compartido, así que Sesiones, Errores y Falsas certezas lo reciben a la vez. Busca apuntes con paginación, permite elegir apartado, descarta los encabezados repetidos, avisa cuando el apartado cambió y conserva el enlace al apunte. Commit: `feat(notebook): pick notes from the error panel`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y la suite E2E completa (100 correctas, 6 omitidas) con Node 23.7.0. La E2E nueva recorre las tres vistas. De paso, la E2E de la paleta (TASK 3.5) buscaba «Unidad 1» y empataba con las sesiones Unidad 1X de otros specs: ahora busca «Unidad 1, ej». Siguiente TASK 5.3. |
 | 2026-09-29 | TASK 5.3: reverso del selector, dentro del propio lector del apunte. `NotebookRelatedErrors` pagina los errores que citan el apunte, reutiliza CorrectionPair y el enlace `/errores?error=` ya usado en la paleta y en Anki, desvincula sin salir de la página y retrocede sola de página cuando la desvinculación la deja vacía. El apartado vigente enlaza como ancla al propio lector (`#nb-…`), reutilizando los ids que ya pone TASK 3.3. Commit: `feat(notebook): show related errors in the reader`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y la suite E2E completa (101 correctas, 6 omitidas) con Node 23.7.0. La E2E nueva crea 21 vínculos para forzar la paginación, comprueba la desvinculación en ambas páginas y que el apunte sobrevive a una recarga. Siguiente TASK 6.1. |
 | 2026-09-29 | TASK 6.1: `/notebook/importar` y acceso «Importar .md» en la portada. `src/lib/notebook/import.ts` (solo servidor) valida extensión, tamaño y UTF-8 (quita el BOM), lee el frontmatter con YAML failsafe sin alias ni etiquetas `!…` y hasta 8 KiB, propone título desde frontmatter, primer H1 o archivo y normaliza etiquetas. Decisión: un frontmatter sin cierre, inválido, excesivo o que no es un mapa no se descarta, se conserva como texto al principio del cuerpo con aviso. Los campos desconocidos se enseñan y se descartan; `notebook_uid` y las fechas de otra exportación se reconocen pero no se aplican. Avisa de HTML, imágenes, enlaces no admitidos, destinos en otros archivos y anclas sin apartado, sin reescribir el cuerpo. `previewMarkdownImportAction` no escribe; `importMarkdownAction` vuelve a leer el archivo, compara su huella con la vista previa y crea con un UID propio de la importación, así que reintentar no duplica. Dependencia `yaml` 2.9.1. Commit: `feat(notebook): import a Markdown file`. | `pnpm typecheck`, `pnpm lint`, 760 pruebas unitarias (`pnpm test:coverage`: 98 % líneas, 92,46 % ramas; `import.ts` 99,36 %) y la suite E2E completa (103 correctas, 6 omitidas) con Node 23.7.0. Siguiente TASK 6.2. |
+| 2026-09-29 | TASK 6.2: `src/lib/notebook/export.ts` serializa un apunte a `.md` con el frontmatter del contrato (title, tags, notebook_uid, created_at, updated_at) y el cuerpo intacto, más nombres de fichero y de carpeta seguros en Windows con el ID delante para que los títulos repetidos no choquen. Todo valor del YAML va entre comillas dobles y en una línea, así ningún título puede escribir un `---` que al releerlo pareciera el cierre del frontmatter. Descarga en `GET /exportar/notebook-42.md` y acción «Exportar .md» en el lector. Decisión: la descarga individual no reescribe los enlaces del cuerpo; eso es cosa del ZIP (TASK 6.3), donde hay un árbol al que referirse. Commit: `feat(notebook): export a note as Markdown`. | `pnpm typecheck`, `pnpm lint`, 777 pruebas unitarias (17 nuevas, con ida y vuelta por el importador de 6.1) y una E2E que descarga el `.md` y lo reimporta sin avisos, con Node 23.7.0. Siguiente TASK 6.3. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.

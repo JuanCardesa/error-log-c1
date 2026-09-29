@@ -1,6 +1,8 @@
 import { getDb } from '@/lib/db/client';
 import { loadAnkiDataset, loadDataset } from '@/lib/db/load';
+import { getNotebookNote } from '@/lib/db/notebookRepo';
 import { isCsvExport, toCsvExport, toJsonDump } from '@/lib/export/dump';
+import { notebookNoteFileName, notebookNoteToMarkdown } from '@/lib/notebook/export';
 import { parseWindow } from '../../_shared/window';
 
 /**
@@ -18,6 +20,19 @@ export async function GET(
 ): Promise<Response> {
   const { file } = await context.params;
   const windowDays = parseWindow(new URL(request.url).searchParams.get('w') ?? undefined);
+
+  // Un apunte se descarga por ID: el sufijo del nombre lo pone la respuesta, no la ruta.
+  const note = /^notebook-([1-9]\d*)\.md$/.exec(file);
+  if (note !== null) {
+    const found = getNotebookNote(getDb(), Number(note[1]));
+    if (found === null) return new Response('No existe ese apunte.', { status: 404 });
+    return new Response(notebookNoteToMarkdown(found), {
+      headers: {
+        'content-type': 'text/markdown; charset=utf-8',
+        'content-disposition': `attachment; filename="${notebookNoteFileName(found)}"`,
+      },
+    });
+  }
 
   const data = loadDataset(getDb());
   const anki = loadAnkiDataset(getDb());

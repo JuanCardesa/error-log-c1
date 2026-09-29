@@ -9,6 +9,7 @@ import { MarkdownRenderer } from '../MarkdownRenderer';
 import { NotebookDirectory } from '../NotebookDirectory';
 import { NotebookRelatedErrors } from '../NotebookRelatedErrors';
 import { TableOfContents } from '../TableOfContents';
+import ui from '../../_shared/ui.module.css';
 import styles from '../notebook.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +49,7 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
         </aside>}
         <article className={styles.reader}>
           <div className={styles.readerActions}>
+            <a href={`/exportar/notebook-${String(note.id)}.md`} download className={ui.secondary}>Exportar .md</a>
             <Link href={`${notebookNoteHref(note)}/editar`} className={styles.newNoteLink}>Editar</Link>
           </div>
           <h1 id={titleHeading?.slug} className={styles.readerTitle}>{note.title}</h1>
