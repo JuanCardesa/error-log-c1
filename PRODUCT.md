@@ -80,6 +80,10 @@ dashboard. La conversión a Anki solo se sella cuando la tarjeta existe y está 
   Imágenes, adjuntos, wikilinks, IA y colaboración quedan fuera de esta primera versión.
 - El lector no ejecuta HTML ni carga imágenes o vistas previas remotas. La app conserva
   su perímetro local y sin cuenta. [Contrato detallado](docs/NOTEBOOK-PLAN.md).
+- Las rutas principales son `/notebook`, `/notebook/nuevo`, `/notebook/importar` y
+  `/notebook/<id>-<slug>` (con `/editar`). Las descargas son
+  `/exportar/notebook.zip` y `/exportar/notebook-<id>.md`. El ZIP no recompone los
+  vínculos con errores al reimportar; una copia SQLite sí los conserva.
 
 ## Evidence on Hand
 

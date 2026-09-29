@@ -365,10 +365,23 @@ al apunte. Borrar un extremo elimina solo sus vínculos. `rule_note`, causas, ca
 denominadores, Anki y Q1–Q7 mantienen sus contratos existentes. El cuaderno no forma
 parte de `Dataset` ni se carga para calcular los informes.
 
+Las rutas son `/notebook`, `/notebook/nuevo`, `/notebook/importar`,
+`/notebook/<id>-<slug>` y `/notebook/<id>-<slug>/editar`. Las descargas usan
+`/exportar/notebook.zip` y `/exportar/notebook-<id>.md`.
+
+El borrador local se escribe tras 250 ms sin cambios; el autosave envía al servidor tras
+un segundo. Guardar ahora y Ctrl/⌘+S fuerzan el envío. Solo una escritura queda en curso;
+los cambios posteriores siguen pendientes. Un guardado se anuncia como tal únicamente
+tras confirmación del servidor. Un conflicto conserva el borrador y permite cargar la
+versión guardada o conservar el trabajo como apunte nuevo.
+
 Se admite importar un `.md` por operación, exportar un apunte `.md`, el cuaderno ZIP y
-Notebook en el dump JSON. El backup SQLite es la recuperación íntegra. No se importan
-adjuntos ni se cargan imágenes remotas al leer. HTML embebido y URLs activas se rechazan;
-los enlaces internos usan rutas Markdown normales, sin wikilinks.
+Notebook en el dump JSON (`formatVersion: 2`). Reimportar los `.md` del ZIP crea apuntes
+nuevos y no restaura los vínculos con errores. El backup SQLite es la recuperación íntegra.
+No se importan adjuntos ni se cargan imágenes remotas al leer: se muestra su sintaxis.
+HTML embebido no se representa; se rechazan protocolos de URL activos. Los enlaces
+internos usan rutas Markdown normales, sin wikilinks. La app es local y no autentica
+usuarios; no conserva historial de versiones.
 
 Límites de entrada: carpeta 80 caracteres; título 160; cuerpo 256 KiB UTF-8; doce tags
 de 40 caracteres; consulta 200. Una carpeta no se borra con hijos o apuntes. Los
