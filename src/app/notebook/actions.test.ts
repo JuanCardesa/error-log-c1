@@ -5,11 +5,13 @@ import { createDb, getDb, type Db } from '@/lib/db/client';
 import type * as DbClient from '@/lib/db/client';
 import { migrate } from '@/lib/db/migrate';
 import { getNotebookNote } from '@/lib/db/notebookRepo';
+import { notebookNoteHref } from '@/lib/notebook/urls';
 import {
   createFolderAction,
   createNoteAction,
   deleteFolderAction,
   deleteNoteAction,
+  finishEditingAction,
   getNoteAction,
   getNoteByUidAction,
   getNoteOutlineAction,
@@ -76,7 +78,34 @@ describe('Server Actions Notebook', () => {
       ok: true,
       data: { revision: 1, headings: [{ depth: 2, text: 'Must have', slug: 'nb-must-have' }] },
     });
-    expect(revalidatePath).toHaveBeenCalledWith('/notebook');
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('finaliza una revisión confirmada e invalida el listado y las URLs del lector', async () => {
+    const created = await createNoteAction(note());
+    if (!created.ok) throw new Error('No se creó el apunte');
+    const original = created.data.note;
+    const saved = await saveNoteAction({ ...note({ title: 'Nuevo título' }), id: original.id, expectedRevision: 1 });
+    if (!saved.ok) throw new Error('No se guardó el apunte');
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(await finishEditingAction({
+      id: original.id, uid: UID, expectedRevision: 1, previousTitle: original.title,
+    })).toMatchObject({ ok: false, code: 'CONFLICT' });
+    expect(await finishEditingAction({
+      id: original.id, uid: 'd8766760-f8e8-4f34-b739-d07113f30d6c',
+      expectedRevision: 2,
+    })).toMatchObject({ ok: false, code: 'NOT_FOUND' });
+    expect(await finishEditingAction({ id: original.id, uid: UID, expectedRevision: '2' }))
+      .toMatchObject({ ok: false, code: 'VALIDATION' });
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(await finishEditingAction({
+      id: original.id, uid: UID, expectedRevision: 2, previousTitle: original.title,
+    })).toEqual({ ok: true, data: saved.data });
+    expect(vi.mocked(revalidatePath).mock.calls).toEqual([
+      ['/notebook'],
+      [notebookNoteHref(saved.data)],
+      [notebookNoteHref(original)],
+    ]);
   });
 
   it('conserva la versión actual frente a escrituras y borrados obsoletos', async () => {

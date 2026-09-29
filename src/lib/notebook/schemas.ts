@@ -93,6 +93,12 @@ export const getNotebookNoteSchema = z.strictObject({
   uid: uid.optional(),
 });
 export const getNotebookNoteByUidSchema = z.strictObject({ uid });
+export const finishNotebookEditingSchema = z.strictObject({
+  id: safeId,
+  uid,
+  expectedRevision: safeId,
+  previousTitle: notebookTitleSchema.optional(),
+});
 export const getNotebookOutlineSchema = z.strictObject({ id: safeId });
 
 export const createNotebookFolderSchema = z.strictObject({

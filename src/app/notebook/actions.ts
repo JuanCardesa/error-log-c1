@@ -22,6 +22,7 @@ import {
   createNotebookNoteSchema,
   deleteNotebookFolderSchema,
   deleteNotebookNoteSchema,
+  finishNotebookEditingSchema,
   getNotebookNoteSchema,
   getNotebookNoteByUidSchema,
   getNotebookOutlineSchema,
@@ -33,6 +34,7 @@ import type {
   NotebookCreateResult, NotebookFolder, NotebookNote, NotebookNoteSummary,
   NotebookOutline, NotebookPage, NotebookResult,
 } from '@/lib/notebook/types';
+import { notebookNoteHref } from '@/lib/notebook/urls';
 import { collectIssues } from '../_shared/formData';
 
 /** Cada Server Action es un POST público: validar incluso si el cliente tiene tipos. */
@@ -68,9 +70,7 @@ function validated<TSchema extends z.ZodType, T>(
 
 export async function createNoteAction(raw: unknown): Promise<NotebookResult<NotebookCreateResult>> {
   return validated(createNotebookNoteSchema, raw, (input) => {
-    const result = createNotebookNote(getDb(), input, new Date().toISOString());
-    revalidatePath('/notebook');
-    return result;
+    return createNotebookNote(getDb(), input, new Date().toISOString());
   });
 }
 
@@ -94,6 +94,23 @@ export async function getNoteByUidAction(raw: unknown): Promise<NotebookResult<N
   return validated(getNotebookNoteByUidSchema, raw, ({ uid }) => {
     const note = getNotebookNoteByUid(getDb(), uid);
     if (note === null) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+    return note;
+  });
+}
+
+/** Explicitly close an edit session and invalidate the pages the reader can revisit. */
+export async function finishEditingAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {
+  return validated(finishNotebookEditingSchema, raw, ({ id, uid, expectedRevision, previousTitle }) => {
+    const note = getNotebookNote(getDb(), id);
+    if (note === null || note.uid !== uid) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+    if (note.revision !== expectedRevision) {
+      throw new NotebookRepoError('CONFLICT', 'El apunte cambió en otra pestaña', note);
+    }
+    revalidatePath('/notebook');
+    revalidatePath(notebookNoteHref(note));
+    if (previousTitle !== undefined && previousTitle !== note.title) {
+      revalidatePath(notebookNoteHref({ id, title: previousTitle }));
+    }
     return note;
   });
 }

@@ -10,7 +10,7 @@ import type { NotebookFolder, NotebookNote } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import ui from '../_shared/ui.module.css';
 import { ConfirmDialog } from '../_shared/ConfirmDialog';
-import { createNoteAction, getNoteAction, getNoteByUidAction, saveNoteAction } from './actions';
+import { createNoteAction, finishEditingAction, getNoteAction, getNoteByUidAction, saveNoteAction } from './actions';
 import { formatNotebookSelection, type Formatting } from './editorFormatting';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { downloadNotebookDraft } from './notebookDraft';
@@ -47,7 +47,10 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
   const queuedRef = useRef(false);
+  const [finishing, setFinishing] = useState(false);
+  const finishingRef = useRef(false);
   const [checking, setChecking] = useState(false);
   const [issue, setIssueState] = useState<SaveIssue | null>(null);
   const issueRef = useRef<SaveIssue | null>(null);
@@ -62,6 +65,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
   const [savedKey, setSavedKey] = useState<string | null>(note === undefined ? null : formKey(formFromNote(note)));
   const savedFormRef = useRef(form);
   const needsEditorRouteRef = useRef(note === undefined);
+  const initialReaderTitleRef = useRef(note?.title);
   const uidRef = useRef<string | null>(note?.uid ?? null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const selectionRef = useRef({ start: 0, end: 0 });
@@ -74,7 +78,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
   const firstHeading = activeTab === 'preview' ? analyzeNotebookMarkdown(form.contentMarkdown).headings[0] : undefined;
   const hideFirstH1 = firstHeading?.depth === 1 && firstHeading.text === form.title.trim();
   const draft = useNotebookDraft({
-    note: savedNote, form, formRef, uidRef, dirty: pendingChanges, touched, requestedKey: requestedDraftKey,
+    note: savedNote, form, formRef, uidRef, dirty: pendingChanges || issue !== null, touched, requestedKey: requestedDraftKey,
     onRecover: (fields, stale, createAttempted) => {
       change(fields);
       if (stale && savedRef.current !== undefined) setIssue({ kind: 'conflict', current: savedRef.current });
@@ -115,12 +119,12 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
     });
   }
 
-  function confirmWrite(updated: NotebookNote, snapshot: Form, sent: NoteSnapshot) {
+  function confirmWrite(updated: NotebookNote, snapshot: Form, sent: NoteSnapshot): boolean {
     const previous = savedRef.current;
     if (!matchesNoteSnapshot(updated, sent)
       || (previous !== undefined && (updated.id !== previous.id || updated.revision <= previous.revision))) {
       setIssue({ kind: 'conflict', current: updated });
-      return;
+      return false;
     }
     draft.markConfirmed(updated);
     savedRef.current = updated;
@@ -134,19 +138,21 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
       draft.clearConfirmed(updated);
       if (needsEditorRouteRef.current) {
         needsEditorRouteRef.current = false;
-        router.replace(`${notebookNoteHref(updated)}/editar`);
+        if (!finishingRef.current) router.replace(`${notebookNoteHref(updated)}/editar`);
       }
     } else {
       queuedRef.current = true;
       draft.flushNow();
     }
+    return true;
   }
 
-  function handleReconciliation(result: Reconciliation, attempt: WriteAttempt, snapshot: Form) {
-    if (result.kind === 'confirmed') confirmWrite(result.note, snapshot, attempt.snapshot);
-    else if (result.kind === 'conflict') setIssue({ kind: 'conflict', current: result.current });
+  function handleReconciliation(result: Reconciliation, attempt: WriteAttempt, snapshot: Form): boolean {
+    if (result.kind === 'confirmed') return confirmWrite(result.note, snapshot, attempt.snapshot);
+    if (result.kind === 'conflict') setIssue({ kind: 'conflict', current: result.current });
     else if (result.kind === 'deleted') setIssue({ kind: 'deleted' });
     else if (result.kind === 'uncertain') setIssue({ kind: 'uncertain', attempt, form: snapshot });
+    return false;
   }
 
   function reconcile(attempt: WriteAttempt) {
@@ -222,13 +228,22 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
     setTouched(true);
   }
 
-  async function save(manual = false) {
-    if (pendingRef.current) { queuedRef.current = true; return; }
-    if (editorLocked || issueRef.current !== null) return;
+  function save(manual = false): Promise<boolean> {
+    if (pendingRef.current) {
+      queuedRef.current = true;
+      return savePromiseRef.current ?? Promise.resolve(false);
+    }
+    const task = performSave(manual);
+    savePromiseRef.current = task;
+    return task;
+  }
+
+  async function performSave(manual: boolean): Promise<boolean> {
+    if (editorLocked || issueRef.current !== null) return false;
     const snapshot = formRef.current;
-    if (formKey(snapshot) === formKey(savedFormRef.current)) return;
+    if (formKey(snapshot) === formKey(savedFormRef.current)) return savedRef.current !== undefined;
     if (savedRef.current === undefined && snapshot.title === '' && snapshot.tagsText === ''
-      && snapshot.contentMarkdown === '' && snapshot.folderId === initialFolderId) return;
+      && snapshot.contentMarkdown === '' && snapshot.folderId === initialFolderId) return false;
     const tags = snapshot.tagsText.trim() === '' ? [] : snapshot.tagsText.split(',').map((tag) => tag.trim());
     const uid = uidRef.current ?? crypto.randomUUID();
     uidRef.current = uid;
@@ -247,7 +262,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
         setFieldErrors(errors);
         setError('Revisa los campos indicados.');
       }
-      return;
+      return false;
     }
 
     const sent: NoteSnapshot = { uid: parsed.data.uid, title: parsed.data.title,
@@ -271,12 +286,10 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
           try { result = await saveNoteAction(parsed.data); }
           catch {
             const checked = await reconcile(attempt);
-            handleReconciliation(checked.kind === 'retry' ? { kind: 'uncertain' } : checked, attempt, snapshot);
-            return;
+            return handleReconciliation(checked.kind === 'retry' ? { kind: 'uncertain' } : checked, attempt, snapshot);
           }
         } else {
-          handleReconciliation(reconciled, attempt, snapshot);
-          return;
+          return handleReconciliation(reconciled, attempt, snapshot);
         }
       }
       if (!result.ok) {
@@ -284,17 +297,18 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
         if (result.code === 'CONFLICT' && result.current !== undefined) {
           if (matchesNoteSnapshot(result.current, sent)
             && (attempt.kind === 'create' || result.current.revision > attempt.base.revision)) {
-            confirmWrite(result.current, snapshot, sent);
+            return confirmWrite(result.current, snapshot, sent);
           } else setIssue({ kind: 'conflict', current: result.current });
         } else if (result.code === 'NOT_FOUND') setIssue({ kind: 'deleted' });
         else setError(result.message);
         setFieldErrors(result.fieldErrors ?? {});
-        return;
+        return false;
       }
       const updated = 'note' in result.data ? result.data.note : result.data;
-      confirmWrite(updated, snapshot, sent);
+      return confirmWrite(updated, snapshot, sent);
     } catch {
       setIssue({ kind: 'uncertain', attempt, form: snapshot });
+      return false;
     } finally {
       pendingRef.current = false;
       setPending(false);
@@ -305,8 +319,59 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
     }
   }
 
+  async function finishEditing() {
+    if (finishingRef.current || editorLocked || issueRef.current !== null) return;
+    finishingRef.current = true;
+    setFinishing(true);
+    draft.flushNow();
+    let navigating = false;
+    try {
+      while (pendingRef.current) {
+        const active = savePromiseRef.current;
+        if (active === null || !await active) return;
+      }
+      while (formKey(formRef.current) !== formKey(savedFormRef.current)) {
+        if (!await save(true)) return;
+        if (issueRef.current !== null) return;
+        while (pendingRef.current) {
+          const active = savePromiseRef.current;
+          if (active === null || !await active) return;
+        }
+      }
+      const confirmed = savedRef.current;
+      if (confirmed === undefined) {
+        navigating = true;
+        router.push('/notebook');
+        return;
+      }
+      const result = await finishEditingAction({
+        id: confirmed.id, uid: confirmed.uid, expectedRevision: confirmed.revision,
+        previousTitle: initialReaderTitleRef.current,
+      });
+      if (!result.ok) {
+        if (result.code === 'CONFLICT' && result.current !== undefined) {
+          draft.preserveCurrent();
+          setIssue({ kind: 'conflict', current: result.current });
+        } else if (result.code === 'NOT_FOUND') {
+          draft.preserveCurrent();
+          setIssue({ kind: 'deleted' });
+        } else setError(result.message);
+        return;
+      }
+      navigating = true;
+      router.push(notebookNoteHref(result.data));
+    } catch {
+      setError('No se pudo terminar la edición. Vuelve a intentarlo.');
+    } finally {
+      if (!navigating) {
+        finishingRef.current = false;
+        setFinishing(false);
+      }
+    }
+  }
+
   useNotebookAutosave(formKey(form), draft.ready && draft.candidate === null && touched
-    && pendingChanges && issue === null && error === null, () => { void save(false); });
+    && pendingChanges && issue === null && error === null && !finishing, () => { void save(false); });
 
   useEffect(() => {
     if (!pendingChanges) return;
@@ -345,7 +410,14 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
           <h1>{savedNote === undefined ? 'Nuevo apunte' : 'Editar apunte'}</h1>
         </div>
         <Link href={readerHref} className={ui.backLink} onClick={(event) => {
-          if (pendingChanges && !window.confirm('Hay cambios sin guardar. ¿Salir de todos modos?')) event.preventDefault();
+          if (finishingRef.current) { event.preventDefault(); return; }
+          if (pendingChanges || issueRef.current !== null) {
+            if (!window.confirm('Hay cambios sin confirmar. ¿Salir de todos modos?')) event.preventDefault();
+            else draft.flushNow();
+          } else if (savedRef.current !== undefined && !editorLocked) {
+            event.preventDefault();
+            void finishEditing();
+          }
         }}>
           {savedNote === undefined ? 'Volver a Notebook' : 'Volver a lectura'}
         </Link>
@@ -398,13 +470,13 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
       <div className={styles.metaFields}>
         <label className={ui.field}>Título
           <input className={ui.input} value={form.title} maxLength={NOTEBOOK_LIMITS.title} required
-            disabled={editorLocked}
+            disabled={editorLocked || finishing}
             aria-invalid={fieldErrors['title'] !== undefined}
             onChange={(event) => { change({ title: event.target.value }); }} />
           {fieldError('title')}
         </label>
         <label className={ui.field}>Carpeta
-          <select className={ui.select} value={form.folderId ?? ''} disabled={editorLocked}
+          <select className={ui.select} value={form.folderId ?? ''} disabled={editorLocked || finishing}
             onChange={(event) => { change({ folderId: event.target.value === '' ? null : Number(event.target.value) }); }}>
             <option value="">Sin carpeta</option>
             {folders.map((folder) => <option key={folder.id} value={folder.id}>
@@ -414,7 +486,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
           {fieldError('folderId')}
         </label>
         <label className={ui.field}>Etiquetas <span className={ui.optional}>separadas por comas</span>
-          <input className={ui.input} value={form.tagsText} placeholder="gramática, part4" disabled={editorLocked}
+          <input className={ui.input} value={form.tagsText} placeholder="gramática, part4" disabled={editorLocked || finishing}
             aria-invalid={fieldErrors['tags'] !== undefined}
             onChange={(event) => { change({ tagsText: event.target.value }); }} />
           {fieldError('tags')}
@@ -431,7 +503,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
             onKeyDown={(event) => { onTabKeyDown(event, 'preview'); }} onClick={() => { setActiveTab('preview'); }}>Vista previa</button>
         </div>
         <span aria-live="polite" className={styles.saveStatus}>
-          {pending ? 'Guardando…' : issue !== null || error !== null ? 'No guardado' : pendingChanges ? 'Sin guardar' : savedNote === undefined ? 'Nuevo apunte' : 'Guardado'}
+          {finishing ? 'Finalizando…' : pending ? 'Guardando…' : issue !== null || error !== null ? 'No guardado' : pendingChanges ? 'Sin guardar' : savedNote === undefined ? 'Nuevo apunte' : 'Guardado'}
         </span>
       </div>
 
@@ -442,14 +514,14 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
             ['list', 'Lista', 'Lista'], ['quote', 'Cita', 'Cita'], ['link', 'Enlace', 'Enlace'],
           ] as const).map(([kind, label, text]) => (
             <button key={kind} type="button" className={`${ui.secondary} ${ui.compact}`} aria-label={label}
-              disabled={editorLocked}
+              disabled={editorLocked || finishing}
               onMouseDown={(event) => { event.preventDefault(); }}
               onClick={() => { applyFormatting(kind); }}>{text}</button>
           ))}
         </div>
         <label className={`${ui.field} ${styles.bodyLabel}`} htmlFor="notebook-body">Contenido Markdown</label>
         <textarea id="notebook-body" ref={textareaRef} className={`${ui.textarea} ${styles.textarea}`}
-          value={form.contentMarkdown} disabled={editorLocked}
+          value={form.contentMarkdown} disabled={editorLocked || finishing}
           aria-invalid={fieldErrors['contentMarkdown'] !== undefined}
           onChange={(event) => { change({ contentMarkdown: event.target.value }); }}
           onSelect={(event) => { selectionRef.current = { start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }; }} />
@@ -467,7 +539,9 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
       </div>
 
       <div className={styles.actions}>
-        <button type="button" className={ui.primary} disabled={editorLocked || issue !== null || !pendingChanges} onClick={() => { void save(true); }}>Guardar ahora</button>
+        <button type="button" className={ui.primary} disabled={editorLocked || finishing || issue !== null || !pendingChanges} onClick={() => { void save(true); }}>Guardar ahora</button>
+        <button type="button" className={ui.secondary} disabled={editorLocked || finishing || issue !== null}
+          onClick={() => { void finishEditing(); }}>Terminar edición</button>
         {error !== null && <p role="alert" className={ui.fieldError}>{error}</p>}
       </div>
       <ConfirmDialog open={confirmDiscard} title="Descartar borrador local" confirmLabel="Descartar borrador"

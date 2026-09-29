@@ -92,10 +92,7 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
     };
   }, [tabId, note, uidRef, formRef]);
 
-  const flush = useCallback(() => {
-    if (!dirty || !touched || candidate !== null) return;
-    const current = formRef.current;
-    if (JSON.stringify(current) === clearedFormRef.current) return;
+  const writeCurrent = useCallback(() => {
     const draft = makeDraft();
     if (draft === null) return;
     let result: 'saved' | 'quota' | 'unavailable';
@@ -112,7 +109,13 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
       }
       notifyDrafts();
     }
-  }, [dirty, touched, candidate, formRef, makeDraft]);
+  }, [makeDraft]);
+
+  const flush = useCallback(() => {
+    if (!dirty || !touched || candidate !== null) return;
+    if (JSON.stringify(formRef.current) === clearedFormRef.current) return;
+    writeCurrent();
+  }, [dirty, touched, candidate, formRef, writeCurrent]);
 
   useEffect(() => {
     if (tabId === null || !touched) return;
@@ -172,6 +175,8 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
     flush();
   }
 
+  function preserveCurrent() { writeCurrent(); }
+
   function markConfirmed(confirmed: NotebookNote) {
     confirmedNoteRef.current = confirmed;
     recoveredBaseRevisionRef.current = undefined;
@@ -206,7 +211,7 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
 
   return { ready: tabId !== null, candidate, fromOtherTab: candidate !== null && candidate.tabId !== tabId,
     hasAnotherRequested: candidate === own && requested !== undefined && requested !== own,
-    storageProblem, recover, discard, clearOwn, clearConfirmed, flushNow: flush,
+    storageProblem, recover, discard, clearOwn, clearConfirmed, flushNow: flush, preserveCurrent,
     markCreateAttempted, markConfirmed, resetForNew, resetToSaved, downloadCurrent };
 }
 
