@@ -64,6 +64,25 @@ export function analyzeNotebookMarkdown(markdown: string): NotebookMarkdownAnaly
   return analyzeTree(tree);
 }
 
+export interface NotebookMarkdownInspection extends NotebookMarkdownAnalysis {
+  /** Bloques y fragmentos HTML, comentarios incluidos: el lector los omite. */
+  readonly htmlCount: number;
+  /** Imágenes que el lector muestra como texto, sin pedirlas. */
+  readonly imageCount: number;
+}
+
+/** Para avisar antes de importar; un solo parseo con la misma política que el lector. */
+export function inspectNotebookMarkdown(markdown: string): NotebookMarkdownInspection {
+  const tree = parser.parse(markdown) as Root;
+  let htmlCount = 0;
+  let imageCount = 0;
+  walk(tree, (node) => {
+    if (node.type === 'html') htmlCount += 1;
+    else if (node.type === 'image' || node.type === 'imageReference') imageCount += 1;
+  });
+  return { ...analyzeTree(tree), htmlCount, imageCount };
+}
+
 function analyzeTree(tree: Root): NotebookMarkdownAnalysis {
   const slugger = new GithubSlugger();
   const headings: NotebookHeading[] = [];

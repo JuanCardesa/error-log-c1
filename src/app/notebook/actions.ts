@@ -19,6 +19,7 @@ import {
   updateNotebookFolder,
 } from '@/lib/db/notebookRepo';
 import { searchNotebookNotes } from '@/lib/db/notebookSearch';
+import { parseNotebookMarkdownImport, type NotebookImportDraft } from '@/lib/notebook/import';
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import {
   createNotebookFolderSchema,
@@ -31,6 +32,7 @@ import {
   getNotebookNoteSchema,
   getNotebookNoteByUidSchema,
   getNotebookOutlineSchema,
+  notebookImportSizeError,
   removeErrorNoteLinkSchema,
   saveNotebookNoteSchema,
   searchNotebookSchema,
@@ -43,7 +45,7 @@ import type {
   NotebookOutline, NotebookPage, NotebookResult,
 } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
-import { collectIssues } from '../_shared/formData';
+import { collectIssues, text } from '../_shared/formData';
 
 /** Cada Server Action es un POST público: validar incluso si el cliente tiene tipos. */
 function validated<TSchema extends z.ZodType, T>(
@@ -192,5 +194,62 @@ export async function removeErrorNoteLinkAction(raw: unknown): Promise<NotebookR
     const note = getNotebookNote(db, input.noteId);
     if (note !== null) revalidatePath(notebookNoteHref(note));
     return link;
+  });
+}
+
+function importFailure(message: string): NotebookResult<never> {
+  return { ok: false, code: 'VALIDATION', message, fieldErrors: { file: [message] } };
+}
+
+/** El tamaño se comprueba antes de leer: el nombre y el contenido se analizan de nuevo aquí. */
+async function readImportFile(form: FormData): Promise<NotebookResult<NotebookImportDraft>> {
+  const file = form.get('file');
+  if (file === null || typeof file === 'string') return importFailure('Elige un archivo .md.');
+  const sizeError = notebookImportSizeError(file.size);
+  if (sizeError !== null) return importFailure(sizeError);
+  const parsed = parseNotebookMarkdownImport(file.name, new Uint8Array(await file.arrayBuffer()));
+  return parsed.ok ? { ok: true, data: parsed.draft } : importFailure(parsed.message);
+}
+
+/** Solo analiza: no escribe nada hasta `importMarkdownAction`. */
+export async function previewMarkdownImportAction(raw: unknown): Promise<NotebookResult<NotebookImportDraft>> {
+  if (!(raw instanceof FormData)) return importFailure('Elige un archivo .md.');
+  try {
+    return await readImportFile(raw);
+  } catch {
+    return { ok: false, code: 'PERSISTENCE', message: 'No se pudo leer el archivo. Vuelve a elegirlo.' };
+  }
+}
+
+/**
+ * Crea siempre un apunte nuevo con el UID de esta importación, nunca el del frontmatter:
+ * reintentar la misma confirmación devuelve el apunte ya creado en vez de duplicarlo.
+ */
+export async function importMarkdownAction(raw: unknown): Promise<NotebookResult<{
+  readonly href: string;
+  readonly created: boolean;
+}>> {
+  if (!(raw instanceof FormData)) return importFailure('Elige un archivo .md.');
+  let read: NotebookResult<NotebookImportDraft>;
+  try {
+    read = await readImportFile(raw);
+  } catch {
+    return { ok: false, code: 'PERSISTENCE', message: 'No se pudo leer el archivo. Vuelve a elegirlo.' };
+  }
+  if (!read.ok) return read;
+  if (read.data.contentHash !== text(raw, 'contentHash')) {
+    return importFailure('El archivo cambió desde la vista previa. Vuelve a elegirlo para revisar la versión actual.');
+  }
+  const folder = text(raw, 'folderId').trim();
+  return validated(createNotebookNoteSchema, {
+    uid: text(raw, 'uid'),
+    title: text(raw, 'title'),
+    folderId: folder === '' ? null : Number(folder),
+    tags: raw.getAll('tags').filter((tag) => typeof tag === 'string'),
+    contentMarkdown: read.data.contentMarkdown,
+  }, (input) => {
+    const { note, created } = createNotebookNote(getDb(), input, new Date().toISOString());
+    revalidatePath('/notebook');
+    return { href: notebookNoteHref(note), created };
   });
 }

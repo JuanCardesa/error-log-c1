@@ -11,6 +11,17 @@ export const NOTEBOOK_LIMITS = {
   frontmatterBytes: 8 * 1024,
 } as const;
 
+/** Cuerpo y frontmatter máximos, más holgura para delimitadores, BOM y líneas en blanco. */
+export const NOTEBOOK_IMPORT_MAX_FILE_BYTES = NOTEBOOK_LIMITS.contentBytes + NOTEBOOK_LIMITS.frontmatterBytes + 1024;
+export const NOTEBOOK_IMPORT_ACCEPT = '.md,.markdown,text/markdown';
+
+/** El navegador lo comprueba antes de enviar; el servidor lo repite antes de leer el archivo. */
+export function notebookImportSizeError(bytes: number): string | null {
+  return bytes > NOTEBOOK_IMPORT_MAX_FILE_BYTES
+    ? `El archivo supera ${String(Math.floor(NOTEBOOK_IMPORT_MAX_FILE_BYTES / 1024))} KiB.`
+    : null;
+}
+
 const singleLineControl = /[\u0000-\u001f\u007f]/u;
 const multilineControl = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u;
 const safeId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);

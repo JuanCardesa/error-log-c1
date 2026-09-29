@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **21 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 6.1**, añadir importación individual.
+> Estado: **22 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 6.2**, exportar un apunte.
 
 ## Cómo continuar
 
@@ -792,7 +792,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
 
 ### PHASE 6 — Portabilidad
 
-- [ ] **TASK 6.1 — Añadir importación individual.**
+- [x] **TASK 6.1 — Añadir importación individual.**
   Archivo, frontmatter, preview y confirmación.
   **Files affected:** src/lib/notebook/import.ts, /importar y dependencia YAML.
   **Dependencies:** 1.3, 2.6, 4.1. **Tests:** UTF-8, tamaños, YAML, campos desconocidos y títulos.
@@ -893,7 +893,7 @@ No hay preguntas de producto bloqueantes. Tras guardar el plan y crear la rama, 
 | Búsqueda | FTS5 local |
 | Portabilidad | .md, ZIP, JSON; SQLite para restaurar |
 
-Ya instaladas para TASK 1.3: react-markdown, remark-gfm, unified, remark-parse, github-slugger y tipos mdast. `yaml` y `yazl` siguen previstos para la fase de portabilidad.
+Ya instaladas para TASK 1.3: react-markdown, remark-gfm, unified, remark-parse, github-slugger y tipos mdast. `yaml` se instaló en TASK 6.1; `yazl` sigue previsto para TASK 6.3.
 
 ## 24. Final recommended architecture
 
@@ -933,5 +933,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | 2026-09-29 | TASK 5.1: repositorio y acciones para vincular errores con apuntes o apartados, actualizar/desvincular el par, consultar desde ambos extremos con paginación inversa y detectar encabezados cambiados o ambiguos. La tabla y cascadas ya estaban migradas. Commit: `feat(notebook): link notes to errors`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y `pnpm build` correctos con Node 23.7.0. Siguiente TASK 5.2. |
 | 2026-09-29 | TASK 5.2: selector de apuntes dentro del panel de detalle compartido, así que Sesiones, Errores y Falsas certezas lo reciben a la vez. Busca apuntes con paginación, permite elegir apartado, descarta los encabezados repetidos, avisa cuando el apartado cambió y conserva el enlace al apunte. Commit: `feat(notebook): pick notes from the error panel`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y la suite E2E completa (100 correctas, 6 omitidas) con Node 23.7.0. La E2E nueva recorre las tres vistas. De paso, la E2E de la paleta (TASK 3.5) buscaba «Unidad 1» y empataba con las sesiones Unidad 1X de otros specs: ahora busca «Unidad 1, ej». Siguiente TASK 5.3. |
 | 2026-09-29 | TASK 5.3: reverso del selector, dentro del propio lector del apunte. `NotebookRelatedErrors` pagina los errores que citan el apunte, reutiliza CorrectionPair y el enlace `/errores?error=` ya usado en la paleta y en Anki, desvincula sin salir de la página y retrocede sola de página cuando la desvinculación la deja vacía. El apartado vigente enlaza como ancla al propio lector (`#nb-…`), reutilizando los ids que ya pone TASK 3.3. Commit: `feat(notebook): show related errors in the reader`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y la suite E2E completa (101 correctas, 6 omitidas) con Node 23.7.0. La E2E nueva crea 21 vínculos para forzar la paginación, comprueba la desvinculación en ambas páginas y que el apunte sobrevive a una recarga. Siguiente TASK 6.1. |
+| 2026-09-29 | TASK 6.1: `/notebook/importar` y acceso «Importar .md» en la portada. `src/lib/notebook/import.ts` (solo servidor) valida extensión, tamaño y UTF-8 (quita el BOM), lee el frontmatter con YAML failsafe sin alias ni etiquetas `!…` y hasta 8 KiB, propone título desde frontmatter, primer H1 o archivo y normaliza etiquetas. Decisión: un frontmatter sin cierre, inválido, excesivo o que no es un mapa no se descarta, se conserva como texto al principio del cuerpo con aviso. Los campos desconocidos se enseñan y se descartan; `notebook_uid` y las fechas de otra exportación se reconocen pero no se aplican. Avisa de HTML, imágenes, enlaces no admitidos, destinos en otros archivos y anclas sin apartado, sin reescribir el cuerpo. `previewMarkdownImportAction` no escribe; `importMarkdownAction` vuelve a leer el archivo, compara su huella con la vista previa y crea con un UID propio de la importación, así que reintentar no duplica. Dependencia `yaml` 2.9.1. Commit: `feat(notebook): import a Markdown file`. | `pnpm typecheck`, `pnpm lint`, 760 pruebas unitarias (`pnpm test:coverage`: 98 % líneas, 92,46 % ramas; `import.ts` 99,36 %) y la suite E2E completa (103 correctas, 6 omitidas) con Node 23.7.0. Siguiente TASK 6.2. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.

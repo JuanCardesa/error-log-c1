@@ -301,8 +301,12 @@ ha guardado nada».
 ## Notebook
 
 - Entrada en Más y en la paleta, conservando los cuatro destinos de la cabecera. La
-  portada abre con búsqueda, carpetas, modificados recientes y una acción «Nuevo
-  apunte». El estado vacío explica cómo crear el primero.
+  portada abre con búsqueda, carpetas, modificados recientes, la acción «Nuevo apunte» y
+  la secundaria «Importar .md». El estado vacío explica cómo crear el primero.
+- Importar analiza un `.md` sin guardar nada: propone título, carpeta y etiquetas
+  editables, lista los avisos (frontmatter no interpretado, campos descartados, HTML,
+  imágenes, destinos no resolubles) y enseña la vista previa con el renderizador del
+  lector. Solo «Crear apunte» escribe, y siempre crea un apunte nuevo.
 - La lectura usa Source Serif 4 y `--reading-max`; directorio e índice acompañan al
   texto en pantallas amplias. Bajo 1024 px, directorio e índice se despliegan y el
   contenido ocupa una columna. Las tablas Markdown desplazan dentro de su contenedor.

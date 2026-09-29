@@ -7,6 +7,7 @@ import { searchNotebookHits } from '@/lib/db/notebookSearch';
 import { searchNotebookSchema } from '@/lib/notebook/schemas';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import type { NotebookNoteSummary } from '@/lib/notebook/types';
+import ui from '../_shared/ui.module.css';
 import { FolderManager } from './FolderManager';
 import { NotebookDraftNotice } from './NotebookDraftNotice';
 import { NotebookDirectory } from './NotebookDirectory';
@@ -97,8 +98,12 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
           <h1 className={styles.pageTitle}>Notebook</h1>
           <p className={styles.intro}>Apuntes organizados por carpetas, con enlaces que conservan su ID al renombrarlos o moverlos.</p>
         </div>
-        <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/nuevo' : `/notebook/nuevo?carpeta=${String(selectedFolderId)}`}
-          className={styles.newNoteLink}>Nuevo apunte</Link>
+        <div className={styles.headActions}>
+          <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/importar' : `/notebook/importar?carpeta=${String(selectedFolderId)}`}
+            className={ui.secondary}>Importar .md</Link>
+          <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/nuevo' : `/notebook/nuevo?carpeta=${String(selectedFolderId)}`}
+            className={styles.newNoteLink}>Nuevo apunte</Link>
+        </div>
       </header>
       <NotebookDraftNotice />
       <NotebookSearchControls folders={folders} folderParam={folderParam} tag={tag} />

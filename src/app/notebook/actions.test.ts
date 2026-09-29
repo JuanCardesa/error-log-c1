@@ -5,6 +5,7 @@ import { createDb, getDb, type Db } from '@/lib/db/client';
 import type * as DbClient from '@/lib/db/client';
 import { migrate } from '@/lib/db/migrate';
 import { getNotebookNote } from '@/lib/db/notebookRepo';
+import { NOTEBOOK_IMPORT_MAX_FILE_BYTES } from '@/lib/notebook/schemas';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import {
   createFolderAction,
@@ -17,6 +18,8 @@ import {
   getNoteByUidAction,
   getNoteErrorLinksAction,
   getNoteOutlineAction,
+  importMarkdownAction,
+  previewMarkdownImportAction,
   saveNoteAction,
   searchNotesAction,
   removeErrorNoteLinkAction,
@@ -211,5 +214,103 @@ describe('Server Actions Notebook', () => {
       ok: false, code: 'PERSISTENCE', message: 'No se pudo completar la operación. Inténtalo de nuevo.',
     });
     expect(getNotebookNote(db, id)).toEqual(created.data.note);
+  });
+});
+
+describe('Importación de un .md', () => {
+  const IMPORT_UID = '4b1f0c2e-8a57-4c1e-9d7e-2f6a3b5c8d90';
+  const FILE = '---\ntitle: Modales\ntags: [part4]\nnotebook_uid: "9c8de1e3-03e6-42ec-a098-ac0db92331d0"\nautor: Ana\n---\n\n# Modales\n\nMust have.\n';
+
+  function upload(text: string, name = 'modales.md'): FormData {
+    const form = new FormData();
+    form.set('file', new File([text], name, { type: 'text/markdown' }));
+    return form;
+  }
+
+  async function preview(text = FILE) {
+    const result = await previewMarkdownImportAction(upload(text));
+    if (!result.ok) throw new Error(result.message);
+    return result.data;
+  }
+
+  function confirmation(text = FILE, fields: Record<string, string | readonly string[]> = {}, hash?: string) {
+    const form = upload(text);
+    form.set('uid', IMPORT_UID);
+    form.set('title', 'Modales en pasado');
+    form.set('folderId', '');
+    form.set('contentHash', hash ?? '');
+    for (const [key, value] of Object.entries(fields)) {
+      form.delete(key);
+      for (const item of typeof value === 'string' ? [value] : value) form.append(key, item);
+    }
+    return form;
+  }
+
+  const noteCount = () => (db.$client.prepare('SELECT count(*) AS n FROM notebook_note').get() as { n: number }).n;
+
+  it('la vista previa analiza sin escribir ni invalidar', async () => {
+    const draft = await preview();
+    expect(draft).toMatchObject({
+      fileName: 'modales.md', title: 'Modales', titleSource: 'frontmatter', tags: ['part4'],
+      contentMarkdown: '# Modales\n\nMust have.\n', unknownFields: ['autor'], ignoredFields: ['notebook_uid'],
+    });
+    expect(draft.contentHash).toMatch(/^[0-9a-f]{64}$/u);
+    expect(noteCount()).toBe(0);
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it('rechaza entradas sin archivo, con otra extensión o demasiado grandes', async () => {
+    expect(await previewMarkdownImportAction({ file: 'x' })).toMatchObject({ ok: false, code: 'VALIDATION' });
+    expect(await previewMarkdownImportAction(new FormData())).toMatchObject({
+      ok: false, code: 'VALIDATION', fieldErrors: { file: [expect.stringMatching(/Elige un archivo/u)] },
+    });
+    expect(await previewMarkdownImportAction(upload('x', 'modales.txt'))).toMatchObject({ ok: false, code: 'VALIDATION' });
+    const big = new FormData();
+    big.set('file', new File([new Uint8Array(NOTEBOOK_IMPORT_MAX_FILE_BYTES + 1)], 'grande.md'));
+    expect(await previewMarkdownImportAction(big)).toMatchObject({ ok: false, message: expect.stringMatching(/supera/u) });
+  });
+
+  it('crea un apunte nuevo con los metadatos confirmados y el UID de la importación', async () => {
+    const { contentHash } = await preview();
+    const result = await importMarkdownAction(confirmation(FILE, { tags: ['part4', 'Modales'] }, contentHash));
+    if (!result.ok) throw new Error(result.message);
+    expect(result.data.created).toBe(true);
+    const saved = getNotebookNote(db, 1);
+    expect(saved).toMatchObject({
+      uid: IMPORT_UID, title: 'Modales en pasado', tags: ['part4', 'modales'], folderId: null,
+      contentMarkdown: '# Modales\n\nMust have.\n', revision: 1,
+    });
+    expect(result.data.href).toBe(notebookNoteHref({ id: 1, title: 'Modales en pasado' }));
+    expect(revalidatePath).toHaveBeenCalledWith('/notebook');
+  });
+
+  it('repetir la confirmación devuelve el mismo apunte en vez de duplicarlo', async () => {
+    const { contentHash } = await preview();
+    const first = await importMarkdownAction(confirmation(FILE, {}, contentHash));
+    const retry = await importMarkdownAction(confirmation(FILE, {}, contentHash));
+    expect(first).toMatchObject({ ok: true, data: { created: true } });
+    expect(retry).toMatchObject({ ok: true, data: { created: false } });
+    expect(first.ok && retry.ok && retry.data.href === first.data.href).toBe(true);
+    expect(noteCount()).toBe(1);
+  });
+
+  it('vuelve a leer el archivo y no guarda si cambió desde la vista previa', async () => {
+    const { contentHash } = await preview();
+    const result = await importMarkdownAction(confirmation(FILE.replace('Must have.', 'Otro texto.'), {}, contentHash));
+    expect(result).toMatchObject({ ok: false, code: 'VALIDATION', message: expect.stringMatching(/cambió/u) });
+    expect(noteCount()).toBe(0);
+  });
+
+  it('valida en servidor los metadatos confirmados', async () => {
+    const { contentHash } = await preview();
+    const bad = await importMarkdownAction(confirmation(FILE, { title: '  ', uid: 'no-es-uuid', tags: ['a', 'A'] }, contentHash));
+    expect(bad).toMatchObject({ ok: false, code: 'VALIDATION' });
+    if (bad.ok) throw new Error('Se aceptó una entrada inválida');
+    expect(Object.keys(bad.fieldErrors ?? {})).toEqual(expect.arrayContaining(['uid', 'title', 'tags.1']));
+    expect(await importMarkdownAction(confirmation(FILE, { folderId: '99' }, contentHash)))
+      .toMatchObject({ ok: false, code: 'INVALID_PARENT' });
+    expect(await importMarkdownAction(confirmation(FILE, { folderId: 'abc' }, contentHash)))
+      .toMatchObject({ ok: false, code: 'VALIDATION' });
+    expect(noteCount()).toBe(0);
   });
 });
