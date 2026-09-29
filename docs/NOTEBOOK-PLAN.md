@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **8 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 2.6**, exponer Server Actions tipadas.
+> Estado: **9 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 3.1**, crear rutas y directorio.
 
 ## Cómo continuar
 
@@ -641,7 +641,7 @@ Mantener 90 % de cobertura en src/lib y regresiones de Anki, informes y captura.
 | Fase | Entregable | Estado |
 | --- | --- | --- |
 | 1. Contrato y núcleo | Tipos, validación, Markdown y enlaces | Completada |
-| 2. Persistencia | Migraciones, repositorios, concurrencia y FTS | En curso: 2.1–2.5 completadas |
+| 2. Persistencia | Migraciones, repositorios, concurrencia y FTS | Completada |
 | 3. Consulta | Navegación, lector, TOC y búsqueda | Pendiente |
 | 4. Edición fiable | Editor, preview, autosave y recuperación | Pendiente |
 | 5. Integración | Vínculos con errores | Pendiente |
@@ -706,7 +706,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
   **Dependencies:** 2.1, 2.4. **Tests:** solo apuntes, WAL y restauración antigua/nueva.
   **Difficulty:** MEDIUM. **Risk:** HIGH: evitar mezclar ejemplos o impedir recuperación.
 
-- [ ] **TASK 2.6 — Exponer Server Actions tipadas.**
+- [x] **TASK 2.6 — Exponer Server Actions tipadas.**
   Validación, errores y contratos.
   **Files affected:** src/app/notebook/actions.ts, tipos y tests.
   **Dependencies:** 2.2–2.4. **Tests:** entradas manipuladas, borrados y conflictos.
@@ -920,5 +920,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | --- | --- | --- |
 | 2026-09-29 | Análisis y plan acordado; rama feature/notebook creada desde develop b03b745; documento y checklist guardados | Implementación no iniciada. Continuar por TASK 1.1 |
 | 2026-09-29 | TASK 1.1–1.3 y 2.1–2.5: contrato, esquemas, AST/URLs, migraciones, repositorios, FTS, seed y backups. Commits: `f2458f6` (contrato) y `feat(notebook): persist notes and protect recovery` (persistencia). | `pnpm typecheck`, `pnpm lint`, `pnpm test` (674 pruebas), `pnpm test:coverage` (92,59 % ramas) y `pnpm build` correctos con Node 23.7.0; validar también con Node 22 antes de entregar. Siguiente TASK 2.6. |
+| 2026-09-29 | TASK 2.6: acciones tipadas de apuntes y carpetas, lectura, índice y búsqueda filtrada/paginada. Los vínculos e importación tienen tareas propias en fases 5 y 6. Commit: `feat(notebook): expose validated server actions`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (684 pruebas), `pnpm test:coverage` (92,62 % ramas) y `pnpm build` correctos con Node 23.7.0. Siguiente TASK 3.1. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.

@@ -33,6 +33,16 @@ export interface NotebookMarkdownLink {
   readonly url: string;
 }
 
+export interface NotebookOutline {
+  readonly revision: number;
+  readonly headings: readonly NotebookHeading[];
+}
+
+export interface NotebookCreateResult {
+  readonly note: NotebookNote;
+  readonly created: boolean;
+}
+
 export interface NotebookErrorLink {
   readonly errorId: number;
   readonly noteId: number;

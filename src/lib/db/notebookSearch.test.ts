@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createDb, type Db } from './client';
 import { migrate } from './migrate';
-import { createNotebookNote, deleteNotebookNote, getNotebookNote, saveNotebookNote } from './notebookRepo';
-import { rebuildNotebookSearch } from './notebookSearch';
+import {
+  createNotebookFolder, createNotebookNote, deleteNotebookNote, getNotebookNote, saveNotebookNote,
+} from './notebookRepo';
+import { rebuildNotebookSearch, searchNotebookNotes } from './notebookSearch';
 
 const NOW = '2026-09-29T07:00:00.000Z';
 const UID = '9c8de1e3-03e6-42ec-a098-ac0db92331d0';
@@ -27,6 +29,17 @@ function input(markdown = 'Must **have** happened') {
 
 function indexed(id: number) {
   return db.$client.prepare('SELECT title, body, tags FROM notebook_note_fts WHERE rowid = ?').get(id);
+}
+
+function search(query: string, changes: { folderId?: number | null; tag?: string | null; page?: number } = {}) {
+  return searchNotebookNotes(db, { query, folderId: null, tag: null, page: 1, ...changes });
+}
+
+function addNote(n: number, title: string, contentMarkdown: string, tags: string[] = [], folderId: number | null = null) {
+  return createNotebookNote(db, {
+    uid: `9c8de1e3-03e6-42ec-a098-${String(n).padStart(12, '0')}`,
+    title, contentMarkdown, tags, folderId,
+  }, NOW).note;
 }
 
 describe('índice de búsqueda Notebook', () => {
@@ -77,5 +90,48 @@ describe('índice de búsqueda Notebook', () => {
     expect(() => rebuildNotebookSearch(db)).toThrow(/Etiquetas inválidas/);
     expect(db.$client.prepare('SELECT rowid, title, body, tags FROM notebook_note_fts ORDER BY rowid').all())
       .toEqual(snapshot);
+  });
+});
+
+describe('consulta paginada Notebook', () => {
+  it('prioriza título exacto, título parcial, tag y cuerpo', () => {
+    const body = addNote(1, 'Deducciones', 'Must **have** happened');
+    const tagged = addNote(2, 'Grammar', 'Otro texto', ['must have']);
+    const partial = addNote(3, 'Must have happened', 'Otro texto');
+    const exact = addNote(4, 'Must have', 'Otro texto');
+    expect(search('must have').items.map((row) => row.id))
+      .toEqual([exact.id, partial.id, tagged.id, body.id]);
+  });
+
+  it('resuelve consultas cortas, acentos, comillas, porcentajes y apóstrofos', () => {
+    const note = addNote(1, 'Deducción', 'Can’t have: 50%_value y "must have"');
+    for (const query of ['de', 'deduccion', "can't have", '50%_', '"must have"']) {
+      expect(search(query).items.map((row) => row.id), query).toEqual([note.id]);
+    }
+    expect(search('no existe').items).toEqual([]);
+  });
+
+  it('filtra por carpeta raíz con subcarpetas y por etiqueta exacta', () => {
+    const root = createNotebookFolder(db, { name: 'Grammar', parentId: null }, NOW);
+    const child = createNotebookFolder(db, { name: 'Modals', parentId: root.id }, NOW);
+    const elsewhere = createNotebookFolder(db, { name: 'Vocabulary', parentId: null }, NOW);
+    const rootNote = addNote(1, 'Root note', 'Must have', ['part4'], root.id);
+    const childNote = addNote(2, 'Child note', 'Must have', ['part4'], child.id);
+    addNote(3, 'Wrong tag', 'Must have', ['part2'], child.id);
+    addNote(4, 'Elsewhere', 'Must have', ['part4'], elsewhere.id);
+    expect(search('must have', { folderId: root.id, tag: 'PART4' }).items.map((row) => row.id))
+      .toEqual([childNote.id, rootNote.id]);
+    expect(search('must have', { folderId: child.id, tag: 'part4' }).items.map((row) => row.id))
+      .toEqual([childNote.id]);
+    expect(search('', { folderId: 999 }).items).toEqual([]);
+  });
+
+  it('devuelve 20 filas y una señal de página siguiente', () => {
+    for (let i = 1; i <= 21; i += 1) addNote(i, `Note ${String(i)}`, 'Must have');
+    expect(search('must have')).toMatchObject({ hasMore: true });
+    expect(search('must have').items).toHaveLength(20);
+    expect(search('must have', { page: 2 })).toMatchObject({ hasMore: false });
+    expect(search('must have', { page: 2 }).items).toHaveLength(1);
+    expect(search('must have', { page: Number.MAX_SAFE_INTEGER }).items).toEqual([]);
   });
 });

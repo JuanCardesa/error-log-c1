@@ -1,5 +1,76 @@
 import { analyzeNotebookMarkdown, normalizeNotebookSearchText } from '../notebook/markdown';
+import {
+  NOTEBOOK_LIMITS, notebookTagsSchema, searchNotebookSchema, type SearchNotebookInput,
+} from '../notebook/schemas';
+import type { NotebookNoteSummary, NotebookPage } from '../notebook/types';
 import type { Db } from './client';
+
+interface SearchRow {
+  readonly id: number;
+  readonly uid: string;
+  readonly folder_id: number | null;
+  readonly title: string;
+  readonly tags: string;
+  readonly revision: number;
+  readonly created_at: string;
+  readonly updated_at: string;
+}
+
+/** Consulta corta por subcadena; desde tres caracteres ordinarios, FTS reduce candidatos. */
+export function searchNotebookNotes(db: Db, input: SearchNotebookInput): NotebookPage<NotebookNoteSummary> {
+  const filters = searchNotebookSchema.parse(input);
+  const query = normalizeNotebookSearchText(filters.query);
+  const conditions: string[] = [];
+  const parameters: Array<string | number> = [];
+  if (query !== '') {
+    if ([...query].length >= 3 && /^[\p{L}\p{N} ]+$/u.test(query)) {
+      conditions.push('n.id IN (SELECT rowid FROM notebook_note_fts WHERE notebook_note_fts MATCH ?)');
+      parameters.push(`"${query.replaceAll('"', '""')}"`);
+    }
+    conditions.push('(instr(f.title, ?) > 0 OR instr(f.body, ?) > 0 OR instr(f.tags, ?) > 0)');
+    parameters.push(query, query, query);
+  }
+  if (filters.folderId !== null) {
+    conditions.push(`(n.folder_id = ? OR n.folder_id IN
+      (SELECT id FROM notebook_folder WHERE parent_id = ?))`);
+    parameters.push(filters.folderId, filters.folderId);
+  }
+  if (filters.tag !== null) {
+    conditions.push('EXISTS (SELECT 1 FROM json_each(n.tags) AS tag WHERE tag.value = ?)');
+    parameters.push(filters.tag);
+  }
+  const where = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
+  const rank = query === '' ? '' : `
+    CASE
+      WHEN f.title = ? THEN 0
+      WHEN instr(f.title, ?) > 0 THEN 1
+      WHEN instr(f.tags, ?) > 0 THEN 2
+      ELSE 3
+    END,`;
+  if (query !== '') parameters.push(query, query, query);
+  const offset = (filters.page - 1) * NOTEBOOK_LIMITS.pageSize;
+  if (!Number.isSafeInteger(offset)) return { items: [], hasMore: false };
+  parameters.push(NOTEBOOK_LIMITS.pageSize + 1, offset);
+  const rows = db.$client.prepare<Array<string | number>, SearchRow>(`
+    SELECT n.id, n.uid, n.folder_id, n.title, n.tags, n.revision, n.created_at, n.updated_at
+    FROM notebook_note AS n
+    JOIN notebook_note_fts AS f ON f.rowid = n.id
+    ${where}
+    ORDER BY ${rank} n.updated_at DESC, n.id DESC
+    LIMIT ? OFFSET ?
+  `).all(...parameters);
+  const items = rows.slice(0, NOTEBOOK_LIMITS.pageSize).map((row) => ({
+    id: row.id,
+    uid: row.uid,
+    folderId: row.folder_id,
+    title: row.title,
+    tags: notebookTagsSchema.parse(JSON.parse(row.tags)),
+    revision: row.revision,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+  return { items, hasMore: rows.length > NOTEBOOK_LIMITS.pageSize };
+}
 
 /** Reconstrucción atómica del índice derivado, sin cargar todos los cuerpos en memoria. */
 export function rebuildNotebookSearch(db: Db): number {
