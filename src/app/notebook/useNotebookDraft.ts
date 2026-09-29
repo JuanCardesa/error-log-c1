@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import type { NotebookNote } from '@/lib/notebook/types';
 import {
   NOTEBOOK_DRAFT_EVENT, NOTEBOOK_DRAFT_PREFIX, deleteNotebookDraft, downloadNotebookDraft,
-  ensureNotebookTabId, listNotebookDrafts, notebookDraftKey, readNotebookTabId,
+  ensureNotebookTabId, legacyNewDraftKey, listNotebookDrafts, notebookDraftKey, parseNotebookDraft, readNotebookTabId,
   writeNotebookDraft, type NotebookDraft, type NotebookDraftFields,
 } from './notebookDraft';
 
@@ -59,7 +59,7 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
   readonly dirty: boolean;
   readonly touched: boolean;
   readonly requestedKey?: string;
-  readonly onRecover: (fields: NotebookDraftFields, stale: boolean) => void;
+  readonly onRecover: (fields: NotebookDraftFields, stale: boolean, createAttempted: boolean) => void;
   readonly onDiscard: () => void;
 }) {
   const tabId = useNotebookTabId();
@@ -67,25 +67,28 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
   const [storageProblem, setStorageProblem] = useState<'quota' | 'unavailable' | null>(null);
   const clearedFormRef = useRef<string | null>(null);
   const recoveredBaseRevisionRef = useRef<number | null | undefined>(undefined);
-  const ownKey = tabId === null ? null : note === undefined
-    ? `${NOTEBOOK_DRAFT_PREFIX}new:${tabId}`
+  const createAttemptedRef = useRef(false);
+  const confirmedNoteRef = useRef<NotebookNote | null | undefined>(undefined);
+  const ownKey = tabId === null || note === undefined ? null
     : notebookDraftKey({ uid: note.uid, tabId, noteId: note.id });
   const matching = (draft: NotebookDraft) => note === undefined
     ? draft.noteId === null
     : draft.noteId === note.id && draft.uid === note.uid;
   const requested = requestedKey === undefined ? undefined : drafts.find((draft) => notebookDraftKey(draft) === requestedKey && matching(draft));
-  const own = ownKey === null ? undefined : drafts.find((draft) => notebookDraftKey(draft) === ownKey && matching(draft));
+  const own = tabId === null ? undefined : drafts.find((draft) => draft.tabId === tabId && matching(draft));
   // La copia de esta pestaña se decide primero para no sobrescribirla al abrir otra desde la portada.
-  const candidate = touched ? null : own ?? requested ?? null;
+  const candidate = touched ? null : requested?.tabId === tabId ? requested : own ?? requested ?? null;
 
   const makeDraft = useCallback((): NotebookDraft | null => {
     if (tabId === null) return null;
-    const uid = note?.uid ?? uidRef.current ?? crypto.randomUUID();
+    const effectiveNote = confirmedNoteRef.current === undefined ? note : confirmedNoteRef.current ?? undefined;
+    const uid = effectiveNote?.uid ?? uidRef.current ?? crypto.randomUUID();
     uidRef.current = uid;
     return {
-      v: 1, uid, tabId, noteId: note?.id ?? null,
-      baseRevision: recoveredBaseRevisionRef.current === undefined ? note?.revision ?? null : recoveredBaseRevisionRef.current,
-      ...formRef.current, savedAt: new Date().toISOString(),
+      v: 1, uid, tabId, noteId: effectiveNote?.id ?? null,
+      baseRevision: recoveredBaseRevisionRef.current === undefined ? effectiveNote?.revision ?? null : recoveredBaseRevisionRef.current,
+      ...formRef.current, createAttempted: effectiveNote === undefined ? createAttemptedRef.current : undefined,
+      savedAt: new Date().toISOString(),
     };
   }, [tabId, note, uidRef, formRef]);
 
@@ -99,18 +102,29 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
     try { result = writeNotebookDraft(window.localStorage, draft); }
     catch { result = 'unavailable'; }
     setStorageProblem(result === 'saved' ? null : result);
-    if (result === 'saved') notifyDrafts();
+    if (result === 'saved') {
+      const legacy = legacyNewDraftKey(draft);
+      if (legacy !== null && parseNotebookDraft(window.localStorage.getItem(legacy), legacy)?.uid === draft.uid) {
+        deleteNotebookDraft(window.localStorage, legacy);
+      }
+      if (draft.noteId !== null) {
+        deleteNotebookDraft(window.localStorage, notebookDraftKey({ ...draft, noteId: null }));
+      }
+      notifyDrafts();
+    }
   }, [dirty, touched, candidate, formRef, makeDraft]);
 
   useEffect(() => {
     if (tabId === null || !touched) return;
     if (!dirty) {
-      if (ownKey !== null && deleteNotebookDraft(window.localStorage, ownKey)) notifyDrafts();
+      const key = ownKey ?? (note === undefined && uidRef.current !== null && tabId !== null
+        ? notebookDraftKey({ uid: uidRef.current, tabId, noteId: null }) : null);
+      if (key !== null && deleteNotebookDraft(window.localStorage, key)) notifyDrafts();
       return;
     }
     const timer = window.setTimeout(flush, 250);
     return () => { window.clearTimeout(timer); };
-  }, [form, dirty, touched, tabId, ownKey, flush]);
+  }, [form, dirty, touched, tabId, ownKey, note, uidRef, flush]);
 
   const flushRef = useRef(flush);
   useEffect(() => { flushRef.current = flush; }, [flush]);
@@ -131,9 +145,11 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
   function recover() {
     if (candidate === null || tabId === null) return;
     uidRef.current = candidate.noteId === null && candidate.tabId !== tabId ? crypto.randomUUID() : candidate.uid;
+    createAttemptedRef.current = candidate.noteId === null && candidate.tabId === tabId && candidate.createAttempted === true;
     recoveredBaseRevisionRef.current = candidate.baseRevision;
     const stale = note !== undefined && candidate.baseRevision !== note.revision;
-    onRecover({ title: candidate.title, folderId: candidate.folderId, tagsText: candidate.tagsText, contentMarkdown: candidate.contentMarkdown }, stale);
+    onRecover({ title: candidate.title, folderId: candidate.folderId, tagsText: candidate.tagsText, contentMarkdown: candidate.contentMarkdown }, stale,
+      createAttemptedRef.current);
   }
 
   function discard(): boolean {
@@ -146,10 +162,37 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
 
   function clearOwn() {
     clearedFormRef.current = JSON.stringify(formRef.current);
-    if (ownKey !== null && deleteNotebookDraft(window.localStorage, ownKey)) notifyDrafts();
+    const key = ownKey ?? (note === undefined && uidRef.current !== null && tabId !== null
+      ? notebookDraftKey({ uid: uidRef.current, tabId, noteId: null }) : null);
+    if (key !== null && deleteNotebookDraft(window.localStorage, key)) notifyDrafts();
   }
 
-  function markConfirmed() { recoveredBaseRevisionRef.current = undefined; }
+  function markCreateAttempted() {
+    createAttemptedRef.current = true;
+    flush();
+  }
+
+  function markConfirmed(confirmed: NotebookNote) {
+    confirmedNoteRef.current = confirmed;
+    recoveredBaseRevisionRef.current = undefined;
+    createAttemptedRef.current = false;
+  }
+
+  function clearConfirmed(confirmed: NotebookNote) {
+    if (tabId === null) return;
+    clearedFormRef.current = JSON.stringify(formRef.current);
+    deleteNotebookDraft(window.localStorage, notebookDraftKey({ uid: confirmed.uid, tabId, noteId: null }));
+    deleteNotebookDraft(window.localStorage, notebookDraftKey({ uid: confirmed.uid, tabId, noteId: confirmed.id }));
+    setStorageProblem(null);
+    notifyDrafts();
+  }
+
+  function resetForNew() {
+    confirmedNoteRef.current = null;
+    recoveredBaseRevisionRef.current = undefined;
+    createAttemptedRef.current = false;
+    clearedFormRef.current = null;
+  }
 
   function resetToSaved() {
     recoveredBaseRevisionRef.current = undefined;
@@ -163,7 +206,8 @@ export function useNotebookDraft({ note, form, formRef, uidRef, dirty, touched, 
 
   return { ready: tabId !== null, candidate, fromOtherTab: candidate !== null && candidate.tabId !== tabId,
     hasAnotherRequested: candidate === own && requested !== undefined && requested !== own,
-    storageProblem, recover, discard, clearOwn, markConfirmed, resetToSaved, downloadCurrent };
+    storageProblem, recover, discard, clearOwn, clearConfirmed, flushNow: flush,
+    markCreateAttempted, markConfirmed, resetForNew, resetToSaved, downloadCurrent };
 }
 
 export function discardNotebookDraft(draft: NotebookDraft) {

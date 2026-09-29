@@ -12,6 +12,7 @@ test('recupera tras recarga desde la portada y elimina la copia al confirmar el 
   await page.goto('/notebook/nuevo');
   await page.getByRole('textbox', { name: 'Título' }).fill('Borrador interrumpido');
   await page.getByRole('textbox', { name: 'Contenido Markdown' }).fill('## Regla\n\nSin guardar todavía.');
+  await page.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
   await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('errorlog:notebook:draft:')).length)).toBe(1);
   page.on('dialog', (dialog) => { void dialog.accept(); });
   await page.reload();
@@ -23,6 +24,7 @@ test('recupera tras recarga desde la portada y elimina la copia al confirmar el 
   await page.getByRole('button', { name: 'Recuperar borrador' }).click();
   await expect(page.getByRole('textbox', { name: 'Título' })).toHaveValue('Borrador interrumpido');
   await expect(page.getByRole('textbox', { name: 'Contenido Markdown' })).toHaveValue('## Regla\n\nSin guardar todavía.');
+  await page.getByRole('textbox', { name: /Etiquetas/u }).fill('');
   await page.getByRole('button', { name: 'Guardar ahora' }).click();
   await expect(page).toHaveURL(/\/notebook\/\d+-borrador-interrumpido\/editar$/u);
   await page.goto('/notebook');
@@ -46,6 +48,8 @@ test('dos pestañas conservan copias separadas y una revisión antigua no sobres
   await second.goto(href);
   await first.getByRole('textbox', { name: 'Contenido Markdown' }).fill('Cambio de la primera pestaña.');
   await second.getByRole('textbox', { name: 'Contenido Markdown' }).fill('Cambio de la segunda pestaña.');
+  await first.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
+  await second.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
   await expect.poll(() => first.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('errorlog:notebook:draft:note:')).length)).toBe(2);
   await first.reload();
   await second.reload();
@@ -53,6 +57,7 @@ test('dos pestañas conservan copias separadas y una revisión antigua no sobres
   await second.getByRole('button', { name: 'Recuperar borrador' }).click();
   await expect(first.getByRole('textbox', { name: 'Contenido Markdown' })).toHaveValue('Cambio de la primera pestaña.');
   await expect(second.getByRole('textbox', { name: 'Contenido Markdown' })).toHaveValue('Cambio de la segunda pestaña.');
+  await first.getByRole('textbox', { name: /Etiquetas/u }).fill('');
   await first.getByRole('button', { name: 'Guardar ahora' }).click();
   await expect(first.getByText('Guardado', { exact: true })).toBeVisible();
   await second.reload();
@@ -84,6 +89,7 @@ test('avisa de cuota agotada y permite descargar el texto pendiente', async ({ p
   });
   await page.getByRole('textbox', { name: 'Título' }).fill('Sin espacio');
   await page.getByRole('textbox', { name: 'Contenido Markdown' }).fill('Mi texto recuperable.');
+  await page.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
   await expect(page.getByRole('alert').filter({ hasText: 'Se agotó el espacio' })).toBeVisible();
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Descargar borrador' }).click();
@@ -107,6 +113,7 @@ test('ignora un borrador local con formato inválido', async ({ page }) => {
 test('descarta una copia local con confirmación sin tocar el apunte guardado', async ({ page }) => {
   await page.goto('/notebook/nuevo');
   await page.getByRole('textbox', { name: 'Título' }).fill('Borrador descartable');
+  await page.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
   await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('errorlog:notebook:draft:')).length)).toBe(1);
   page.on('dialog', (dialog) => { void dialog.accept(); });
   await page.reload();
@@ -126,6 +133,8 @@ test('al abrir un borrador ajeno conserva primero el pendiente de esta pestaña'
   await second.goto('/notebook/nuevo');
   await first.getByRole('textbox', { name: 'Título' }).fill('Borrador propio');
   await second.getByRole('textbox', { name: 'Título' }).fill('Borrador ajeno');
+  await first.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
+  await second.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
   await expect.poll(() => first.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('errorlog:notebook:draft:new:')).length)).toBe(2);
   await first.goto('/notebook');
   const notices = first.getByRole('region', { name: /Borradores locales pendientes/u });

@@ -16,6 +16,7 @@ const draftSchema = z.strictObject({
   folderId: id.nullable(),
   tagsText: z.string().max(10_000),
   contentMarkdown: z.string().max(4 * 1024 * 1024),
+  createAttempted: z.boolean().optional(),
   savedAt: z.iso.datetime(),
 }).refine((draft) => (draft.noteId === null) === (draft.baseRevision === null));
 
@@ -24,14 +25,19 @@ export type NotebookDraftFields = Pick<NotebookDraft, 'title' | 'folderId' | 'ta
 export type DraftWriteResult = 'saved' | 'quota' | 'unavailable';
 
 export function notebookDraftKey(draft: Pick<NotebookDraft, 'uid' | 'tabId' | 'noteId'>): string {
-  return `${NOTEBOOK_DRAFT_PREFIX}${draft.noteId === null ? 'new' : `note:${draft.uid}`}:${draft.tabId}`;
+  return `${NOTEBOOK_DRAFT_PREFIX}${draft.noteId === null ? `new:${draft.uid}` : `note:${draft.uid}`}:${draft.tabId}`;
+}
+
+export function legacyNewDraftKey(draft: Pick<NotebookDraft, 'tabId' | 'noteId'>): string | null {
+  return draft.noteId === null ? `${NOTEBOOK_DRAFT_PREFIX}new:${draft.tabId}` : null;
 }
 
 export function parseNotebookDraft(raw: string | null, key: string): NotebookDraft | null {
   if (raw === null || raw.length > MAX_RAW_LENGTH) return null;
   try {
     const result = draftSchema.safeParse(JSON.parse(raw));
-    return result.success && notebookDraftKey(result.data) === key ? result.data : null;
+    return result.success && (notebookDraftKey(result.data) === key || legacyNewDraftKey(result.data) === key)
+      ? result.data : null;
   } catch { return null; }
 }
 
@@ -60,9 +66,21 @@ export function writeNotebookDraft(storage: Pick<Storage, 'setItem'>, draft: Not
   }
 }
 
-export function deleteNotebookDraft(storage: Pick<Storage, 'removeItem'>, key: string): boolean {
+export function deleteNotebookDraft(storage: Pick<Storage, 'removeItem' | 'getItem'>, key: string): boolean {
   if (!key.startsWith(NOTEBOOK_DRAFT_PREFIX)) return false;
-  try { storage.removeItem(key); return true; } catch { return false; }
+  try {
+    const draft = parseNotebookDraft(storage.getItem(key), key);
+    storage.removeItem(key);
+    const newKey = /^new:([0-9a-f-]+):([0-9a-f-]+)$/u.exec(key.slice(NOTEBOOK_DRAFT_PREFIX.length));
+    const legacy = draft === null && newKey !== null
+      ? `${NOTEBOOK_DRAFT_PREFIX}new:${newKey[2]}`
+      : draft === null ? null : legacyNewDraftKey(draft);
+    const uid = draft?.uid ?? newKey?.[1];
+    if (legacy !== null && legacy !== key && parseNotebookDraft(storage.getItem(legacy), legacy)?.uid === uid) {
+      storage.removeItem(legacy);
+    }
+    return true;
+  } catch { return false; }
 }
 
 export function readNotebookTabId(name: string): string | null {

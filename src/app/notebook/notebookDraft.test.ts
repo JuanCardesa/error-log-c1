@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  deleteNotebookDraft, ensureNotebookTabId, listNotebookDrafts, notebookDraftKey,
+  deleteNotebookDraft, ensureNotebookTabId, legacyNewDraftKey, listNotebookDrafts, notebookDraftKey,
   parseNotebookDraft, writeNotebookDraft, type NotebookDraft,
 } from './notebookDraft';
 
@@ -47,6 +47,16 @@ describe('borradores locales Notebook', () => {
     local.setItem(notebookDraftKey(draft), JSON.stringify({ ...draft, baseRevision: 2 }));
     expect(listNotebookDrafts(local)).toEqual([]);
     expect(parseNotebookDraft(JSON.stringify(draft), `${notebookDraftKey(draft)}-ajeno`)).toBeNull();
+  });
+
+  it('lee y descarta borradores nuevos de la clave anterior sin perder su UID', () => {
+    const local = storage();
+    const legacy = legacyNewDraftKey(draft);
+    expect(legacy).not.toBeNull();
+    local.setItem(legacy!, JSON.stringify(draft));
+    expect(listNotebookDrafts(local)).toEqual([draft]);
+    expect(deleteNotebookDraft(local, notebookDraftKey(draft))).toBe(true);
+    expect(listNotebookDrafts(local)).toEqual([]);
   });
 
   it('avisa cuando se agota la cuota o no está disponible el almacenamiento', () => {

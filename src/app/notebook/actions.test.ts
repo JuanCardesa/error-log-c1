@@ -11,6 +11,7 @@ import {
   deleteFolderAction,
   deleteNoteAction,
   getNoteAction,
+  getNoteByUidAction,
   getNoteOutlineAction,
   saveNoteAction,
   searchNotesAction,
@@ -67,6 +68,8 @@ describe('Server Actions Notebook', () => {
     const retried = await createNoteAction(note({ title: 'Sin duplicar' }));
     expect(retried).toEqual({ ok: true, data: { created: false, note: created.data.note } });
     expect(await getNoteAction({ id, uid: UID })).toEqual({ ok: true, data: created.data.note });
+    expect(await getNoteByUidAction({ uid: UID })).toEqual({ ok: true, data: created.data.note });
+    expect((await getNoteByUidAction({ uid: 'invalid' })).ok).toBe(false);
     expect(await getNoteAction({ id, uid: 'd8766760-f8e8-4f34-b739-d07113f30d6c' }))
       .toMatchObject({ ok: false, code: 'NOT_FOUND' });
     expect(await getNoteOutlineAction({ id })).toEqual({

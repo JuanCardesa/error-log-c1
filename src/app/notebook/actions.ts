@@ -11,6 +11,7 @@ import {
   deleteNotebookFolder,
   deleteNotebookNote,
   getNotebookNote,
+  getNotebookNoteByUid,
   saveNotebookNote,
   updateNotebookFolder,
 } from '@/lib/db/notebookRepo';
@@ -22,6 +23,7 @@ import {
   deleteNotebookFolderSchema,
   deleteNotebookNoteSchema,
   getNotebookNoteSchema,
+  getNotebookNoteByUidSchema,
   getNotebookOutlineSchema,
   saveNotebookNoteSchema,
   searchNotebookSchema,
@@ -84,6 +86,14 @@ export async function getNoteAction(raw: unknown): Promise<NotebookResult<Notebo
     if (note === null || (uid !== undefined && note.uid !== uid)) {
       throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
     }
+    return note;
+  });
+}
+
+export async function getNoteByUidAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {
+  return validated(getNotebookNoteByUidSchema, raw, ({ uid }) => {
+    const note = getNotebookNoteByUid(getDb(), uid);
+    if (note === null) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
     return note;
   });
 }
