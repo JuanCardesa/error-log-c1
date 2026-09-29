@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
-function render(markdown: string, basePath = '/notebook/42-example'): string {
-  return renderToStaticMarkup(createElement(MarkdownRenderer, { markdown, basePath }));
+function render(markdown: string, basePath = '/notebook/42-example', hideFirstH1 = false): string {
+  return renderToStaticMarkup(createElement(MarkdownRenderer, { markdown, basePath, hideFirstH1 }));
 }
 
 describe('MarkdownRenderer', () => {
@@ -25,6 +25,14 @@ describe('MarkdownRenderer', () => {
     for (const heading of headings) expect(html).toContain(`id="${heading.slug}"`);
     expect(html).not.toContain('id="nb-falso-encabezado"');
     expect(html).toContain('<strong>deduction</strong>');
+  });
+
+  it('permite al lector mostrar una sola vez el primer H1 que repite el título', () => {
+    const source = '# Past modal verbs\n\n## Must have';
+    const html = render(source, '/notebook/42-past-modal-verbs', true);
+    expect(html).not.toContain('<h1');
+    expect(html).toContain('id="nb-must-have"');
+    expect(analyzeNotebookMarkdown(source).headings[0]?.slug).toBe('nb-past-modal-verbs');
   });
 
   it('omite HTML y deja los protocolos inseguros como texto sin enlace', () => {

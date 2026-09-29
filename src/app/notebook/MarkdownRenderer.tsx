@@ -16,9 +16,11 @@ const remarkPlugins = [remarkGfm];
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 /** Una única política para lectura y futura vista previa. Nunca interpreta HTML ni carga imágenes. */
-export function MarkdownRenderer({ markdown, basePath = '/notebook/' }: {
+export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH1 = false }: {
   readonly markdown: string;
   readonly basePath?: string;
+  /** El lector coloca el mismo anchor en el título cuando el primer H1 lo repite. */
+  readonly hideFirstH1?: boolean;
 }) {
   const analysis = analyzeNotebookMarkdown(markdown);
   const headingByOffset = new Map(analysis.headingOffsets.map((offset, index) => [offset, analysis.headings[index]?.slug]));
@@ -28,6 +30,7 @@ export function MarkdownRenderer({ markdown, basePath = '/notebook/' }: {
     readonly children?: ReactNode;
   }) {
     const offset = node?.position?.start.offset;
+    if (Tag === 'h1' && hideFirstH1 && offset === analysis.headingOffsets[0]) return null;
     const id = offset === undefined ? undefined : headingByOffset.get(offset);
     return <Tag id={id}>{children}</Tag>;
   };

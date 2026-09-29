@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **11 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 3.3**, implementar TOC y navegación interna.
+> Estado: **12 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 3.4**, añadir búsqueda Notebook.
 
 ## Cómo continuar
 
@@ -642,7 +642,7 @@ Mantener 90 % de cobertura en src/lib y regresiones de Anki, informes y captura.
 | --- | --- | --- |
 | 1. Contrato y núcleo | Tipos, validación, Markdown y enlaces | Completada |
 | 2. Persistencia | Migraciones, repositorios, concurrencia y FTS | Completada |
-| 3. Consulta | Navegación, lector, TOC y búsqueda | En curso: 3.1–3.2 completadas |
+| 3. Consulta | Navegación, lector, TOC y búsqueda | En curso: 3.1–3.3 completadas |
 | 4. Edición fiable | Editor, preview, autosave y recuperación | Pendiente |
 | 5. Integración | Vínculos con errores | Pendiente |
 | 6. Portabilidad | Importación, exportaciones y recuperación | Pendiente |
@@ -726,7 +726,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
   **Dependencies:** 1.3, 3.1. **Tests:** XSS, protocolos, HTML, tablas, tareas y red.
   **Difficulty:** MEDIUM. **Risk:** HIGH: contenido importado no confiable.
 
-- [ ] **TASK 3.3 — Implementar TOC y navegación interna.**
+- [x] **TASK 3.3 — Implementar TOC y navegación interna.**
   Índice responsive, activo y hashes.
   **Files affected:** TableOfContents.tsx, lector y CSS.
   **Dependencies:** 3.2. **Tests:** hash inicial, teclado, duplicados y movimiento reducido.
@@ -923,5 +923,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | 2026-09-29 | TASK 2.6: acciones tipadas de apuntes y carpetas, lectura, índice y búsqueda filtrada/paginada. Los vínculos e importación tienen tareas propias en fases 5 y 6. Commit: `feat(notebook): expose validated server actions`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (684 pruebas), `pnpm test:coverage` (92,62 % ramas) y `pnpm build` correctos con Node 23.7.0. Siguiente TASK 3.1. |
 | 2026-09-29 | TASK 3.1: portada y directorio de dos niveles, gestión de carpetas, listado paginado por carpeta, lector por ID y acceso desde Más. El lector muestra Markdown como texto escapado hasta TASK 3.2. Commit: `feat(notebook): add directory and note routes`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (694 pruebas), `pnpm build` y 2 E2E de Notebook correctos con Node 23.7.0. Siguiente TASK 3.2. |
 | 2026-09-29 | TASK 3.2: renderizador Markdown compartido para lector y futura preview, con lista cerrada de elementos, encabezados `nb-`, enlaces validados, tablas desplazables y checkboxes de lectura. Las imágenes conservan su sintaxis sin cargar recursos; HTML se omite. Commit: `feat(notebook): render safe Markdown`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (700 pruebas), `pnpm test:coverage` (92,8 % ramas), build E2E y 2 E2E de Notebook correctos con Node 23.7.0. Siguiente TASK 3.3. |
+| 2026-09-29 | TASK 3.3: índice anidado a partir del AST, vista lateral o desplegable según ancho, apartado activo por observador y scroll, navegación con hashes e historial, y primer H1 repetido integrado en el título visible. Commit: `feat(notebook): add outline navigation`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (703 pruebas), build y 4 E2E de Notebook correctos con Node 23.7.0. Siguiente TASK 3.4. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.

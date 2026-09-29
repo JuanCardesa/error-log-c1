@@ -33,6 +33,26 @@
   gap: var(--space-6);
 }
 
+.readerLayout {
+  grid-template-columns: minmax(190px, 250px) minmax(0, 1fr);
+}
+
+.readerLayout .sidebar {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.tocArea {
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.readerLayout .reader {
+  grid-column: 2;
+  grid-row: 2;
+}
+
 .sidebar {
   min-width: 0;
 }
@@ -251,6 +271,23 @@
   color: var(--color-brand);
 }
 
+@media (min-width: 1280px) {
+  .readerLayout {
+    grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(180px, 210px);
+    gap: var(--space-5);
+  }
+
+  .readerLayout .reader {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .tocArea {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+
 @media (max-width: 1023px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
@@ -259,6 +296,21 @@
 
   .directory {
     padding: var(--space-3) var(--space-4);
+  }
+
+  .readerLayout .sidebar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .tocArea {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .readerLayout .reader {
+    grid-column: 1;
+    grid-row: 3;
   }
 }
 

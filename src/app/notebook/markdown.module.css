@@ -29,7 +29,6 @@
 .markdown h6 {
   margin: var(--space-6) 0 var(--space-3);
   line-height: 1.25;
-  scroll-margin-top: calc(var(--header-h) + var(--space-4));
 }
 
 .markdown h1 {
