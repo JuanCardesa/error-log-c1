@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation';
 
 import { getDb } from '@/lib/db/client';
 import { getNotebookNote, listNotebookFolders } from '@/lib/db/notebookRepo';
-import { parseNotebookNoteId } from '@/lib/notebook/urls';
+import { notebookNoteHref, parseNotebookNoteId } from '@/lib/notebook/urls';
+import { MarkdownRenderer } from '../MarkdownRenderer';
 import { NotebookDirectory } from '../NotebookDirectory';
 import styles from '../notebook.module.css';
 
@@ -48,7 +49,7 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
           {note.contentMarkdown === '' ? (
             <div className={styles.empty}><p>Este apunte todavía no tiene contenido.</p></div>
           ) : (
-            <pre className={styles.sourceText}>{note.contentMarkdown}</pre>
+            <MarkdownRenderer markdown={note.contentMarkdown} basePath={notebookNoteHref(note)} />
           )}
         </article>
       </div>

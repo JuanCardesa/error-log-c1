@@ -52,6 +52,8 @@ function walk(node: Nodes, visit: (node: Nodes) => void): void {
 
 export interface NotebookMarkdownAnalysis {
   readonly headings: readonly NotebookHeading[];
+  /** Posición de cada encabezado, alineada con `headings`, para el renderizador. */
+  readonly headingOffsets: readonly number[];
   readonly searchText: string;
   readonly links: readonly NotebookMarkdownLink[];
 }
@@ -61,6 +63,7 @@ export function analyzeNotebookMarkdown(markdown: string): NotebookMarkdownAnaly
   const tree = parser.parse(markdown) as Root;
   const slugger = new GithubSlugger();
   const headings: NotebookHeading[] = [];
+  const headingOffsets: number[] = [];
   const links: NotebookMarkdownLink[] = [];
   const definitions = new Map<string, string>();
 
@@ -77,6 +80,7 @@ export function analyzeNotebookMarkdown(markdown: string): NotebookMarkdownAnaly
       const base = githubSlug(text);
       const slug = `nb-${slugger.slug(base.replace(/-/gu, '') ? text : fallback)}`;
       headings.push({ depth: node.depth, text, slug });
+      headingOffsets.push(node.position?.start.offset ?? -1);
     } else if (node.type === 'link') {
       links.push({ text: visibleText(node), url: node.url });
     } else if (node.type === 'linkReference') {
@@ -87,6 +91,7 @@ export function analyzeNotebookMarkdown(markdown: string): NotebookMarkdownAnaly
 
   return {
     headings,
+    headingOffsets,
     searchText: normalizeNotebookSearchText(visibleText(tree)),
     links,
   };

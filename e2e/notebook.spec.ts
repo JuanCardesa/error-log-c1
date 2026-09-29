@@ -18,7 +18,14 @@ test('abre por ID, devuelve 404 para IDs inexistentes y conserva enlaces al reno
     folderId = second.id;
     const { note } = createNotebookNote(db, {
       uid: randomUUID(), title: 'Past modal verbs', folderId: first.id,
-      tags: ['grammar'], contentMarkdown: '# Must have\nA deduction.',
+      tags: ['grammar'], contentMarkdown: [
+        '# Must have',
+        'A deduction.',
+        '',
+        '![pixel](https://tracker.example/pixel.png)',
+        '',
+        '<script>window.__notebookPwned = true</script>',
+      ].join('\n'),
     }, at);
     oldHref = notebookNoteHref(note);
     saveNotebookNote(db, {
@@ -28,10 +35,18 @@ test('abre por ID, devuelve 404 para IDs inexistentes y conserva enlaces al reno
     }, new Date().toISOString());
   } finally { db.$client.close(); }
 
+  const externalRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().startsWith('https://tracker.example/')) externalRequests.push(request.url());
+  });
   await page.goto(oldHref);
   await expect(page.getByRole('heading', { level: 1, name: 'Modal verbs in the past' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Ruta del apunte' }).getByRole('link', { name: /Vocabulary/ })).toHaveAttribute('href', `/notebook?carpeta=${String(folderId)}`);
-  await expect(page.getByText('# Must have', { exact: false })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Must have' })).toHaveAttribute('id', 'nb-must-have');
+  await expect(page.getByText('![pixel](https://tracker.example/pixel.png)')).toBeVisible();
+  expect(await page.locator('img').count()).toBe(0);
+  expect(externalRequests).toEqual([]);
+  expect(await page.evaluate(() => Reflect.get(window, '__notebookPwned'))).toBeUndefined();
 
   await page.goto('/notebook/999999999-not-found');
   await expect(page.getByRole('heading', { name: 'Esta página no existe' })).toBeVisible();

@@ -21,14 +21,16 @@ const BASE = 'http://notebook.local/notebook/';
 const scheme = /^[a-z][a-z\d+.-]*:/iu;
 
 /** Valida destinos del Markdown antes de pasarlos a un componente de enlace. */
-export function classifyNotebookUrl(value: string): NotebookUrl {
+export function classifyNotebookUrl(value: string, basePath = '/notebook/'): NotebookUrl {
   const href = value.trim();
   if (!href || /[\u0000-\u001f\u007f\\]/u.test(href) || href.startsWith('//')) {
     return { kind: 'invalid' };
   }
 
+  if (href.startsWith('#')) return { kind: 'internal', href };
+
   try {
-    const url = new URL(href, BASE);
+    const url = new URL(href, new URL(basePath, BASE));
     if (scheme.test(href)) {
       if (url.protocol === 'https:' || url.protocol === 'http:') {
         return { kind: 'external', href: url.href };

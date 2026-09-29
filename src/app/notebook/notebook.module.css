@@ -251,13 +251,6 @@
   color: var(--color-brand);
 }
 
-.sourceText {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font: 400 18px/1.6 var(--font-serif);
-}
-
 @media (max-width: 1023px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);

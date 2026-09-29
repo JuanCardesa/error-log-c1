@@ -25,11 +25,18 @@ describe('URLs de Notebook', () => {
   );
 
   it.each([
-    ['#nb-must-have', '/notebook/#nb-must-have'],
+    ['#nb-must-have', '#nb-must-have'],
     ['/notebook/42-past-modal-verbs', '/notebook/42-past-modal-verbs'],
     ['../errores?busqueda=modal', '/errores?busqueda=modal'],
   ])('admite enlace interno %s', (input, expected) => {
     expect(classifyNotebookUrl(input)).toEqual({ kind: 'internal', href: expected });
+  });
+
+  it('resuelve enlaces relativos desde el apunte actual', () => {
+    expect(classifyNotebookUrl('?vista=lectura#nb-ejemplo', '/notebook/42-past-modal-verbs'))
+      .toEqual({ kind: 'internal', href: '/notebook/42-past-modal-verbs?vista=lectura#nb-ejemplo' });
+    expect(classifyNotebookUrl('#nb-ejemplo', '/notebook/42-past-modal-verbs'))
+      .toEqual({ kind: 'internal', href: '#nb-ejemplo' });
   });
 
   it.each([
