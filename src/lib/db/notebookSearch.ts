@@ -1,9 +1,15 @@
-import { analyzeNotebookMarkdown, normalizeNotebookSearchText } from '../notebook/markdown';
+import { inArray } from 'drizzle-orm';
+
+import {
+  analyzeNotebookMarkdown, findNotebookMarkdownExcerpt, findNotebookTextMatch, normalizeNotebookSearchText,
+  type NotebookExcerpt,
+} from '../notebook/markdown';
 import {
   NOTEBOOK_LIMITS, notebookTagsSchema, searchNotebookSchema, type SearchNotebookInput,
 } from '../notebook/schemas';
 import type { NotebookNoteSummary, NotebookPage } from '../notebook/types';
 import type { Db } from './client';
+import { notebookNote } from './schema';
 
 interface SearchRow {
   readonly id: number;
@@ -35,6 +41,7 @@ export function searchNotebookNotes(db: Db, input: SearchNotebookInput): Noteboo
       (SELECT id FROM notebook_folder WHERE parent_id = ?))`);
     parameters.push(filters.folderId, filters.folderId);
   }
+  if (filters.unfiledOnly === true) conditions.push('n.folder_id IS NULL');
   if (filters.tag !== null) {
     conditions.push('EXISTS (SELECT 1 FROM json_each(n.tags) AS tag WHERE tag.value = ?)');
     parameters.push(filters.tag);
@@ -70,6 +77,36 @@ export function searchNotebookNotes(db: Db, input: SearchNotebookInput): Noteboo
     updatedAt: row.updated_at,
   }));
   return { items, hasMore: rows.length > NOTEBOOK_LIMITS.pageSize };
+}
+
+export interface NotebookSearchHit {
+  readonly note: NotebookNoteSummary;
+  readonly excerpt: NotebookExcerpt | null;
+  readonly matchedIn: 'title' | 'tag' | 'body' | null;
+}
+
+/** Carga cuerpos exclusivamente para los 20 resultados de esta página. */
+export function searchNotebookHits(db: Db, input: SearchNotebookInput): NotebookPage<NotebookSearchHit> {
+  const page = searchNotebookNotes(db, input);
+  const query = normalizeNotebookSearchText(input.query);
+  if (page.items.length === 0) return { items: [], hasMore: page.hasMore };
+  if (query === '') {
+    return { items: page.items.map((note) => ({ note, excerpt: null, matchedIn: null })), hasMore: page.hasMore };
+  }
+  const ids = page.items.map((note) => note.id);
+  const contents = db.select({ id: notebookNote.id, markdown: notebookNote.contentMarkdown })
+    .from(notebookNote).where(inArray(notebookNote.id, ids)).all();
+  const markdownById = new Map(contents.map((row) => [row.id, row.markdown]));
+  return {
+    items: page.items.map((note) => {
+      const excerpt = findNotebookMarkdownExcerpt(markdownById.get(note.id) ?? '', query);
+      const matchedIn = findNotebookTextMatch(note.title, query) !== null ? 'title'
+        : note.tags.some((tag) => findNotebookTextMatch(tag, query) !== null) ? 'tag'
+          : excerpt === null ? null : 'body';
+      return { note, excerpt, matchedIn };
+    }),
+    hasMore: page.hasMore,
+  };
 }
 
 /** Reconstrucción atómica del índice derivado, sin cargar todos los cuerpos en memoria. */

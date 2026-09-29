@@ -61,6 +61,10 @@ export interface NotebookMarkdownAnalysis {
 /** Parsear una sola vez antes de escribir; el lector usa los mismos slugs. */
 export function analyzeNotebookMarkdown(markdown: string): NotebookMarkdownAnalysis {
   const tree = parser.parse(markdown) as Root;
+  return analyzeTree(tree);
+}
+
+function analyzeTree(tree: Root): NotebookMarkdownAnalysis {
   const slugger = new GithubSlugger();
   const headings: NotebookHeading[] = [];
   const headingOffsets: number[] = [];
@@ -94,5 +98,88 @@ export function analyzeNotebookMarkdown(markdown: string): NotebookMarkdownAnaly
     headingOffsets,
     searchText: normalizeNotebookSearchText(visibleText(tree)),
     links,
+  };
+}
+
+export interface NotebookTextMatch {
+  readonly start: number;
+  readonly end: number;
+}
+
+/** Devuelve offsets del texto original aunque la consulta omita acentos o cambie de caja. */
+export function findNotebookTextMatch(value: string, query: string): NotebookTextMatch | null {
+  const needle = normalizeNotebookSearchText(query);
+  if (needle === '') return null;
+  const position = normalizeNotebookSearchText(value).indexOf(needle);
+  if (position < 0) return null;
+
+  let normalizedOffset = 0;
+  let originalOffset = 0;
+  let previousSpace = false;
+  let start = -1;
+  let end = -1;
+  for (const character of value) {
+    const originalEnd = originalOffset + character.length;
+    let piece: string;
+    if (/\s/u.test(character)) {
+      piece = normalizedOffset > 0 && !previousSpace ? ' ' : '';
+      previousSpace = true;
+    } else {
+      piece = normalizeNotebookSearchText(character);
+      if (piece !== '') previousSpace = false;
+    }
+    if (piece !== '') {
+      const nextOffset = normalizedOffset + piece.length;
+      if (start < 0 && position >= normalizedOffset && position < nextOffset) start = originalOffset;
+      if (position + needle.length - 1 >= normalizedOffset && position + needle.length - 1 < nextOffset) {
+        end = originalEnd;
+        break;
+      }
+      normalizedOffset = nextOffset;
+    }
+    originalOffset = originalEnd;
+  }
+  return start < 0 || end < 0 ? null : { start, end };
+}
+
+export interface NotebookExcerpt {
+  readonly text: string;
+  readonly match: NotebookTextMatch;
+  readonly heading: NotebookHeading | null;
+}
+
+/** Solo se invoca para los resultados de la página visible, nunca para todo el cuaderno. */
+export function findNotebookMarkdownExcerpt(markdown: string, query: string): NotebookExcerpt | null {
+  if (normalizeNotebookSearchText(query) === '') return null;
+  const tree = parser.parse(markdown) as Root;
+  const headings = analyzeTree(tree).headings;
+  const segments: Array<{ text: string; heading: NotebookHeading | null }> = [];
+  let currentHeading: NotebookHeading | null = null;
+  let headingIndex = 0;
+  walk(tree, (node) => {
+    if (node.type === 'heading') currentHeading = headings[headingIndex++] ?? null;
+    if (node.type === 'heading' || node.type === 'paragraph' || node.type === 'code' || node.type === 'tableCell') {
+      const text = visibleText(node).trim();
+      if (text !== '') segments.push({ text, heading: currentHeading });
+    }
+  });
+  const plainText = segments.map((segment) => segment.text).join(' ');
+  const match = findNotebookTextMatch(plainText, query);
+  if (match === null) return null;
+  let segmentEnd = 0;
+  let heading: NotebookHeading | null = null;
+  for (const segment of segments) {
+    segmentEnd += segment.text.length;
+    if (match.start <= segmentEnd) { heading = segment.heading; break; }
+    segmentEnd += 1;
+  }
+  const start = Math.max(0, match.start - 70);
+  const end = Math.min(plainText.length, match.end + 110);
+  const prefix = start > 0 ? '…' : '';
+  const suffix = end < plainText.length ? '…' : '';
+  return {
+    text: `${prefix}${plainText.slice(start, end)}${suffix}`,
+    match: { start: prefix.length + match.start - start, end: prefix.length + match.end - start },
+    heading,
   };
 }

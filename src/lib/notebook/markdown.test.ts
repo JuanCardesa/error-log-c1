@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { analyzeNotebookMarkdown, normalizeNotebookSearchText } from './markdown';
+import {
+  analyzeNotebookMarkdown, findNotebookMarkdownExcerpt, findNotebookTextMatch, normalizeNotebookSearchText,
+} from './markdown';
 
 describe('análisis Markdown compartido', () => {
   it('extrae H1–H6 y anchors únicos, incluidos Unicode y títulos vacíos', () => {
@@ -75,5 +77,49 @@ describe('análisis Markdown compartido', () => {
   it('normaliza acentos, espacios, caja y apóstrofos para la búsqueda', () => {
     expect(normalizeNotebookSearchText('  MÚST\n  HAVE  —  can’t  '))
       .toBe("must have — can't");
+  });
+});
+
+describe('fragmentos de búsqueda Notebook', () => {
+  it('encuentra una frase con formato bajo el encabezado precedente', () => {
+    const excerpt = findNotebookMarkdownExcerpt([
+      '# Past deduction',
+      'Introducción.',
+      '',
+      '## Must have',
+      'He **must have** forgotten it.',
+      '',
+      '## Must have',
+      'Otro apartado.',
+    ].join('\n'), 'must have forgotten');
+    expect(excerpt?.heading?.slug).toBe('nb-must-have');
+    expect(excerpt?.text.slice(excerpt.match.start, excerpt.match.end)).toBe('must have forgotten');
+  });
+
+  it('selecciona el apartado repetido cuando ahí aparece la primera coincidencia', () => {
+    const excerpt = findNotebookMarkdownExcerpt([
+      '## Regla',
+      'Texto distinto.',
+      '',
+      '## Regla',
+      'La deducción ocurre aquí.',
+    ].join('\n'), 'deduccion');
+    expect(excerpt?.heading?.slug).toBe('nb-regla-1');
+    expect(excerpt?.text.slice(excerpt.match.start, excerpt.match.end)).toBe('deducción');
+  });
+
+  it('resalta acentos, caja y apóstrofos sin perder los caracteres originales', () => {
+    const value = 'La Deducción dice can’t have.';
+    const accent = findNotebookTextMatch(value, 'deduccion');
+    const apostrophe = findNotebookTextMatch(value, "can't have");
+    expect(value.slice(accent?.start, accent?.end)).toBe('Deducción');
+    expect(value.slice(apostrophe?.start, apostrophe?.end)).toBe('can’t have');
+  });
+
+  it('ignora HTML, indexa el texto alternativo y conserva el código como texto', () => {
+    const source = '<script>secretoHtml</script>\n\n![gráfico](https://example.com)\n\n```txt\nMust have\n```';
+    expect(findNotebookMarkdownExcerpt(source, 'secretoHtml')).toBeNull();
+    expect(findNotebookMarkdownExcerpt(source, 'grafico')?.text).toContain('gráfico');
+    expect(findNotebookMarkdownExcerpt(source, 'must have')?.text).toContain('Must have');
   });
 });

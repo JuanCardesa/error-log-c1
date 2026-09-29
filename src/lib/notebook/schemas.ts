@@ -113,6 +113,7 @@ export const searchNotebookSchema = z.strictObject({
       .refine((value) => !singleLineControl.test(value), 'Consulta inválida'),
   ),
   folderId: safeId.nullable().default(null),
+  unfiledOnly: z.boolean().optional(),
   tag: notebookTagSchema.nullable().default(null),
   page: safeId.default(1),
 });

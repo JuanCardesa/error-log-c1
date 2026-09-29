@@ -148,3 +148,89 @@ test('en una nota breve, el hash decide el apartado activo aunque no haya scroll
   await toc.getByRole('link', { name: 'Segundo' }).click();
   await expect(toc.getByRole('link', { name: 'Segundo' })).toHaveAttribute('aria-current', 'location');
 });
+
+test('busca en título, etiquetas y cuerpo con filtros, fragmento y enlace al apartado', async ({ page }) => {
+  const db = createDb(E2E_DB);
+  let rootId: number;
+  let childId: number;
+  let bodyHref: string;
+  try {
+    const at = new Date().toISOString();
+    const root = createNotebookFolder(db, { name: `Search root ${randomUUID().slice(0, 8)}`, parentId: null }, at);
+    const child = createNotebookFolder(db, { name: 'Search child', parentId: root.id }, at);
+    const other = createNotebookFolder(db, { name: `Search other ${randomUUID().slice(0, 8)}`, parentId: null }, at);
+    rootId = root.id;
+    childId = child.id;
+    createNotebookNote(db, {
+      uid: randomUUID(), title: 'Catenative inversion', folderId: root.id, tags: ['syntax'], contentMarkdown: 'Solo título.',
+    }, at);
+    createNotebookNote(db, {
+      uid: randomUUID(), title: 'Catenative inversion in context', folderId: child.id, tags: ['syntax'], contentMarkdown: 'Otro texto.',
+    }, at);
+    createNotebookNote(db, {
+      uid: randomUUID(), title: 'Tagged syntax', folderId: other.id, tags: ['catenative inversion'], contentMarkdown: 'Otro texto.',
+    }, at);
+    const body = createNotebookNote(db, {
+      uid: randomUUID(), title: 'Markdown syntax', folderId: null, tags: ['syntax'],
+      contentMarkdown: '## Regla\n\nTexto inicial.\n\n## Regla\n\nLa catenative **inversion** aparece aquí.',
+    }, at).note;
+    bodyHref = notebookNoteHref(body);
+  } finally { db.$client.close(); }
+
+  await page.goto('/notebook');
+  const search = page.getByRole('searchbox', { name: 'Buscar apuntes' });
+  await search.fill('Catenative inversion');
+  await expect(page).toHaveURL(/q=Catenative\+inversion/u);
+  const results = page.locator('section[aria-labelledby="notebook-list-title"]');
+  await expect(results.getByRole('link', { name: 'Catenative inversion', exact: true })).toBeVisible();
+  await expect(results.getByRole('link', { name: 'Catenative inversion in context' })).toBeVisible();
+  const bodyLink = results.getByRole('link', { name: 'Markdown syntax' });
+  await expect(bodyLink).toHaveAttribute('href', `${bodyHref}#nb-regla-1`);
+  await expect(results.getByText(/La catenative inversion aparece aquí/u)).toBeVisible();
+  await expect(results.locator('mark')).toHaveCount(4);
+
+  await page.getByRole('combobox', { name: 'Carpeta' }).selectOption(String(rootId));
+  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
+  await expect(page).toHaveURL(new RegExp(`carpeta=${String(rootId)}`));
+  await expect(results.getByRole('link', { name: 'Catenative inversion', exact: true })).toBeVisible();
+  await expect(results.getByRole('link', { name: 'Catenative inversion in context' })).toBeVisible();
+  await expect(bodyLink).toHaveCount(0);
+
+  await page.getByRole('combobox', { name: 'Carpeta' }).selectOption(String(childId));
+  await page.getByRole('textbox', { name: 'Etiqueta' }).fill('syntax');
+  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
+  await expect(results.getByRole('link', { name: 'Catenative inversion in context' })).toBeVisible();
+  await expect(results.getByRole('link', { name: 'Catenative inversion', exact: true })).toHaveCount(0);
+
+  await page.getByRole('combobox', { name: 'Carpeta' }).selectOption('sin-carpeta');
+  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
+  await expect(bodyLink).toBeVisible();
+  await bodyLink.click();
+  await expect(page).toHaveURL(/#nb-regla-1$/u);
+});
+
+test('pagina resultados conservando la búsqueda y la carpeta', async ({ page }) => {
+  const db = createDb(E2E_DB);
+  let folderId: number;
+  try {
+    const at = new Date().toISOString();
+    const folder = createNotebookFolder(db, { name: `Paged search ${randomUUID().slice(0, 8)}`, parentId: null }, at);
+    folderId = folder.id;
+    for (let i = 1; i <= 21; i += 1) {
+      createNotebookNote(db, {
+        uid: randomUUID(), title: `Result ${String(i)}`, folderId: folder.id, tags: [],
+        contentMarkdown: 'Glossopharyngeal practice.',
+      }, at);
+    }
+  } finally { db.$client.close(); }
+
+  await page.goto(`/notebook?carpeta=${String(folderId)}&q=glossopharyngeal`);
+  const results = page.locator('section[aria-labelledby="notebook-list-title"]');
+  await expect(results.locator('ul').first().locator(':scope > li')).toHaveCount(20);
+  await page.getByRole('navigation', { name: 'Páginas de apuntes' }).getByRole('link', { name: 'Siguiente' }).click();
+  await expect(page).toHaveURL(new RegExp(`carpeta=${String(folderId)}.*q=glossopharyngeal.*p=2`));
+  await expect(results.getByRole('link', { name: 'Result 1', exact: true })).toBeVisible();
+  await expect(results.locator('ul').first().locator(':scope > li')).toHaveCount(1);
+  await page.getByRole('navigation', { name: 'Páginas de apuntes' }).getByRole('link', { name: 'Anterior' }).click();
+  await expect(results.locator('ul').first().locator(':scope > li')).toHaveCount(20);
+});

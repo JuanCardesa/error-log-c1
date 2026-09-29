@@ -5,7 +5,7 @@ import { migrate } from './migrate';
 import {
   createNotebookFolder, createNotebookNote, deleteNotebookNote, getNotebookNote, saveNotebookNote,
 } from './notebookRepo';
-import { rebuildNotebookSearch, searchNotebookNotes } from './notebookSearch';
+import { rebuildNotebookSearch, searchNotebookHits, searchNotebookNotes } from './notebookSearch';
 
 const NOW = '2026-09-29T07:00:00.000Z';
 const UID = '9c8de1e3-03e6-42ec-a098-ac0db92331d0';
@@ -124,6 +124,35 @@ describe('consulta paginada Notebook', () => {
     expect(search('must have', { folderId: child.id, tag: 'part4' }).items.map((row) => row.id))
       .toEqual([childNote.id]);
     expect(search('', { folderId: 999 }).items).toEqual([]);
+  });
+
+  it('filtra también la agrupación virtual Sin carpeta', () => {
+    const folder = createNotebookFolder(db, { name: 'Grammar', parentId: null }, NOW);
+    const unfiled = addNote(1, 'Libre', 'Must have');
+    addNote(2, 'En carpeta', 'Must have', [], folder.id);
+    expect(searchNotebookNotes(db, {
+      query: 'must have', folderId: null, unfiledOnly: true, tag: null, page: 1,
+    }).items.map((note) => note.id)).toEqual([unfiled.id]);
+  });
+
+  it('enriquece solo la página visible con fragmento y apartado del cuerpo', () => {
+    const body = addNote(1, 'Grammar', [
+      '## Regla',
+      'Otro texto.',
+      '',
+      '## Regla',
+      'La deducción usa must **have**.',
+    ].join('\n'));
+    const title = addNote(2, 'Must have', 'Texto distinto');
+    const tagged = addNote(3, 'Otro', 'Texto distinto', ['must have']);
+    const page = searchNotebookHits(db, { query: 'must have', folderId: null, tag: null, page: 1 });
+    expect(page.items.map((hit) => hit.note.id)).toEqual([title.id, tagged.id, body.id]);
+    expect(page.items.map((hit) => hit.matchedIn)).toEqual(['title', 'tag', 'body']);
+    expect(page.items[0]?.excerpt).toBeNull();
+    expect(page.items[1]?.excerpt).toBeNull();
+    expect(page.items[2]?.excerpt?.heading?.slug).toBe('nb-regla-1');
+    const excerpt = page.items[2]?.excerpt;
+    expect(excerpt?.text.slice(excerpt.match.start, excerpt.match.end)).toBe('must have');
   });
 
   it('devuelve 20 filas y una señal de página siguiente', () => {
