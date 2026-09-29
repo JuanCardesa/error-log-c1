@@ -7,6 +7,7 @@ import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import { notebookNoteHref, parseNotebookNoteId } from '@/lib/notebook/urls';
 import { MarkdownRenderer } from '../MarkdownRenderer';
 import { NotebookDirectory } from '../NotebookDirectory';
+import { NotebookRelatedErrors } from '../NotebookRelatedErrors';
 import { TableOfContents } from '../TableOfContents';
 import styles from '../notebook.module.css';
 
@@ -61,6 +62,7 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
           ) : (
             <MarkdownRenderer markdown={note.contentMarkdown} basePath={notebookNoteHref(note)} hideFirstH1={titleHeading !== null} />
           )}
+          <NotebookRelatedErrors key={note.id} noteId={note.id} />
         </article>
       </div>
     </div>

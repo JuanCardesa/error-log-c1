@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **20 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 5.3**, mostrar los errores relacionados en el lector.
+> Estado: **21 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 6.1**, añadir importación individual.
 
 ## Cómo continuar
 
@@ -784,7 +784,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
   **Dependencies:** 3.4, 5.1. **Tests:** Sesiones, Errores y Falsas certezas.
   **Difficulty:** MEDIUM. **Risk:** MEDIUM.
 
-- [ ] **TASK 5.3 — Mostrar errores relacionados en lector.**
+- [x] **TASK 5.3 — Mostrar errores relacionados en lector.**
   Correcciones y enlaces reutilizados.
   **Files affected:** lector y componente de relaciones.
   **Dependencies:** 5.1. **Tests:** paginación, desvinculación y conservación del apunte.
@@ -932,5 +932,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | 2026-09-29 | TASK 4.4: finalización explícita que espera el guardado, verifica UID/revisión e invalida listado y rutas actual/anterior del lector; navegación de salida con borrador recuperable y copia local ante conflicto final. Commit: `feat(notebook): finish editing and refresh reader`. | `pnpm typecheck`, `pnpm lint`, 721 pruebas unitarias y E2E de salida, regreso, recarga y lector visitado correctos con Node 23.7.0. Siguiente TASK 5.1. |
 | 2026-09-29 | TASK 5.1: repositorio y acciones para vincular errores con apuntes o apartados, actualizar/desvincular el par, consultar desde ambos extremos con paginación inversa y detectar encabezados cambiados o ambiguos. La tabla y cascadas ya estaban migradas. Commit: `feat(notebook): link notes to errors`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y `pnpm build` correctos con Node 23.7.0. Siguiente TASK 5.2. |
 | 2026-09-29 | TASK 5.2: selector de apuntes dentro del panel de detalle compartido, así que Sesiones, Errores y Falsas certezas lo reciben a la vez. Busca apuntes con paginación, permite elegir apartado, descarta los encabezados repetidos, avisa cuando el apartado cambió y conserva el enlace al apunte. Commit: `feat(notebook): pick notes from the error panel`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y la suite E2E completa (100 correctas, 6 omitidas) con Node 23.7.0. La E2E nueva recorre las tres vistas. De paso, la E2E de la paleta (TASK 3.5) buscaba «Unidad 1» y empataba con las sesiones Unidad 1X de otros specs: ahora busca «Unidad 1, ej». Siguiente TASK 5.3. |
+| 2026-09-29 | TASK 5.3: reverso del selector, dentro del propio lector del apunte. `NotebookRelatedErrors` pagina los errores que citan el apunte, reutiliza CorrectionPair y el enlace `/errores?error=` ya usado en la paleta y en Anki, desvincula sin salir de la página y retrocede sola de página cuando la desvinculación la deja vacía. El apartado vigente enlaza como ancla al propio lector (`#nb-…`), reutilizando los ids que ya pone TASK 3.3. Commit: `feat(notebook): show related errors in the reader`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y la suite E2E completa (101 correctas, 6 omitidas) con Node 23.7.0. La E2E nueva crea 21 vínculos para forzar la paginación, comprueba la desvinculación en ambas páginas y que el apunte sobrevive a una recarga. Siguiente TASK 6.1. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.
