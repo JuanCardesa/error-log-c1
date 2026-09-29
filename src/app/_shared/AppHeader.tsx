@@ -28,6 +28,7 @@ const NAV = [
 ] as const;
 
 const MORE = [
+  { href: '/notebook', label: 'Notebook' },
   { href: '/writing', label: 'Writing' },
   { href: '/exportar', label: 'Exportar datos' },
 ] as const;

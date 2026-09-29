@@ -1,3 +1,18 @@
+import { slug as githubSlug } from 'github-slugger';
+
+/** El ID conserva el enlace aunque cambien el título o la carpeta. */
+export function notebookNoteHref(note: { readonly id: number; readonly title: string }): string {
+  const suffix = githubSlug(note.title);
+  return `/notebook/${String(note.id)}${suffix === '' ? '' : `-${suffix}`}`;
+}
+
+export function parseNotebookNoteId(key: string): number | null {
+  const match = /^([1-9]\d*)(?:-[^/]+)?$/u.exec(key);
+  if (match === null) return null;
+  const id = Number(match[1]);
+  return Number.isSafeInteger(id) ? id : null;
+}
+
 export type NotebookUrl =
   | { readonly kind: 'internal' | 'external'; readonly href: string }
   | { readonly kind: 'invalid' };
