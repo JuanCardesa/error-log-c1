@@ -341,3 +341,36 @@ resumen de tres líneas: qué cambió y qué falta.
 Flujo de git: rama `feature/<slug>` → PR a `develop`; `develop` → `main` solo al cerrar
 fase. Conventional Commits, un commit por unidad lógica. CI (`typecheck`, `lint`, `test`,
 `build`) en push y PR a `develop` y `main`; el PR no se mergea si CI falla.
+
+---
+
+## 10. Notebook (contrato aprobado el 2026-09-29)
+
+Notebook es un cuaderno personal de apuntes Markdown dentro de la misma base SQLite.
+Cada apunte tiene título obligatorio, cuerpo que puede estar vacío, carpeta opcional y
+hasta doce etiquetas opcionales. Las carpetas tienen un máximo de dos niveles; los
+apartados son encabezados del Markdown, no filas independientes. La categoría de un
+error no se copia al cuaderno ni organiza automáticamente los apuntes.
+
+El lector ofrece Markdown seguro, índice de encabezados y búsqueda paginada por título,
+contenido y etiquetas. La edición usa texto con vista previa, borrador local recuperable,
+autosave y revisión optimista: un guardado con revisión antigua devuelve conflicto y
+conserva el trabajo local. El ID entero identifica la ruta; un UUID inmutable identifica
+el apunte y sus borradores. Renombrar o mover un apunte no cambia su identidad. Los
+enlaces a apartados pueden cambiar si cambia el encabezado.
+
+Un error puede vincularse manualmente con varios apuntes; cada par error–apunte puede
+señalar un apartado. Si este desaparece o deja de ser inequívoco, se conserva el vínculo
+al apunte. Borrar un extremo elimina solo sus vínculos. `rule_note`, causas, categorías,
+denominadores, Anki y Q1–Q7 mantienen sus contratos existentes. El cuaderno no forma
+parte de `Dataset` ni se carga para calcular los informes.
+
+Se admite importar un `.md` por operación, exportar un apunte `.md`, el cuaderno ZIP y
+Notebook en el dump JSON. El backup SQLite es la recuperación íntegra. No se importan
+adjuntos ni se cargan imágenes remotas al leer. HTML embebido y URLs activas se rechazan;
+los enlaces internos usan rutas Markdown normales, sin wikilinks.
+
+Límites de entrada: carpeta 80 caracteres; título 160; cuerpo 256 KiB UTF-8; doce tags
+de 40 caracteres; consulta 200. Una carpeta no se borra con hijos o apuntes. Los
+borrados se confirman. El modelo, las rutas y las fases de entrega están detallados en
+[NOTEBOOK-PLAN.md](NOTEBOOK-PLAN.md).

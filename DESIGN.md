@@ -297,3 +297,22 @@ ha guardado nada».
 - **Don't** usar color como única señal de estado.
 - **Don't** usar `window.confirm`: las confirmaciones son `ConfirmDialog`.
 - **Don't** poner más de un primario por tarea visible.
+
+## Notebook
+
+- Entrada en Más y en la paleta, conservando los cuatro destinos de la cabecera. La
+  portada abre con búsqueda, carpetas, modificados recientes y una acción «Nuevo
+  apunte». El estado vacío explica cómo crear el primero.
+- La lectura usa Source Serif 4 y `--reading-max`; directorio e índice acompañan al
+  texto en pantallas amplias. Bajo 1024 px, directorio e índice se despliegan y el
+  contenido ocupa una columna. Las tablas Markdown desplazan dentro de su contenedor.
+- El editor usa Plex, textarea nativo, toolbar pequeña y pestañas Editar/Vista previa.
+  La vista previa comparte renderizador con el lector. Guardar ahora y Ctrl/⌘+S
+  complementan autosave; un estado visible distingue pendiente, guardando, guardado,
+  conflicto y error. El borrador local se puede recuperar o descargar.
+- El índice usa enlaces reales, foco visible, teclado, scroll margin para la cabecera y
+  movimiento reducido cuando lo pide el sistema. Enlaces externos abren con atributos
+  seguros; imágenes se muestran como texto o aviso, sin peticiones de red.
+- El detalle de error permite buscar y vincular un apunte o apartado, además de abrirlo.
+  Si cambia un encabezado, se conserva el vínculo al documento y se muestra el aviso.
+  Borrar un apunte o carpeta requiere la confirmación existente.

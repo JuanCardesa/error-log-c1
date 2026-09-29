@@ -1,0 +1,31 @@
+export type NotebookUrl =
+  | { readonly kind: 'internal' | 'external'; readonly href: string }
+  | { readonly kind: 'invalid' };
+
+const BASE = 'http://notebook.local/notebook/';
+const scheme = /^[a-z][a-z\d+.-]*:/iu;
+
+/** Valida destinos del Markdown antes de pasarlos a un componente de enlace. */
+export function classifyNotebookUrl(value: string): NotebookUrl {
+  const href = value.trim();
+  if (!href || /[\u0000-\u001f\u007f\\]/u.test(href) || href.startsWith('//')) {
+    return { kind: 'invalid' };
+  }
+
+  try {
+    const url = new URL(href, BASE);
+    if (scheme.test(href)) {
+      if (url.protocol === 'https:' || url.protocol === 'http:') {
+        return { kind: 'external', href: url.href };
+      }
+      if (url.protocol === 'mailto:' && url.pathname) {
+        return { kind: 'external', href: url.href };
+      }
+      return { kind: 'invalid' };
+    }
+    if (url.origin !== new URL(BASE).origin) return { kind: 'invalid' };
+    return { kind: 'internal', href: `${url.pathname}${url.search}${url.hash}` };
+  } catch {
+    return { kind: 'invalid' };
+  }
+}
