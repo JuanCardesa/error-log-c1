@@ -234,3 +234,65 @@ test('pagina resultados conservando la búsqueda y la carpeta', async ({ page })
   await page.getByRole('navigation', { name: 'Páginas de apuntes' }).getByRole('link', { name: 'Anterior' }).click();
   await expect(results.locator('ul').first().locator(':scope > li')).toHaveCount(20);
 });
+
+test('la paleta muestra hasta tres apuntes junto a errores y sesiones y navega por ID', async ({ page }) => {
+  const db = createDb(E2E_DB);
+  let href: string;
+  try {
+    const at = new Date().toISOString();
+    let newest = createNotebookNote(db, {
+      uid: randomUUID(), title: 'Commitment note 1', folderId: null, tags: [], contentMarkdown: 'Texto.',
+    }, at).note;
+    for (let i = 2; i <= 4; i += 1) {
+      newest = createNotebookNote(db, {
+        uid: randomUUID(), title: `Commitment note ${String(i)}`, folderId: null, tags: [], contentMarkdown: 'Texto.',
+      }, at).note;
+    }
+    href = notebookNoteHref(newest);
+  } finally { db.$client.close(); }
+
+  await page.goto('/registrar');
+  await page.keyboard.press('Control+k');
+  const search = page.getByRole('combobox', { name: 'Buscar' });
+  await expect(search).toBeFocused();
+  await search.fill('commitment');
+  await expect(page.getByRole('option', { name: /Commitment note/u })).toHaveCount(3);
+  await expect(page.getByRole('option').filter({ hasText: 'commitement' })).toBeVisible();
+  await expect(page.getByRole('option', { name: /Commitment note 1/u })).toHaveCount(0);
+  await page.getByRole('option', { name: /Commitment note 4/u }).click();
+  await expect(page).toHaveURL(new RegExp(`${href}$`));
+
+  await page.keyboard.press('Control+k');
+  await search.fill('Unidad 1');
+  await expect(page.getByRole('option', { name: /Unidad 1/u })).toBeVisible();
+  await expect(page.getByRole('option', { name: /Commitment note/u })).toHaveCount(0);
+});
+
+test('la paleta descarta una respuesta antigua al limpiar la consulta', async ({ page }) => {
+  await page.goto('/registrar');
+  await page.keyboard.press('Control+k');
+  const search = page.getByRole('combobox', { name: 'Buscar' });
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  let caught!: () => void;
+  const intercepted = new Promise<void>((resolve) => { caught = resolve; });
+  let delayed = false;
+  await page.route('**/registrar', async (route) => {
+    if (route.request().method() === 'POST' && !delayed) {
+      delayed = true;
+      caught();
+      await pending;
+    }
+    await route.continue();
+  });
+  await search.fill('commitment');
+  await intercepted;
+  await search.fill('');
+  const completed = page.waitForResponse((response) => response.request().method() === 'POST'
+    && response.url().includes('/registrar'));
+  release();
+  await completed;
+  await page.waitForTimeout(100);
+  await expect(page.getByRole('option', { name: 'Ir a Notebook' })).toBeVisible();
+  await expect(page.getByRole('option').filter({ hasText: 'commitement' })).toHaveCount(0);
+});

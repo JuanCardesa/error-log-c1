@@ -135,7 +135,7 @@ export function AppHeader() {
           onClick={() => { setPalette(true); }}
         >
           <Search size={16} aria-hidden="true" />
-          <span className={styles.searchText}>Buscar errores, sesiones, acciones</span>
+          <span className={styles.searchText}>Buscar errores, sesiones, apuntes</span>
           <Kbd>{keys.search}</Kbd>
         </button>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BookOpen,
   Calendar,
   ChartColumn,
   CircleAlert,
@@ -15,6 +16,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
+import { notebookNoteHref } from '@/lib/notebook/urls';
 import { type PaletteResults, searchPaletteAction } from './searchActions';
 import { useShortcutLabels } from './shortcuts';
 import styles from './palette.module.css';
@@ -23,13 +25,13 @@ import styles from './palette.module.css';
  * Búsqueda global y acciones. `<dialog>` modal: el foco va al campo al abrir, ↑↓ mueven,
  * Intro abre, Escape o un clic fuera cierran y el foco vuelve a quien la abrió.
  *
- * Los errores y sesiones los busca el servidor, con un pequeño retardo al teclear y
+ * Los errores, sesiones y apuntes los busca el servidor, con un pequeño retardo al teclear y
  * descartando las respuestas que lleguen tarde.
  */
 
 interface Item {
   readonly key: string;
-  readonly group: 'Errores' | 'Sesiones' | 'Acciones';
+  readonly group: 'Errores' | 'Sesiones' | 'Notebook' | 'Acciones';
   readonly icon: LucideIcon;
   readonly label: string;
   readonly mine?: string | null;
@@ -38,7 +40,7 @@ interface Item {
   readonly href: string;
 }
 
-const EMPTY: PaletteResults = { errors: [], sessions: [] };
+const EMPTY: PaletteResults = { errors: [], sessions: [], notes: [] };
 const DEBOUNCE_MS = 140;
 
 export function CommandPalette({ open, onClose }: { readonly open: boolean; readonly onClose: () => void }) {
@@ -48,7 +50,8 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
   const keys = useShortcutLabels();
   const listId = useId();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<PaletteResults>(EMPTY);
+  const [resultState, setResultState] = useState<{ query: string; results: PaletteResults }>({ query: '', results: EMPTY });
+  const results = resultState.query === query.trim() ? resultState.results : EMPTY;
   const [active, setActive] = useState(0);
   const requestId = useRef(0);
 
@@ -69,8 +72,8 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
     if (q === '') return;
     const timer = setTimeout(() => {
       void searchPaletteAction(q).then(
-        (found) => { if (requestId.current === mine) setResults(found); },
-        () => { if (requestId.current === mine) setResults(EMPTY); },
+        (found) => { if (requestId.current === mine) setResultState({ query: q, results: found }); },
+        () => { if (requestId.current === mine) setResultState({ query: q, results: EMPTY }); },
       );
     }, DEBOUNCE_MS);
     return () => { clearTimeout(timer); };
@@ -96,6 +99,14 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
         sub: session.sub,
         href: `/registrar?s=${String(session.id)}`,
       })),
+      ...results.notes.map((note): Item => ({
+        key: `n${String(note.id)}`,
+        group: 'Notebook',
+        icon: BookOpen,
+        label: note.title,
+        sub: note.sub,
+        href: notebookNoteHref(note),
+      })),
     ];
     const actions: Item[] = [
       { key: 'new', group: 'Acciones', icon: Plus, label: 'Nueva sesión', kbd: 'N', href: '/registrar?nueva=1' },
@@ -104,6 +115,7 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
       { key: 'ge', group: 'Acciones', icon: List, label: 'Ir a Errores', kbd: 'G E', href: '/errores' },
       { key: 'gp', group: 'Acciones', icon: ChartColumn, label: 'Ir a Progreso', kbd: 'G P', href: '/informe' },
       { key: 'ga', group: 'Acciones', icon: RefreshCw, label: 'Ir a Anki', kbd: 'G A', href: '/anki' },
+      { key: 'gn', group: 'Acciones', icon: BookOpen, label: 'Ir a Notebook', href: '/notebook' },
       { key: 'export', group: 'Acciones', icon: Download, label: 'Exportar datos', href: '/exportar' },
     ];
     return [...found, ...actions.filter((action) => q === '' || action.label.toLowerCase().includes(q))];
@@ -112,8 +124,9 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
   const current = Math.min(active, Math.max(0, items.length - 1));
 
   const close = () => {
+    requestId.current += 1;
     setQuery('');
-    setResults(EMPTY);
+    setResultState({ query: '', results: EMPTY });
     setActive(0);
     onClose();
   };
@@ -146,17 +159,19 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
               ref={input}
               className={styles.input}
               value={query}
-              placeholder="Busca errores, sesiones o acciones"
+              placeholder="Busca errores, sesiones, apuntes o acciones"
               aria-label="Buscar"
+              maxLength={200}
               role="combobox"
               aria-expanded="true"
               aria-controls={listId}
               aria-activedescendant={items[current] === undefined ? undefined : `${listId}-${items[current].key}`}
               autoComplete="off"
               onChange={(event) => {
+                requestId.current += 1;
                 setQuery(event.target.value);
                 setActive(0);
-                if (event.target.value.trim() === '') setResults(EMPTY);
+                if (event.target.value.trim() === '') setResultState({ query: '', results: EMPTY });
               }}
               onKeyDown={(event) => {
                 if (event.key === 'ArrowDown') {
@@ -214,7 +229,7 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
             <span>↑↓ navegar</span>
             <span>↵ abrir</span>
             <span>esc cerrar</span>
-            <span className={styles.footHint}>Busca en enunciados, respuestas, reglas y sesiones</span>
+            <span className={styles.footHint}>Busca en errores, sesiones y apuntes</span>
           </div>
         </div>
       )}
