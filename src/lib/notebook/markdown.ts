@@ -50,6 +50,62 @@ function walk(node: Nodes, visit: (node: Nodes) => void): void {
   if ('children' in node) node.children.forEach((child) => walk(child, visit));
 }
 
+export interface NotebookLinkSpan {
+  readonly url: string;
+  /** Offsets del destino dentro del Markdown original, sin el texto ni los paréntesis. */
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * Localiza el destino de cada enlace para poder sustituirlo sin reescribir el documento.
+ *
+ * Solo devuelve un tramo cuando el texto de esas posiciones coincide exactamente con la URL
+ * que leyó el parser. Una forma que no se pueda situar así se omite: la exportación
+ * preferirá dejar el enlace como estaba antes que arriesgarse a cortar el Markdown.
+ */
+export function notebookLinkSpans(markdown: string): NotebookLinkSpan[] {
+  const spans: NotebookLinkSpan[] = [];
+  walk(parser.parse(markdown) as Root, (node) => {
+    if (node.type !== 'link' && node.type !== 'definition') return;
+    const from = node.position?.start.offset;
+    const to = node.position?.end.offset;
+    if (from === undefined || to === undefined) return;
+    const span = destinationSpan(markdown.slice(from, to), node.type, node.url);
+    if (span === null) return;
+    const start = from + span.start;
+    const end = from + span.end;
+    if (markdown.slice(start, end) === node.url) spans.push({ url: node.url, start, end });
+  });
+  return spans;
+}
+
+/** Offsets dentro del trozo de Markdown que ocupa el nodo. */
+function destinationSpan(slice: string, type: 'link' | 'definition', url: string): { start: number; end: number } | null {
+  if (type === 'definition') {
+    const label = slice.indexOf(']:');
+    return label < 0 ? null : bareDestination(slice, label + 2);
+  }
+  // `<https://…>` y las URL sueltas que reconoce GFM no llevan texto ni paréntesis.
+  if (slice.startsWith('<') && slice.endsWith('>')) return { start: 1, end: slice.length - 1 };
+  if (slice === url) return { start: 0, end: slice.length };
+  const open = slice.lastIndexOf('](');
+  return open < 0 ? null : bareDestination(slice, open + 2);
+}
+
+/** Desde `at`: entre `<>`, o hasta el espacio que separa el título o el cierre del enlace. */
+function bareDestination(slice: string, at: number): { start: number; end: number } | null {
+  let start = at;
+  while (start < slice.length && (slice[start] === ' ' || slice[start] === '\t')) start += 1;
+  if (slice[start] === '<') {
+    const close = slice.indexOf('>', start);
+    return close < 0 ? null : { start: start + 1, end: close };
+  }
+  let end = start;
+  while (end < slice.length && !/[\s)]/u.test(slice[end] ?? '')) end += 1;
+  return end === start ? null : { start, end };
+}
+
 export interface NotebookMarkdownAnalysis {
   readonly headings: readonly NotebookHeading[];
   /** Posición de cada encabezado, alineada con `headings`, para el renderizador. */

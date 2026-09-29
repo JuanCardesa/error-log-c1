@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **23 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 6.3**, exportar cuaderno y JSON.
+> Estado: **24 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 7.1**, completar responsive, accesibilidad y fallos.
 
 ## Cómo continuar
 
@@ -645,7 +645,7 @@ Mantener 90 % de cobertura en src/lib y regresiones de Anki, informes y captura.
 | 3. Consulta | Navegación, lector, TOC y búsqueda | En curso: 3.1–3.3 completadas |
 | 4. Edición fiable | Editor, preview, autosave y recuperación | Pendiente |
 | 5. Integración | Vínculos con errores | Pendiente |
-| 6. Portabilidad | Importación, exportaciones y recuperación | Pendiente |
+| 6. Portabilidad | Importación, exportaciones y recuperación | Completada |
 | 7. Entrega | E2E, rendimiento, demo y documentación | Pendiente |
 
 Rama feature/notebook desde develop. Commits por unidad verificable. PR a develop conforme a CONTRIBUTING.md.
@@ -804,7 +804,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
   **Dependencies:** 6.1. **Tests:** contenido y metadata.
   **Difficulty:** LOW. **Risk:** LOW.
 
-- [ ] **TASK 6.3 — Exportar cuaderno y JSON.**
+- [x] **TASK 6.3 — Exportar cuaderno y JSON.**
   Snapshot, streams, manifiesto, enlaces relativos y JSON ampliado.
   **Files affected:** notebookExport.ts, dump.ts, descargas y dependencia ZIP.
   **Dependencies:** 2.5, 5.1, 6.2. **Tests:** consistencia, relaciones, nombres, enlaces y cancelación.
@@ -893,7 +893,7 @@ No hay preguntas de producto bloqueantes. Tras guardar el plan y crear la rama, 
 | Búsqueda | FTS5 local |
 | Portabilidad | .md, ZIP, JSON; SQLite para restaurar |
 
-Ya instaladas para TASK 1.3: react-markdown, remark-gfm, unified, remark-parse, github-slugger y tipos mdast. `yaml` se instaló en TASK 6.1; `yazl` sigue previsto para TASK 6.3.
+Ya instaladas para TASK 1.3: react-markdown, remark-gfm, unified, remark-parse, github-slugger y tipos mdast. `yaml` se instaló en TASK 6.1 y `yazl` (con `@types/yazl`) en TASK 6.3.
 
 ## 24. Final recommended architecture
 
@@ -935,5 +935,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | 2026-09-29 | TASK 5.3: reverso del selector, dentro del propio lector del apunte. `NotebookRelatedErrors` pagina los errores que citan el apunte, reutiliza CorrectionPair y el enlace `/errores?error=` ya usado en la paleta y en Anki, desvincula sin salir de la página y retrocede sola de página cuando la desvinculación la deja vacía. El apartado vigente enlaza como ancla al propio lector (`#nb-…`), reutilizando los ids que ya pone TASK 3.3. Commit: `feat(notebook): show related errors in the reader`. | `pnpm typecheck`, `pnpm lint`, 726 pruebas unitarias y la suite E2E completa (101 correctas, 6 omitidas) con Node 23.7.0. La E2E nueva crea 21 vínculos para forzar la paginación, comprueba la desvinculación en ambas páginas y que el apunte sobrevive a una recarga. Siguiente TASK 6.1. |
 | 2026-09-29 | TASK 6.1: `/notebook/importar` y acceso «Importar .md» en la portada. `src/lib/notebook/import.ts` (solo servidor) valida extensión, tamaño y UTF-8 (quita el BOM), lee el frontmatter con YAML failsafe sin alias ni etiquetas `!…` y hasta 8 KiB, propone título desde frontmatter, primer H1 o archivo y normaliza etiquetas. Decisión: un frontmatter sin cierre, inválido, excesivo o que no es un mapa no se descarta, se conserva como texto al principio del cuerpo con aviso. Los campos desconocidos se enseñan y se descartan; `notebook_uid` y las fechas de otra exportación se reconocen pero no se aplican. Avisa de HTML, imágenes, enlaces no admitidos, destinos en otros archivos y anclas sin apartado, sin reescribir el cuerpo. `previewMarkdownImportAction` no escribe; `importMarkdownAction` vuelve a leer el archivo, compara su huella con la vista previa y crea con un UID propio de la importación, así que reintentar no duplica. Dependencia `yaml` 2.9.1. Commit: `feat(notebook): import a Markdown file`. | `pnpm typecheck`, `pnpm lint`, 760 pruebas unitarias (`pnpm test:coverage`: 98 % líneas, 92,46 % ramas; `import.ts` 99,36 %) y la suite E2E completa (103 correctas, 6 omitidas) con Node 23.7.0. Siguiente TASK 6.2. |
 | 2026-09-29 | TASK 6.2: `src/lib/notebook/export.ts` serializa un apunte a `.md` con el frontmatter del contrato (title, tags, notebook_uid, created_at, updated_at) y el cuerpo intacto, más nombres de fichero y de carpeta seguros en Windows con el ID delante para que los títulos repetidos no choquen. Todo valor del YAML va entre comillas dobles y en una línea, así ningún título puede escribir un `---` que al releerlo pareciera el cierre del frontmatter. Descarga en `GET /exportar/notebook-42.md` y acción «Exportar .md» en el lector. Decisión: la descarga individual no reescribe los enlaces del cuerpo; eso es cosa del ZIP (TASK 6.3), donde hay un árbol al que referirse. Commit: `feat(notebook): export a note as Markdown`. | `pnpm typecheck`, `pnpm lint`, 777 pruebas unitarias (17 nuevas, con ida y vuelta por el importador de 6.1) y una E2E que descarga el `.md` y lo reimporta sin avisos, con Node 23.7.0. Siguiente TASK 6.3. |
+| 2026-09-29 | TASK 6.3: `GET /exportar/notebook.zip` y el volcado JSON ampliado, ambos leídos de una copia temporal de la base (`notebookSnapshot.ts`) que se borra termine bien, falle o cancele el navegador: así ningún apunte sale con una revisión y el cuerpo de otro. El ZIP lleva `Notebook/` con las carpetas (también las vacías), un `.md` por apunte y `manifest.json` con versión, identidades, rutas, carpetas, metadata y vínculos con errores. Los cuerpos se leen de uno en uno, con `addReadStreamLazy`, cuando el ZIP llega a cada entrada. Los enlaces entre apuntes pasan a rutas relativas y las anclas `#nb-…` a la convención de GitHub; solo se sustituye el destino, y solo cuando se puede situar con exactitud, así que un enlace raro se queda como estaba antes que arriesgar el Markdown. `dump.json` conserva `exportedAt`, `rows` y `anki`, y añade `formatVersion: 2` y `notebook` emitido por trozos. Decisión: los vínculos con errores viajan solo en el manifiesto, no en los `.md`, porque identifican filas de esta base y el ZIP no los restaura. Dependencia `yazl` 3.3.1. Commit: `feat(notebook): export the notebook as ZIP and JSON`. | `pnpm typecheck`, `pnpm lint`, 815 pruebas unitarias (`pnpm test:coverage`: 98 % líneas, 91,96 % ramas) y la suite E2E completa (107 correctas, 6 omitidas) con Node 23.7.0. Las E2E abren el ZIP de verdad con un lector propio sobre `node:zlib` y comprueban que cancelar no deja copias temporales. Siguiente TASK 7.1. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.

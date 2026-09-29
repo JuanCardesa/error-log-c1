@@ -303,6 +303,9 @@ ha guardado nada».
 - Entrada en Más y en la paleta, conservando los cuatro destinos de la cabecera. La
   portada abre con búsqueda, carpetas, modificados recientes, la acción «Nuevo apunte» y
   la secundaria «Importar .md». El estado vacío explica cómo crear el primero.
+- Exportar ofrece el cuaderno completo en ZIP desde la pantalla Exportar y un `.md` suelto
+  desde el lector. El aviso dice qué lleva el manifiesto, que los enlaces pasan a rutas
+  relativas con anclas de GitHub y que los vínculos con errores no se restauran al importar.
 - Importar analiza un `.md` sin guardar nada: propone título, carpeta y etiquetas
   editables, lista los avisos (frontmatter no interpretado, campos descartados, HTML,
   imágenes, destinos no resolubles) y enseña la vista previa con el renderizador del
