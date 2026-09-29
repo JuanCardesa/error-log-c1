@@ -46,6 +46,9 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
           <TableOfContents headings={headings} />
         </aside>}
         <article className={styles.reader}>
+          <div className={styles.readerActions}>
+            <Link href={`${notebookNoteHref(note)}/editar`} className={styles.newNoteLink}>Editar</Link>
+          </div>
           <h1 id={titleHeading?.slug} className={styles.readerTitle}>{note.title}</h1>
           <div className={styles.meta}>
             <span>Modificado <time dateTime={note.updatedAt}>{new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' }).format(new Date(note.updatedAt))}</time></span>

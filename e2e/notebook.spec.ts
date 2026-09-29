@@ -51,7 +51,7 @@ test('abre por ID, devuelve 404 para IDs inexistentes y conserva enlaces al reno
   await page.goto('/notebook/999999999-not-found');
   await expect(page.getByRole('heading', { name: 'Esta página no existe' })).toBeVisible();
   await page.goto('/notebook/nuevo');
-  await expect(page.getByRole('heading', { name: 'Esta página no existe' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Nuevo apunte' })).toBeVisible();
 });
 
 test('muestra carpetas anidadas, estados vacíos y permite crear y renombrar carpetas', async ({ page }) => {

@@ -96,6 +96,8 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
           <h1 className={styles.pageTitle}>Notebook</h1>
           <p className={styles.intro}>Apuntes organizados por carpetas, con enlaces que conservan su ID al renombrarlos o moverlos.</p>
         </div>
+        <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/nuevo' : `/notebook/nuevo?carpeta=${String(selectedFolderId)}`}
+          className={styles.newNoteLink}>Nuevo apunte</Link>
       </header>
       <NotebookSearchControls folders={folders} folderParam={folderParam} tag={tag} />
       <div className={styles.layout}>
