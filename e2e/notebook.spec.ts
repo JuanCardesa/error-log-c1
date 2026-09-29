@@ -263,8 +263,9 @@ test('la paleta muestra hasta tres apuntes junto a errores y sesiones y navega p
   await expect(page).toHaveURL(new RegExp(`${href}$`));
 
   await page.keyboard.press('Control+k');
-  await search.fill('Unidad 1');
-  await expect(page.getByRole('option', { name: /Unidad 1/u })).toBeVisible();
+  // «Unidad 1» a secas empata con las sesiones Unidad 1X de otros specs y el tope es de tres.
+  await search.fill('Unidad 1, ej');
+  await expect(page.getByRole('option', { name: /Unidad 1, ej/u })).toBeVisible();
   await expect(page.getByRole('option', { name: /Commitment note/u })).toHaveCount(0);
 });
 
