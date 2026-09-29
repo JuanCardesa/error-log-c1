@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **15 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 4.2**, implementar borradores recuperables.
+> Estado: **16 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 4.3**, implementar autosave y reconciliación.
 
 ## Cómo continuar
 
@@ -752,7 +752,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
   **Dependencies:** 2.6, 3.2. **Tests:** teclado, selección y equivalencia preview.
   **Difficulty:** MEDIUM. **Risk:** MEDIUM.
 
-- [ ] **TASK 4.2 — Implementar borradores recuperables.**
+- [x] **TASK 4.2 — Implementar borradores recuperables.**
   UID/pestaña, recuperación, descarte y descarga.
   **Files affected:** módulo de borradores, hook y portada.
   **Dependencies:** 4.1. **Tests:** recarga, dos pestañas, cuota y formato inválido.
@@ -927,5 +927,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | 2026-09-29 | TASK 3.4: búsqueda Notebook por título, etiquetas y Markdown con filtros por carpeta/etiqueta, fragmentos resaltados, apartado y paginación compartible. Commit: `feat(notebook): add filtered search and excerpts`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (709 pruebas), build E2E y 6 E2E de Notebook correctos con Node 23.7.0. Siguiente TASK 3.5. |
 | 2026-09-29 | TASK 3.5: paleta global con hasta tres apuntes, acción de acceso a Notebook y navegación por ID. Los resultados de errores y sesiones se conservan; al cambiar o cerrar la consulta se descartan respuestas anteriores. Commit: `feat(notebook): add notes to command palette`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (709 pruebas), build E2E y 12 E2E de Notebook/Registrar correctos con Node 23.7.0. Siguiente TASK 4.1. |
 | 2026-09-29 | TASK 4.1: rutas de creación y edición, campos de título/carpeta/etiquetas, textarea con toolbar que conserva la selección, pestañas accesibles, preview compartida con el lector y guardado manual con Ctrl/⌘+S. Commit: `feat(notebook): add editor and preview`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (712 pruebas), build E2E y 9 E2E de Notebook correctos con Node 23.7.0. Siguiente TASK 4.2. |
+| 2026-09-29 | TASK 4.2: borradores locales versionados por UID y pestaña, escritura diferida y vaciado al abandonar, recuperación/descarga/descarte en editor y portada, aviso de cuota y protección de la revisión base al recuperar. Commit: `feat(notebook): recover local drafts`. | `pnpm typecheck`, `pnpm lint`, `pnpm test` (716 pruebas), build E2E y 15 E2E de Notebook correctos con Node 23.7.0. Siguiente TASK 4.3. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.

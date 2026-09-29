@@ -5,11 +5,12 @@ import { NotebookEditor } from '../NotebookEditor';
 export const dynamic = 'force-dynamic';
 
 export default async function NewNotebookNotePage({ searchParams }: {
-  readonly searchParams: Promise<{ readonly carpeta?: string | string[] }>;
+  readonly searchParams: Promise<{ readonly carpeta?: string | string[]; readonly borrador?: string | string[] }>;
 }) {
-  const { carpeta } = await searchParams;
+  const { carpeta, borrador } = await searchParams;
   const folders = listNotebookFolders(getDb());
   const folderId = typeof carpeta === 'string' && /^[1-9]\d*$/u.test(carpeta) ? Number(carpeta) : null;
   const initialFolderId = folders.some((folder) => folder.id === folderId) ? folderId : null;
-  return <NotebookEditor folders={folders} initialFolderId={initialFolderId} />;
+  return <NotebookEditor folders={folders} initialFolderId={initialFolderId}
+    requestedDraftKey={typeof borrador === 'string' ? borrador : undefined} />;
 }

@@ -8,6 +8,7 @@ import { searchNotebookSchema } from '@/lib/notebook/schemas';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import type { NotebookNoteSummary } from '@/lib/notebook/types';
 import { FolderManager } from './FolderManager';
+import { NotebookDraftNotice } from './NotebookDraftNotice';
 import { NotebookDirectory } from './NotebookDirectory';
 import { NotebookSearchControls } from './NotebookSearchControls';
 import { NotebookSearchResults } from './NotebookSearchResults';
@@ -99,6 +100,7 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
         <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/nuevo' : `/notebook/nuevo?carpeta=${String(selectedFolderId)}`}
           className={styles.newNoteLink}>Nuevo apunte</Link>
       </header>
+      <NotebookDraftNotice />
       <NotebookSearchControls folders={folders} folderParam={folderParam} tag={tag} />
       <div className={styles.layout}>
         <aside className={styles.sidebar}>

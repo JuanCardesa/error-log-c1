@@ -7,8 +7,9 @@ import { NotebookEditor } from '../../NotebookEditor';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EditNotebookNotePage({ params }: {
+export default async function EditNotebookNotePage({ params, searchParams }: {
   readonly params: Promise<{ readonly noteKey: string }>;
+  readonly searchParams: Promise<{ readonly borrador?: string | string[] }>;
 }) {
   const { noteKey } = await params;
   const id = parseNotebookNoteId(noteKey);
@@ -16,5 +17,7 @@ export default async function EditNotebookNotePage({ params }: {
   const db = getDb();
   const note = getNotebookNote(db, id);
   if (note === null) notFound();
-  return <NotebookEditor key={note.id} note={note} folders={listNotebookFolders(db)} />;
+  const { borrador } = await searchParams;
+  return <NotebookEditor key={note.id} note={note} folders={listNotebookFolders(db)}
+    requestedDraftKey={typeof borrador === 'string' ? borrador : undefined} />;
 }

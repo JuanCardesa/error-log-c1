@@ -9,9 +9,12 @@ import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import type { NotebookFolder, NotebookNote } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import ui from '../_shared/ui.module.css';
+import { ConfirmDialog } from '../_shared/ConfirmDialog';
 import { createNoteAction, saveNoteAction } from './actions';
 import { formatNotebookSelection, type Formatting } from './editorFormatting';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { downloadNotebookDraft } from './notebookDraft';
+import { useNotebookDraft } from './useNotebookDraft';
 import styles from './editor.module.css';
 
 type Form = { title: string; folderId: number | null; tagsText: string; contentMarkdown: string };
@@ -23,10 +26,11 @@ function formFromNote(note: NotebookNote): Form {
 
 function formKey(form: Form): string { return JSON.stringify(form); }
 
-export function NotebookEditor({ note, folders, initialFolderId = null }: {
+export function NotebookEditor({ note, folders, initialFolderId = null, requestedDraftKey }: {
   readonly note?: NotebookNote;
   readonly folders: readonly NotebookFolder[];
   readonly initialFolderId?: number | null;
+  readonly requestedDraftKey?: string;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<Form>(() => note === undefined
@@ -38,6 +42,10 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
   const pendingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [touched, setTouched] = useState(false);
+  const [recoveryConflict, setRecoveryConflict] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState(note);
   const savedRef = useRef(note);
   const [savedKey, setSavedKey] = useState<string | null>(note === undefined ? null : formKey(formFromNote(note)));
@@ -46,14 +54,27 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
   const selectionRef = useRef({ start: 0, end: 0 });
 
   const dirty = savedKey !== formKey(form);
+  const pendingChanges = savedNote === undefined
+    ? form.title !== '' || form.tagsText !== '' || form.contentMarkdown !== '' || form.folderId !== initialFolderId
+    : dirty;
   const readerHref = savedNote === undefined ? '/notebook' : notebookNoteHref(savedNote);
   const firstHeading = activeTab === 'preview' ? analyzeNotebookMarkdown(form.contentMarkdown).headings[0] : undefined;
   const hideFirstH1 = firstHeading?.depth === 1 && firstHeading.text === form.title.trim();
+  const draft = useNotebookDraft({
+    note: savedNote, form, formRef, uidRef, dirty: pendingChanges, touched, requestedKey: requestedDraftKey,
+    onRecover: (fields, stale) => {
+      change(fields);
+      setRecoveryConflict(stale);
+    },
+    onDiscard: () => { setTouched(true); },
+  });
+  const editorLocked = !draft.ready || draft.candidate !== null;
 
   function change(patch: Partial<Form>) {
     const updated = { ...formRef.current, ...patch };
     formRef.current = updated;
     setForm(updated);
+    setTouched(true);
     setError(null);
     setFieldErrors({});
   }
@@ -72,7 +93,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
   }
 
   async function save() {
-    if (pendingRef.current || savedRef.current !== undefined && savedKey === formKey(formRef.current)) return;
+    if (pendingRef.current || editorLocked || recoveryConflict || !pendingChanges) return;
     const snapshot = formRef.current;
     const tags = snapshot.tagsText.trim() === '' ? [] : snapshot.tagsText.split(',').map((tag) => tag.trim());
     const uid = uidRef.current ?? crypto.randomUUID();
@@ -109,6 +130,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
         return;
       }
       const updated = 'note' in result.data ? result.data.note : result.data;
+      draft.markConfirmed();
       savedRef.current = updated;
       setSavedNote(updated);
       const canonical = formFromNote(updated);
@@ -117,9 +139,11 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
         && updated.folderId === parsed.data.folderId
         && updated.contentMarkdown === parsed.data.contentMarkdown
         && updated.tags.join('\u0000') === parsed.data.tags.join('\u0000');
-      if (responseMatchesInput && formKey(formRef.current) === formKey(snapshot)) {
+      const unchangedSinceSend = formKey(formRef.current) === formKey(snapshot);
+      if (responseMatchesInput && unchangedSinceSend) {
         formRef.current = canonical;
         setForm(canonical);
+        draft.clearOwn();
       }
       if (current === undefined && responseMatchesInput && formKey(formRef.current) === formKey(canonical)) {
         router.replace(`${notebookNoteHref(updated)}/editar`);
@@ -133,11 +157,11 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
   }
 
   useEffect(() => {
-    if (!dirty) return;
+    if (!pendingChanges) return;
     function warn(event: BeforeUnloadEvent) { event.preventDefault(); }
     window.addEventListener('beforeunload', warn);
     return () => { window.removeEventListener('beforeunload', warn); };
-  }, [dirty]);
+  }, [pendingChanges]);
 
   function onEditorKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
@@ -169,22 +193,59 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
           <h1>{savedNote === undefined ? 'Nuevo apunte' : 'Editar apunte'}</h1>
         </div>
         <Link href={readerHref} className={ui.backLink} onClick={(event) => {
-          if (dirty && !window.confirm('Hay cambios sin guardar. ¿Salir de todos modos?')) event.preventDefault();
+          if (pendingChanges && !window.confirm('Hay cambios sin guardar. ¿Salir de todos modos?')) event.preventDefault();
         }}>
           {savedNote === undefined ? 'Volver a Notebook' : 'Volver a lectura'}
         </Link>
       </div>
 
+      {draft.candidate !== null && (
+        <section className={styles.draftNotice} aria-label="Borrador recuperable">
+          <h2>Hay un borrador local de este apunte</h2>
+          <p>Guardado {new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(draft.candidate.savedAt))}.
+            {draft.fromOtherTab ? ' Proviene de otra pestaña; al recuperarlo se conservará allí una copia.' : ''}
+            {draft.hasAnotherRequested ? ' Esta pestaña tiene otro borrador pendiente; decide sobre él antes de abrir el seleccionado.' : ''}
+          </p>
+          <div className={styles.draftActions}>
+            <button type="button" className={ui.primary} onClick={draft.recover}>Recuperar borrador</button>
+            <button type="button" className={ui.secondary} onClick={() => {
+              if (draft.candidate !== null) downloadNotebookDraft(draft.candidate);
+            }}>Descargar borrador</button>
+            <button type="button" className={ui.dangerLink} onClick={() => { setDiscardError(null); setConfirmDiscard(true); }}>Descartar borrador…</button>
+          </div>
+        </section>
+      )}
+      {recoveryConflict && <div role="alert" className={styles.draftNotice}>
+        El apunte guardado cambió desde este borrador. Descarga tus cambios antes de volver a la versión guardada; el guardado está detenido para evitar sobrescribirla.
+        <div className={styles.draftActions}>
+          <button type="button" className={ui.secondary} onClick={draft.downloadCurrent}>Descargar borrador</button>
+          <button type="button" className={ui.secondary} onClick={() => {
+            if (savedRef.current === undefined) return;
+            const original = formFromNote(savedRef.current);
+            formRef.current = original;
+            setForm(original);
+            setRecoveryConflict(false);
+            draft.resetToSaved();
+          }}>Volver a versión guardada</button>
+        </div>
+      </div>}
+      {draft.storageProblem !== null && <div role="alert" className={styles.storageWarning}>
+        {draft.storageProblem === 'quota'
+          ? 'Se agotó el espacio para borradores locales. Tu texto sigue en esta pestaña.'
+          : 'No se pudo guardar una copia local. Tu texto sigue en esta pestaña.'}
+        <button type="button" className={ui.secondary} onClick={draft.downloadCurrent}>Descargar borrador</button>
+      </div>}
+
       <div className={styles.metaFields}>
         <label className={ui.field}>Título
           <input className={ui.input} value={form.title} maxLength={NOTEBOOK_LIMITS.title} required
-            disabled={pending && savedNote === undefined}
+            disabled={editorLocked || pending && savedNote === undefined}
             aria-invalid={fieldErrors['title'] !== undefined}
             onChange={(event) => { change({ title: event.target.value }); }} />
           {fieldError('title')}
         </label>
         <label className={ui.field}>Carpeta
-          <select className={ui.select} value={form.folderId ?? ''} disabled={pending && savedNote === undefined}
+          <select className={ui.select} value={form.folderId ?? ''} disabled={editorLocked || pending && savedNote === undefined}
             onChange={(event) => { change({ folderId: event.target.value === '' ? null : Number(event.target.value) }); }}>
             <option value="">Sin carpeta</option>
             {folders.map((folder) => <option key={folder.id} value={folder.id}>
@@ -194,7 +255,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
           {fieldError('folderId')}
         </label>
         <label className={ui.field}>Etiquetas <span className={ui.optional}>separadas por comas</span>
-          <input className={ui.input} value={form.tagsText} placeholder="gramática, part4" disabled={pending && savedNote === undefined}
+          <input className={ui.input} value={form.tagsText} placeholder="gramática, part4" disabled={editorLocked || pending && savedNote === undefined}
             aria-invalid={fieldErrors['tags'] !== undefined}
             onChange={(event) => { change({ tagsText: event.target.value }); }} />
           {fieldError('tags')}
@@ -211,7 +272,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
             onKeyDown={(event) => { onTabKeyDown(event, 'preview'); }} onClick={() => { setActiveTab('preview'); }}>Vista previa</button>
         </div>
         <span aria-live="polite" className={styles.saveStatus}>
-          {pending ? 'Guardando…' : error !== null ? 'No guardado' : dirty ? 'Sin guardar' : 'Guardado'}
+          {pending ? 'Guardando…' : error !== null ? 'No guardado' : pendingChanges ? 'Sin guardar' : savedNote === undefined ? 'Nuevo apunte' : 'Guardado'}
         </span>
       </div>
 
@@ -222,14 +283,14 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
             ['list', 'Lista', 'Lista'], ['quote', 'Cita', 'Cita'], ['link', 'Enlace', 'Enlace'],
           ] as const).map(([kind, label, text]) => (
             <button key={kind} type="button" className={`${ui.secondary} ${ui.compact}`} aria-label={label}
-              disabled={pending && savedNote === undefined}
+              disabled={editorLocked || pending && savedNote === undefined}
               onMouseDown={(event) => { event.preventDefault(); }}
               onClick={() => { applyFormatting(kind); }}>{text}</button>
           ))}
         </div>
         <label className={`${ui.field} ${styles.bodyLabel}`} htmlFor="notebook-body">Contenido Markdown</label>
         <textarea id="notebook-body" ref={textareaRef} className={`${ui.textarea} ${styles.textarea}`}
-          value={form.contentMarkdown} disabled={pending && savedNote === undefined}
+          value={form.contentMarkdown} disabled={editorLocked || pending && savedNote === undefined}
           aria-invalid={fieldErrors['contentMarkdown'] !== undefined}
           onChange={(event) => { change({ contentMarkdown: event.target.value }); }}
           onSelect={(event) => { selectionRef.current = { start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }; }} />
@@ -247,9 +308,17 @@ export function NotebookEditor({ note, folders, initialFolderId = null }: {
       </div>
 
       <div className={styles.actions}>
-        <button type="button" className={ui.primary} disabled={pending || !dirty} onClick={() => { void save(); }}>Guardar ahora</button>
+        <button type="button" className={ui.primary} disabled={pending || editorLocked || recoveryConflict || !pendingChanges} onClick={() => { void save(); }}>Guardar ahora</button>
         {error !== null && <p role="alert" className={ui.fieldError}>{error}</p>}
       </div>
+      <ConfirmDialog open={confirmDiscard} title="Descartar borrador local" confirmLabel="Descartar borrador"
+        error={discardError}
+        onConfirm={() => {
+          if (draft.discard()) setConfirmDiscard(false);
+          else setDiscardError('No se pudo borrar la copia local. Inténtalo de nuevo.');
+        }} onCancel={() => { setConfirmDiscard(false); setDiscardError(null); }}>
+        Se borrará la copia local seleccionada. Esta acción no se puede deshacer.
+      </ConfirmDialog>
     </div>
   );
 }
