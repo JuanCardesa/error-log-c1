@@ -109,7 +109,7 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
       <NotebookSearchControls folders={folders} folderParam={folderParam} tag={tag} />
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <NotebookDirectory key={selectedFolderId ?? 'home'} folders={folders} selectedFolderId={selectedFolderId} />
+          <NotebookDirectory folders={folders} selectedFolderId={selectedFolderId} />
           <FolderManager key={selectedFolderId ?? 'home'} folders={folders} selected={folders.find((item) => item.id === selectedFolderId)} />
         </aside>
         <section className={styles.content} aria-labelledby="notebook-list-title">

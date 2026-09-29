@@ -15,9 +15,13 @@ export function NotebookDirectory({
 }) {
   const idPrefix = useId();
   const roots = folders.filter((folder) => folder.parentId === null);
-  const [expanded, setExpanded] = useState<ReadonlySet<number>>(
-    () => new Set(roots.map((folder) => folder.id)),
-  );
+  /**
+   * Se recuerda lo que se cierra, no lo que se abre: así una carpeta recién creada
+   * aparece desplegada sin tener que remontar el componente. Antes se remontaba con
+   * `key` al cambiar de carpeta y cada navegación de cliente dejaba el `nav` anterior
+   * pegado en el DOM, con el directorio repetido una vez por salto.
+   */
+  const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(() => new Set());
 
   return (
     <nav aria-label="Directorio de Notebook" className={styles.directory}>
@@ -30,7 +34,7 @@ export function NotebookDirectory({
         </li>
         {roots.map((folder) => {
           const children = folders.filter((child) => child.parentId === folder.id);
-          const isExpanded = expanded.has(folder.id);
+          const isExpanded = !collapsed.has(folder.id);
           const childListId = `${idPrefix}-${String(folder.id)}`;
           return (
             <li key={folder.id}>
@@ -43,7 +47,7 @@ export function NotebookDirectory({
                     aria-expanded={isExpanded}
                     aria-controls={childListId}
                     onClick={() => {
-                      setExpanded((current) => {
+                      setCollapsed((current) => {
                         const next = new Set(current);
                         if (next.has(folder.id)) next.delete(folder.id);
                         else next.add(folder.id);

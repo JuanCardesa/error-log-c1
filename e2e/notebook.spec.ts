@@ -78,6 +78,40 @@ test('muestra carpetas anidadas, estados vacíos y permite crear y renombrar car
   await expect(page.getByRole('navigation', { name: 'Directorio de Notebook' }).getByRole('link', { name: 'Modal verbs' })).toBeHidden();
 });
 
+test('el directorio no se repite al saltar de carpeta en carpeta ni al entrar en un apunte', async ({ page }) => {
+  const db = createDb(E2E_DB);
+  let firstId: number;
+  let secondName: string;
+  let noteHref: string;
+  try {
+    const at = new Date().toISOString();
+    const first = createNotebookFolder(db, { name: `Directorio A ${randomUUID().slice(0, 8)}`, parentId: null }, at);
+    secondName = `Directorio B ${randomUUID().slice(0, 8)}`;
+    createNotebookFolder(db, { name: secondName, parentId: null }, at);
+    firstId = first.id;
+    noteHref = notebookNoteHref(createNotebookNote(db, {
+      uid: randomUUID(), title: 'Apunte del directorio', folderId: first.id, tags: [], contentMarkdown: 'Texto.',
+    }, at).note);
+  } finally { db.$client.close(); }
+
+  // Remontar el directorio al cambiar de carpeta dejaba el `nav` anterior en la página:
+  // uno más por cada salto, con las carpetas de antes dentro.
+  const directory = page.getByRole('navigation', { name: 'Directorio de Notebook' });
+  await page.goto(`/notebook?carpeta=${String(firstId)}`);
+  await expect(directory).toHaveCount(1);
+  await directory.getByRole('link', { name: secondName }).click();
+  await expect(directory).toHaveCount(1);
+  await page.getByRole('link', { name: 'Ver recientes' }).click();
+  await expect(page).toHaveURL(/\/notebook$/u);
+  await expect(directory).toHaveCount(1);
+
+  await page.goto(noteHref);
+  await expect(directory).toHaveCount(1);
+  await directory.getByRole('link', { name: secondName }).click();
+  await expect(page).toHaveURL(/carpeta=\d+/u);
+  await expect(directory).toHaveCount(1);
+});
+
 test('el índice conserva hashes, teclado, duplicados y movimiento reducido', async ({ page }) => {
   const db = createDb(E2E_DB);
   let href: string;

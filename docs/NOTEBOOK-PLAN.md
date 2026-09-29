@@ -3,8 +3,8 @@
 > Plan aprobado el 29 de septiembre de 2026. Implementación iniciada en `feature/notebook`.
 > Rama de trabajo: **feature/notebook**, creada desde **develop**, commit **b03b745**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **24 de 27 tareas de implementación completadas**.
-> Próximo paso: **TASK 7.1**, completar responsive, accesibilidad y fallos.
+> Estado: **25 de 27 tareas de implementación completadas**.
+> Próximo paso: **TASK 7.2**, medir y cerrar rendimiento.
 
 ## Cómo continuar
 
@@ -642,11 +642,11 @@ Mantener 90 % de cobertura en src/lib y regresiones de Anki, informes y captura.
 | --- | --- | --- |
 | 1. Contrato y núcleo | Tipos, validación, Markdown y enlaces | Completada |
 | 2. Persistencia | Migraciones, repositorios, concurrencia y FTS | Completada |
-| 3. Consulta | Navegación, lector, TOC y búsqueda | En curso: 3.1–3.3 completadas |
-| 4. Edición fiable | Editor, preview, autosave y recuperación | Pendiente |
-| 5. Integración | Vínculos con errores | Pendiente |
+| 3. Consulta | Navegación, lector, TOC y búsqueda | Completada |
+| 4. Edición fiable | Editor, preview, autosave y recuperación | Completada |
+| 5. Integración | Vínculos con errores | Completada |
 | 6. Portabilidad | Importación, exportaciones y recuperación | Completada |
-| 7. Entrega | E2E, rendimiento, demo y documentación | Pendiente |
+| 7. Entrega | E2E, rendimiento, demo y documentación | En curso: 7.1 completada |
 
 Rama feature/notebook desde develop. Commits por unidad verificable. PR a develop conforme a CONTRIBUTING.md.
 
@@ -812,7 +812,7 @@ Los archivos nuevos indicados son destinos propuestos, no archivos ya creados. M
 
 ### PHASE 7 — Validación y entrega
 
-- [ ] **TASK 7.1 — Completar responsive, accesibilidad y fallos.**
+- [x] **TASK 7.1 — Completar responsive, accesibilidad y fallos.**
   Cubrir recorridos de la sección 19.
   **Files affected:** e2e/notebook*.spec.ts.
   **Dependencies:** fases 3–6. **Tests:** escritorio, tableta, móvil, teclado, pestañas y transporte.
@@ -936,5 +936,6 @@ La primera versión entrega el cuaderno y sus conexiones. Recomendaciones autom�
 | 2026-09-29 | TASK 6.1: `/notebook/importar` y acceso «Importar .md» en la portada. `src/lib/notebook/import.ts` (solo servidor) valida extensión, tamaño y UTF-8 (quita el BOM), lee el frontmatter con YAML failsafe sin alias ni etiquetas `!…` y hasta 8 KiB, propone título desde frontmatter, primer H1 o archivo y normaliza etiquetas. Decisión: un frontmatter sin cierre, inválido, excesivo o que no es un mapa no se descarta, se conserva como texto al principio del cuerpo con aviso. Los campos desconocidos se enseñan y se descartan; `notebook_uid` y las fechas de otra exportación se reconocen pero no se aplican. Avisa de HTML, imágenes, enlaces no admitidos, destinos en otros archivos y anclas sin apartado, sin reescribir el cuerpo. `previewMarkdownImportAction` no escribe; `importMarkdownAction` vuelve a leer el archivo, compara su huella con la vista previa y crea con un UID propio de la importación, así que reintentar no duplica. Dependencia `yaml` 2.9.1. Commit: `feat(notebook): import a Markdown file`. | `pnpm typecheck`, `pnpm lint`, 760 pruebas unitarias (`pnpm test:coverage`: 98 % líneas, 92,46 % ramas; `import.ts` 99,36 %) y la suite E2E completa (103 correctas, 6 omitidas) con Node 23.7.0. Siguiente TASK 6.2. |
 | 2026-09-29 | TASK 6.2: `src/lib/notebook/export.ts` serializa un apunte a `.md` con el frontmatter del contrato (title, tags, notebook_uid, created_at, updated_at) y el cuerpo intacto, más nombres de fichero y de carpeta seguros en Windows con el ID delante para que los títulos repetidos no choquen. Todo valor del YAML va entre comillas dobles y en una línea, así ningún título puede escribir un `---` que al releerlo pareciera el cierre del frontmatter. Descarga en `GET /exportar/notebook-42.md` y acción «Exportar .md» en el lector. Decisión: la descarga individual no reescribe los enlaces del cuerpo; eso es cosa del ZIP (TASK 6.3), donde hay un árbol al que referirse. Commit: `feat(notebook): export a note as Markdown`. | `pnpm typecheck`, `pnpm lint`, 777 pruebas unitarias (17 nuevas, con ida y vuelta por el importador de 6.1) y una E2E que descarga el `.md` y lo reimporta sin avisos, con Node 23.7.0. Siguiente TASK 6.3. |
 | 2026-09-29 | TASK 6.3: `GET /exportar/notebook.zip` y el volcado JSON ampliado, ambos leídos de una copia temporal de la base (`notebookSnapshot.ts`) que se borra termine bien, falle o cancele el navegador: así ningún apunte sale con una revisión y el cuerpo de otro. El ZIP lleva `Notebook/` con las carpetas (también las vacías), un `.md` por apunte y `manifest.json` con versión, identidades, rutas, carpetas, metadata y vínculos con errores. Los cuerpos se leen de uno en uno, con `addReadStreamLazy`, cuando el ZIP llega a cada entrada. Los enlaces entre apuntes pasan a rutas relativas y las anclas `#nb-…` a la convención de GitHub; solo se sustituye el destino, y solo cuando se puede situar con exactitud, así que un enlace raro se queda como estaba antes que arriesgar el Markdown. `dump.json` conserva `exportedAt`, `rows` y `anki`, y añade `formatVersion: 2` y `notebook` emitido por trozos. Decisión: los vínculos con errores viajan solo en el manifiesto, no en los `.md`, porque identifican filas de esta base y el ZIP no los restaura. Dependencia `yazl` 3.3.1. Commit: `feat(notebook): export the notebook as ZIP and JSON`. | `pnpm typecheck`, `pnpm lint`, 815 pruebas unitarias (`pnpm test:coverage`: 98 % líneas, 91,96 % ramas) y la suite E2E completa (107 correctas, 6 omitidas) con Node 23.7.0. Las E2E abren el ZIP de verdad con un lector propio sobre `node:zlib` y comprueban que cancelar no deja copias temporales. Siguiente TASK 7.1. |
+| 2026-09-29 | TASK 7.1: tres specs nuevos —`notebookResponsive`, `notebookKeyboard` y `notebookFailures`— más dos recorridos que faltaban. Responsive: portada, búsqueda, lector, editor, nuevo e importar sin desplazamiento horizontal a 1440, 834 y 390 px, con el índice en columna por encima de 1280 y desplegable por debajo, y una tabla de cinco columnas que scrollea dentro de su envoltorio sin arrastrar la página. Teclado: el envoltorio de la tabla entra en la tabulación y se desplaza con las flechas, una carpeta se crea abriendo el `details` con Enter, Escape cierra primero el selector de apuntes y después el panel del error, las pestañas del editor responden a Inicio/Fin con foco único, y el diálogo de borrar carpeta se cancela con Escape devolviendo el foco. Fallos: se corta una sola Server Action por su cuerpo y se comprueba el aviso y el reintento en la búsqueda, el guardado y la desvinculación de vínculos, en los errores relacionados del lector, en el alta de carpeta y en la importación —ahí con la respuesta perdida después del servidor, que no duplica el apunte—. Y el recorrido 9: borrar error, sesión y apunte, cada uno con su consecuencia en el otro extremo. Dos arreglos salidos de estas pruebas: el `key` que remontaba `NotebookDirectory` al cambiar de carpeta dejaba el `nav` anterior pegado al DOM (un directorio más por salto), así que ahora se recuerda lo que se cierra en vez de lo que se abre y no hace falta remontar; y Escape en el selector de apuntes devuelve el foco a «Vincular apunte», porque al desmontarse el campo el foco se perdía y el segundo Escape ya no cerraba el panel. De paso, en `FolderManager.deleteFolder` sobraba el `router.refresh()` detrás del `push`: la acción ya revalida `/notebook`. Commit: `test(notebook): cover responsive, keyboard and transport failures`. | `pnpm typecheck`, `pnpm lint`, 815 pruebas unitarias (`pnpm test:coverage`: 98 % sentencias, 91,96 % ramas) y la suite E2E completa (124 correctas, 6 omitidas) con Node 23.7.0. Aviso para la próxima sesión: las E2E sirven desde `.next-e2e`, así que hay que compilar con `ERRORLOG_E2E=1 pnpm build` antes de `playwright test`; `pnpm test:e2e` compila `.next` y deja el bundle E2E como estuviera. Siguiente TASK 7.2. |
 
 TASK 1.1 se cerró al actualizar SPEC, PRODUCT y DESIGN; el plan por sí solo no completaba esa tarea.

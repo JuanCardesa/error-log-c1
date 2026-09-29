@@ -42,7 +42,7 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
       </nav>
       <div className={`${styles.layout} ${headings.length > 0 ? styles.readerLayout : ''}`}>
         <aside className={styles.sidebar}>
-          <NotebookDirectory key={note.folderId ?? 'unfiled'} folders={folders} selectedFolderId={note.folderId} />
+          <NotebookDirectory folders={folders} selectedFolderId={note.folderId} />
         </aside>
         {headings.length > 0 && <aside className={styles.tocArea}>
           <TableOfContents headings={headings} />

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 
 import {
   getErrorNoteLinksAction, getNoteOutlineAction, removeErrorNoteLinkAction,
@@ -30,6 +30,7 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
   const [outlineLoading, setOutlineLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -129,11 +130,14 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
         event.stopPropagation();
         setSelectedNote(null);
         setPickerOpen(false);
+        // El campo que tenía el foco desaparece con el selector: sin devolverlo al
+        // disparador, el siguiente Escape ya no llegaría al panel para cerrarlo.
+        toggleRef.current?.focus();
       }
     }}>
       <div className={styles.heading}>
         <h2>Apuntes vinculados</h2>
-        <button type="button" className={ui.textLink} onClick={() => {
+        <button ref={toggleRef} type="button" className={ui.textLink} onClick={() => {
           setSelectedNote(null); setQuery(''); setPage(1); setMessage(null); setPickerOpen(!pickerOpen);
         }}>{pickerOpen ? 'Cerrar selector' : 'Vincular apunte'}</button>
       </div>

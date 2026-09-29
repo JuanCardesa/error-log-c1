@@ -62,8 +62,9 @@ export function FolderManager({
       const result = await deleteFolderAction({ id: selected.id });
       if (!result.ok) { setError(result.message); setConfirmDelete(false); return; }
       setConfirmDelete(false);
+      // Sin `router.refresh()` detrás: la acción ya revalidó /notebook y refrescar
+      // mientras el push está en vuelo deja las dos páginas pintadas a la vez.
       router.push('/notebook');
-      router.refresh();
     } catch {
       setError('No se pudo borrar la carpeta. Inténtalo de nuevo.');
     } finally { setPending(false); }

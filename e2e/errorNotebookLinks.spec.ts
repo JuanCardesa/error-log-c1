@@ -4,7 +4,8 @@ import { expect, test } from '@playwright/test';
 
 import { createDb } from '../src/lib/db/client';
 import { loadDataset } from '../src/lib/db/load';
-import { createNotebookNote, getNotebookNote, saveNotebookNote } from '../src/lib/db/notebookRepo';
+import { setErrorNoteLink } from '../src/lib/db/notebookLinkRepo';
+import { createNotebookFolder, createNotebookNote, getNotebookNote, saveNotebookNote } from '../src/lib/db/notebookRepo';
 import { notebookNoteHref } from '../src/lib/notebook/urls';
 import { E2E_DB } from './globalSetup';
 
@@ -64,4 +65,46 @@ test('vincula un apartado desde Sesiones y lo revisa en Errores y Falsas certeza
   await expect(links.getByRole('link', { name: title })).toHaveAttribute('href', `${noteHref}#nb-apartado-nuevo`);
   await links.getByRole('button', { name: 'Desvincular' }).click();
   await expect(links.getByText('Este error aún no tiene apuntes vinculados.')).toBeVisible();
+});
+
+test('el vínculo sobrevive a renombrar y mover el apunte, con su apartado', async ({ page }) => {
+  const db = createDb(E2E_DB);
+  let errorId: number;
+  let noteId: number;
+  let destination: string;
+  const title = `Apunte que se muda ${randomUUID().slice(0, 8)}`;
+  try {
+    const at = new Date().toISOString();
+    const origin = createNotebookFolder(db, { name: `Origen ${randomUUID().slice(0, 8)}`, parentId: null }, at);
+    destination = `Destino ${randomUUID().slice(0, 8)}`;
+    createNotebookFolder(db, { name: destination, parentId: null }, at);
+    const error = loadDataset(db).errors.find((item) => item.correctAnswer === 'the meeting had to be called off');
+    if (error === undefined) throw new Error('Falta el error de prueba');
+    errorId = error.id;
+    const note = createNotebookNote(db, {
+      uid: randomUUID(), title, folderId: origin.id, tags: [],
+      contentMarkdown: '## Regla del apartado\n\nLa explicación.',
+    }, at).note;
+    noteId = note.id;
+    setErrorNoteLink(db, { errorId, noteId, headingSlug: 'nb-regla-del-apartado' }, at);
+  } finally { db.$client.close(); }
+
+  const renamed = `${title} revisado`;
+  await page.goto(`/notebook/${String(noteId)}/editar`);
+  await page.getByRole('textbox', { name: 'Título' }).fill(renamed);
+  await page.getByRole('combobox', { name: 'Carpeta' }).selectOption({ label: destination });
+  await page.getByRole('button', { name: 'Guardar ahora' }).click();
+  await expect(page.getByText('Guardado', { exact: true })).toBeVisible();
+
+  // El vínculo se guardó contra el ID, así que el cambio de título y de carpeta solo
+  // cambia la dirección a la que lleva: ni se rompe ni pierde el apartado.
+  await page.goto(`/errores?error=${String(errorId)}`);
+  const links = page.getByRole('region', { name: 'Apuntes vinculados' });
+  await expect(links.getByRole('link', { name: renamed }))
+    .toHaveAttribute('href', `${notebookNoteHref({ id: noteId, title: renamed })}#nb-regla-del-apartado`);
+  await expect(links.getByText('Apartado: Regla del apartado')).toBeVisible();
+
+  await links.getByRole('link', { name: renamed }).click();
+  await expect(page.getByRole('heading', { level: 1, name: renamed })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Ruta del apunte' }).getByRole('link', { name: destination })).toBeVisible();
 });
