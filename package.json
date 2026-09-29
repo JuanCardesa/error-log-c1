@@ -29,6 +29,7 @@
     "db:seed": "tsx src/lib/db/seed.run.ts",
     "db:backup": "tsx src/lib/db/backup.run.ts",
     "db:restore": "tsx src/lib/db/restore.run.ts",
+    "db:notebook-rebuild": "tsx src/lib/db/notebookSearch.run.ts",
     "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {

@@ -4,8 +4,10 @@ import {
   check,
   index,
   integer,
+  primaryKey,
   sqliteTable,
   text,
+  uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
 import {
@@ -20,6 +22,7 @@ import {
   SOURCES,
 } from '../domain/enums';
 import { RULE_NOTE_MIN_LENGTH } from '../validation/schemas';
+import { NOTEBOOK_LIMITS } from '../notebook/schemas';
 
 /**
  * Schema de la base. Los CHECK repiten a proposito invariantes que ya valida Zod
@@ -245,3 +248,53 @@ export const writingPiece = sqliteTable(
     `),
   ],
 );
+
+/** Carpetas de dos niveles; los triggers de 0008 protegen movimientos entre niveles. */
+export const notebookFolder = sqliteTable('notebook_folder', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  parentId: integer('parent_id').references((): AnySQLiteColumn => notebookFolder.id, { onDelete: 'restrict' }),
+  name: text('name').notNull(),
+  nameKey: text('name_key').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('notebook_folder_parent_idx').on(table.parentId),
+  uniqueIndex('notebook_folder_root_name_key_unique').on(table.nameKey)
+    .where(sql`${table.parentId} IS NULL`),
+  uniqueIndex('notebook_folder_child_name_key_unique').on(table.parentId, table.nameKey)
+    .where(sql`${table.parentId} IS NOT NULL`),
+  check('notebook_folder_no_self_parent', sql`${table.parentId} IS NULL OR ${table.parentId} <> ${table.id}`),
+  check('notebook_folder_name_length', sql`length(trim(${table.name})) BETWEEN 1 AND ${sql.raw(String(NOTEBOOK_LIMITS.folderName))}`),
+  check('notebook_folder_name_key_length', sql`length(${table.nameKey}) BETWEEN 1 AND ${sql.raw(String(NOTEBOOK_LIMITS.folderName))}`),
+]);
+
+export const notebookNote = sqliteTable('notebook_note', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  uid: text('uid').notNull().unique(),
+  folderId: integer('folder_id').references(() => notebookFolder.id, { onDelete: 'restrict' }),
+  title: text('title').notNull(),
+  contentMarkdown: text('content_markdown').notNull().default(''),
+  tags: text('tags', { mode: 'json' }).$type<readonly string[]>().notNull().default([]),
+  revision: integer('revision').notNull().default(1),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('notebook_note_folder_title_id_idx').on(table.folderId, table.title, table.id),
+  index('notebook_note_updated_id_idx').on(table.updatedAt, table.id),
+  check('notebook_note_title_length', sql`length(trim(${table.title})) BETWEEN 1 AND ${sql.raw(String(NOTEBOOK_LIMITS.title))}`),
+  check('notebook_note_content_size', sql`length(CAST(${table.contentMarkdown} AS BLOB)) <= ${sql.raw(String(NOTEBOOK_LIMITS.contentBytes))}`),
+  check('notebook_note_tags_array', sql`CASE WHEN json_valid(${table.tags}) THEN json_type(${table.tags}) = 'array' AND json_array_length(${table.tags}) <= ${sql.raw(String(NOTEBOOK_LIMITS.tagCount))} ELSE 0 END`),
+  check('notebook_note_revision_positive', sql`${table.revision} >= 1`),
+]);
+
+export const notebookErrorLink = sqliteTable('notebook_error_link', {
+  errorId: integer('error_id').notNull().references(() => errorRow.id, { onDelete: 'cascade' }),
+  noteId: integer('note_id').notNull().references(() => notebookNote.id, { onDelete: 'cascade' }),
+  headingSlug: text('heading_slug'),
+  headingText: text('heading_text'),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.errorId, table.noteId] }),
+  index('notebook_error_link_note_error_idx').on(table.noteId, table.errorId),
+  check('notebook_error_link_heading_pair', sql`(${table.headingSlug} IS NULL AND ${table.headingText} IS NULL) OR (${table.headingSlug} IS NOT NULL AND ${table.headingText} IS NOT NULL)`),
+]);
