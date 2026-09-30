@@ -9,6 +9,7 @@ import { MarkdownRenderer } from '../MarkdownRenderer';
 import { NotebookDirectory } from '../NotebookDirectory';
 import { NotebookRelatedErrors } from '../NotebookRelatedErrors';
 import { TableOfContents } from '../TableOfContents';
+import { DeleteNotebookNote } from '../DeleteNotebookNote';
 import ui from '../../_shared/ui.module.css';
 import styles from '../notebook.module.css';
 
@@ -52,6 +53,7 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
           <div className={styles.readerActions}>
             <a href={`/exportar/notebook-${String(note.id)}.md`} download className={ui.secondary}>Exportar .md</a>
             <Link href={`${notebookNoteHref(note)}/editar`} className={styles.newNoteLink}>Editar</Link>
+            <DeleteNotebookNote key={note.revision} note={{ id: note.id, uid: note.uid, revision: note.revision, title: note.title }} />
           </div>
           <h1 id={titleHeading?.slug} className={styles.readerTitle}>{note.title}</h1>
           <div className={styles.meta}>

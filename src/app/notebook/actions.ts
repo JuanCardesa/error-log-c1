@@ -129,6 +129,8 @@ export async function deleteNoteAction(raw: unknown): Promise<NotebookResult<{ r
   return validated(deleteNotebookNoteSchema, raw, (input) => {
     deleteNotebookNote(getDb(), input);
     revalidatePath('/notebook');
+    revalidatePath('/notebook/[noteKey]', 'page');
+    revalidatePath('/notebook/[noteKey]/editar', 'page');
     return { id: input.id };
   });
 }
