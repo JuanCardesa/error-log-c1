@@ -95,10 +95,12 @@ export async function GET(
   if (note !== null) {
     const found = getNotebookNote(getDb(), Number(note[1]));
     if (found === null) return new Response('No existe ese apunte.', { status: 404 });
+    const encodedName = encodeURIComponent(notebookNoteFileName(found))
+      .replace(/['()*]/gu, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`);
     return new Response(notebookNoteToMarkdown(found), {
       headers: {
         'content-type': 'text/markdown; charset=utf-8',
-        'content-disposition': `attachment; filename="${notebookNoteFileName(found)}"`,
+        'content-disposition': `attachment; filename="notebook-${String(found.id)}.md"; filename*=UTF-8''${encodedName}`,
       },
     });
   }

@@ -20,7 +20,7 @@ const FOLDER_SLUG_MAX = 40;
 
 function shortSlug(title: string, max: number): string {
   // githubSlug ya quita `/ \ < > : " | ? *`; conserva acentos y otros alfabetos.
-  return githubSlug(title).replace(/^-+|-+$/gu, '').slice(0, max).replace(/-+$/u, '');
+  return Array.from(githubSlug(title).replace(/^-+|-+$/gu, '')).slice(0, max).join('').replace(/-+$/u, '');
 }
 
 /** `42-past-modal-verbs.md`; solo `42.md` si el título no deja nada utilizable. */
