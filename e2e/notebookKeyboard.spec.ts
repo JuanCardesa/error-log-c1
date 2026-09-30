@@ -100,6 +100,10 @@ test('Escape cierra primero el selector de apuntes y después el panel del error
     const panel = page.getByRole('complementary', { name: 'Detalle del error' });
     const links = panel.getByRole('region', { name: 'Apuntes vinculados' });
     const open = links.getByRole('button', { name: 'Vincular apunte' });
+    // `focus` y `press` no esperan a que React tome el control: sin esta espera el Enter
+    // puede caer en el HTML del servidor y perderse sin reintento. Cuando la region deja
+    // de cargar sus vinculos, su efecto de cliente ya ha corrido.
+    await expect(links.getByText('Este error aún no tiene apuntes vinculados.')).toBeVisible();
     await open.focus();
     await page.keyboard.press('Enter');
 
