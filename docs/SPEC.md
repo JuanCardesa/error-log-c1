@@ -359,6 +359,14 @@ conserva el trabajo local. El ID entero identifica la ruta; un UUID inmutable id
 el apunte y sus borradores. Renombrar o mover un apunte no cambia su identidad. Los
 enlaces a apartados pueden cambiar si cambia el encabezado.
 
+Al entrar al editor se consulta la revisión actual antes de habilitar los campos,
+también al volver mediante el historial del navegador. Los borradores pendientes
+siguen su flujo de recuperación. El lector permite borrar con confirmación y revisión
+optimista: no elimina una versión modificada desde que se abrió.
+
+El listado de una carpeta incluye sus subcarpetas con o sin consulta textual y se
+ordena por última modificación. Los filtros visibles se sincronizan al navegar.
+
 Un error puede vincularse manualmente con varios apuntes; cada par error–apunte puede
 señalar un apartado. Si este desaparece o deja de ser inequívoco, se conserva el vínculo
 al apunte. Borrar un extremo elimina solo sus vínculos. `rule_note`, causas, categorías,

@@ -70,6 +70,15 @@ borradores locales recuperables y **Guardar ahora** (Ctrl/⌘+S). La lectura mue
 índice de apartados; la búsqueda encuentra títulos, texto y etiquetas. Desde el panel
 de un error puedes vincularlo manualmente a un apunte completo o a un apartado.
 
+Los listados de una carpeta incluyen sus subcarpetas, también sin escribir una búsqueda,
+y muestran primero los apuntes modificados más recientemente. Al abrir el editor se
+comprueba la versión guardada actual, incluso al volver con Atrás, conservando cualquier
+borrador pendiente. Usa **Terminar edición** para volver al lector.
+
+Para eliminar un apunte, pulsa **Borrar apunte…** en el lector y confirma. Se eliminan
+el apunte y sus vínculos; los errores de Error Log se conservan. Si el apunte cambió
+desde que lo abriste, el borrado se detiene para que revises la versión actual.
+
 Importa **un `.md` por vez** con vista previa. Descarga cada apunte como `.md`, el
 cuaderno como ZIP o todos los datos como JSON desde **Exportar**. El ZIP incluye
 Markdown y un manifiesto, pero volver a importar sus `.md` no restaura los vínculos
