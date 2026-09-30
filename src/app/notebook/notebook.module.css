@@ -372,6 +372,8 @@
   }
 
   .tocArea {
+    position: sticky;
+    top: calc(var(--header-h) + var(--space-5));
     grid-column: 3;
     grid-row: 1;
   }

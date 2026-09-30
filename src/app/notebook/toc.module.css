@@ -1,6 +1,4 @@
 .desktop {
-  position: sticky;
-  top: calc(var(--header-h) + var(--space-5));
   max-height: calc(100vh - var(--header-h) - var(--space-6));
   overflow-y: auto;
 }
