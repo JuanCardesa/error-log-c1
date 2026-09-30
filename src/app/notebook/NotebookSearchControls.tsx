@@ -10,7 +10,7 @@ export function NotebookSearchControls({ folders, folderParam, tag }: {
 }) {
   const roots = folders.filter((folder) => folder.parentId === null);
   return (
-    <form action="/notebook" method="get" className={styles.searchForm}>
+    <form key={JSON.stringify([folderParam, tag])} action="/notebook" method="get" className={styles.searchForm}>
       <label className={ui.field}>Buscar apuntes
         <LiveSearch name="q" maxLength={200} label="Buscar apuntes" placeholder="Título, contenido o etiqueta" />
       </label>
