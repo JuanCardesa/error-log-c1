@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { getDb } from '@/lib/db/client';
-import { listNotebookFolders, listNotebookNotes, listRecentNotebookNotes } from '@/lib/db/notebookRepo';
-import { searchNotebookHits } from '@/lib/db/notebookSearch';
+import { listNotebookFolders, listRecentNotebookNotes } from '@/lib/db/notebookRepo';
+import { searchNotebookHits, searchNotebookNotes } from '@/lib/db/notebookSearch';
 import { searchNotebookSchema } from '@/lib/notebook/schemas';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import type { NotebookNoteSummary } from '@/lib/notebook/types';
@@ -79,7 +79,9 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
   const searchResults = searchInput?.success === true ? searchNotebookHits(db, searchInput.data) : null;
   const listing = searching ? null : selectedFolderId === undefined
     ? { items: listRecentNotebookNotes(db), hasMore: false }
-    : listNotebookNotes(db, selectedFolderId, page);
+    : searchNotebookNotes(db, {
+      query: '', folderId: selectedFolderId, unfiledOnly: selectedFolderId === null, tag: null, page,
+    });
   const pageHref = (target: number) => {
     const query = new URLSearchParams();
     if (folderParam) query.set('carpeta', folderParam);
