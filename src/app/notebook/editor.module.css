@@ -1,0 +1,22 @@
+.editor { display: grid; gap: var(--space-5); min-width: 0; }
+.heading { display: flex; justify-content: space-between; align-items: start; gap: var(--space-4); }
+.heading h1, .previewTitle { font: var(--text-page-title); }
+.eyebrow { margin: 0 0 var(--space-2); color: var(--color-brand); font: var(--text-label); }
+.metaFields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr) minmax(180px, 1fr); gap: var(--space-4); }
+.editorHeader { display: flex; justify-content: space-between; align-items: end; gap: var(--space-4); border-bottom: 1px solid var(--color-rule); }
+.editorHeader > div { border: 0; }
+.tabButton { border: 0; background: transparent; font: inherit; cursor: pointer; }
+.saveStatus { padding-bottom: var(--space-2); color: var(--color-ink-2); font: var(--text-aux); white-space: nowrap; }
+.toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.bodyLabel { margin-bottom: var(--space-2); }
+.textarea { min-height: 420px; font: 14px/1.6 var(--font-mono); tab-size: 2; }
+.preview { min-height: 420px; max-width: var(--reading-max); padding: var(--space-5); border: 1px solid var(--color-rule); border-radius: var(--radius-panel); background: var(--color-surface); }
+.previewTitle { margin-bottom: var(--space-5); overflow-wrap: anywhere; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-4); }
+.draftNotice { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-warning-soft); border-radius: var(--radius-panel); background: var(--color-surface); }
+.draftNotice h2 { font: var(--text-section); }
+.draftNotice p { margin: 0; color: var(--color-ink-2); }
+.draftActions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.storageWarning { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-warning); border-radius: var(--radius-panel); color: var(--color-warning); background: var(--color-surface); }
+@media (max-width: 900px) { .metaFields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .metaFields > :first-child { grid-column: 1 / -1; } }
+@media (max-width: 639px) { .heading { flex-wrap: wrap; } .metaFields { grid-template-columns: minmax(0, 1fr); } .metaFields > :first-child { grid-column: auto; } .preview { padding: var(--space-4); } }

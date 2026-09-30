@@ -1,6 +1,7 @@
 'use server';
 
 import { getDb } from '@/lib/db/client';
+import { searchNotebookNotes } from '@/lib/db/notebookSearch';
 import { searchErrors, searchSessions } from '@/lib/db/repo';
 import { SOURCES } from '@/lib/domain/enums';
 import { practiceLabel, sessionTitle, shortDate } from './format';
@@ -25,16 +26,23 @@ export interface PaletteSession {
   readonly sub: string;
 }
 
+export interface PaletteNote {
+  readonly id: number;
+  readonly title: string;
+  readonly sub: string;
+}
+
 export interface PaletteResults {
   readonly errors: readonly PaletteError[];
   readonly sessions: readonly PaletteSession[];
+  readonly notes: readonly PaletteNote[];
 }
 
 const MAX_QUERY = 200;
 
 export async function searchPaletteAction(query: string): Promise<PaletteResults> {
   const q = typeof query === 'string' ? query.trim().slice(0, MAX_QUERY) : '';
-  if (q === '') return { errors: [], sessions: [] };
+  if (q === '') return { errors: [], sessions: [], notes: [] };
   const db = getDb();
   const lower = q.toLowerCase();
   const sources = SOURCES.filter((source) => SOURCE_LABELS[source].toLowerCase().includes(lower));
@@ -51,5 +59,11 @@ export async function searchPaletteAction(query: string): Promise<PaletteResults
     title: sessionTitle(session),
     sub: `${shortDate(session.date)} · ${practiceLabel(session)}`,
   }));
-  return { errors, sessions };
+  const notes = searchNotebookNotes(db, { query: q, folderId: null, tag: null, page: 1 }).items
+    .slice(0, 3).map((note) => ({
+      id: note.id,
+      title: note.title,
+      sub: note.tags.length > 0 ? note.tags.join(' · ') : 'Apunte',
+    }));
+  return { errors, sessions, notes };
 }

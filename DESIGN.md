@@ -297,3 +297,36 @@ ha guardado nada».
 - **Don't** usar color como única señal de estado.
 - **Don't** usar `window.confirm`: las confirmaciones son `ConfirmDialog`.
 - **Don't** poner más de un primario por tarea visible.
+
+## Notebook
+
+- Entrada en Más y en la paleta, conservando los cuatro destinos de la cabecera. La
+  portada abre con búsqueda, carpetas, modificados recientes, la acción «Nuevo apunte» y
+  la secundaria «Importar .md». El estado vacío explica cómo crear el primero.
+- Portada en `/notebook`, alta en `/notebook/nuevo`, importación en `/notebook/importar`,
+  lector en `/notebook/<id>-<slug>` y editor en su subruta `/editar`. El sufijo describe
+  el título; el ID conserva el enlace tras renombrar. Las descargas usan
+  `/exportar/notebook.zip` y `/exportar/notebook-<id>.md`.
+- Exportar ofrece el cuaderno completo en ZIP desde la pantalla Exportar y un `.md` suelto
+  desde el lector. El aviso dice qué lleva el manifiesto, que los enlaces pasan a rutas
+  relativas con anclas de GitHub y que los vínculos con errores no se restauran al importar.
+- Importar analiza un `.md` sin guardar nada: propone título, carpeta y etiquetas
+  editables, lista los avisos (frontmatter no interpretado, campos descartados, HTML,
+  imágenes, destinos no resolubles) y enseña la vista previa con el renderizador del
+  lector. Solo «Crear apunte» escribe, y siempre crea un apunte nuevo.
+- La lectura usa Source Serif 4 y `--reading-max`; directorio e índice acompañan al
+  texto en pantallas amplias. Bajo 1024 px, directorio e índice se despliegan y el
+  contenido ocupa una columna. Las tablas Markdown desplazan dentro de su contenedor.
+- El editor usa Plex, textarea nativo, toolbar pequeña y pestañas Editar/Vista previa.
+  La vista previa comparte renderizador con el lector. Guardar ahora y Ctrl/⌘+S
+  complementan autosave; un estado visible distingue pendiente, guardando, guardado,
+  conflicto y error. El borrador local se escribe a los 250 ms y se puede recuperar o
+  descargar. El envío al servidor empieza tras un segundo sin cambios; solo la respuesta
+  confirmada muestra «guardado». Un conflicto conserva el borrador y permite cargar lo
+  guardado o crear otro apunte.
+- El índice usa enlaces reales, foco visible, teclado, scroll margin para la cabecera y
+  movimiento reducido cuando lo pide el sistema. Enlaces externos abren con atributos
+  seguros; imágenes se muestran como texto o aviso, sin peticiones de red.
+- El detalle de error permite buscar y vincular un apunte o apartado, además de abrirlo.
+  Si cambia un encabezado, se conserva el vínculo al documento y se muestra el aviso.
+  Borrar un apunte o carpeta requiere la confirmación existente.

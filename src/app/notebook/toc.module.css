@@ -1,0 +1,76 @@
+.desktop {
+  max-height: calc(100vh - var(--header-h) - var(--space-6));
+  overflow-y: auto;
+}
+
+.desktop h2 {
+  margin: 0 0 var(--space-3);
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.list .list {
+  margin-left: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--color-rule);
+}
+
+.list a {
+  display: block;
+  padding: var(--space-2) 0;
+  color: var(--color-ink-2);
+  font: var(--text-aux);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.list a:hover,
+.list a[aria-current='location'] {
+  color: var(--color-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.compact {
+  display: none;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+}
+
+.compact > summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.compact > summary::before {
+  display: inline-block;
+  margin-right: var(--space-2);
+  content: '▸';
+  transition: transform var(--dur-fast) ease;
+}
+
+.compact[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.compact nav {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 1279px) {
+  .desktop {
+    display: none;
+  }
+
+  .compact {
+    display: block;
+  }
+}

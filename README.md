@@ -29,6 +29,8 @@ Demo de 57 segundos con datos ficticios. [Vídeo completo](https://github.com/us
   los errores que reaparecen al reescribir un texto.
 - **Conectar el repaso.** Crea tarjetas en Anki y consulta los fallos por categoría con
   AnkiConnect, mediante sincronización manual.
+- **Convertir errores en apuntes.** Notebook guarda Markdown por carpetas y etiquetas,
+  encuentra apartados y conecta los fallos con las explicaciones que escribas.
 - **Llevarte tus datos.** Exporta las consultas a CSV, las filas a JSON o una
   copia SQLite restaurable.
 
@@ -59,6 +61,38 @@ se conservan y la base personal no se modifica. Sal con `Ctrl+C`.
 
 La demo lleva un aviso en pantalla: los datos son inventados y lo que escribas ahí
 no pasa a tu registro. Para tus datos reales, usa `pnpm dev`.
+
+### Notebook: apuntes para repasar
+
+En **Más → Notebook** puedes crear apuntes Markdown, organizarlos en carpetas de hasta
+dos niveles y añadir etiquetas. El editor ofrece vista previa, guardado automático,
+borradores locales recuperables y **Guardar ahora** (Ctrl/⌘+S). La lectura muestra un
+índice de apartados; la búsqueda encuentra títulos, texto y etiquetas. Desde el panel
+de un error puedes vincularlo manualmente a un apunte completo o a un apartado.
+
+Los listados de una carpeta incluyen sus subcarpetas, también sin escribir una búsqueda,
+y muestran primero los apuntes modificados más recientemente. Al abrir el editor se
+comprueba la versión guardada actual, incluso al volver con Atrás, conservando cualquier
+borrador pendiente. Usa **Terminar edición** para volver al lector.
+
+Para eliminar un apunte, pulsa **Borrar apunte…** en el lector y confirma. Se eliminan
+el apunte y sus vínculos; los errores de Error Log se conservan. Si el apunte cambió
+desde que lo abriste, el borrado se detiene para que revises la versión actual.
+
+Importa **un `.md` por vez** con vista previa. Descarga cada apunte como `.md`, el
+cuaderno como ZIP o todos los datos como JSON desde **Exportar**. El ZIP incluye
+Markdown y un manifiesto, pero volver a importar sus `.md` no restaura los vínculos
+con errores. La demo incluye ocho apuntes ficticios para recorrer estas pantallas.
+
+**Límites actuales:** Notebook no admite adjuntos ni imágenes: al leer se muestra su
+sintaxis, sin cargarlas. El HTML embebido no se representa. No hay historial de versiones
+ni importación de un ZIP completo. La app es local, monousuario y sin autenticación;
+para una recuperación íntegra de apuntes, errores y vínculos, usa una copia SQLite
+con `pnpm db:backup` y `pnpm db:restore`.
+
+| Lector con índice | Búsqueda con fragmentos |
+| --- | --- |
+| ![Apunte de oraciones enfáticas con carpetas a la izquierda e índice de apartados a la derecha](docs/screenshots/notebook-lector.png) | ![Resultados de búsqueda de preposición en Notebook con fragmentos de los apuntes](docs/screenshots/notebook-busqueda.png) |
 
 ### Empezar con mis datos
 
@@ -195,6 +229,7 @@ pnpm test:coverage
 pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
+pnpm bench:notebook
 ```
 
 La suite prueba también que el seed respeta los datos existentes y que una copia con WAL

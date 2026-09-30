@@ -28,6 +28,7 @@ const NAV = [
 ] as const;
 
 const MORE = [
+  { href: '/notebook', label: 'Notebook' },
   { href: '/writing', label: 'Writing' },
   { href: '/exportar', label: 'Exportar datos' },
 ] as const;
@@ -134,7 +135,7 @@ export function AppHeader() {
           onClick={() => { setPalette(true); }}
         >
           <Search size={16} aria-hidden="true" />
-          <span className={styles.searchText}>Buscar errores, sesiones, acciones</span>
+          <span className={styles.searchText}>Buscar errores, sesiones, apuntes</span>
           <Kbd>{keys.search}</Kbd>
         </button>
       </div>

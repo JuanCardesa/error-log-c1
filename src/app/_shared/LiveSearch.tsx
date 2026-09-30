@@ -9,16 +9,19 @@ import ui from './ui.module.css';
  * Búsqueda que filtra al escribir. El texto va a la URL (`q`) y la consulta la hace el
  * servidor; cambiar la búsqueda vuelve a la primera página y cierra el detalle abierto.
  */
-export function LiveSearch({ placeholder, label, className }: {
+export function LiveSearch({ placeholder, label, className, name, maxLength }: {
   readonly placeholder: string;
   readonly label: string;
   readonly className?: string;
+  readonly name?: string;
+  readonly maxLength?: number;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const current = params.get('q') ?? '';
-  const [value, setValue] = useState(current);
+  const [edit, setEdit] = useState({ from: current, value: current });
+  const value = edit.from === current ? edit.value : current;
 
   useEffect(() => {
     if (value.trim() === current) return;
@@ -37,9 +40,11 @@ export function LiveSearch({ placeholder, label, className }: {
   return (
     <input
       type="search"
+      name={name}
+      maxLength={maxLength}
       className={`${ui.input} ${className ?? ''}`}
       value={value}
-      onChange={(event) => { setValue(event.target.value); }}
+      onChange={(event) => { setEdit({ from: current, value: event.target.value }); }}
       placeholder={placeholder}
       aria-label={label}
     />
