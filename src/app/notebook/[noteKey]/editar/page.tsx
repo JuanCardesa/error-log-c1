@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getDb } from '@/lib/db/client';
 import { getNotebookNote, listNotebookFolders } from '@/lib/db/notebookRepo';
 import { parseNotebookNoteId } from '@/lib/notebook/urls';
-import { NotebookEditor } from '../../NotebookEditor';
+import { NotebookEditorEntry } from '../../NotebookEditorEntry';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +18,6 @@ export default async function EditNotebookNotePage({ params, searchParams }: {
   const note = getNotebookNote(db, id);
   if (note === null) notFound();
   const { borrador } = await searchParams;
-  return <NotebookEditor key={note.id} note={note} folders={listNotebookFolders(db)}
+  return <NotebookEditorEntry key={note.id} id={note.id} uid={note.uid} folders={listNotebookFolders(db)}
     requestedDraftKey={typeof borrador === 'string' ? borrador : undefined} />;
 }

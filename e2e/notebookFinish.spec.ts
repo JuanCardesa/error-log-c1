@@ -49,6 +49,7 @@ test('espera una escritura en vuelo antes de finalizar', async ({ page }) => {
     href = `${notebookNoteHref(note)}/editar`;
   } finally { db.$client.close(); }
   await page.goto(href);
+  await expect(page.getByRole('textbox', { name: 'Contenido Markdown' })).toBeEnabled();
   let intercepted = false;
   let notifySent!: () => void;
   let release!: () => void;
@@ -108,6 +109,7 @@ test('conserva copia local si aparece un conflicto al finalizar', async ({ page 
   } finally { db.$client.close(); }
 
   await page.goto(href);
+  await expect(page.getByRole('textbox', { name: 'Contenido Markdown' })).toBeEnabled();
   const other = createDb(E2E_DB);
   try {
     saveNotebookNote(other, {

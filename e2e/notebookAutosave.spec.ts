@@ -19,6 +19,7 @@ function seedNote() {
 test('guarda al quedar inactivo y serializa un cambio escrito durante la petición', async ({ page }) => {
   const note = seedNote();
   await page.goto(`${notebookNoteHref(note)}/editar`);
+  await expect(page.getByRole('textbox', { name: 'Contenido Markdown' })).toBeEnabled();
   let intercepted = false;
   let notifySent!: () => void;
   let release!: () => void;
@@ -48,6 +49,7 @@ test('guarda al quedar inactivo y serializa un cambio escrito durante la petici�
 test('reconcilia una respuesta perdida sin repetir la escritura confirmada', async ({ page }) => {
   const note = seedNote();
   await page.goto(`${notebookNoteHref(note)}/editar`);
+  await expect(page.getByRole('textbox', { name: 'Contenido Markdown' })).toBeEnabled();
   let intercepted = false;
   await page.route('**/notebook/**/editar', async (route) => {
     if (route.request().method() !== 'POST' || intercepted) { await route.continue(); return; }
@@ -66,6 +68,7 @@ test('reconcilia una respuesta perdida sin repetir la escritura confirmada', asy
 test('reintenta con la misma revisión cuando la petición nunca llegó al servidor', async ({ page }) => {
   const note = seedNote();
   await page.goto(`${notebookNoteHref(note)}/editar`);
+  await expect(page.getByRole('textbox', { name: 'Contenido Markdown' })).toBeEnabled();
   let intercepted = false;
   await page.route('**/notebook/**/editar', async (route) => {
     if (route.request().method() !== 'POST' || intercepted) { await route.continue(); return; }
@@ -127,6 +130,7 @@ test('no recrea automáticamente un alta incierta recuperada tras recarga', asyn
 test('detiene autosave al detectar conflicto o borrado y conserva el texto local', async ({ page }) => {
   const note = seedNote();
   await page.goto(`${notebookNoteHref(note)}/editar`);
+  await expect(page.getByRole('textbox', { name: 'Contenido Markdown' })).toBeEnabled();
   let db = createDb(E2E_DB);
   try {
     saveNotebookNote(db, { id: note.id, uid: note.uid, expectedRevision: note.revision,
@@ -148,6 +152,7 @@ test('detiene autosave al detectar conflicto o borrado y conserva el texto local
 
   const deleted = seedNote();
   await page.goto(`${notebookNoteHref(deleted)}/editar`);
+  await expect(page.getByRole('textbox', { name: 'Contenido Markdown' })).toBeEnabled();
   db = createDb(E2E_DB);
   try {
     deleteNotebookNote(db, { id: deleted.id, uid: deleted.uid, expectedRevision: deleted.revision });
