@@ -10,6 +10,16 @@ function render(markdown: string, basePath = '/notebook/42-example', hideFirstH1
 }
 
 describe('MarkdownRenderer', () => {
+  it('el modo estudio indexa texto visible sin introducir HTML del usuario', () => {
+    const html = renderToStaticMarkup(createElement(MarkdownRenderer, {
+      markdown: 'One **two** &amp; [three](https://example.com).\n\n`code`\n\n<script>bad()</script>', study: true,
+    }));
+    expect(html).toContain('data-study-start="0"');
+    expect(html).toContain('data-study-start="4"');
+    expect(html).toContain('data-study-start="7"');
+    expect(html).toContain('<code>code</code>');
+    expect(html).not.toContain('<script');
+  });
   it('comparte los IDs de encabezados con el análisis, incluso con formato y duplicados', () => {
     const source = [
       '# Past **deduction**',

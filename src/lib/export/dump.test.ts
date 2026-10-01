@@ -99,7 +99,7 @@ describe('volcado JSON', () => {
     // del mismo dato, una de ellas con fecha de caducidad.
     // Notebook no entra aqui: la ruta lo añade por trozos para no juntar todos los cuerpos.
     expect(Object.keys(dump)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki']);
-    expect(dump.formatVersion).toBe(2);
+    expect(dump.formatVersion).toBe(3);
   });
 
   it('sella la fecha de exportacion y no depende de la ventana', () => {

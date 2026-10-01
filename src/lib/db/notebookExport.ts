@@ -5,7 +5,7 @@ import {
 } from '../notebook/export';
 import type { NotebookErrorLink, NotebookFolder, NotebookNote } from '../notebook/types';
 import type { Db } from './client';
-import { notebookErrorLink, notebookFolder, notebookNote } from './schema';
+import { notebookAnnotation, notebookErrorLink, notebookFolder, notebookNote } from './schema';
 
 /**
  * Exportación del cuaderno. Se lee de una copia consistente de la base, nunca de la base
@@ -205,5 +205,13 @@ export function* notebookJsonChunks(db: Db): Generator<string> {
     yield `${first ? '' : ','}${JSON.stringify({ ...note, contentMarkdown: noteBody(db, note.id) })}`;
     first = false;
   }
-  yield `],"errorLinks":${JSON.stringify(listNotebookExportErrorLinks(db))}}`;
+  yield `],"errorLinks":${JSON.stringify(listNotebookExportErrorLinks(db))},"annotations":[`;
+  first = true;
+  for (const note of notes) {
+    for (const annotation of db.select().from(notebookAnnotation).where(eq(notebookAnnotation.noteId, note.id)).orderBy(asc(notebookAnnotation.id)).all()) {
+      yield `${first ? '' : ','}${JSON.stringify(annotation)}`;
+      first = false;
+    }
+  }
+  yield ']}';
 }

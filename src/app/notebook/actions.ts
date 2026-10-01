@@ -16,11 +16,14 @@ import {
   getNotebookNote,
   getNotebookNoteByUid,
   saveNotebookNote,
+  saveNotebookAnnotation,
   updateNotebookFolder,
 } from '@/lib/db/notebookRepo';
 import { searchNotebookNotes } from '@/lib/db/notebookSearch';
 import { parseNotebookMarkdownImport, type NotebookImportDraft } from '@/lib/notebook/import';
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
+import { saveStudyAnnotationSchema } from '@/lib/notebook/annotationSchemas';
+import type { NotebookAnnotation } from '@/lib/notebook/annotations';
 import {
   createNotebookFolderSchema,
   createNotebookNoteSchema,
@@ -88,6 +91,11 @@ export async function createNoteAction(raw: unknown): Promise<NotebookResult<Not
 export async function saveNoteAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {
   return validated(saveNotebookNoteSchema, raw, (input) =>
     saveNotebookNote(getDb(), input, new Date().toISOString()));
+}
+
+export async function saveStudyAnnotationAction(raw: unknown): Promise<NotebookResult<NotebookAnnotation[]>> {
+  return validated(saveStudyAnnotationSchema, raw, (input) =>
+    saveNotebookAnnotation(getDb(), input, new Date().toISOString()));
 }
 
 export async function getNoteAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {

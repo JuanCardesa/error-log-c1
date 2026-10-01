@@ -2,9 +2,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { getDb } from '@/lib/db/client';
-import { getNotebookNote, listNotebookFolders } from '@/lib/db/notebookRepo';
+import { getNotebookNote, listNotebookAnnotations, listNotebookFolders } from '@/lib/db/notebookRepo';
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
+import { notebookStudyText } from '@/lib/notebook/studyMarkdown';
 import { notebookNoteHref, parseNotebookNoteId } from '@/lib/notebook/urls';
+import { NotebookStudy } from '../NotebookStudy';
 import { MarkdownRenderer } from '../MarkdownRenderer';
 import { NotebookDirectory } from '../NotebookDirectory';
 import { NotebookRelatedErrors } from '../NotebookRelatedErrors';
@@ -42,33 +44,37 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
         <span aria-hidden="true">/</span>
         <span aria-current="page">{note.title}</span>
       </nav>
-      <div className={`${styles.layout} ${headings.length > 0 ? styles.readerLayout : ''}`}>
+      <div className={`${styles.layout} ${styles.readerLayout}`}>
         <aside className={styles.sidebar}>
           <NotebookDirectory folders={folders} selectedFolderId={note.folderId} />
         </aside>
-        {headings.length > 0 && <aside className={styles.tocArea}>
-          <TableOfContents headings={headings} />
-        </aside>}
-        <article className={styles.reader}>
+        <div className={styles.readerColumn}>
           <div className={styles.readerActions}>
             <a href={`/exportar/notebook-${String(note.id)}.md`} download className={ui.secondary}>Exportar .md</a>
             <Link href={`${notebookNoteHref(note)}/editar`} className={styles.newNoteLink}>Editar</Link>
             <DeleteNotebookNote key={note.revision} note={{ id: note.id, uid: note.uid, revision: note.revision, title: note.title }} />
           </div>
-          <h1 id={titleHeading?.slug} className={styles.readerTitle}>{note.title}</h1>
-          <div className={styles.meta}>
-            <span>Modificado <time dateTime={note.updatedAt}>{new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' }).format(new Date(note.updatedAt))}</time></span>
-            {note.tags.length > 0 && <ul className={styles.tags} aria-label="Etiquetas">
-              {note.tags.map((tag) => <li key={tag}>{tag}</li>)}
-            </ul>}
-          </div>
-          {note.contentMarkdown === '' ? (
-            <div className={styles.empty}><p>Este apunte todavía no tiene contenido.</p></div>
-          ) : (
-            <MarkdownRenderer markdown={note.contentMarkdown} analysis={analysis} basePath={notebookNoteHref(note)} hideFirstH1={titleHeading !== null} />
-          )}
+          <article className={styles.reader}>
+            <h1 id={titleHeading?.slug} className={styles.readerTitle}>{note.title}</h1>
+            <div className={styles.meta}>
+              <span>Modificado <time dateTime={note.updatedAt}>{new Intl.DateTimeFormat('es-ES', { dateStyle: 'long' }).format(new Date(note.updatedAt))}</time></span>
+              {note.tags.length > 0 && <ul className={styles.tags} aria-label="Etiquetas">
+                {note.tags.map((tag) => <li key={tag}>{tag}</li>)}
+              </ul>}
+            </div>
+            <TableOfContents key={note.id} headings={headings} />
+            {note.contentMarkdown === '' ? (
+              <div className={styles.empty}><p>Este apunte todavía no tiene contenido.</p></div>
+            ) : (
+              <NotebookStudy key={`${String(note.id)}-${String(note.revision)}`} noteId={note.id} uid={note.uid} revision={note.revision}
+                text={notebookStudyText(note.contentMarkdown)} initialAnnotations={listNotebookAnnotations(db, note.id)}>
+                <MarkdownRenderer markdown={note.contentMarkdown} analysis={analysis}
+                  basePath={notebookNoteHref(note)} hideFirstH1={titleHeading !== null} study />
+              </NotebookStudy>
+            )}
+          </article>
           <NotebookRelatedErrors key={note.id} noteId={note.id} />
-        </article>
+        </div>
       </div>
     </div>
   );

@@ -13,9 +13,7 @@ import { E2E_DB } from './globalSetup';
  * horizontal— sobre el contenido que más tira del ancho: una tabla de cinco columnas,
  * una URL sin espacios, un bloque de código largo y un título de apunte que no cabe.
  *
- * El índice cambia de forma por el camino: columna a partir de 1280px y desplegable por
- * debajo. Las dos formas llevan el mismo `nav`, así que se distinguen por cuál está a la
- * vista, no por su clase.
+ * El índice es un desplegable cerrado inicialmente en todos los tamaños.
  */
 
 const VIEWPORTS = [
@@ -96,10 +94,12 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-test('el índice es columna en escritorio y desplegable por debajo de 1280', async ({ page }) => {
+test('el índice empieza cerrado también en escritorio', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(noteHref);
   const toc = page.getByRole('navigation', { name: 'Índice del apunte' });
+  await expect(toc).toHaveCount(0);
+  await page.locator('summary').filter({ hasText: 'En esta nota' }).click();
   await expect(toc).toHaveCount(1);
   await expect(toc.getByRole('link', { name: 'Tabla de contraste' })).toBeVisible();
 

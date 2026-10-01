@@ -11,6 +11,12 @@
   /* ── Superficies ─────────────────────────────── */
   --color-bg: #f6f5f1;
   --color-surface: #ffffff;
+  --study-highlight: #fff0a8;
+  --study-green: #276544;
+  --study-red: #a32e28;
+  --study-blue: #315f83;
+  --study-orange: #8b450f;
+  --study-paper-radius: 2px;
   --color-surface-2: #ecedea;
   --color-skeleton: #e4e5e0;
   --color-selected: #e6ece8;
