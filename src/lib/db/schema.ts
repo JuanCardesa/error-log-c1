@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { StudyAnchor } from '../notebook/annotations';
 import {
   type AnySQLiteColumn,
   check,
@@ -297,4 +298,24 @@ export const notebookErrorLink = sqliteTable('notebook_error_link', {
   primaryKey({ columns: [table.errorId, table.noteId] }),
   index('notebook_error_link_note_error_idx').on(table.noteId, table.errorId),
   check('notebook_error_link_heading_pair', sql`(${table.headingSlug} IS NULL AND ${table.headingText} IS NULL) OR (${table.headingSlug} IS NOT NULL AND ${table.headingText} IS NOT NULL)`),
+]);
+
+export const notebookAnnotation = sqliteTable('notebook_annotation', {
+  id: text('id').primaryKey(),
+  noteId: integer('note_id').notNull().references(() => notebookNote.id, { onDelete: 'cascade' }),
+  kind: text('kind', { enum: ['highlight', 'color'] }).notNull(),
+  color: text('color', { enum: ['green', 'red', 'blue', 'orange'] }),
+  anchor: text('anchor', { mode: 'json' }).$type<StudyAnchor>().notNull(),
+  orphaned: integer('orphaned', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('notebook_annotation_note_idx').on(table.noteId),
+  check('notebook_annotation_style', sql`(${table.kind} = 'highlight' AND ${table.color} IS NULL)
+    OR (${table.kind} = 'color' AND ${table.color} IS NOT NULL AND ${table.color} IN ('green', 'red', 'blue', 'orange'))`),
+  check('notebook_annotation_anchor', sql`CASE WHEN json_valid(${table.anchor}) THEN
+    json_type(${table.anchor}, '$.start') = 'integer' AND json_extract(${table.anchor}, '$.start') >= 0
+    AND json_type(${table.anchor}, '$.end') = 'integer' AND json_extract(${table.anchor}, '$.end') > json_extract(${table.anchor}, '$.start')
+    AND json_type(${table.anchor}, '$.exact') = 'text' AND length(json_extract(${table.anchor}, '$.exact')) > 0
+    ELSE 0 END`),
 ]);

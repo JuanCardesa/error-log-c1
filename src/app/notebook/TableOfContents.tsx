@@ -112,17 +112,11 @@ export function TableOfContents({ headings }: { readonly headings: readonly Note
 
   if (headings.length === 0) return null;
   return (
-    <>
-      <nav aria-label="Índice del apunte" className={styles.desktop}>
-        <h2>En esta nota</h2>
+    <details className={styles.compact}>
+      <summary>En esta nota · {headings.length} {headings.length === 1 ? 'sección' : 'secciones'}</summary>
+      <nav aria-label="Índice del apunte">
         <TocLinks nodes={tree} active={active} onNavigate={onNavigate} />
       </nav>
-      <details className={styles.compact}>
-        <summary>En esta nota</summary>
-        <nav aria-label="Índice del apunte">
-          <TocLinks nodes={tree} active={active} onNavigate={onNavigate} />
-        </nav>
-      </details>
-    </>
+    </details>
   );
 }

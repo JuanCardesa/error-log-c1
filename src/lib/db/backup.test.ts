@@ -11,7 +11,9 @@ import { backupDatabase, restoreDatabase } from './backup';
 import { type Db, createDb } from './client';
 import { loadDataset } from './load';
 import { MIGRATIONS_DIR } from './paths';
-import { createNotebookNote, getNotebookNote } from './notebookRepo';
+import { createNotebookNote, getNotebookNote, listNotebookAnnotations, saveNotebookAnnotation } from './notebookRepo';
+import { studyAnchor } from '../notebook/annotations';
+import { notebookStudyText } from '../notebook/studyMarkdown';
 import { seedIfEmpty } from './seedSafe';
 
 vi.mock('node:fs', async (importOriginal) => {
@@ -35,6 +37,21 @@ afterEach(() => {
 });
 
 describe('copias y restauracion', () => {
+  it('copia y restaura también las marcas de estudio', async () => {
+    const source = join(scratch, 'study.db');
+    const db = open(source);
+    migrate(db);
+    const note = createNotebookNote(db, { uid: '9c8de1e3-03e6-42ec-a098-ac0db92331d0',
+      title: 'Study', folderId: null, tags: [], contentMarkdown: 'Important concept.' }, '2026-09-30').note;
+    const text = notebookStudyText(note.contentMarkdown);
+    const marks = saveNotebookAnnotation(db, { noteId: note.id, uid: note.uid, expectedRevision: 1,
+      anchor: studyAnchor(text, 0, 9), command: { kind: 'highlight', enabled: true } }, '2026-09-30');
+    const copy = join(scratch, 'study-copy.db');
+    await backupDatabase(source, copy);
+    const restored = join(scratch, 'study-restored.db');
+    await restoreDatabase(copy, restored);
+    expect(listNotebookAnnotations(open(restored), note.id)).toEqual(marks);
+  });
   it('crea una copia restaurable en un volumen sin enlaces duros', async () => {
     const source = join(scratch, 'original.db');
     const db = open(source);
@@ -145,7 +162,7 @@ describe('copias y restauracion', () => {
     old.$client.pragma('foreign_keys = OFF');
     for (const trigger of ['notebook_folder_insert_depth', 'notebook_folder_update_depth',
       'notebook_note_fts_delete', 'notebook_note_fts_update']) old.$client.exec(`DROP TRIGGER ${trigger}`);
-    for (const table of ['notebook_note_fts', 'notebook_error_link', 'notebook_note',
+    for (const table of ['notebook_annotation', 'notebook_note_fts', 'notebook_error_link', 'notebook_note',
       'notebook_folder']) old.$client.exec(`DROP TABLE ${table}`);
     for (const trigger of ['session_search_insert', 'session_search_update', 'session_search_delete',
       'error_search_insert', 'error_search_update', 'error_search_delete']) old.$client.exec(`DROP TRIGGER ${trigger}`);

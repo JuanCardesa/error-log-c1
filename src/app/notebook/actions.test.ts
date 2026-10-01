@@ -21,6 +21,7 @@ import {
   importMarkdownAction,
   previewMarkdownImportAction,
   saveNoteAction,
+  saveStudyAnnotationAction,
   searchNotesAction,
   removeErrorNoteLinkAction,
   setErrorNoteLinkAction,
@@ -56,6 +57,21 @@ function note(changes: Record<string, unknown> = {}) {
 }
 
 describe('Server Actions Notebook', () => {
+  it('valida las marcas y comunica los fallos sin exponer SQLite', async () => {
+    expect(await saveStudyAnnotationAction({ noteId: 1, command: { kind: 'color', color: 'script' } }))
+      .toMatchObject({ ok: false, code: 'VALIDATION' });
+    const created = await createNoteAction(note({ contentMarkdown: 'Study.' }));
+    if (!created.ok) throw new Error('No se creó el apunte');
+    const input = { noteId: created.data.note.id, uid: UID, expectedRevision: 1,
+      anchor: { start: 0, end: 5, exact: 'Study', prefix: '', suffix: '.\n' },
+      command: { kind: 'highlight', enabled: true } };
+    expect(await saveStudyAnnotationAction(input)).toMatchObject({ ok: true, data: [{ kind: 'highlight' }] });
+    expect(await saveStudyAnnotationAction({ ...input, expectedRevision: 2 })).toMatchObject({ ok: false, code: 'CONFLICT' });
+    db.$client.exec("CREATE TRIGGER study_failure BEFORE DELETE ON notebook_annotation BEGIN SELECT RAISE(ABORT, 'private database detail'); END");
+    const failure = await saveStudyAnnotationAction({ ...input, command: { kind: 'clear' } });
+    expect(failure).toMatchObject({ ok: false, code: 'PERSISTENCE' });
+    expect(JSON.stringify(failure)).not.toContain('private database detail');
+  });
   it('rechaza payloads manipulados antes de acceder a SQLite', async () => {
     const bad = await createNoteAction(note({ id: 55, uid: 'fake', title: ' ', tags: ['X', 'x'] }));
     expect(bad).toMatchObject({ ok: false, code: 'VALIDATION' });

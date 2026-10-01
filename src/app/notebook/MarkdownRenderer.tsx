@@ -4,25 +4,29 @@ import remarkGfm from 'remark-gfm';
 
 import { analyzeNotebookMarkdown, type NotebookMarkdownAnalysis } from '@/lib/notebook/markdown';
 import { classifyNotebookUrl } from '@/lib/notebook/urls';
+import { remarkStudyText } from '@/lib/notebook/studyText';
+import { StudyText } from './StudyText';
 import styles from './markdown.module.css';
 
 const allowedElements = [
   'a', 'blockquote', 'br', 'code', 'del', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'hr', 'img', 'input', 'li', 'ol', 'p', 'pre', 'strong', 'table', 'tbody', 'td',
-  'th', 'thead', 'tr', 'ul',
+  'th', 'thead', 'tr', 'ul', 'span',
 ];
 
 const remarkPlugins = [remarkGfm];
+const studyPlugins = [remarkGfm, remarkStudyText];
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
 /** Una única política para lectura y futura vista previa. Nunca interpreta HTML ni carga imágenes. */
-export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH1 = false, analysis: given }: {
+export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH1 = false, analysis: given, study = false }: {
   readonly markdown: string;
   readonly basePath?: string;
   /** El lector coloca el mismo anchor en el título cuando el primer H1 lo repite. */
   readonly hideFirstH1?: boolean;
   /** El lector ya analizó este Markdown para el índice: sin repetirlo, un parseo menos por visita. */
   readonly analysis?: NotebookMarkdownAnalysis;
+  readonly study?: boolean;
 }) {
   const analysis = given ?? analyzeNotebookMarkdown(markdown);
   const headingByOffset = new Map(analysis.headingOffsets.map((offset, index) => [offset, analysis.headings[index]?.slug]));
@@ -38,6 +42,11 @@ export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH
   };
 
   const components: Components = {
+    span: ({ node, children }) => {
+      const start = node?.properties['data-study-start'];
+      return study && typeof start === 'number' && typeof children === 'string'
+        ? <StudyText start={start} text={children} /> : <span>{children}</span>;
+    },
     h1: renderHeading('h1'),
     h2: renderHeading('h2'),
     h3: renderHeading('h3'),
@@ -72,7 +81,7 @@ export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH
   return (
     <div className={styles.markdown}>
       <Markdown
-        remarkPlugins={remarkPlugins}
+        remarkPlugins={study ? studyPlugins : remarkPlugins}
         skipHtml
         allowedElements={allowedElements}
         urlTransform={(url, key) => {

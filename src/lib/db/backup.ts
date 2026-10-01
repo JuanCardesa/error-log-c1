@@ -6,7 +6,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 
 import {
   ankiCard, ankiNote, ankiReview, ankiSync, errorRow,
-  notebookErrorLink, notebookFolder, notebookNote,
+  notebookAnnotation, notebookErrorLink, notebookFolder, notebookNote,
   session, sessionImportReceipt, writingPiece,
 } from './schema';
 
@@ -53,6 +53,7 @@ function checkDatabase(sqlite: Database.Database, requireCurrentSchema: boolean)
   db.select().from(notebookFolder).limit(0).all();
   db.select().from(notebookNote).limit(0).all();
   db.select().from(notebookErrorLink).limit(0).all();
+  db.select().from(notebookAnnotation).limit(0).all();
   sqlite.prepare('SELECT rowid FROM session_search_fts LIMIT 0').all();
   sqlite.prepare('SELECT rowid FROM error_search_fts LIMIT 0').all();
   sqlite.prepare('SELECT rowid FROM notebook_note_fts LIMIT 0').all();

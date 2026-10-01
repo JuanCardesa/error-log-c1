@@ -191,16 +191,17 @@ test('los filtros siguen la navegación y una carpeta incluye descendientes sin 
   await expect(page.getByRole('combobox', { name: 'Carpeta', exact: true })).toHaveValue(String(rootId));
 });
 
-test('el índice permanece visible al desplazarse por un apunte largo', async ({ page }) => {
+test('el índice desplegable navega sin ocupar una columna permanente', async ({ page }) => {
   const note = seedNote(Array.from({ length: 15 }, (_, i) => `## Apartado ${String(i)}\n\n${'Explicación de la regla. '.repeat(60)}`).join('\n\n'));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(notebookNoteHref(note));
+  await page.locator('summary').filter({ hasText: 'En esta nota' }).click();
   const toc = page.getByRole('navigation', { name: 'Índice del apunte' });
   await toc.getByRole('link', { name: 'Apartado 8', exact: true }).click();
   await expect(page).toHaveURL(/#nb-apartado-8$/u);
   await expect.poll(async () => {
     const box = await toc.boundingBox();
-    return box !== null && box.y >= 0 && box.y + box.height <= 900;
+    return box !== null && box.y + box.height < 0;
   }).toBe(true);
   await expect(toc.getByRole('link', { name: 'Apartado 8', exact: true })).toHaveAttribute('aria-current', 'location');
 });

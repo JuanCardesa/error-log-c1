@@ -70,19 +70,29 @@ borradores locales recuperables y **Guardar ahora** (Ctrl/⌘+S). La lectura mue
 índice de apartados; la búsqueda encuentra títulos, texto y etiquetas. Desde el panel
 de un error puedes vincularlo manualmente a un apunte completo o a un apartado.
 
+El lector presenta el apunte como un folio y mantiene **En esta nota** cerrado al entrar.
+En ordenador, selecciona texto para abrir **Rotulador · Color · Limpiar**: el rotulador
+amarillo y los colores de tinta se guardan automáticamente, sin cambiar el Markdown.
+Puedes quitar formato solo de una parte de una frase. Tab lleva el foco a la barra y
+Escape la cierra. El código y los controles quedan fuera de las marcas.
+Al editar, las marcas se recolocan únicamente si se puede identificar su texto; si no,
+se conservan guardadas y el lector muestra un aviso.
+
 Los listados de una carpeta incluyen sus subcarpetas, también sin escribir una búsqueda,
 y muestran primero los apuntes modificados más recientemente. Al abrir el editor se
 comprueba la versión guardada actual, incluso al volver con Atrás, conservando cualquier
 borrador pendiente. Usa **Terminar edición** para volver al lector.
 
 Para eliminar un apunte, pulsa **Borrar apunte…** en el lector y confirma. Se eliminan
-el apunte y sus vínculos; los errores de Error Log se conservan. Si el apunte cambió
+el apunte, sus marcas y sus vínculos; los errores de Error Log se conservan. Si el apunte cambió
 desde que lo abriste, el borrado se detiene para que revises la versión actual.
 
 Importa **un `.md` por vez** con vista previa. Descarga cada apunte como `.md`, el
 cuaderno como ZIP o todos los datos como JSON desde **Exportar**. El ZIP incluye
 Markdown y un manifiesto, pero volver a importar sus `.md` no restaura los vínculos
 con errores. La demo incluye ocho apuntes ficticios para recorrer estas pantallas.
+Las marcas viajan en el JSON (versión 3) y las copias SQLite; las descargas `.md` y ZIP
+conservan el Markdown original sin marcas de estudio.
 
 **Límites actuales:** Notebook no admite adjuntos ni imágenes: al leer se muestra su
 sintaxis, sin cargarlas. El HTML embebido no se representa. No hay historial de versiones

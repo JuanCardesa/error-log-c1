@@ -1,4 +1,10 @@
 import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
+
+import { applyStudyCommand, resolveStudyAnchor, studyAnchor, type NotebookAnnotation } from '../notebook/annotations';
+import { saveStudyAnnotationSchema, type SaveStudyAnnotationInput } from '../notebook/annotationSchemas';
+import { notebookStudyText } from '../notebook/studyMarkdown';
+import { STUDY_BARRIER } from '../notebook/studyText';
 
 import { analyzeNotebookMarkdown, normalizeNotebookSearchText } from '../notebook/markdown';
 import {
@@ -19,7 +25,7 @@ import type {
   NotebookErrorCode, NotebookFolder, NotebookNote, NotebookNoteSummary, NotebookPage,
 } from '../notebook/types';
 import type { Db } from './client';
-import { notebookFolder, notebookNote } from './schema';
+import { notebookAnnotation, notebookFolder, notebookNote } from './schema';
 
 /** Errores esperados de dominio; las acciones los convierten en respuestas tipadas. */
 export class NotebookRepoError extends Error {
@@ -195,6 +201,7 @@ export function saveNotebookNote(db: Db, input: SaveNotebookNoteInput, at: strin
   const searchTitle = normalizeNotebookSearchText(changes.title);
   const searchTags = normalizeNotebookSearchText(changes.tags.join(' '));
   return db.transaction((tx) => {
+    const previous = tx.select().from(notebookNote).where(eq(notebookNote.id, id)).get();
     if (changes.folderId !== null) {
       const folder = tx.select({ id: notebookFolder.id }).from(notebookFolder)
         .where(eq(notebookFolder.id, changes.folderId)).get();
@@ -210,6 +217,15 @@ export function saveNotebookNote(db: Db, input: SaveNotebookNoteInput, at: strin
       eq(notebookNote.revision, expectedRevision),
     )).returning().get();
     if (saved !== undefined) {
+      if (previous !== undefined && previous.contentMarkdown !== saved.contentMarkdown) {
+        const text = notebookStudyText(saved.contentMarkdown);
+        const oldText = notebookStudyText(previous.contentMarkdown);
+        for (const annotation of listNotebookAnnotations(tx, id)) {
+          const anchor = resolveStudyAnchor(text, annotation.anchor, annotation.orphaned ? undefined : oldText);
+          tx.update(notebookAnnotation).set({ anchor: anchor ?? annotation.anchor, orphaned: anchor === null })
+            .where(eq(notebookAnnotation.id, annotation.id)).run();
+        }
+      }
       tx.run(sql`INSERT INTO notebook_note_fts (rowid, title, body, tags)
         VALUES (${saved.id}, ${searchTitle}, ${searchBody}, ${searchTags})`);
       return saved;
@@ -217,6 +233,44 @@ export function saveNotebookNote(db: Db, input: SaveNotebookNoteInput, at: strin
     const current = tx.select().from(notebookNote).where(eq(notebookNote.id, id)).get();
     if (current === undefined) throw new NotebookRepoError('NOT_FOUND', 'Apunte eliminado');
     throw new NotebookRepoError('CONFLICT', 'El apunte cambió en otra pestaña', current);
+  });
+}
+
+export function listNotebookAnnotations(db: Pick<Db, 'select'>, noteId: number): NotebookAnnotation[] {
+  return db.select().from(notebookAnnotation).where(eq(notebookAnnotation.noteId, noteId))
+    .orderBy(asc(notebookAnnotation.createdAt), asc(notebookAnnotation.id)).all();
+}
+
+/** Lee y modifica las marcas actuales en una transacción; no altera la revisión del Markdown. */
+export function saveNotebookAnnotation(db: Db, raw: SaveStudyAnnotationInput, at: string): NotebookAnnotation[] {
+  const input = saveStudyAnnotationSchema.parse(raw);
+  return db.transaction((tx) => {
+    const note = tx.select().from(notebookNote).where(eq(notebookNote.id, input.noteId)).get();
+    if (note === undefined || note.uid !== input.uid) throw new NotebookRepoError('NOT_FOUND', 'Apunte eliminado');
+    if (note.revision !== input.expectedRevision) {
+      throw new NotebookRepoError('CONFLICT', 'El apunte ha cambiado. Recarga antes de seguir marcando.');
+    }
+    const text = notebookStudyText(note.contentMarkdown);
+    const { start, end } = input.anchor;
+    const anchor = studyAnchor(text, start, end);
+    if (end <= start || end > text.length || !anchor.exact.trim() || anchor.exact.includes(STUDY_BARRIER)
+      || anchor.exact !== input.anchor.exact || anchor.prefix !== input.anchor.prefix || anchor.suffix !== input.anchor.suffix) {
+      throw new NotebookRepoError('VALIDATION', 'Selecciona texto del apunte, sin código ni controles.');
+    }
+    const before = listNotebookAnnotations(tx, note.id);
+    const after = applyStudyCommand(before, text, anchor, input.command, note.id, at, randomUUID);
+    const byId = new Map(after.map((item) => [item.id, item]));
+    for (const item of before) {
+      if (!byId.has(item.id)) tx.delete(notebookAnnotation).where(eq(notebookAnnotation.id, item.id)).run();
+    }
+    const old = new Map(before.map((item) => [item.id, item]));
+    for (const item of after) {
+      const prior = old.get(item.id);
+      if (prior === item) continue;
+      if (prior === undefined) tx.insert(notebookAnnotation).values(item).run();
+      else tx.update(notebookAnnotation).set(item).where(eq(notebookAnnotation.id, item.id)).run();
+    }
+    return after;
   });
 }
 

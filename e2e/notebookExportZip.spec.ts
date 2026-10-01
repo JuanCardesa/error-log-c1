@@ -139,7 +139,7 @@ test('el volcado JSON añade formatVersion y el cuaderno sin recortar los cuerpo
       };
     };
     expect(Object.keys(dump)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki', 'notebook']);
-    expect(dump.formatVersion).toBe(2);
+    expect(dump.formatVersion).toBe(3);
     expect(dump.rows.errors.length).toBeGreaterThan(0);
 
     const source = dump.notebook.notes.find((note) => note.id === fixture.sourceId);

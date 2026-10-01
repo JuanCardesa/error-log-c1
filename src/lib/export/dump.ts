@@ -55,8 +55,8 @@ export function toCsvExport(
   }
 }
 
-/** 2 desde que el volcado lleva Notebook; 1 era el volcado sin `formatVersion`. */
-export const JSON_DUMP_FORMAT_VERSION = 2;
+/** 3 añade marcas de estudio; 2 añadió Notebook; 1 no llevaba `formatVersion`. */
+export const JSON_DUMP_FORMAT_VERSION = 3;
 
 export interface JsonDump {
   readonly formatVersion: number;
