@@ -40,3 +40,18 @@ it('limita la URL original y normalizada a 2048 caracteres', () => {
 it.each(['http://localhost:1', 'https://localhost:65535', 'http://[::1]:8765', 'http://localhost', 'https://localhost'])('acepta un puerto local válido: %s', (url) => {
   expect(ankiConfig({ ANKI_CONNECT_URL: url }).url).toBe(new URL(url).href);
 });
+
+it('la grabación solo habla con Anki si lo pide con su URL y un perfil con nombre', () => {
+  const recording = { ERRORLOG_DEMO: '1', ERRORLOG_RECORDING: '1' };
+  expect(ankiConfig(recording)).toMatchObject({ disabled: true });
+  expect(ankiConfig(recording).requiredProfile).toBeUndefined();
+  // ANKI_CONNECT_URL no basta: la demo sigue sin tocar ninguna colección.
+  expect(ankiConfig({ ...recording, ANKI_CONNECT_URL: 'http://127.0.0.1:8765' })).toMatchObject({ disabled: true });
+  const env = { ...recording, ERRORLOG_RECORDING_ANKI_URL: 'http://127.0.0.1:8765', ERRORLOG_RECORDING_ANKI_PROFILE: ' Error Log demo ' };
+  expect(ankiConfig(env)).toMatchObject({ disabled: false, url: 'http://127.0.0.1:8765/', requiredProfile: 'Error Log demo', statusTtlMs: 0 });
+  expect(() => ankiConfig({ ...env, ERRORLOG_RECORDING_ANKI_PROFILE: undefined })).toThrow('ERRORLOG_RECORDING_ANKI_PROFILE');
+  expect(() => ankiConfig({ ...env, ERRORLOG_RECORDING_ANKI_URL: 'http://192.168.1.2:8765' })).toThrow(AnkiError);
+  // Fuera de la grabación, o sin demo, la variable no hace nada.
+  expect(ankiConfig({ ...env, ERRORLOG_RECORDING: undefined })).toMatchObject({ disabled: true });
+  expect(ankiConfig({ ...env, ERRORLOG_DEMO: undefined }).requiredProfile).toBeUndefined();
+});

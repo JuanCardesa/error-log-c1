@@ -26,9 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AppHeader />
           {IS_DEMO && (
             <p className={styles.demo} role="note">
-              <strong>Demo con datos inventados.</strong> Esta base se descarta: cada
-              <code> pnpm demo </code>
-              crea una nueva. Para tus datos reales usa <code>pnpm dev</code>.
+              <strong>Demo con datos inventados.</strong> Cada arranque crea un espacio nuevo, independiente de tu registro personal.
             </p>
           )}
           <main id="contenido" className={styles.main} tabIndex={-1}>

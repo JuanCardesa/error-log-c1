@@ -16,6 +16,9 @@ versión corresponde a un tag `vX.Y` en `main`; `package.json` lleva el mismo n�
 
 - El volcado `dump.json` usa `formatVersion: 2` e incorpora la clave `notebook` con
   carpetas, apuntes y vínculos.
+- README en inglés, como presentación del producto: qué problema resuelve, cómo funciona,
+  la demo de 1:51 y el arranque. El detalle de uso pasa sin recortes a
+  [docs/GUIDE.md](docs/GUIDE.md), en español como la interfaz.
 - Las migraciones `0008_notebook_core` y `0009_notebook_search` añaden las tablas y el
   índice. Ejecuta `pnpm db:migrate` con la app detenida: antes guarda una copia
   verificada. Si el índice de búsqueda necesita reconstrucción, ejecuta

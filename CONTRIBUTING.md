@@ -106,5 +106,5 @@ pnpm db:restore data/backups/copia.db data/restored.db  # exige un destino nuevo
 Las migraciones de `drizzle/` son versionadas y se commitean. No se editan a mano una vez
 aplicadas: se añade una nueva encima.
 
-Los pasos para activar una base restaurada estan en [README.md](README.md#copias-y-recuperación).
+Los pasos para activar una base restaurada estan en [la guía de uso](docs/GUIDE.md#copias-y-recuperación).
 Los tests de backup y demo crean sus propias bases temporales.

@@ -15,6 +15,9 @@
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
     "demo": "tsx src/lib/db/demo.run.ts",
+    "demo:record:build": "tsx src/lib/db/recording.run.ts --build",
+    "demo:record": "tsx src/lib/db/recording.run.ts",
+    "demo:verify": "playwright test --config playwright.recording.config.ts",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1",
     "typecheck": "tsc --noEmit",

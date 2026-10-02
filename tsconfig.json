@@ -43,12 +43,15 @@
     ".next-e2e/types/**/*.ts",
     ".next-e2e/dev/types/**/*.ts",
     ".next-demo/types/**/*.ts",
-    ".next-demo/dev/types/**/*.ts"
+    ".next-demo/dev/types/**/*.ts",
+    ".next-recording/types/**/*.ts",
+    ".next-recording/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     ".next",
     ".next-demo",
+    ".next-recording",
     ".next-e2e",
     "coverage"
   ]

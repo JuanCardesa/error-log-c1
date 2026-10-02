@@ -11,6 +11,12 @@
 La conexión es local y sale del servidor; la clave no llega al navegador. Demo y e2e
 no pueden acceder a Anki personal. Los e2e usan su propio doble HTTP.
 
+La grabación de la demo (`pnpm demo:record`) es la única excepción, y solo si se pide:
+`ERRORLOG_RECORDING_ANKI_URL` apunta a AnkiConnect y `ERRORLOG_RECORDING_ANKI_PROFILE`
+nombra el perfil obligatorio. Con otro perfil abierto, Anki aparece como no disponible y
+no se escribe nada. `ANKI_CONNECT_URL` no la activa. Úsala con un Anki aparte
+(`anki -b <carpeta> -p <perfil>`), nunca con el perfil de tu colección.
+
 ## Configuración del servidor
 
 | Variable | Valor predeterminado |
@@ -80,7 +86,7 @@ y no altera las siete reglas del informe.
 Las notas no vinculadas al log se asignan a una categoría principal mediante el mapeo de
 etiquetas de `src/lib/anki/categories.ts`. Q7 tiene CSV; el JSON exporta el espejo, solo
 datos y sin agregaciones.
-Para recuperar toda la app, usa una copia SQLite: [copias y recuperación](../README.md#copias-y-recuperación).
+Para recuperar toda la app, usa una copia SQLite: [copias y recuperación](GUIDE.md#copias-y-recuperación).
 
 ## Protecciones y límites
 
