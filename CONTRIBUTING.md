@@ -64,9 +64,19 @@ pnpm test:coverage
 ```
 
 Las E2E se sirven desde `.next-e2e`, no desde `.next`: en local, compila como CI.
+Instala primero Chromium con `pnpm exec playwright install chromium`.
+
+En Bash:
 
 ```bash
 ERRORLOG_E2E=1 pnpm test:e2e
+```
+
+En PowerShell, usa una terminal dedicada y ciérrala al terminar para no conservar la variable:
+
+```powershell
+$env:ERRORLOG_E2E = '1'
+pnpm test:e2e
 ```
 
 Para medir Notebook a 50, 500 y 5.000 apuntes sobre una base temporal (no toca
@@ -77,12 +87,12 @@ pnpm build && pnpm bench:notebook            # --sizes 50,500 · --runs 15 · --
 ```
 
 No forma parte de CI: los tiempos dependen del equipo. Lo que sí vigilan las pruebas son
-las cotas que no dependen del reloj (`notebookScale.test.ts`, `notebookBundle.spec.ts`).
+las cotas que no dependen del reloj (`notebookScale.test.ts`, `notebookPerformance.spec.ts`).
 
 ## Reglas que el linter no puede comprobar
 
-- **Cero `any` y cero `@ts-ignore`.** ESLint los marca como error y CI además hace un grep
-  final. Si un tipo se resiste, el arreglo es modelar mejor, no silenciar.
+- **Cero `any` y cero `@ts-ignore`.** ESLint los marca como error y CI ejecuta el linter.
+  Si un tipo se resiste, el arreglo es modelar mejor, no silenciar.
 - **La lógica de dominio, consultas y reglas es pura.** El reloj se inyecta como
   parámetro `now`. `src/lib/db/` contiene los adaptadores de SQLite y fichero;
   los puntos de entrada `*.run.ts` leen el reloj y el entorno.

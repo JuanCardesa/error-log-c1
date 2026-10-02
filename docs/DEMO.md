@@ -33,18 +33,49 @@ El informe destaca una sola prioridad y explica los datos que la disparan.
 
 ![Informe semanal con la acción prioritaria](media/step-5.png)
 
+## Más pantallas
+
+### Buscar errores
+
+Cada corrección conserva su contexto, sesión y estado en Anki.
+
+![Errores: búsqueda de correcciones en el historial](screenshots/errores.png)
+
+### Preparar tarjetas
+
+La cola de Anki muestra la respuesta, la corrección y la regla antes de crear la tarjeta.
+Esta captura usa el doble de Anki de las pruebas; `pnpm demo` no conecta con tu colección.
+
+![Anki: cola de pendientes y vista previa de una tarjeta](screenshots/anki.png)
+
 ## Regenerar los medios
 
-Con las dependencias del proyecto instaladas y el puerto 3210 libre:
+Con las dependencias del proyecto instaladas y el puerto 3210 libre, compila primero
+en `.next-e2e`. En Bash:
+
+```bash
+ERRORLOG_E2E=1 pnpm build
+```
+
+En PowerShell, desde una terminal dedicada:
+
+```powershell
+$env:ERRORLOG_E2E = '1'
+pnpm build
+```
+
+Después, en cualquiera de los dos shells:
 
 ```bash
 pnpm exec playwright install chromium
 pnpm screenshots
 ```
 
-El comando prepara `data/e2e.db`, compila en `.next-e2e/` y ejecuta el recorrido en
+El comando prepara `data/e2e.db`, usa la compilación de `.next-e2e/` y ejecuta el recorrido en
 Chromium. Sobrescribe exclusivamente las capturas de `docs/screenshots/` y los cinco
 pasos de `docs/media/`; no utiliza la base personal ni reutiliza un servidor existente.
+La captura del lector de Notebook incluye una regla resaltada y la página completa para
+mostrar el error relacionado. Cierra la terminal dedicada de PowerShell al terminar para descartar la variable.
 
 Para codificar el GIF se necesita Python 3 con Pillow:
 

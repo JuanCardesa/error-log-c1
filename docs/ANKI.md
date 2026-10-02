@@ -2,6 +2,10 @@
 
 ## Conectar
 
+Anki no es necesario para registrar errores ni consultar informes, pero el motor prioriza
+la deuda de tarjetas sobre las demás señales. Si no conviertes errores elegibles, puede
+seguir recomendando hacerlo; actualmente no hay un modo de recomendaciones sin Anki.
+
 1. En Anki abre Herramientas → Complementos → Descargar complementos e instala
    [AnkiConnect (2055492159)](https://ankiweb.net/shared/info/2055492159).
 2. Reinicia Anki y deja abierto el perfil de tu colección.

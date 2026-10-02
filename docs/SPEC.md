@@ -221,10 +221,12 @@ Siete reglas. Cada una devuelve un estado:
 
 ### Mecánica exacta
 
-- **Guarda de n mínimo:** `MIN_N = 15`. Ninguna regla basada en **porcentaje**
-  (0, 1, 3, 5, 6) puede dispararse con menos de 15 errores en la ventana; en ese caso el
-  estado es `needs n ≥ 15`. Las reglas de **conteo absoluto** (2, y 4 que es un ratio de
-  conversión) sí se disparan sin la guarda.
+- **Guarda de n mínimo:** `MIN_N = 15`. Las reglas de patrones basadas en porcentaje
+  (0, 1, 3, 5, 6) necesitan al menos 15 errores en su muestra: todos los del periodo para
+  0, 1 y 3; los de sesiones cronometradas para 5; los errores originales de los pares de
+  reescritura evaluados para 6. Por debajo, el estado es `needs n ≥ 15`. La regla 2
+  (conteo absoluto de falsas certezas) y la 4 (porcentaje de conversión a Anki) no usan
+  esa guarda. La regla 4 requiere errores elegibles; sin ellos no aplica.
 - **Umbral WATCH** por regla, para avisar antes de cruzar: 30%, 50%, 3, 20%, 90%, 28%, 35%.
 - **Orden de prioridad:** `[4, 0, 1, 2, 3, 5, 6]`. La regla 4 manda sobre todo — un bucle
   de conversión roto bloquea cualquier otro remedio. De las reglas disparadas, la primera

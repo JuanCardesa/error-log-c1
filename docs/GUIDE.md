@@ -81,6 +81,34 @@ evaluaría como fórmula sale con un tabulador protector dentro del campo entrec
 las respuestas normales no se tocan, sufijos como `-ing` o `-ed` incluidos. Si necesitas
 el contenido literal para procesarlo, usa el JSON.
 
+### Formato JSON de una sesión
+
+Puedes pegar la cabecera y hasta 300 errores juntos. Este ejemplo incluye ocho ítems,
+siete aciertos y el único error de la sesión:
+
+```json
+{
+  "session": {
+    "date": "2026-10-01", "kind": "DRILL", "paper": "RUOE", "part": 1,
+    "source": "ONLINE", "sourceRef": "Urban gardens · collocations",
+    "itemsTotal": 8, "itemsCorrect": 7, "timed": false
+  },
+  "errors": [{
+    "itemRef": "1",
+    "prompt": "The students ___ research into urban gardens. (A made / B carried out / C held / D raised)",
+    "myAnswer": "made", "correctAnswer": "carried out",
+    "category": "COLOCACION", "cause": "CONFUSION", "confidence": "SEGURO",
+    "ruleNote": "Research goes with do, conduct or carry out. 'Make research' isn't natural."
+  }]
+}
+```
+
+Cambia la fecha y los recuentos por los de tu práctica. `COLOCACION` identifica la
+categoría; `CONFUSION`, que conocías las alternativas pero elegiste mal; `SEGURO`, que
+creías estar en lo cierto. Revisa esas clasificaciones antes de guardar. Los valores
+admitidos están en la [especificación](SPEC.md). Este formato de entrada no es el volcado
+completo de **Exportar**: importar `dump.json` no está implementado.
+
 ## Notebook: apuntes para repasar
 
 En **Más → Notebook** puedes crear apuntes Markdown, organizarlos en carpetas de hasta
@@ -125,8 +153,14 @@ con `pnpm db:backup` y `pnpm db:restore`.
 
 ## Progreso y Anki
 
-Progreso prioriza una acción con siete reglas. Las reglas de porcentaje exigen al
-menos 15 observaciones en su propio denominador; las falsas certezas usan 30 días.
+Progreso destaca como máximo una acción entre siete reglas. Si no hay muestra suficiente
+o ninguna regla se activa, lo indica. Las reglas porcentuales de patrones necesitan al
+menos 15 errores en su propio denominador; la conversión a Anki y el conteo de falsas
+certezas no usan ese mínimo. Las falsas certezas miran siempre 30 días.
+
+Puedes registrar y consultar informes sin Anki, pero la deuda de tarjetas tiene la máxima
+prioridad del motor: si decides no convertir errores elegibles, esa recomendación puede
+seguir apareciendo. La demo normal no conecta con tu colección de Anki.
 [Consultas, umbrales y decisiones](SPEC.md#4-consultas-q1q6-del-mvp-y-q7-de-anki).
 
 Para crear tarjetas y leer repasos, instala AnkiConnect y deja Anki abierto.

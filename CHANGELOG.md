@@ -11,24 +11,27 @@ versión corresponde a un tag `vX.Y` en `main`; `package.json` lleva el mismo n�
   búsqueda FTS5, editor con vista previa, autosave y borradores recuperables. Vínculos
   manuales entre errores y apuntes o apartados, importación individual de `.md` y
   exportación de `.md` y ZIP. La demo incluye un cuaderno de ejemplo ficticio.
+- **Marcas de estudio:** resaltado y subrayado en cuatro colores, guardados aparte del
+  Markdown. El JSON y las copias SQLite los conservan; `.md` y ZIP exportan el texto original.
 
 ### Cambiado
 
-- El volcado `dump.json` usa `formatVersion: 2` e incorpora la clave `notebook` con
-  carpetas, apuntes y vínculos.
+- El volcado `dump.json` usa `formatVersion: 3` e incorpora la clave `notebook` con
+  carpetas, apuntes, vínculos y anotaciones. El manifiesto del ZIP usa `formatVersion: 2`.
 - README en inglés, como presentación del producto: qué problema resuelve, cómo funciona,
   la demo de 1:51 y el arranque. El detalle de uso pasa sin recortes a
   [docs/GUIDE.md](docs/GUIDE.md), en español como la interfaz.
-- Las migraciones `0008_notebook_core` y `0009_notebook_search` añaden las tablas y el
-  índice. Ejecuta `pnpm db:migrate` con la app detenida: antes guarda una copia
+- Las migraciones `0008_notebook_core`, `0009_notebook_search` y
+  `0010_notebook_annotations` añaden las tablas, el índice y las marcas de estudio.
+  Ejecuta `pnpm db:migrate` con la app detenida: antes guarda una copia
   verificada. Si el índice de búsqueda necesita reconstrucción, ejecuta
   `pnpm db:notebook-rebuild`.
 
 ### Notas para actualizar desde 2.0
 
 - No hay migración inversa: conserva la copia SQLite previa para volver atrás.
-- Los consumidores del JSON deben aceptar `formatVersion: 2` y la nueva clave
-  `notebook`. El ZIP es una exportación portable; importar sus `.md` no reconstruye
+- Los consumidores del JSON deben aceptar `formatVersion: 3` y la nueva clave
+  `notebook`, incluidas sus `annotations`. El ZIP es una exportación portable; importar sus `.md` no reconstruye
   los vínculos con errores. La copia SQLite conserva todos los datos y relaciones.
 - Notebook no carga imágenes ni representa HTML, no guarda historial de versiones y
   admite un `.md` por importación. Sigue siendo una app local sin autenticación.

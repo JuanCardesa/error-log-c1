@@ -1,23 +1,28 @@
-<p align="center">
+<h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/media/wordmark-dark.png">
     <img src="docs/media/wordmark-light.png" alt="Error Log C1" width="440">
   </picture>
-</p>
+</h1>
 
-<h3 align="center">Turn your mistakes into your next study step.</h3>
+<p align="center"><b>Turn your mistakes into your next study step.</b></p>
 
 <p align="center">
   A study log for Cambridge C1 Advanced that runs on your own computer.<br>
   Record what you got wrong and why, see where your mistakes cluster,
-  and get one clear priority for the week.
+  and focus on one study priority at a time.
 </p>
 
 <p align="center">
   <a href="https://github.com/JuanCardesa/error-log-c1/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/JuanCardesa/error-log-c1/ci.yml?branch=main&amp;label=CI" alt="CI status"></a>
   <a href="https://github.com/JuanCardesa/error-log-c1/releases/latest"><img src="https://img.shields.io/github/v/release/JuanCardesa/error-log-c1?label=release&amp;color=304F46" alt="Latest release"></a>
-  <a href=".nvmrc"><img src="https://img.shields.io/badge/node-22-304F46" alt="Node.js 22"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-304F46" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <b>Spanish interface · Runs locally · No account</b><br>
+  <a href="#quick-start">Try it locally</a> &nbsp;·&nbsp;
+  <a href="#documentation">Documentation</a>
 </p>
 
 <p align="center">
@@ -29,7 +34,8 @@
   &nbsp;·&nbsp;
   <a href="https://github.com/user-attachments/assets/21fa4430-f354-4717-bb94-1bca991c61b5">Spanish captions</a>
   <br>
-  <sub>No voice-over. All data is invented. The interface is in Spanish.</sub>
+  Follow a correction from import to study notes, a priority and an Anki card.<br>
+  <sub>No voice-over. All examples are fictional.</sub>
 </p>
 
 ## Why
@@ -37,16 +43,8 @@
 Most practice ends the same way: you check the answers, count the mistakes and move on.
 Two weeks later the same mistake is back, and its correction is lost somewhere in a workbook.
 
-A score tells you *that* you got something wrong. It doesn't tell you:
-
-- what you keep getting wrong;
-- whether you didn't know it, mixed it up or simply didn't check;
-- whether it's a pattern or a one-off;
-- what deserves your time this week.
-
-Error Log C1 keeps the answers. Every mistake is saved with its context and its cause.
-Every session counts towards the totals, even one without mistakes, so the rates stay honest.
-Over a few weeks, that history turns into one concrete next step.
+Error Log C1 keeps your corrections, their context and the reason you got them wrong.
+Sessions without mistakes count too: the reports relate errors to the practice you record.
 
 **The cause changes the fix.** Not knowing a collocation and not rereading your answer look
 the same on a marked page. The first one you study; the second one you solve with better
@@ -60,12 +58,50 @@ exam technique.
    corrected mistakes in one go or type them in.
 3. **Classify each mistake.** Keep your answer, the correction and the rule in your own
    words, plus a category, a cause and how sure you were.
-4. **Read the patterns.** See which categories you miss most per 100 items, which causes
-   dominate, and how your Reading and Use of English accuracy moves by part and week.
-5. **Get one priority.** Seven rules choose a single action for the week and show the
-   numbers behind it. Rules based on percentages wait until there are at least 15 mistakes.
+4. **Read the patterns.** Review recurring categories, causes and accuracy by exam part.
+5. **Choose your next step.** When the data triggers a rule, Progress highlights one
+   priority and explains why. Otherwise, it tells you there is too little evidence or no
+   priority to act on.
 6. **Close the loop.** Turn the mistakes you can fix by studying into Anki cards, link them
    to your notes, and go back to practice.
+
+## Quick start
+
+You need **Git**, **Node.js 22** and **pnpm 10**. The repository pins pnpm 10.33.2.
+If pnpm is not set up yet, enable it with the Corepack included in Node.js 22:
+
+```sh
+corepack enable
+```
+
+Then clone the repository and start the demo:
+
+```sh
+git clone https://github.com/JuanCardesa/error-log-c1.git
+cd error-log-c1
+pnpm install --frozen-lockfile
+pnpm demo
+```
+
+Open **[127.0.0.1:3001](http://127.0.0.1:3001)**. Each start creates a fresh database with fictional data,
+separate from your own. The demo does not connect to your Anki collection; use the personal
+app below to create and sync real cards. Stop the demo with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
+
+To start with your own data:
+
+```sh
+pnpm db:migrate
+pnpm dev
+```
+
+Open **[127.0.0.1:3000](http://127.0.0.1:3000)**. Saved records live in `data/errorlog.db`, which Git ignores;
+unsaved drafts stay in your browser. No environment variables are required. For a production
+build, run `pnpm build` and then `pnpm start`. Stop the app before migrating an existing database.
+
+**Using Anki:** install AnkiConnect and keep Anki open when creating or syncing cards
+([setup](docs/ANKI.md)). Recording and reports work without it, but the highest-priority
+rule addresses errors waiting for Anki cards. That recommendation can remain active if you
+choose not to use Anki.
 
 ## What you can do
 
@@ -73,29 +109,56 @@ exam technique.
 
 Paste a whole session with up to 300 mistakes as JSON, or copy rows straight from a
 spreadsheet. A review screen walks you through every mistake before anything is saved. The
-batch is written in a single transaction, and saving it twice doesn't duplicate it. You can
-also log mistakes one at a time from the keyboard.
+batch is written in a single transaction, and retrying the same save doesn't duplicate it.
+You can also log mistakes from the keyboard and edit saved errors and sessions.
 
 Corrections on paper or in screenshots? **Prepare corrections with AI**
 (*Preparar correcciones con IA*) copies a ready-made prompt for the AI tool of your choice.
 You paste its JSON back and review it like any other batch. Error Log C1 itself never
 contacts an AI service.
 
+See the [import example and instructions](docs/GUIDE.md#formato-json-de-una-sesión).
+
 ### See why, not just what
 
-Each mistake gets one of [six causes](#a-mistake-as-data), one of 14 categories
+Each mistake gets one of six causes, one of 14 categories
 (collocation, phrasal verb, word formation, dependent preposition…) and a confidence level:
 sure, unsure or guessed. Mistakes you were *sure* about get their own list,
 **false certainties**: beliefs to correct rather than gaps to fill.
 
-### One priority, not a dashboard
+<details>
+<summary><b>The six causes and what to do about them</b></summary>
 
-**Progress** opens with a single recommendation for the week and the figures that
-triggered it. The seven rules run in a fixed order of priority, so two conflicting actions
-are never active at the same time. Underneath you'll find mistakes per 100 items by
-category, causes split into studying and exam technique, and a part-by-week accuracy grid
-for Reading and Use of English, over the last 30 or 60 days. Writing tasks keep their four
-assessment bands, and the app checks how many mistakes come back in the rewrite.
+| Cause | What happened | Next step |
+| --- | --- | --- |
+| Lack of knowledge | You didn't know it | Study it with an Anki card |
+| Confusion | You knew the alternatives but chose the wrong one | Study the contrast |
+| Spelling | You knew the word but misspelled it | Practise it with a spelling card |
+| Oversight | You didn't read or check carefully | Adjust your answer-checking routine |
+| Task format | You broke a rule of the task | Review the instructions |
+| Time pressure | You ran out of time or rushed | Practise time management |
+
+The first three causes are eligible for Anki cards. The interface and import format use
+the Spanish names; the [specification](docs/SPEC.md) lists all values and thresholds.
+
+</details>
+
+### A priority with the evidence behind it
+
+**Progress** evaluates seven rules over your recorded practice and highlights at most one
+action. It updates as your data or the selected 30/60-day window changes; it is not a fixed
+weekly plan. Pattern-based percentage rules need at least 15 errors in their relevant sample.
+Anki conversion and the count of confident mistakes do not use that minimum.
+
+Reports show causes, errors by category per 100 attempted items overall, and Reading and
+Use of English accuracy by part and week. The category rate is not a failure percentage
+within that category; sessions without item counts, such as Writing, are excluded from it.
+
+[![Progress: a recommendation to review pending Anki cards, with its evidence and the category and cause breakdowns](docs/screenshots/informe.png)](docs/screenshots/informe.png)
+
+**Writing** records the four assessment bands you enter and links originals to rewrites.
+It checks for repeated logged errors by matching category, subcategory and corrected answer.
+It does not grade essays or detect mistakes in the text automatically.
 
 ### Notes next to your mistakes
 
@@ -104,128 +167,54 @@ contents list for each note and full-text search with snippets. Link a mistake t
 or to one section of it, and the note lists every mistake connected to it. On a computer,
 select text to highlight it or mark it in one of four ink colours; the marks are stored
 separately from the Markdown. Notes save automatically, unsaved drafts can be recovered,
-and notes can be imported and exported as `.md` files, or the whole notebook as a ZIP.
+and you can import one `.md` file at a time or export notes as `.md` and the notebook as ZIP.
+
+[![Notebook: a highlighted grammar rule and its related mistake, linked to the relevant section](docs/screenshots/notebook-lector.png)](docs/screenshots/notebook-lector.png)
+
+Screens use fictional data. See the [five-step walkthrough and more screens](docs/DEMO.md).
 
 ### Spaced review with Anki
 
-Mistakes you can fix by studying become Anki cards in one click through AnkiConnect, with
-the question, your answer and the rule. A mistake only counts as converted once its card
-has been verified in Anki. Syncing brings your review history back, with failed reviews
-grouped by category. If Anki is closed, everything else keeps working.
+Create Anki cards from eligible mistakes through AnkiConnect, with the question, your answer,
+the correction and the rule. New conversions are only confirmed after verification in Anki.
+If you edit a linked error, the app flags the changed content and lets you update its card.
+Syncing brings your review history back, with failed reviews grouped by category.
+Recording and the last synced reports remain available when Anki is closed.
 
-### Find anything, keep everything
+### Search, export and recover
 
 **Errors** searches every answer, prompt and rule, and <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd>
-finds mistakes, sessions and notes from any page. Export tables as CSV, all your data as
-JSON and the notebook as a ZIP, or take a verified SQLite backup from the command line.
+finds mistakes, sessions and notes from any page.
 
-## Product tour
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/informe.png" alt="Progress screen: the main recommendation for the week, mistakes by category per 100 items and a bar chart of causes">
-      <br><b>Progress</b> · one priority for the week, with the numbers behind it
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/errores.png" alt="Errors screen: a searchable table with each correction, its context, its session and its Anki status">
-      <br><b>Errors</b> · every mistake with its context, ready to search
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/notebook-lector.png" alt="Notebook reader: a grammar note with folders on the left, a table of contents on the right and related mistakes below">
-      <br><b>Notebook</b> · a note with the mistakes linked to it
-    </td>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/anki.png" alt="Anki screen: the queue of pending mistakes and a card preview with the answer, the correction and the rule">
-      <br><b>Anki</b> · pending cards, each with the rule on its back
-    </td>
-  </tr>
-</table>
-
-<sub>Screens from the demo, with invented data. Step by step: [the five-step walkthrough](docs/DEMO.md).</sub>
-
-## A mistake, as data
-
-Every mistake belongs to a session, and the session holds the denominator: how many items
-you attempted and how many you got right. This is the batch format the app imports, shown
-with a single mistake:
-
-```json
-{
-  "session": {
-    "date": "2026-10-01", "kind": "DRILL", "paper": "RUOE", "part": 1,
-    "source": "ONLINE", "sourceRef": "Urban gardens · collocations",
-    "itemsTotal": 8, "itemsCorrect": 5, "timed": false
-  },
-  "errors": [{
-    "itemRef": "1",
-    "prompt": "The students ___ research into urban gardens. (A made / B carried out / C held / D raised)",
-    "myAnswer": "made", "correctAnswer": "carried out",
-    "category": "COLOCACION", "cause": "CONFUSION", "confidence": "SEGURO",
-    "ruleNote": "Research goes with do, conduct or carry out. 'Make research' isn't natural."
-  }]
-}
-```
-
-The values use the interface's Spanish names. `COLOCACION` is a collocation, `CONFUSION`
-means you knew both options but picked the wrong one, and `SEGURO` means you were sure,
-which makes this mistake a false certainty. The cause decides what to do about it:
-
-| Cause | What happened | How to fix it | Anki card |
-| --- | --- | --- | --- |
-| `DESCONOCIMIENTO` | You didn't know it | Study it | Yes |
-| `CONFUSION` | You knew it, but picked the wrong one of two | Study it with a contrast card | Yes |
-| `ORTOGRAFIA` | You knew the word, but misspelled it | Study it with a spelling card | Yes |
-| `DESPISTE` | You knew it, but didn't read or check | Change how you review your answers | No |
-| `FORMATO` | You broke a rule of the task | Reread the task instructions | No |
-| `TIEMPO` | You ran out of time or rushed | Work on time management | No |
-
-The full data model, the 14 categories and every threshold are in the
-[specification](docs/SPEC.md).
-
-## Quick start
-
-You need **Node.js 22** and **pnpm 10**. The repository pins pnpm 10.33.2, and on Node 22
-`corepack enable` sets it up for you.
-
-```bash
-git clone https://github.com/JuanCardesa/error-log-c1.git
-cd error-log-c1
-pnpm install --frozen-lockfile
-pnpm demo
-```
-
-Open **http://127.0.0.1:3001**. The demo starts a fresh database with invented data every
-time, separate from your own. Stop it with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
-
-To use it with your own data:
-
-```bash
-pnpm db:migrate
-pnpm dev
-```
-
-Open **http://127.0.0.1:3000**. Everything is stored in `data/errorlog.db`, which Git
-ignores. For a production build, run `pnpm build` and then `pnpm start`.
-
-No environment variables are required. Anki is optional: install the AnkiConnect add-on and
-keep Anki open while you sync ([setup and settings](docs/ANKI.md)).
+- **CSV:** report tables for spreadsheets.
+- **Markdown / ZIP:** portable notes without study marks. ZIP includes a metadata and
+  error-link manifest, but only individual `.md` files can be imported, without restoring
+  those links.
+- **JSON:** saved records, Anki history and the notebook, including study marks. Full JSON
+  import is not implemented.
+- **SQLite backup:** the complete saved database for restoration. Browser drafts are
+  separate and are not included in exports or backups.
 
 <details>
 <summary><b>Back up and restore</b></summary>
-<br>
 
-```bash
-pnpm db:backup                                           # verified copy in data/backups/
-pnpm db:restore data/backups/<copy>.db data/restored.db # with the app stopped
+```sh
+pnpm db:backup
 ```
 
-Backups use SQLite's backup API, so they are safe to take while the app is running, and they
-never overwrite an existing file. `pnpm db:migrate` takes one before changing anything and
-stops if it fails. Restoring always writes to a new file; the
-[user guide](docs/GUIDE.md#copias-y-recuperación) explains how to point the app at it.
+This creates a verified copy in `data/backups/`. SQLite's backup API allows it to run while
+the app is open. Before migrating an existing database, `pnpm db:migrate` also backs it up
+and stops if that copy fails.
+
+With the app stopped, replace `backup.db` below with the filename of your backup.
+The destination must not already exist:
+
+```sh
+pnpm db:restore data/backups/backup.db data/restored.db
+```
+
+Restoring writes to a new file. Follow the [recovery instructions](docs/GUIDE.md#copias-y-recuperación)
+to point the app at it before migrating and restarting.
 
 </details>
 
@@ -251,38 +240,32 @@ stops if it fails. Restoring always writes to a new file; the
   change unless the specification changes first.
 - **Validated twice.** Zod checks every input, and CHECK constraints and foreign keys in
   SQLite protect what is stored.
-- **Nothing lost by accident.** Batches are saved in one transaction, migrations back up
-  existing data first and stop if the backup fails, and deletions ask for confirmation.
-- **Honest numbers.** Rates are normalised by items attempted, a week without practice is
-  never shown as 0 %, and percentage rules stay silent until the sample is large enough.
-- **Tested.** More than 850 Vitest tests, with a 90 % coverage threshold on `src/lib` for
+- **Saving and recovery.** Imports are transactional and safe to retry. Migrations back up
+  existing data first. Notebook uses revision checks to detect conflicting edits and keeps
+  a recoverable browser draft ([save reconciliation](src/app/notebook/reconcileSave.ts)).
+- **Consistent exports.** Notebook exports read from a database snapshot and stream note
+  bodies one at a time, so edits during a download do not mix revisions
+  ([export code](src/lib/db/notebookExport.ts)).
+- **Explicit missing data.** A week without practice is not shown as 0% accuracy. Rules
+  distinguish missing data, insufficient samples and signals below their thresholds.
+- **Tested.** More than 850 Vitest tests, with a 90% coverage threshold on `src/lib` for
   lines, branches, functions and statements, and more than 140 Playwright end-to-end tests.
-  CI runs type checking, linting, coverage, the build and the end-to-end suite on every push
-  and pull request to `main` and `develop`.
+  Tests cover recovery, interrupted Anki operations, conflicting note edits, keyboard use
+  and narrow layouts. CI runs type checking, linting, coverage, the build and end-to-end
+  tests on pushes and pull requests to `main` and `develop`. The
+  [coverage configuration](vitest.config.ts) lists the measured files and exclusions.
 - **Strict TypeScript.** `any` and `@ts-ignore` are lint errors.
 
-<details>
-<summary><b>Development commands</b></summary>
-<br>
-
-```bash
-pnpm typecheck
-pnpm lint
-pnpm test:coverage
-pnpm exec playwright install chromium
-ERRORLOG_E2E=1 pnpm test:e2e   # builds into .next-e2e first, as CI does
-```
-
-Branches, commits and releases are described in [CONTRIBUTING.md](CONTRIBUTING.md).
-
-</details>
+Run `pnpm typecheck`, `pnpm lint` and `pnpm test:coverage` for local checks.
+[Contributing](CONTRIBUTING.md#antes-de-abrir-el-pr) covers end-to-end setup for Bash and
+PowerShell, benchmarks, branches and releases.
 
 ## Privacy
 
 Error Log C1 is local-first.
 
-- Your data is a single SQLite file on your computer. There's no account and no cloud sync.
-- The server only listens on `127.0.0.1`. There's no login either, so it isn't meant to be
+- Saved data lives in SQLite on your computer. There's no account and no cloud sync.
+- The supplied start commands listen on `127.0.0.1`. There's no login, so the app isn't meant to be
   exposed to the internet.
 - The app doesn't call external services. Its only outgoing connection is to AnkiConnect,
   and it rejects any AnkiConnect address that isn't on your own machine.
@@ -309,8 +292,9 @@ preparation, and that's what it's used for.
   sessions count in the general reports and rules but don't have a dedicated view.
 - Accuracy reflects the answers you record. It isn't an official Cambridge score or a
   prediction of your result.
-- The interface is in Spanish. It's a single-user app, designed for a computer and usable
-  on a phone.
+- The interface is in Spanish and designed for one person on a computer. Layouts adapt to
+  narrow screens, but the documented setup is accessible only from the computer running
+  it; it does not provide access from a separate phone.
 
 **Current limits**
 
@@ -320,7 +304,7 @@ preparation, and that's what it's used for.
 
 ## Documentation
 
-The detailed documents are in Spanish, like the interface.
+The detailed guides are in Spanish, like the interface.
 
 | Document | What's in it |
 | --- | --- |
