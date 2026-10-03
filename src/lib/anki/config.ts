@@ -16,6 +16,8 @@ export interface AnkiConfig {
   /** Tope de tiempo para una sincronizacion entera. */
   readonly syncBudgetMs: number;
   readonly disabled: boolean;
+  /** Perfil de Anki obligatorio. Solo lo fija la grabación de la demo: nunca la colección personal. */
+  readonly requiredProfile?: string;
 }
 
 /**
@@ -89,7 +91,13 @@ export function ankiConfig(env: Readonly<Record<string, string | undefined>> = p
   // Playwright, cuya URL se inyecta aquí: `ANKI_CONNECT_URL` queda fuera de juego, así
   // que ninguna configuración heredada del entorno puede devolverlos a la colección real.
   const fakeUrl = e2e && !demo ? env['ERRORLOG_ANKI_FAKE_URL'] : undefined;
-  const url = connectUrl(fakeUrl ?? env['ANKI_CONNECT_URL'] ?? `http://127.0.0.1:${ANKI_CONNECT_PORT}`);
+  // La grabación de la demo puede enseñar una tarjeta creada de verdad, pero solo si se pide
+  // con su propia URL y en un perfil con nombre: `ANKI_CONNECT_URL` tampoco cuenta aquí, y
+  // cualquier otro perfil abierto, como el de la colección personal, queda fuera.
+  const recordingUrl = demo && env['ERRORLOG_RECORDING'] === '1' ? env['ERRORLOG_RECORDING_ANKI_URL'] : undefined;
+  const requiredProfile = recordingUrl === undefined ? undefined
+    : configText('ERRORLOG_RECORDING_ANKI_PROFILE', env['ERRORLOG_RECORDING_ANKI_PROFILE'], 256).trim();
+  const url = connectUrl(fakeUrl ?? recordingUrl ?? env['ANKI_CONNECT_URL'] ?? `http://127.0.0.1:${ANKI_CONNECT_PORT}`);
   // Un doble en el puerto real dejaría de ser un doble.
   if (fakeUrl !== undefined && (url.port === ANKI_CONNECT_PORT || url.port === '')) {
     throw new AnkiError('ANKI_CONFIG', `El doble de AnkiConnect no puede escuchar en el puerto ${ANKI_CONNECT_PORT}.`);
@@ -111,7 +119,8 @@ export function ankiConfig(env: Readonly<Record<string, string | undefined>> = p
     statusTtlMs: demo || e2e ? 0 : STATUS_TTL_MS,
     batchSize: positiveInt(env, 'ANKI_BATCH_SIZE', BATCH_SIZE, 2000),
     syncBudgetMs: positiveInt(env, 'ANKI_SYNC_BUDGET_MS', SYNC_BUDGET_MS, 3_600_000),
-    // Sin doble inyectado, la demo y los e2e no leen ni escriben ninguna colección.
-    disabled: (demo || e2e) && fakeUrl === undefined,
+    // Sin doble ni Anki de grabación, la demo y los e2e no leen ni escriben ninguna colección.
+    disabled: (demo || e2e) && fakeUrl === undefined && recordingUrl === undefined,
+    ...(requiredProfile === undefined ? {} : { requiredProfile }),
   };
 }

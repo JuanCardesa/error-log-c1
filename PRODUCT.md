@@ -65,6 +65,26 @@ dashboard. La conversión a Anki solo se sella cuando la tarjeta existe y está 
   informe, medición de segundos, marca manual de tarjeta.
 - Idioma de la interfaz: español.
 
+### Notebook (ampliación aprobada el 2026-09-29)
+
+- Cuaderno personal para convertir errores concretos en conocimiento consultable:
+  apuntes Markdown con carpetas de hasta dos niveles, tags opcionales e índice por
+  encabezados. Se entra desde Más y desde la búsqueda global, sin añadir ruido al
+  recorrido diario de registro.
+- La lectura y la búsqueda son el recorrido principal. Escribir requiere vista previa,
+  guardado automático confirmado, borrador recuperable y aviso de conflictos entre
+  pestañas. Un fallo de transporte no debe anunciar éxito ni descartar lo escrito.
+- Los errores se vinculan manualmente a apuntes o apartados. No se infieren relaciones
+  por categoría y no cambian las siete reglas, el denominador de sesiones ni Anki.
+- El contenido se importa de un `.md` por vez y sale en `.md`, ZIP, JSON o backup SQLite.
+  Imágenes, adjuntos, wikilinks, IA y colaboración quedan fuera de esta primera versión.
+- El lector no ejecuta HTML ni carga imágenes o vistas previas remotas. La app conserva
+  su perímetro local y sin cuenta. [Contrato detallado](docs/NOTEBOOK-PLAN.md).
+- Las rutas principales son `/notebook`, `/notebook/nuevo`, `/notebook/importar` y
+  `/notebook/<id>-<slug>` (con `/editar`). Las descargas son
+  `/exportar/notebook.zip` y `/exportar/notebook-<id>.md`. El ZIP no recompone los
+  vínculos con errores al reimportar; una copia SQLite sí los conserva.
+
 ## Evidence on Hand
 
 - Demo reproducible con datos inventados: `pnpm demo` (`src/lib/db/demo.ts`).

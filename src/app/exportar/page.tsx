@@ -1,4 +1,4 @@
-import { ChevronRight, Download, FileBraces, FileSpreadsheet } from 'lucide-react';
+import { ChevronRight, Download, FileArchive, FileBraces, FileSpreadsheet } from 'lucide-react';
 
 import { CSV_EXPORTS, CSV_LABELS, type CsvExport } from '@/lib/export/dump';
 import ui from '../_shared/ui.module.css';
@@ -72,7 +72,33 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
             </a>
           </li>
         </ul>
-        <p className={ui.help}>Tus filas y el historial de Anki tal cual, sin cifras calculadas: esas salen de los CSV o de la propia app.</p>
+        <p className={ui.help}>Tus filas y el historial de Anki tal cual, sin cifras calculadas: esas salen de los CSV o de la propia app. Incluye el cuaderno con el cuerpo de cada apunte.</p>
+      </section>
+
+      <section className={styles.section} aria-labelledby="notebook-heading">
+        <h2 id="notebook-heading" className={ui.sectionTitle}>Cuaderno</h2>
+        <ul className={styles.list}>
+          <li className={styles.row}>
+            <span className={styles.name}>
+              <FileArchive size={18} className={styles.icon} aria-hidden="true" />
+              <span className={styles.nameText}>
+                <span className={styles.label}>Notebook · ZIP de Markdown</span>
+                <span className={styles.file}>errorlog-notebook.zip</span>
+              </span>
+            </span>
+            <span className={styles.scopeFixed}>Todos los apuntes</span>
+            <a className={`${ui.secondary} ${ui.compact} ${styles.download}`} href="/exportar/notebook.zip" download aria-label="Descargar el cuaderno en ZIP">
+              <Download size={16} aria-hidden="true" />
+              Descargar
+            </a>
+          </li>
+        </ul>
+        <p className={ui.help}>
+          Un <code className={styles.code}>.md</code> por apunte con sus carpetas, más un{' '}
+          <code className={styles.code}>manifest.json</code> con identidades, rutas y vínculos con errores. Los enlaces
+          entre apuntes pasan a rutas relativas y sus anclas a la convención de GitHub, que no todos los visores siguen
+          igual. Los vínculos con errores viajan en el manifiesto: identifican filas de esta base y el ZIP no los restaura.
+        </p>
       </section>
 
       <details className={`${ui.disclosure} ${styles.backup}`}>

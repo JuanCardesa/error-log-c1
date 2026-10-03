@@ -4,7 +4,11 @@ import { dirname, join, resolve } from 'node:path';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 
-import { ankiCard, ankiNote, ankiReview, ankiSync, errorRow, session, sessionImportReceipt, writingPiece } from './schema';
+import {
+  ankiCard, ankiNote, ankiReview, ankiSync, errorRow,
+  notebookAnnotation, notebookErrorLink, notebookFolder, notebookNote,
+  session, sessionImportReceipt, writingPiece,
+} from './schema';
 
 function requireNewDestination(file: string): void {
   for (const suffix of ['', '-wal', '-shm', '-journal']) {
@@ -46,8 +50,13 @@ function checkDatabase(sqlite: Database.Database, requireCurrentSchema: boolean)
   db.select().from(ankiCard).limit(0).all();
   db.select().from(ankiReview).limit(0).all();
   db.select().from(ankiSync).limit(0).all();
+  db.select().from(notebookFolder).limit(0).all();
+  db.select().from(notebookNote).limit(0).all();
+  db.select().from(notebookErrorLink).limit(0).all();
+  db.select().from(notebookAnnotation).limit(0).all();
   sqlite.prepare('SELECT rowid FROM session_search_fts LIMIT 0').all();
   sqlite.prepare('SELECT rowid FROM error_search_fts LIMIT 0').all();
+  sqlite.prepare('SELECT rowid FROM notebook_note_fts LIMIT 0').all();
 }
 
 /** Un fichero que no es SQLite falla con «file is not a database»; aqui se dice cual y por que. */

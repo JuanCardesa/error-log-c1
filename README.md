@@ -1,213 +1,326 @@
-# Error Log C1
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/wordmark-dark.png">
+    <img src="docs/media/wordmark-light.png" alt="Error Log C1" width="440">
+  </picture>
+</h1>
 
-**Convierte tus errores del C1 en un plan concreto de estudio.**
+<p align="center"><b>Turn your mistakes into your next study step.</b></p>
 
-[![CI](https://github.com/JuanCardesa/error-log-c1/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/JuanCardesa/error-log-c1/actions/workflows/ci.yml)
-[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
+<p align="center">
+  A study log for Cambridge C1 Advanced that runs on your own computer.<br>
+  Record what you got wrong and why, see where your mistakes cluster,
+  and focus on one study priority at a time.
+</p>
 
-Un registro personal para preparar Cambridge C1 Advanced: guarda qué fallaste y por qué,
-revisa tus patrones y elige **una acción para esta semana**. Funciona en tu equipo,
-sin cuenta y con tus datos en SQLite.
+<p align="center">
+  <a href="https://github.com/JuanCardesa/error-log-c1/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/JuanCardesa/error-log-c1/ci.yml?branch=main&amp;label=CI" alt="CI status"></a>
+  <a href="https://github.com/JuanCardesa/error-log-c1/releases/latest"><img src="https://img.shields.io/github/v/release/JuanCardesa/error-log-c1?label=release&amp;color=304F46" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-304F46" alt="MIT license"></a>
+</p>
 
-<picture>
-  <source media="(prefers-reduced-motion: reduce)" srcset="docs/media/demo-poster.webp">
-  <img src="docs/media/demo.webp" alt="Demo de Error Log C1: pegar una tanda, revisarla y guardarla, y consultar el progreso y la cola de Anki">
-</picture>
+<p align="center">
+  <b>Spanish interface · Runs locally · No account</b><br>
+  <a href="#quick-start">Try it locally</a> &nbsp;·&nbsp;
+  <a href="#documentation">Documentation</a>
+</p>
 
-Demo de 57 segundos con datos ficticios. [Vídeo completo](https://github.com/user-attachments/assets/d72fba4a-1ee2-4e8e-8c22-70c82d64b71a) ·
-[Recorrido en imágenes estáticas](docs/DEMO.md).
+<p align="center">
+  <a href="https://github.com/user-attachments/assets/b191da2c-9ab6-449a-b76e-7a7fbf8353ad"><img src="docs/media/demo-thumbnail.webp" alt="Demo video. The frame shows a pasted batch under review: the answer 'made' is corrected to 'carried out', with its category, cause, confidence and rule." width="880"></a>
+</p>
 
-## Qué puedes hacer
+<p align="center">
+  <a href="https://github.com/user-attachments/assets/b191da2c-9ab6-449a-b76e-7a7fbf8353ad"><b>Watch the demo</b></a> (1:51, English captions)
+  &nbsp;·&nbsp;
+  <a href="https://github.com/user-attachments/assets/21fa4430-f354-4717-bb94-1bca991c61b5">Spanish captions</a>
+  <br>
+  Follow a correction from import to study notes, a priority and an Anki card.<br>
+  <sub>No voice-over. All examples are fictional.</sub>
+</p>
 
-- **Registrar sin repetir trabajo.** Captura individual por teclado o importación de
-  hasta 100 errores desde una tabla o un JSON, con vista previa y control de duplicados.
-- **Entender el origen del fallo.** Distingue desconocimiento, confusión, ortografía,
-  despiste, formato y tiempo; relaciona los errores con los ítems intentados.
-- **Decidir qué estudiar.** Siete reglas priorizan una sola acción, con la cifra que
-  la dispara y un mínimo de muestra para las reglas de porcentaje.
-- **Cerrar el ciclo.** Revisa las tarjetas pendientes de Anki, las falsas certezas y
-  los errores que reaparecen al reescribir un texto.
-- **Conectar el repaso.** Crea tarjetas en Anki y consulta los fallos por categoría con
-  AnkiConnect, mediante sincronización manual.
-- **Llevarte tus datos.** Exporta las consultas a CSV, las filas a JSON o una
-  copia SQLite restaurable.
+## Why
 
-| Informe semanal | Evolución de Reading & Use of English |
-| --- | --- |
-| ![Informe con la acción prioritaria y las cifras que la justifican](docs/screenshots/informe.png) | ![Precisión por part y semana, con celdas sin datos diferenciadas](docs/screenshots/ruoe.png) |
+Most practice ends the same way: you check the answers, count the mistakes and move on.
+Two weeks later the same mistake is back, and its correction is lost somewhere in a workbook.
 
-## Empezar
+Error Log C1 keeps your corrections, their context and the reason you got them wrong.
+Sessions without mistakes count too: the reports relate errors to the practice you record.
 
-Necesitas **Node.js 22** (la versión de `.nvmrc` y CI) y **pnpm 10.33.2**.
-Instala las dependencias desde la carpeta del proyecto:
+**The cause changes the fix.** Not knowing a collocation and not rereading your answer look
+the same on a marked page. The first one you study; the second one you solve with better
+exam technique.
 
-```bash
+## How it works
+
+1. **Practise.** Do a C1 task as usual: a Reading and Use of English part, a Listening part,
+   a Writing task or a coursebook exercise.
+2. **Log the session.** Note how many items you attempted and got right, then paste the
+   corrected mistakes in one go or type them in.
+3. **Classify each mistake.** Keep your answer, the correction and the rule in your own
+   words, plus a category, a cause and how sure you were.
+4. **Read the patterns.** Review recurring categories, causes and accuracy by exam part.
+5. **Choose your next step.** When the data triggers a rule, Progress highlights one
+   priority and explains why. Otherwise, it tells you there is too little evidence or no
+   priority to act on.
+6. **Close the loop.** Turn the mistakes you can fix by studying into Anki cards, link them
+   to your notes, and go back to practice.
+
+## Quick start
+
+You need **Git**, **Node.js 22** and **pnpm 10**. The repository pins pnpm 10.33.2.
+If pnpm is not set up yet, enable it with the Corepack included in Node.js 22:
+
+```sh
+corepack enable
+```
+
+Then clone the repository and start the demo:
+
+```sh
 git clone https://github.com/JuanCardesa/error-log-c1.git
 cd error-log-c1
 pnpm install --frozen-lockfile
-```
-
-### Probar con ejemplos
-
-```bash
 pnpm demo
 ```
 
-Abre **http://127.0.0.1:3001**. El comando prepara automáticamente una base nueva
-con ejemplos en `data/demo/`. Cada arranque empieza de nuevo; las bases anteriores
-se conservan y la base personal no se modifica. Sal con `Ctrl+C`.
+Open **[127.0.0.1:3001](http://127.0.0.1:3001)**. Each start creates a fresh database with fictional data,
+separate from your own. The demo does not connect to your Anki collection; use the personal
+app below to create and sync real cards. Stop the demo with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
 
-La demo lleva un aviso en pantalla: los datos son inventados y lo que escribas ahí
-no pasa a tu registro. Para tus datos reales, usa `pnpm dev`.
+To start with your own data:
 
-### Empezar con mis datos
-
-```bash
+```sh
 pnpm db:migrate
 pnpm dev
 ```
 
-Abre **http://127.0.0.1:3000**. Tus datos se guardan en `data/errorlog.db`, fuera de Git.
-Para ejecutar la versión compilada: `pnpm build` y después `pnpm start`.
+Open **[127.0.0.1:3000](http://127.0.0.1:3000)**. Saved records live in `data/errorlog.db`, which Git ignores;
+unsaved drafts stay in your browser. No environment variables are required. For a production
+build, run `pnpm build` and then `pnpm start`. Stop the app before migrating an existing database.
 
-Para actualizar una base existente, detén la app y ejecuta `pnpm db:migrate`. Antes de
-tocar nada guarda una copia verificada en `data/backups/previa-a-migrar-<fecha>.db`; si
-esa copia falla, no migra. Usa este comando también para las migraciones que reconstruyen
-tablas: conserva las relaciones y verifica la integridad antes de confirmar los cambios.
-No hay migraciones inversas: para volver atrás se restaura esa copia con `pnpm db:restore`.
+**Using Anki:** install AnkiConnect and keep Anki open when creating or syncing cards
+([setup](docs/ANKI.md)). Recording and reports work without it, but the highest-priority
+rule addresses errors waiting for Anki cards. That recommendation can remain active if you
+choose not to use Anki.
 
-`pnpm db:seed` sigue disponible para cargar ejemplos en una base **vacía y migrada**.
-Si encuentra datos, se detiene sin cambiarlos. Para probar la app, usa `pnpm demo`.
+## What you can do
 
-**Uso local y monousuario.** No hay autenticación. Los comandos de arranque escuchan
-solo en `127.0.0.1`; la app no está preparada para exponerse directamente a Internet.
+### Log a session without retyping it
 
-## Pegar correcciones
+Paste a whole session with up to 300 mistakes as JSON, or copy rows straight from a
+spreadsheet. A review screen walks you through every mistake before anything is saved. The
+batch is written in a single transaction, and retrying the same save doesn't duplicate it.
+You can also log mistakes from the keyboard and edit saved errors and sessions.
 
-1. En **Sesiones**, pega en **Pegar correcciones**; para añadir a una sesión abierta,
-   ábrela y pulsa **Pegar varios**.
-2. Pega celdas con las cabeceras de la plantilla o un JSON de errores. Si partes de
-   correcciones en texto o fotos, copia las instrucciones de **Preparar correcciones
-   con IA** y úsalas en la herramienta que prefieras.
-3. Pulsa **Revisar importación**: un índice con el estado de cada error y un editor para
-   el elegido. Completa lo pendiente (Alt+↓ salta al siguiente) y ajusta causa y confianza.
-4. Guarda la tanda (Ctrl+Intro). Un error repetido en la misma sesión no se duplica ni modifica el anterior.
+Corrections on paper or in screenshots? **Prepare corrections with AI**
+(*Preparar correcciones con IA*) copies a ready-made prompt for the AI tool of your choice.
+You paste its JSON back and review it like any other batch. Error Log C1 itself never
+contacts an AI service.
 
-La app no conecta con una IA ni lee fotos directamente. Si utilizas una herramienta
-externa, las correcciones se las facilitas tú. Revisa su respuesta: puede interpretar mal
-el ejercicio. Cuando faltan causa y confianza se proponen `DESCONOCIMIENTO` y `DUDABA`.
+See the [import example and instructions](docs/GUIDE.md#formato-json-de-una-sesión).
 
-Una sesión con cero errores también cuenta: es parte del denominador. Las ventanas
-del informe son de 30 y 60 días; Falsas certezas usa siempre 30 días.
-En Sesiones puedes buscar por referencia, fuente o fecha y filtrar por estado y práctica;
-**Errores** busca en todos tus fallos, y Ctrl/⌘+K abre la búsqueda global.
+### See why, not just what
 
-Para ejercicios del libro que no siguen una tarea de Cambridge, elige **Sin formato de
-examen** en Formato de examen. No tendrás que indicar Part; sí los ítems y aciertos. Indica unidad,
-página y ejercicio en Referencia. Estas sesiones cuentan en el informe general y Anki,
-y quedan fuera de la precisión RUOE. Un ejercicio del libro con formato de examen
-puede seguir usando su paper y part correspondientes.
+Each mistake gets one of six causes, one of 14 categories
+(collocation, phrasal verb, word formation, dependent preposition…) and a confidence level:
+sure, unsure or guessed. Mistakes you were *sure* about get their own list,
+**false certainties**: beliefs to correct rather than gaps to fill.
 
-Los CSV incluyen la marca UTF-8 para conservar los acentos en Excel. Lo que Excel
-evaluaría como fórmula sale con un tabulador protector dentro del campo entrecomillado;
-las respuestas normales no se tocan, sufijos como `-ing` o `-ed` incluidos. Si necesitas
-el contenido literal para procesarlo, usa el JSON.
+<details>
+<summary><b>The six causes and what to do about them</b></summary>
 
-## Copias y recuperación
+| Cause | What happened | Next step |
+| --- | --- | --- |
+| Lack of knowledge | You didn't know it | Study it with an Anki card |
+| Confusion | You knew the alternatives but chose the wrong one | Study the contrast |
+| Spelling | You knew the word but misspelled it | Practise it with a spelling card |
+| Oversight | You didn't read or check carefully | Adjust your answer-checking routine |
+| Task format | You broke a rule of the task | Review the instructions |
+| Time pressure | You ran out of time or rushed | Practise time management |
 
-### Crear una copia
+The first three causes are eligible for Anki cards. The interface and import format use
+the Spanish names; the [specification](docs/SPEC.md) lists all values and thresholds.
 
-```bash
+</details>
+
+### A priority with the evidence behind it
+
+**Progress** evaluates seven rules over your recorded practice and highlights at most one
+action. It updates as your data or the selected 30/60-day window changes; it is not a fixed
+weekly plan. Pattern-based percentage rules need at least 15 errors in their relevant sample.
+Anki conversion and the count of confident mistakes do not use that minimum.
+
+Reports show causes, errors by category per 100 attempted items overall, and Reading and
+Use of English accuracy by part and week. The category rate is not a failure percentage
+within that category; sessions without item counts, such as Writing, are excluded from it.
+
+[![Progress: a recommendation to review pending Anki cards, with its evidence and the category and cause breakdowns](docs/screenshots/informe.png)](docs/screenshots/informe.png)
+
+**Writing** records the four assessment bands you enter and links originals to rewrites.
+It checks for repeated logged errors by matching category, subcategory and corrected answer.
+It does not grade essays or detect mistakes in the text automatically.
+
+### Notes next to your mistakes
+
+**Notebook** keeps your study notes in Markdown, organised in folders and tags, with a
+contents list for each note and full-text search with snippets. Link a mistake to a note,
+or to one section of it, and the note lists every mistake connected to it. On a computer,
+select text to highlight it or mark it in one of four ink colours; the marks are stored
+separately from the Markdown. Notes save automatically, unsaved drafts can be recovered,
+and you can import one `.md` file at a time or export notes as `.md` and the notebook as ZIP.
+
+[![Notebook: a highlighted grammar rule and its related mistake, linked to the relevant section](docs/screenshots/notebook-lector.png)](docs/screenshots/notebook-lector.png)
+
+Screens use fictional data. See the [five-step walkthrough and more screens](docs/DEMO.md).
+
+### Spaced review with Anki
+
+Create Anki cards from eligible mistakes through AnkiConnect, with the question, your answer,
+the correction and the rule. New conversions are only confirmed after verification in Anki.
+If you edit a linked error, the app flags the changed content and lets you update its card.
+Syncing brings your review history back, with failed reviews grouped by category.
+Recording and the last synced reports remain available when Anki is closed.
+
+### Search, export and recover
+
+**Errors** searches every answer, prompt and rule, and <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd>
+finds mistakes, sessions and notes from any page.
+
+- **CSV:** report tables for spreadsheets.
+- **Markdown / ZIP:** portable notes without study marks. ZIP includes a metadata and
+  error-link manifest, but only individual `.md` files can be imported, without restoring
+  those links.
+- **JSON:** saved records, Anki history and the notebook, including study marks. Full JSON
+  import is not implemented.
+- **SQLite backup:** the complete saved database for restoration. Browser drafts are
+  separate and are not included in exports or backups.
+
+<details>
+<summary><b>Back up and restore</b></summary>
+
+```sh
 pnpm db:backup
-# También puedes elegir un nombre nuevo:
-pnpm db:backup data/backups/antes-de-actualizar.db
 ```
 
-El comando usa la API de backup de SQLite, comprueba la integridad y genera un fichero
-independiente, también con la app abierta. Incluye los datos confirmados que aún estén
-en el WAL. Nunca sobrescribe una copia existente. Guarda otra copia fuera del equipo.
+This creates a verified copy in `data/backups/`. SQLite's backup API allows it to run while
+the app is open. Before migrating an existing database, `pnpm db:migrate` also backs it up
+and stops if that copy fails.
 
-**No copies solo `errorlog.db` mientras la app esté abierta:** los últimos cambios pueden
-estar en `errorlog.db-wal`. [Detalles de SQLite](https://www.sqlite.org/wal.html).
+With the app stopped, replace `backup.db` below with the filename of your backup.
+The destination must not already exist:
 
-### Recuperar una copia
-
-Detén la app con `Ctrl+C` y restaura a un nombre nuevo:
-
-```bash
-pnpm db:restore data/backups/antes-de-actualizar.db data/restored.db
+```sh
+pnpm db:restore data/backups/backup.db data/restored.db
 ```
 
-La restauración comprueba la copia y rechaza cualquier destino existente, incluidos sus
-archivos WAL. Conserva la base anterior hasta comprobar tus sesiones y errores.
+Restoring writes to a new file. Follow the [recovery instructions](docs/GUIDE.md#copias-y-recuperación)
+to point the app at it before migrating and restarting.
 
-Activa el fichero restaurado **en la misma terminal** antes de migrar y arrancar.
+</details>
 
-PowerShell (Windows):
+## Built with
 
-```powershell
-$env:DB_FILE_OVERRIDE = "data/restored.db"
-pnpm db:migrate
-pnpm dev
-```
+| Layer | Tools |
+| --- | --- |
+| App | Next.js 16 (App Router, Server Actions), React 19, TypeScript in strict mode |
+| Data | SQLite through better-sqlite3, Drizzle ORM with versioned migrations, Zod |
+| Search | SQLite FTS5 trigram indexes for sessions, mistakes and notes |
+| Interface | CSS Modules without a component library, self-hosted IBM Plex and Source Serif 4 |
+| Notebook | react-markdown with remark-gfm |
+| Tests | Vitest with v8 coverage, Playwright on Chromium |
+| Integration | AnkiConnect over local HTTP |
+| Tooling | pnpm, ESLint, GitHub Actions |
 
-Bash (macOS/Linux):
+## Engineering
 
-```bash
-export DB_FILE_OVERRIDE="$PWD/data/restored.db"
-pnpm db:migrate
-pnpm dev
-```
+- **A pure core.** The seven queries and the rule engine are pure functions over rows, with
+  the clock passed in. SQLite access is kept in `src/lib/db/`.
+- **The product is a contract.** Taxonomies and thresholds are closed sets in
+  `src/lib/domain/`, written down in the [specification](docs/SPEC.md). A threshold doesn't
+  change unless the specification changes first.
+- **Validated twice.** Zod checks every input, and CHECK constraints and foreign keys in
+  SQLite protect what is stored.
+- **Saving and recovery.** Imports are transactional and safe to retry. Migrations back up
+  existing data first. Notebook uses revision checks to detect conflicting edits and keeps
+  a recoverable browser draft ([save reconciliation](src/app/notebook/reconcileSave.ts)).
+- **Consistent exports.** Notebook exports read from a database snapshot and stream note
+  bodies one at a time, so edits during a download do not mix revisions
+  ([export code](src/lib/db/notebookExport.ts)).
+- **Explicit missing data.** A week without practice is not shown as 0% accuracy. Rules
+  distinguish missing data, insufficient samples and signals below their thresholds.
+- **Tested.** More than 850 Vitest tests, with a 90% coverage threshold on `src/lib` for
+  lines, branches, functions and statements, and more than 140 Playwright end-to-end tests.
+  Tests cover recovery, interrupted Anki operations, conflicting note edits, keyboard use
+  and narrow layouts. CI runs type checking, linting, coverage, the build and end-to-end
+  tests on pushes and pull requests to `main` and `develop`. The
+  [coverage configuration](vitest.config.ts) lists the measured files and exclusions.
+- **Strict TypeScript.** `any` and `@ts-ignore` are lint errors.
 
-Mantén esa variable en los siguientes arranques para seguir usando el fichero recuperado;
-`db:backup` también la respeta. Sin ella se utiliza `data/errorlog.db`.
-Si esa ruta predeterminada no existe, puedes restaurar directamente a ella omitiendo
-el segundo argumento. Una exportación JSON sirve para portabilidad; aún no hay importación
-del volcado completo ni restauración desde la interfaz.
+Run `pnpm typecheck`, `pnpm lint` and `pnpm test:coverage` for local checks.
+[Contributing](CONTRIBUTING.md#antes-de-abrir-el-pr) covers end-to-end setup for Bash and
+PowerShell, benchmarks, branches and releases.
 
-## Progreso y Anki
+## Privacy
 
-Progreso prioriza una acción con siete reglas. Las reglas de porcentaje exigen al
-menos 15 observaciones en su propio denominador; las falsas certezas usan 30 días.
-[Consultas, umbrales y decisiones](docs/SPEC.md#4-consultas-q1q6-del-mvp-y-q7-de-anki).
+Error Log C1 is local-first.
 
-Para crear tarjetas y leer repasos, instala AnkiConnect y deja Anki abierto.
-La app permite crear, actualizar explícitamente y deshacer vínculos, además de
-sincronizar el historial. La conversión solo se sella tras verificar la tarjeta.
-[Instalación, configuración, funcionamiento y límites](docs/ANKI.md).
+- Saved data lives in SQLite on your computer. There's no account and no cloud sync.
+- The supplied start commands listen on `127.0.0.1`. There's no login, so the app isn't meant to be
+  exposed to the internet.
+- The app doesn't call external services. Its only outgoing connection is to AnkiConnect,
+  and it rejects any AnkiConnect address that isn't on your own machine.
+- There's no AI built in. If you use the AI prompt, you choose the tool and what you send to
+  it, and you review the result before it's saved.
+- Notes never load remote images or render embedded HTML, and the fonts ship with the app.
+- Unsaved drafts, such as a batch under review or a note being edited, are kept in your
+  browser's local storage.
+- Next.js collects anonymous usage data from its own command-line tool. You can opt out with
+  `pnpm exec next telemetry --disable`.
 
-## Desarrollo
+## Status and scope
 
-La búsqueda de texto de sesiones y errores usa coincidencia de subcadenas. Para consultas
-de tres caracteres o más, un índice FTS5 de trigramas reduce las filas candidatas; el
-filtro original comprueba el resultado exacto. Las consultas más cortas todavía recorren
-las filas, y las listas paginadas calculan el total. La paleta muestra hasta cinco errores
-y tres sesiones sin calcular ese total. Las entradas se limitan a 200 caracteres.
+Error Log C1 is a personal project under active development. It was built for real C1
+preparation, and that's what it's used for.
 
-Next.js (App Router), TypeScript strict, SQLite con Drizzle, Zod, Vitest y Playwright.
-CSS Modules, sin librería de componentes. El dominio, las consultas y las reglas son
-funciones puras con el reloj inyectado; `src/lib/db/` contiene los adaptadores de persistencia.
+**What it covers today**
 
-```bash
-pnpm typecheck
-pnpm lint
-pnpm test:coverage
-pnpm build
-pnpm exec playwright install chromium
-pnpm test:e2e
-```
+- Sessions record the Cambridge C1 Advanced paper (Reading and Use of English, Listening,
+  Writing or Speaking), the part, the type of practice (drill, partial or full mock exam,
+  class) and the source. Coursebook exercises that don't follow a Cambridge task can be
+  logged without an exam format.
+- Reading and Use of English and Writing have their own views. Listening and Speaking
+  sessions count in the general reports and rules but don't have a dedicated view.
+- Accuracy reflects the answers you record. It isn't an official Cambridge score or a
+  prediction of your result.
+- The interface is in Spanish and designed for one person on a computer. Layouts adapt to
+  narrow screens, but the documented setup is accessible only from the computer running
+  it; it does not provide access from a separate phone.
 
-La suite prueba también que el seed respeta los datos existentes y que una copia con WAL
-se restaura conservando filas, relaciones y migraciones. La cobertura de `src/lib/` exige
-un mínimo del 90 % en líneas, sentencias, funciones y ramas.
+**Current limits**
 
-## Aviso
+- Notes don't support images, attachments or version history, and `.md` files are imported
+  one at a time.
+- Backups are restored from the command line, not from the interface.
 
-Error Log C1 es un proyecto personal e independiente. No está afiliado, patrocinado ni
-respaldado por Cambridge University Press & Assessment ni por ninguna editorial.
-«Cambridge» y «C1 Advanced» son marcas de sus titulares y se citan solo para indicar el
-examen al que se orienta la herramienta. El repositorio no incluye ejercicios de terceros:
-la demo, las capturas y los tests usan contenido inventado.
+## Documentation
 
-[Contribuir](CONTRIBUTING.md) · [Contrato del producto](docs/SPEC.md) ·
-[Regenerar la demo y las capturas](docs/DEMO.md) · [Licencia MIT](LICENSE)
+The detailed guides are in Spanish, like the interface.
+
+| Document | What's in it |
+| --- | --- |
+| [User guide](docs/GUIDE.md) | Everyday use, the notebook in detail, backups and recovery |
+| [Specification](docs/SPEC.md) | Data model, taxonomies, queries and decision rules |
+| [Anki](docs/ANKI.md) | AnkiConnect setup, settings and limits |
+| [Demo](docs/DEMO.md) | Five-step walkthrough, and how the screenshots and videos are made |
+| [Contributing](CONTRIBUTING.md) | Branches, commits, checks and releases |
+| [Changelog](CHANGELOG.md) | What changed in each version |
+
+## License
+
+[MIT](LICENSE).
+
+Error Log C1 is an independent personal project. It isn't affiliated with, sponsored by or
+endorsed by Cambridge University Press & Assessment or any publisher. "Cambridge" and
+"C1 Advanced" are trademarks of their respective owners and are used only to name the exam
+the tool is designed for. The repository contains no third-party exercises: the demo, the
+screenshots and the tests use invented content.

@@ -681,3 +681,13 @@ it('una nota nueva sin respuesta del usuario se crea y varios lotes se leen comp
   fake.notes = new Map(fake.cards.map((value) => [value.note, note({ noteId: value.note, cards: [value.cardId] })]));
   expect((await syncAnki(db, fake.transport, NOW, CONFIG)).cards).toBe(251);
 });
+
+it('con un perfil obligatorio, cualquier otro perfil abierto queda fuera y no se escribe nada', async () => {
+  const config = { ...CONFIG, requiredProfile: 'Error Log demo' };
+  expect(await ankiStatus(db, config, fake.transport)).toMatchObject({ available: false, message: expect.stringContaining('Error Log demo') });
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, config)).rejects.toThrow('Error Log demo');
+  expect(fake.calls.some((call) => /^(create|add|update)/.test(call.action))).toBe(false);
+  expect(loadAnkiDataset(db).sync).toBeNull();
+  fake.profile = 'Error Log demo';
+  expect(await ankiStatus(db, config, fake.transport)).toMatchObject({ available: true, message: 'Anki conectado · perfil Error Log demo' });
+});

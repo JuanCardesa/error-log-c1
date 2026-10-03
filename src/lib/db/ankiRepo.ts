@@ -15,6 +15,9 @@ export function getAnkiSync(db: AnkiDb): AnkiSyncRow | null {
 }
 
 export function assertAnkiScope(state: AnkiSyncRow | null, config: AnkiConfig, profile: string): void {
+  if (config.requiredProfile !== undefined && profile !== config.requiredProfile) {
+    throw new AnkiError('ANKI_CONFIG', `La grabación solo usa el perfil de Anki «${config.requiredProfile}» y está abierto «${profile}». Abre ese perfil: así no se toca ninguna otra colección.`);
+  }
   if (state !== null && (state.profile !== profile || state.url !== config.url
     || state.sourceDeck !== config.sourceDeck || state.targetDeck !== config.targetDeck)) {
     throw new AnkiError('ANKI_CONFIG', `Esta base está vinculada al perfil ${state.profile} y al mazo ${state.sourceDeck}. Abre ese perfil y conserva su configuración para no mezclar colecciones. Para otra colección usa una base nueva con DB_FILE_OVERRIDE.`);

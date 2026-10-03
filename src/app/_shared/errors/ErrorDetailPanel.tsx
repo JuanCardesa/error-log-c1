@@ -15,6 +15,7 @@ import { ANKI_STATE_LABELS, CATEGORY_LABELS, CAUSE_LABELS, CONFIDENCE_LABELS, an
 import { useToast } from '../Toast';
 import { usePreservedForm } from '../usePreservedForm';
 import { ankiClass } from './ankiClass';
+import { ErrorNotebookLinks } from './ErrorNotebookLinks';
 import styles from './panel.module.css';
 import ui from '../ui.module.css';
 
@@ -141,6 +142,7 @@ export function ErrorDetailPanel({
               )}
             </dd>
           </dl>
+          <ErrorNotebookLinks key={error.id} errorId={error.id} />
           <div className={styles.actions}>
             <button ref={editButton} type="button" className={ui.secondary} onClick={() => { setEditing(true); }}>
               Editar error

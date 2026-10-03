@@ -52,7 +52,7 @@ export async function ankiStatus(db: Db, config?: AnkiConfig, transport?: Transp
     const cached = statusCache.get(db);
     const state = getAnkiSync(db);
     const key = JSON.stringify([resolved.url, resolved.sourceDeck, resolved.targetDeck, resolved.apiKey,
-      resolved.disabled, resolved.statusTtlMs, state?.namespace, state?.profile, state?.url, state?.sourceDeck, state?.targetDeck]);
+      resolved.disabled, resolved.statusTtlMs, resolved.requiredProfile, state?.namespace, state?.profile, state?.url, state?.sourceDeck, state?.targetDeck]);
     const api = ankiApi(transport ?? httpTransport(resolved));
     const fresh = cached !== undefined && cached.key === key && now >= cached.at && now - cached.at < resolved.statusTtlMs;
     if (!fresh) await api.version();

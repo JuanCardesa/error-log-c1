@@ -6,6 +6,7 @@ export default tseslint.config(
     ignores: [
       '.next/**',
       '.next-demo/**',
+      '.next-recording/**',
       '.next-e2e/**',
       'node_modules/**',
       'coverage/**',

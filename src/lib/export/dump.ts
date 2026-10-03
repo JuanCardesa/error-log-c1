@@ -55,14 +55,23 @@ export function toCsvExport(
   }
 }
 
+/** 3 añade marcas de estudio; 2 añadió Notebook; 1 no llevaba `formatVersion`. */
+export const JSON_DUMP_FORMAT_VERSION = 3;
+
 export interface JsonDump {
+  readonly formatVersion: number;
   readonly exportedAt: string;
   /** Las filas crudas son el respaldo: sin ellas el volcado no reconstruye nada. */
   readonly rows: Dataset;
   readonly anki: AnkiDataset;
 }
 
-/** No depende de la ventana: se lleva el historial entero, no un recorte. */
+/**
+ * No depende de la ventana: se lleva el historial entero, no un recorte.
+ *
+ * El cuaderno no entra aquí: sus apuntes se añaden por trozos al escribir la respuesta
+ * (`notebookDumpChunks`) para no juntar todos los cuerpos en un mismo objeto.
+ */
 export function toJsonDump(data: Dataset, now: Date, anki: AnkiDataset = EMPTY_ANKI_DATASET): JsonDump {
-  return { exportedAt: now.toISOString(), rows: data, anki };
+  return { formatVersion: JSON_DUMP_FORMAT_VERSION, exportedAt: now.toISOString(), rows: data, anki };
 }

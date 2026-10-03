@@ -97,7 +97,9 @@ describe('volcado JSON', () => {
     expect(dump.rows.pieces).toHaveLength(1);
     // Las agregaciones se recalculan desde las filas: duplicarlas solo daba dos versiones
     // del mismo dato, una de ellas con fecha de caducidad.
-    expect(Object.keys(dump)).toEqual(['exportedAt', 'rows', 'anki']);
+    // Notebook no entra aqui: la ruta lo añade por trozos para no juntar todos los cuerpos.
+    expect(Object.keys(dump)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki']);
+    expect(dump.formatVersion).toBe(3);
   });
 
   it('sella la fecha de exportacion y no depende de la ventana', () => {

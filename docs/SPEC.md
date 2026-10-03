@@ -221,10 +221,12 @@ Siete reglas. Cada una devuelve un estado:
 
 ### Mecánica exacta
 
-- **Guarda de n mínimo:** `MIN_N = 15`. Ninguna regla basada en **porcentaje**
-  (0, 1, 3, 5, 6) puede dispararse con menos de 15 errores en la ventana; en ese caso el
-  estado es `needs n ≥ 15`. Las reglas de **conteo absoluto** (2, y 4 que es un ratio de
-  conversión) sí se disparan sin la guarda.
+- **Guarda de n mínimo:** `MIN_N = 15`. Las reglas de patrones basadas en porcentaje
+  (0, 1, 3, 5, 6) necesitan al menos 15 errores en su muestra: todos los del periodo para
+  0, 1 y 3; los de sesiones cronometradas para 5; los errores originales de los pares de
+  reescritura evaluados para 6. Por debajo, el estado es `needs n ≥ 15`. La regla 2
+  (conteo absoluto de falsas certezas) y la 4 (porcentaje de conversión a Anki) no usan
+  esa guarda. La regla 4 requiere errores elegibles; sin ellos no aplica.
 - **Umbral WATCH** por regla, para avisar antes de cruzar: 30%, 50%, 3, 20%, 90%, 28%, 35%.
 - **Orden de prioridad:** `[4, 0, 1, 2, 3, 5, 6]`. La regla 4 manda sobre todo — un bucle
   de conversión roto bloquea cualquier otro remedio. De las reglas disparadas, la primera
@@ -341,3 +343,57 @@ resumen de tres líneas: qué cambió y qué falta.
 Flujo de git: rama `feature/<slug>` → PR a `develop`; `develop` → `main` solo al cerrar
 fase. Conventional Commits, un commit por unidad lógica. CI (`typecheck`, `lint`, `test`,
 `build`) en push y PR a `develop` y `main`; el PR no se mergea si CI falla.
+
+---
+
+## 10. Notebook (contrato aprobado el 2026-09-29)
+
+Notebook es un cuaderno personal de apuntes Markdown dentro de la misma base SQLite.
+Cada apunte tiene título obligatorio, cuerpo que puede estar vacío, carpeta opcional y
+hasta doce etiquetas opcionales. Las carpetas tienen un máximo de dos niveles; los
+apartados son encabezados del Markdown, no filas independientes. La categoría de un
+error no se copia al cuaderno ni organiza automáticamente los apuntes.
+
+El lector ofrece Markdown seguro, índice de encabezados y búsqueda paginada por título,
+contenido y etiquetas. La edición usa texto con vista previa, borrador local recuperable,
+autosave y revisión optimista: un guardado con revisión antigua devuelve conflicto y
+conserva el trabajo local. El ID entero identifica la ruta; un UUID inmutable identifica
+el apunte y sus borradores. Renombrar o mover un apunte no cambia su identidad. Los
+enlaces a apartados pueden cambiar si cambia el encabezado.
+
+Al entrar al editor se consulta la revisión actual antes de habilitar los campos,
+también al volver mediante el historial del navegador. Los borradores pendientes
+siguen su flujo de recuperación. El lector permite borrar con confirmación y revisión
+optimista: no elimina una versión modificada desde que se abrió.
+
+El listado de una carpeta incluye sus subcarpetas con o sin consulta textual y se
+ordena por última modificación. Los filtros visibles se sincronizan al navegar.
+
+Un error puede vincularse manualmente con varios apuntes; cada par error–apunte puede
+señalar un apartado. Si este desaparece o deja de ser inequívoco, se conserva el vínculo
+al apunte. Borrar un extremo elimina solo sus vínculos. `rule_note`, causas, categorías,
+denominadores, Anki y Q1–Q7 mantienen sus contratos existentes. El cuaderno no forma
+parte de `Dataset` ni se carga para calcular los informes.
+
+Las rutas son `/notebook`, `/notebook/nuevo`, `/notebook/importar`,
+`/notebook/<id>-<slug>` y `/notebook/<id>-<slug>/editar`. Las descargas usan
+`/exportar/notebook.zip` y `/exportar/notebook-<id>.md`.
+
+El borrador local se escribe tras 250 ms sin cambios; el autosave envía al servidor tras
+un segundo. Guardar ahora y Ctrl/⌘+S fuerzan el envío. Solo una escritura queda en curso;
+los cambios posteriores siguen pendientes. Un guardado se anuncia como tal únicamente
+tras confirmación del servidor. Un conflicto conserva el borrador y permite cargar la
+versión guardada o conservar el trabajo como apunte nuevo.
+
+Se admite importar un `.md` por operación, exportar un apunte `.md`, el cuaderno ZIP y
+Notebook en el dump JSON (`formatVersion: 2`). Reimportar los `.md` del ZIP crea apuntes
+nuevos y no restaura los vínculos con errores. El backup SQLite es la recuperación íntegra.
+No se importan adjuntos ni se cargan imágenes remotas al leer: se muestra su sintaxis.
+HTML embebido no se representa; se rechazan protocolos de URL activos. Los enlaces
+internos usan rutas Markdown normales, sin wikilinks. La app es local y no autentica
+usuarios; no conserva historial de versiones.
+
+Límites de entrada: carpeta 80 caracteres; título 160; cuerpo 256 KiB UTF-8; doce tags
+de 40 caracteres; consulta 200. Una carpeta no se borra con hijos o apuntes. Los
+borrados se confirman. El modelo, las rutas y las fases de entrega están detallados en
+[NOTEBOOK-PLAN.md](NOTEBOOK-PLAN.md).

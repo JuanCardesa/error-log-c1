@@ -11,6 +11,9 @@ import { backupDatabase, restoreDatabase } from './backup';
 import { type Db, createDb } from './client';
 import { loadDataset } from './load';
 import { MIGRATIONS_DIR } from './paths';
+import { createNotebookNote, getNotebookNote, listNotebookAnnotations, saveNotebookAnnotation } from './notebookRepo';
+import { studyAnchor } from '../notebook/annotations';
+import { notebookStudyText } from '../notebook/studyMarkdown';
 import { seedIfEmpty } from './seedSafe';
 
 vi.mock('node:fs', async (importOriginal) => {
@@ -34,6 +37,21 @@ afterEach(() => {
 });
 
 describe('copias y restauracion', () => {
+  it('copia y restaura también las marcas de estudio', async () => {
+    const source = join(scratch, 'study.db');
+    const db = open(source);
+    migrate(db);
+    const note = createNotebookNote(db, { uid: '9c8de1e3-03e6-42ec-a098-ac0db92331d0',
+      title: 'Study', folderId: null, tags: [], contentMarkdown: 'Important concept.' }, '2026-09-30').note;
+    const text = notebookStudyText(note.contentMarkdown);
+    const marks = saveNotebookAnnotation(db, { noteId: note.id, uid: note.uid, expectedRevision: 1,
+      anchor: studyAnchor(text, 0, 9), command: { kind: 'highlight', enabled: true } }, '2026-09-30');
+    const copy = join(scratch, 'study-copy.db');
+    await backupDatabase(source, copy);
+    const restored = join(scratch, 'study-restored.db');
+    await restoreDatabase(copy, restored);
+    expect(listNotebookAnnotations(open(restored), note.id)).toEqual(marks);
+  });
   it('crea una copia restaurable en un volumen sin enlaces duros', async () => {
     const source = join(scratch, 'original.db');
     const db = open(source);
@@ -65,6 +83,17 @@ describe('copias y restauracion', () => {
     seedIfEmpty(db, new Date('2026-09-16T12:00:00Z'));
     expect(existsSync(`${source}-wal`)).toBe(true);
     const before = loadDataset(db);
+    const note = createNotebookNote(db, {
+      uid: '9c8de1e3-03e6-42ec-a098-ac0db92331d0',
+      title: 'Past modal verbs', folderId: null, tags: ['part4'],
+      contentMarkdown: '# Must have\nUna deducción pasada',
+    }, '2026-09-29T07:00:00.000Z').note;
+    const errorId = before.errors[0]?.id;
+    if (errorId === undefined) throw new Error('El seed no contiene errores');
+    db.$client.prepare(`INSERT INTO notebook_error_link
+      (error_id, note_id, heading_slug, heading_text, created_at)
+      VALUES (?, ?, 'nb-must-have', 'Must have', '2026-09-29T07:00:00.000Z')`)
+      .run(errorId, note.id);
     const backup = join(scratch, 'copies', 'backup.db');
     await backupDatabase(source, backup);
     expect(existsSync(`${backup}-wal`)).toBe(false);
@@ -76,6 +105,11 @@ describe('copias y restauracion', () => {
     migrate(restoredDb, { migrationsFolder: MIGRATIONS_DIR });
     expect(loadDataset(restoredDb)).toEqual(before);
     expect(loadDataset(db)).toEqual(before);
+    expect(getNotebookNote(restoredDb, note.id)).toEqual(note);
+    expect(restoredDb.$client.prepare('SELECT error_id, note_id FROM notebook_error_link').all())
+      .toEqual([{ error_id: errorId, note_id: note.id }]);
+    expect(restoredDb.$client.prepare('SELECT body FROM notebook_note_fts WHERE rowid = ?').get(note.id))
+      .toEqual({ body: 'must have una deduccion pasada' });
     expect(readdirSync(join(scratch, 'copies'))).toEqual(['backup.db']);
   });
 
@@ -126,6 +160,10 @@ describe('copias y restauracion', () => {
     const old = open(legacy);
     migrate(old, { migrationsFolder: MIGRATIONS_DIR });
     old.$client.pragma('foreign_keys = OFF');
+    for (const trigger of ['notebook_folder_insert_depth', 'notebook_folder_update_depth',
+      'notebook_note_fts_delete', 'notebook_note_fts_update']) old.$client.exec(`DROP TRIGGER ${trigger}`);
+    for (const table of ['notebook_annotation', 'notebook_note_fts', 'notebook_error_link', 'notebook_note',
+      'notebook_folder']) old.$client.exec(`DROP TABLE ${table}`);
     for (const trigger of ['session_search_insert', 'session_search_update', 'session_search_delete',
       'error_search_insert', 'error_search_update', 'error_search_delete']) old.$client.exec(`DROP TRIGGER ${trigger}`);
     for (const table of ['session_search_fts', 'error_search_fts']) old.$client.exec(`DROP TABLE ${table}`);
@@ -142,6 +180,16 @@ describe('copias y restauracion', () => {
     expect(loadDataset(migrated).errors).toEqual([]);
     expect(migrated.$client.prepare("SELECT name FROM sqlite_master WHERE name LIKE 'anki%' AND type = 'table'").all())
       .toHaveLength(4);
+  });
+
+  it('rechaza una copia actual si falta el índice Notebook', async () => {
+    const source = join(scratch, 'sin-indice.db');
+    const db = open(source);
+    migrate(db, { migrationsFolder: MIGRATIONS_DIR });
+    db.$client.exec('DROP TABLE notebook_note_fts');
+    await expect(backupDatabase(source, join(scratch, 'incompleta.db')))
+      .rejects.toThrow('no such table');
+    expect(existsSync(join(scratch, 'incompleta.db'))).toBe(false);
   });
 
   it('rechaza un fichero que no es SQLite sin dejar un destino incompleto', async () => {
