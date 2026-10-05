@@ -300,7 +300,7 @@ ha guardado nada».
 
 ## Notebook
 
-- Entrada en Más y en la paleta, conservando los cuatro destinos de la cabecera. La
+- Entrada principal en la cabecera y en la paleta, junto a los otros cuatro destinos. La
   portada abre con búsqueda, carpetas, modificados recientes, la acción «Nuevo apunte» y
   la secundaria «Importar .md». El estado vacío explica cómo crear el primero.
 - Portada en `/notebook`, alta en `/notebook/nuevo`, importación en `/notebook/importar`,

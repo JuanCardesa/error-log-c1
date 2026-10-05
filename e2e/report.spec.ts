@@ -6,6 +6,23 @@ import { expect, test } from '@playwright/test';
  */
 
 test.describe('progreso', () => {
+  test('G N abre Notebook desde otra sección y en Sesiones no abre Nueva sesión', async ({ page }) => {
+    const notebook = page.getByRole('navigation', { name: 'Secciones' }).getByRole('link', { name: 'Notebook' });
+    for (const path of ['/informe', '/registrar']) {
+      await page.goto(path);
+      // Abrir y cerrar el diálogo exige que los manejadores cliente ya estén hidratados.
+      await page.getByRole('button', { name: /^Buscar \(/ }).click();
+      await expect(page.getByRole('dialog', { name: 'Buscar' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await notebook.focus();
+      await page.keyboard.press('g');
+      await page.keyboard.press('n');
+      await expect(page).toHaveURL(/\/notebook$/);
+      await expect(notebook).toHaveAttribute('aria-current', 'page');
+      await expect(page.getByRole('heading', { name: 'Nueva sesión' })).toHaveCount(0);
+    }
+  });
+
   test('destaca exactamente una recomendación', async ({ page }) => {
     await page.goto('/informe');
     await expect(page.getByText('Recomendación principal · esta semana')).toBeVisible();
@@ -31,7 +48,7 @@ test.describe('progreso', () => {
   test('la navegación lleva a cada sección y marca dónde estás', async ({ page }) => {
     await page.goto('/informe');
     const nav = page.getByRole('navigation', { name: 'Secciones' });
-    for (const name of ['Sesiones', 'Errores', 'Progreso', 'Anki']) {
+    for (const name of ['Sesiones', 'Errores', 'Progreso', 'Anki', 'Notebook']) {
       await expect(nav.getByRole('link', { name, exact: true })).toBeVisible();
     }
     await expect(nav.getByRole('link', { name: 'Progreso', exact: true })).toHaveAttribute('aria-current', 'page');
@@ -40,6 +57,7 @@ test.describe('progreso', () => {
     // Writing y Exportar, a un clic en «Más».
     await page.getByRole('button', { name: 'Más' }).click();
     await expect(page.getByRole('menuitem', { name: 'Writing' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Notebook' })).toHaveCount(0);
     await page.getByRole('menuitem', { name: 'Exportar datos' }).click();
     await expect(page).toHaveURL(/\/exportar/);
 

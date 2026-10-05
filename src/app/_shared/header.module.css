@@ -136,7 +136,7 @@
 }
 
 /*
- * Móvil: dos filas. Marca, Más y buscar arriba; los cuatro destinos repartidos debajo, sin
+ * Móvil: dos filas. Marca, Más y buscar arriba; los cinco destinos repartidos debajo, sin
  * scroll horizontal y con la sección activa siempre a la vista.
  */
 @media (max-width: 639px) {
@@ -182,15 +182,16 @@
     grid-row: 2;
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     margin: 0 calc(-1 * var(--space-2)) 0 calc(-1 * var(--space-4));
     height: 44px;
   }
 
   .navLink {
     justify-content: center;
+    min-width: 0;
     padding: 0;
-    font-size: 14px;
+    font: var(--text-label);
   }
 
   .moreButton {
