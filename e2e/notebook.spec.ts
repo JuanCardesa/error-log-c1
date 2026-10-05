@@ -40,6 +40,8 @@ test('abre por ID, devuelve 404 para IDs inexistentes y conserva enlaces al reno
     if (request.url().startsWith('https://tracker.example/')) externalRequests.push(request.url());
   });
   await page.goto(oldHref);
+  const primaryNotebook = page.getByRole('navigation', { name: 'Secciones' }).getByRole('link', { name: 'Notebook' });
+  await expect(primaryNotebook).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('heading', { level: 1, name: 'Modal verbs in the past' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Ruta del apunte' }).getByRole('link', { name: /Vocabulary/ })).toHaveAttribute('href', `/notebook?carpeta=${String(folderId)}`);
   await expect(page.getByRole('heading', { name: 'Must have' })).toHaveAttribute('id', 'nb-must-have');
@@ -48,10 +50,16 @@ test('abre por ID, devuelve 404 para IDs inexistentes y conserva enlaces al reno
   expect(externalRequests).toEqual([]);
   expect(await page.evaluate(() => Reflect.get(window, '__notebookPwned'))).toBeUndefined();
 
+  await page.goto(`${oldHref}/editar`);
+  await expect(primaryNotebook).toHaveAttribute('aria-current', 'page');
+
   await page.goto('/notebook/999999999-not-found');
   await expect(page.getByRole('heading', { name: 'Esta página no existe' })).toBeVisible();
   await page.goto('/notebook/nuevo');
+  await expect(primaryNotebook).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('heading', { name: 'Nuevo apunte' })).toBeVisible();
+  await page.goto('/notebook/importar');
+  await expect(primaryNotebook).toHaveAttribute('aria-current', 'page');
 });
 
 test('muestra carpetas anidadas, estados vacíos y permite crear y renombrar carpetas', async ({ page }) => {
@@ -133,12 +141,11 @@ test('el índice conserva hashes, teclado, duplicados y movimiento reducido', as
   await page.setViewportSize({ width: 1440, height: 720 });
   await page.goto(`${href}#nb-must-have-1`);
   await expect(page.getByRole('heading', { name: 'Must have', exact: true }).nth(1)).toBeInViewport();
-  await page.locator('summary').filter({ hasText: 'En esta nota' }).click();
   const toc = page.getByRole('navigation', { name: 'Índice del apunte' });
   const links = toc.getByRole('link', { name: 'Must have' });
   await expect(page.getByRole('heading', { level: 1, name: 'Past modal verbs' })).toHaveCount(1);
   await expect(page.getByRole('heading', { level: 1, name: 'Past modal verbs' })).toHaveAttribute('id', 'nb-past-modal-verbs');
-  // Abrir el índice desplaza la vista al principio; el enlace conserva el destino del hash.
+  // El enlace del índice conserva el destino del hash.
   await expect(links.nth(1)).toHaveAttribute('href', '#nb-must-have-1');
   await links.first().focus();
   await page.keyboard.press('Enter');
@@ -165,7 +172,6 @@ test('el índice conserva hashes, teclado, duplicados y movimiento reducido', as
   await page.setViewportSize({ width: 800, height: 700 });
   const disclosure = page.locator('summary').filter({ hasText: 'En esta nota' });
   await disclosure.click();
-  await disclosure.click();
   await expect(page.getByRole('navigation', { name: 'Índice del apunte' }).getByRole('link', { name: 'Must have' }).first()).toBeVisible();
 });
 
@@ -181,7 +187,6 @@ test('en una nota breve, el hash decide el apartado activo aunque no haya scroll
   } finally { db.$client.close(); }
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${href}#nb-primero`);
-  await page.locator('summary').filter({ hasText: 'En esta nota' }).click();
   const toc = page.getByRole('navigation', { name: 'Índice del apunte' });
   await expect(toc.getByRole('link', { name: 'Primero' })).toHaveAttribute('aria-current', 'location');
   await toc.getByRole('link', { name: 'Segundo' }).click();

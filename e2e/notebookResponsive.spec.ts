@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 
 import { createDb } from '../src/lib/db/client';
-import { createNotebookFolder, createNotebookNote } from '../src/lib/db/notebookRepo';
+import { createNotebookFolder, createNotebookNote, deleteNotebookNote } from '../src/lib/db/notebookRepo';
 import { notebookNoteHref } from '../src/lib/notebook/urls';
 import { E2E_DB } from './globalSetup';
 
@@ -13,7 +13,7 @@ import { E2E_DB } from './globalSetup';
  * horizontal— sobre el contenido que más tira del ancho: una tabla de cinco columnas,
  * una URL sin espacios, un bloque de código largo y un título de apunte que no cabe.
  *
- * El índice es un desplegable cerrado inicialmente en todos los tamaños.
+ * El índice ocupa una columna en escritorio y se despliega en pantallas más estrechas.
  */
 
 const VIEWPORTS = [
@@ -94,14 +94,14 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-test('el índice empieza cerrado también en escritorio', async ({ page }) => {
+test('el índice es lateral en escritorio y desplegable en tableta y móvil', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(noteHref);
   const toc = page.getByRole('navigation', { name: 'Índice del apunte' });
-  await expect(toc).toHaveCount(0);
-  await page.locator('summary').filter({ hasText: 'En esta nota' }).click();
   await expect(toc).toHaveCount(1);
   await expect(toc.getByRole('link', { name: 'Tabla de contraste' })).toBeVisible();
+  await expect(page.locator('article').getByRole('navigation', { name: 'Índice del apunte' })).toHaveCount(0);
+  await expect(page.locator('[data-study-content]').getByRole('navigation', { name: 'Índice del apunte' })).toHaveCount(0);
 
   for (const { label, width, height } of [
     { label: 'tableta', width: 834, height: 1112 },
@@ -116,6 +116,42 @@ test('el índice empieza cerrado también en escritorio', async ({ page }) => {
     await toc.getByRole('link', { name: 'Cierre' }).click();
     await expect(page).toHaveURL(/#nb-cierre$/u);
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+  }
+});
+
+test('entre 1024 y 1279 el índice cerrado queda encima del folio en la columna lectora', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 800 });
+  await page.goto(noteHref);
+  const summary = page.locator('summary').filter({ hasText: 'En esta nota' });
+  const article = page.locator('article');
+  await expect(summary).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Índice del apunte' })).toHaveCount(0);
+  const [tocBox, articleBox] = await Promise.all([summary.boundingBox(), article.boundingBox()]);
+  if (tocBox === null || articleBox === null) throw new Error('Falta el índice o el folio');
+  expect(tocBox.y + tocBox.height).toBeLessThan(articleBox.y);
+  expect(tocBox.x).toBeGreaterThanOrEqual(articleBox.x);
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+});
+
+test('sin encabezados no se reserva la columna del índice', async ({ page }) => {
+  const db = createDb(E2E_DB);
+  const plain = createNotebookNote(db, {
+    uid: randomUUID(), title: 'Apunte sin apartados', folderId: null, tags: [], contentMarkdown: 'Solo texto.',
+  }, new Date().toISOString()).note;
+  db.$client.close();
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(noteHref);
+    const withToc = await page.locator('article').boundingBox();
+    await page.goto(notebookNoteHref(plain));
+    await expect(page.getByRole('navigation', { name: 'Índice del apunte' })).toHaveCount(0);
+    const withoutToc = await page.locator('article').boundingBox();
+    if (withToc === null || withoutToc === null) throw new Error('Falta el folio');
+    expect(withoutToc.width).toBeGreaterThan(withToc.width);
+  } finally {
+    const cleanup = createDb(E2E_DB);
+    try { deleteNotebookNote(cleanup, { id: plain.id, uid: plain.uid, expectedRevision: plain.revision }); }
+    finally { cleanup.$client.close(); }
   }
 });
 

@@ -111,13 +111,14 @@ completo de **Exportar**: importar `dump.json` no está implementado.
 
 ## Notebook: apuntes para repasar
 
-En **Más → Notebook** puedes crear apuntes Markdown, organizarlos en carpetas de hasta
+En **Notebook**, en la cabecera, puedes crear apuntes Markdown, organizarlos en carpetas de hasta
 dos niveles y añadir etiquetas. El editor ofrece vista previa, guardado automático,
 borradores locales recuperables y **Guardar ahora** (Ctrl/⌘+S). La lectura muestra un
 índice de apartados; la búsqueda encuentra títulos, texto y etiquetas. Desde el panel
 de un error puedes vincularlo manualmente a un apunte completo o a un apartado.
 
-El lector presenta el apunte como un folio y mantiene **En esta nota** cerrado al entrar.
+El lector presenta el apunte como un folio. En escritorio, **En esta nota** permanece visible
+a la derecha; en tableta y móvil, se abre como un desplegable encima del folio.
 En ordenador, selecciona texto para abrir **Rotulador · Color · Limpiar**: el rotulador
 amarillo y los colores de tinta se guardan automáticamente, sin cambiar el Markdown.
 Puedes quitar formato solo de una parte de una frase. Tab lleva el foco a la barra y

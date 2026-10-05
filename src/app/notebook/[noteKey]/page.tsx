@@ -44,10 +44,13 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
         <span aria-hidden="true">/</span>
         <span aria-current="page">{note.title}</span>
       </nav>
-      <div className={`${styles.layout} ${styles.readerLayout}`}>
+      <div className={`${styles.layout} ${headings.length > 0 ? styles.readerLayout : ''}`}>
         <aside className={styles.sidebar}>
           <NotebookDirectory folders={folders} selectedFolderId={note.folderId} />
         </aside>
+        {headings.length > 0 && <aside className={styles.tocArea}>
+          <TableOfContents key={note.id} headings={headings} />
+        </aside>}
         <div className={styles.readerColumn}>
           <div className={styles.readerActions}>
             <a href={`/exportar/notebook-${String(note.id)}.md`} download className={ui.secondary}>Exportar .md</a>
@@ -62,7 +65,6 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
                 {note.tags.map((tag) => <li key={tag}>{tag}</li>)}
               </ul>}
             </div>
-            <TableOfContents key={note.id} headings={headings} />
             {note.contentMarkdown === '' ? (
               <div className={styles.empty}><p>Este apunte todavía no tiene contenido.</p></div>
             ) : (

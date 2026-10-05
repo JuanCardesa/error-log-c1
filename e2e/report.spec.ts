@@ -6,6 +6,21 @@ import { expect, test } from '@playwright/test';
  */
 
 test.describe('progreso', () => {
+  test('Notebook cabe entero en la cabecera móvil', async ({ page }) => {
+    for (const width of [320, 360, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto('/notebook');
+      const link = page.getByRole('navigation', { name: 'Secciones' }).getByRole('link', { name: 'Notebook' });
+      await expect(link).toBeVisible();
+      const metrics = await link.evaluate((element) => ({
+        textFits: element.scrollWidth <= element.clientWidth,
+        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      }));
+      expect(metrics.textFits, `Notebook recortado a ${String(width)} px`).toBe(true);
+      expect(metrics.pageOverflow, `desbordamiento a ${String(width)} px`).toBeLessThanOrEqual(0);
+    }
+  });
+
   test('G N abre Notebook desde otra sección y en Sesiones no abre Nueva sesión', async ({ page }) => {
     const notebook = page.getByRole('navigation', { name: 'Secciones' }).getByRole('link', { name: 'Notebook' });
     for (const path of ['/informe', '/registrar']) {
