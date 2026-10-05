@@ -317,6 +317,8 @@ ha guardado nada».
 - La lectura usa Source Serif 4 y `--reading-max`; directorio e índice acompañan al
   texto en pantallas amplias. Bajo 1024 px, directorio e índice se despliegan y el
   contenido ocupa una columna. Las tablas Markdown desplazan dentro de su contenedor.
+- La estrella de favoritos confirma con el servidor antes de cambiar. El directorio muestra
+  hasta ocho y la vista Favoritos reúne todos; la marca no altera la fecha ni la revisión.
 - El editor usa Plex, textarea nativo, toolbar pequeña y pestañas Editar/Vista previa.
   La vista previa comparte renderizador con el lector. Guardar ahora y Ctrl/⌘+S
   complementan autosave; un estado visible distingue pendiente, guardando, guardado,

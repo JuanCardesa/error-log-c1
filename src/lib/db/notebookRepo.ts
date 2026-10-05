@@ -14,11 +14,13 @@ import {
   deleteNotebookNoteSchema,
   normalizeFolderNameKey,
   saveNotebookNoteSchema,
+  setNotebookNoteFavoriteSchema,
   updateNotebookFolderSchema,
   type CreateNotebookFolderInput,
   type CreateNotebookNoteInput,
   type DeleteNotebookNoteInput,
   type SaveNotebookNoteInput,
+  type SetNotebookNoteFavoriteInput,
   type UpdateNotebookFolderInput,
 } from '../notebook/schemas';
 import type {
@@ -44,6 +46,7 @@ const noteSummary = {
   revision: notebookNote.revision,
   createdAt: notebookNote.createdAt,
   updatedAt: notebookNote.updatedAt,
+  favoritedAt: notebookNote.favoritedAt,
 };
 
 export function listNotebookFolders(db: Db): NotebookFolder[] {
@@ -163,6 +166,27 @@ export function listNotebookNotes(
 export function listRecentNotebookNotes(db: Db, limit = 20): NotebookNoteSummary[] {
   return db.select(noteSummary).from(notebookNote)
     .orderBy(desc(notebookNote.updatedAt), desc(notebookNote.id)).limit(limit).all();
+}
+
+export function listFavoriteNotebookNotes(db: Db): NotebookNoteSummary[] {
+  return db.select(noteSummary).from(notebookNote)
+    .where(sql`${notebookNote.favoritedAt} IS NOT NULL`)
+    .orderBy(desc(notebookNote.favoritedAt), asc(notebookNote.id)).all();
+}
+
+/** La marca no participa en el CAS del contenido ni modifica la fecha de edición. */
+export function setNotebookNoteFavorite(
+  db: Db,
+  raw: SetNotebookNoteFavoriteInput,
+  at: string,
+): NotebookNote {
+  const { id, favorite } = setNotebookNoteFavoriteSchema.parse(raw);
+  const updated = db.update(notebookNote).set({
+    favoritedAt: favorite ? sql`coalesce(${notebookNote.favoritedAt}, ${at})` : null,
+  })
+    .where(eq(notebookNote.id, id)).returning().get();
+  if (updated === undefined) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+  return updated;
 }
 
 /** Reintentar el mismo UID devuelve la creación confirmada, sin duplicarla. */

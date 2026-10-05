@@ -4,6 +4,7 @@ import type { NotebookSearchHit } from '@/lib/db/notebookSearch';
 import { findNotebookTextMatch, type NotebookTextMatch } from '@/lib/notebook/searchText';
 import type { NotebookFolder } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
+import { FavoriteToggle } from './FavoriteToggle';
 import styles from './notebook.module.css';
 
 function MarkedText({ text, match }: { readonly text: string; readonly match: NotebookTextMatch | null }) {
@@ -28,9 +29,12 @@ export function NotebookSearchResults({ hits, folders, query }: {
               Notebook · {parent === undefined ? '' : `${parent.name} / `}{folder?.name ?? 'Sin carpeta'}
               {excerpt?.heading !== null && excerpt?.heading !== undefined && ` / ${excerpt.heading.text}`}
             </p>
-            <Link href={href} className={styles.noteLink}>
-              <MarkedText text={note.title} match={findNotebookTextMatch(note.title, query)} />
-            </Link>
+            <div className={styles.noteRowMain}>
+              <FavoriteToggle id={note.id} title={note.title} favoritedAt={note.favoritedAt} compact />
+              <Link href={href} className={styles.noteLink}>
+                <MarkedText text={note.title} match={findNotebookTextMatch(note.title, query)} />
+              </Link>
+            </div>
             {excerpt !== null && (
               <p className={styles.resultSnippet}>
                 <MarkedText text={excerpt.text} match={excerpt.match} />

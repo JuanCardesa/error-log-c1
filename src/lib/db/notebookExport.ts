@@ -38,6 +38,7 @@ const noteHeaderColumns = {
   revision: notebookNote.revision,
   createdAt: notebookNote.createdAt,
   updatedAt: notebookNote.updatedAt,
+  favoritedAt: notebookNote.favoritedAt,
 };
 
 export function listNotebookExportFolders(db: Db): NotebookFolder[] {

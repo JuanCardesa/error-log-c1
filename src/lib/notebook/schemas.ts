@@ -99,6 +99,7 @@ export const deleteNotebookNoteSchema = z.strictObject({
   uid,
   expectedRevision: safeId,
 });
+export const setNotebookNoteFavoriteSchema = z.strictObject({ id: safeId, favorite: z.boolean() });
 export const getNotebookNoteSchema = z.strictObject({
   id: safeId,
   uid: uid.optional(),
@@ -147,6 +148,7 @@ export const searchNotebookSchema = z.strictObject({
 export type CreateNotebookNoteInput = z.output<typeof createNotebookNoteSchema>;
 export type SaveNotebookNoteInput = z.output<typeof saveNotebookNoteSchema>;
 export type DeleteNotebookNoteInput = z.output<typeof deleteNotebookNoteSchema>;
+export type SetNotebookNoteFavoriteInput = z.output<typeof setNotebookNoteFavoriteSchema>;
 export type CreateNotebookFolderInput = z.output<typeof createNotebookFolderSchema>;
 export type UpdateNotebookFolderInput = z.output<typeof updateNotebookFolderSchema>;
 export type SearchNotebookInput = z.output<typeof searchNotebookSchema>;

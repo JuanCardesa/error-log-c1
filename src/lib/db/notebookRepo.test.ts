@@ -11,9 +11,11 @@ import {
   getNotebookNote,
   getNotebookNoteByUid,
   listNotebookFolders,
+  listFavoriteNotebookNotes,
   listNotebookNotes,
   listRecentNotebookNotes,
   saveNotebookNote,
+  setNotebookNoteFavorite,
   updateNotebookFolder,
 } from './notebookRepo';
 import { notebookNote } from './schema';
@@ -39,6 +41,34 @@ function noteInput(changes: Record<string, unknown> = {}) {
 }
 
 describe('repositorio de apuntes Notebook', () => {
+  it('marca y desmarca sin editar y conserva la marca tras guardar', () => {
+    const first = createNotebookNote(db, noteInput(), NOW).note;
+    const marked = setNotebookNoteFavorite(db, { id: first.id, favorite: true }, '2026-09-29T08:00:00.000Z');
+    expect(marked).toMatchObject({ favoritedAt: '2026-09-29T08:00:00.000Z', revision: 1, updatedAt: NOW });
+    expect(setNotebookNoteFavorite(db, { id: first.id, favorite: true }, '2026-09-29T09:00:00.000Z'))
+      .toEqual(marked);
+    const saved = saveNotebookNote(db, {
+      ...noteInput({ title: 'Guardado' }), id: first.id, expectedRevision: 1,
+    }, '2026-09-29T10:00:00.000Z');
+    expect(saved.favoritedAt).toBe(marked.favoritedAt);
+    expect(setNotebookNoteFavorite(db, { id: first.id, favorite: false }, '2026-09-29T11:00:00.000Z'))
+      .toMatchObject({ favoritedAt: null, revision: 2, updatedAt: saved.updatedAt });
+    expect(listFavoriteNotebookNotes(db)).toEqual([]);
+    expect(() => setNotebookNoteFavorite(db, { id: 99999, favorite: true }, NOW))
+      .toThrow(expect.objectContaining({ code: 'NOT_FOUND' }));
+  });
+
+  it('ordena favoritos por fecha descendente y después por ID', () => {
+    const first = createNotebookNote(db, noteInput(), NOW).note;
+    const second = createNotebookNote(db, noteInput({ uid: 'd8766760-f8e8-4f34-b739-d07113f30d6a' }), NOW).note;
+    const third = createNotebookNote(db, noteInput({ uid: 'd8766760-f8e8-4f34-b739-d07113f30d6b' }), NOW).note;
+    setNotebookNoteFavorite(db, { id: first.id, favorite: true }, '2026-09-29T08:00:00.000Z');
+    setNotebookNoteFavorite(db, { id: second.id, favorite: true }, '2026-09-29T09:00:00.000Z');
+    setNotebookNoteFavorite(db, { id: third.id, favorite: true }, '2026-09-29T09:00:00.000Z');
+    expect(listFavoriteNotebookNotes(db).map((note) => note.id)).toEqual([second.id, third.id, first.id]);
+    expect(listRecentNotebookNotes(db).map((note) => note.id)).toEqual([third.id, second.id, first.id]);
+  });
+
   it('crea una vez por UID y devuelve la fila ya confirmada al reintentar', () => {
     const first = createNotebookNote(db, noteInput(), NOW);
     expect(first).toMatchObject({ created: true, note: { uid: UID, revision: 1 } });

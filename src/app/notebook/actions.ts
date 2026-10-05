@@ -17,6 +17,7 @@ import {
   getNotebookNoteByUid,
   saveNotebookNote,
   saveNotebookAnnotation,
+  setNotebookNoteFavorite,
   updateNotebookFolder,
 } from '@/lib/db/notebookRepo';
 import { searchNotebookNotes } from '@/lib/db/notebookSearch';
@@ -38,6 +39,7 @@ import {
   notebookImportSizeError,
   removeErrorNoteLinkSchema,
   saveNotebookNoteSchema,
+  setNotebookNoteFavoriteSchema,
   searchNotebookSchema,
   setErrorNoteLinkSchema,
   updateNotebookFolderSchema,
@@ -91,6 +93,15 @@ export async function createNoteAction(raw: unknown): Promise<NotebookResult<Not
 export async function saveNoteAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {
   return validated(saveNotebookNoteSchema, raw, (input) =>
     saveNotebookNote(getDb(), input, new Date().toISOString()));
+}
+
+export async function setNoteFavoriteAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {
+  return validated(setNotebookNoteFavoriteSchema, raw, (input) => {
+    const note = setNotebookNoteFavorite(getDb(), input, new Date().toISOString());
+    revalidatePath('/notebook');
+    revalidatePath(notebookNoteHref(note));
+    return note;
+  });
 }
 
 export async function saveStudyAnnotationAction(raw: unknown): Promise<NotebookResult<NotebookAnnotation[]>> {

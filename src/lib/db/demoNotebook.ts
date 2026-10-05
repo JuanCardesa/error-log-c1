@@ -4,7 +4,7 @@ import { analyzeNotebookMarkdown } from '../notebook/markdown';
 import { notebookNoteHref } from '../notebook/urls';
 import type { Db } from './client';
 import { setErrorNoteLink } from './notebookLinkRepo';
-import { createNotebookFolder, createNotebookNote } from './notebookRepo';
+import { createNotebookFolder, createNotebookNote, setNotebookNoteFavorite } from './notebookRepo';
 import { errorRow } from './schema';
 
 /** Cuaderno pequeño, original y exclusivo de la demo; el seed general sigue vacío. */
@@ -97,6 +97,8 @@ Escribe una frase propia con cada pareja y revísala al día siguiente.
 - [ ] Reescribir una frase con *on the other hand*.
 - [ ] Leerla en voz alta y comprobar la preposición.
 `);
+  setNotebookNoteFavorite(db, { id: cleft.id, favorite: true }, at);
+  setNotebookNoteFavorite(db, { id: connectors.id, favorite: true }, at);
 
   add('Lista de revisión del essay', writing.id, ['essay', 'revisión'], `# Lista de revisión del essay
 

@@ -20,6 +20,7 @@ interface SearchRow {
   readonly revision: number;
   readonly created_at: string;
   readonly updated_at: string;
+  readonly favorited_at: string | null;
 }
 
 /**
@@ -98,7 +99,7 @@ export function searchNotebookNotes(db: Db, input: SearchNotebookInput): Noteboo
     const page = ids.slice(0, NOTEBOOK_LIMITS.pageSize);
     if (page.length === 0) return { items: [], hasMore: false };
     const rows = db.$client.prepare<number[], SearchRow>(`
-      SELECT id, uid, folder_id, title, tags, revision, created_at, updated_at
+      SELECT id, uid, folder_id, title, tags, revision, created_at, updated_at, favorited_at
       FROM notebook_note WHERE id IN (${page.map(() => '?').join(', ')})
     `).all(...page);
     const byId = new Map(rows.map((row) => [row.id, row]));
@@ -113,6 +114,7 @@ export function searchNotebookNotes(db: Db, input: SearchNotebookInput): Noteboo
         revision: row.revision,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+        favoritedAt: row.favorited_at,
       }];
     });
     return { items, hasMore: ids.length > NOTEBOOK_LIMITS.pageSize };

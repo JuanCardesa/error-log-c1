@@ -17,6 +17,7 @@ function noteSummary(note: NotebookNote): NotebookNoteSummary {
   return {
     id: note.id, uid: note.uid, folderId: note.folderId, title: note.title,
     tags: note.tags, revision: note.revision, createdAt: note.createdAt, updatedAt: note.updatedAt,
+    favoritedAt: note.favoritedAt,
   };
 }
 

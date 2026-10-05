@@ -1,8 +1,13 @@
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { normalizeFolderNameKey } from '../notebook/schemas';
 import { createDb, type Db } from './client';
 import { migrate } from './migrate';
+import { MIGRATIONS_DIR } from './paths';
 
 const NOW = '2026-09-29T07:00:00.000Z';
 let db: Db;
@@ -43,6 +48,39 @@ function error(): number {
 }
 
 describe('migración Notebook y restricciones SQLite', () => {
+  it('añade favoritos sobre apuntes existentes y no reaplica la migración', () => {
+    const legacyDir = mkdtempSync(join(tmpdir(), 'errorlog-legacy-migrations-'));
+    const legacyDb = createDb(':memory:');
+    try {
+      const journal = JSON.parse(readFileSync(join(MIGRATIONS_DIR, 'meta', '_journal.json'), 'utf8')) as {
+        version: string; dialect: string; entries: Array<{ tag: string }>;
+      };
+      const previous = journal.entries.filter((entry) => entry.tag !== '0011_notebook_favorites');
+      mkdirSync(join(legacyDir, 'meta'));
+      writeFileSync(join(legacyDir, 'meta', '_journal.json'), JSON.stringify({ ...journal, entries: previous }));
+      for (const entry of previous) {
+        copyFileSync(join(MIGRATIONS_DIR, `${entry.tag}.sql`), join(legacyDir, `${entry.tag}.sql`));
+      }
+      migrate(legacyDb, { migrationsFolder: legacyDir });
+      const id = Number(legacyDb.$client.prepare(`INSERT INTO notebook_note
+        (uid, title, content_markdown, tags, created_at, updated_at)
+        VALUES ('9c8de1e3-03e6-42ec-a098-ac0db92331d0', 'Anterior', '', '[]', ?, ?)`)
+        .run(NOW, NOW).lastInsertRowid);
+      migrate(legacyDb);
+      expect(legacyDb.$client.prepare('SELECT favorited_at FROM notebook_note WHERE id = ?').get(id))
+        .toEqual({ favorited_at: null });
+      expect(legacyDb.$client.prepare(`SELECT name FROM sqlite_schema
+        WHERE type = 'index' AND name = 'notebook_note_favorited_id_idx'`).get())
+        .toEqual({ name: 'notebook_note_favorited_id_idx' });
+      const applied = legacyDb.$client.prepare('SELECT * FROM __drizzle_migrations').all();
+      migrate(legacyDb);
+      expect(legacyDb.$client.prepare('SELECT * FROM __drizzle_migrations').all()).toEqual(applied);
+    } finally {
+      legacyDb.$client.close();
+      if (resolve(legacyDir).startsWith(resolve(tmpdir()) + '\\')) rmSync(legacyDir, { recursive: true, force: true });
+    }
+  });
+
   it('crea las tres tablas y permite migrar dos veces sin cambios', () => {
     expect(db.$client.prepare(`SELECT name FROM sqlite_schema
       WHERE type = 'table' AND name IN

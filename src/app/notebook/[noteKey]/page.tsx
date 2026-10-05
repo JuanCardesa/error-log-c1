@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { getDb } from '@/lib/db/client';
-import { getNotebookNote, listNotebookAnnotations, listNotebookFolders } from '@/lib/db/notebookRepo';
+import { getNotebookNote, listFavoriteNotebookNotes, listNotebookAnnotations, listNotebookFolders } from '@/lib/db/notebookRepo';
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import { notebookStudyText } from '@/lib/notebook/studyMarkdown';
 import { notebookNoteHref, parseNotebookNoteId } from '@/lib/notebook/urls';
@@ -12,6 +12,7 @@ import { NotebookDirectory } from '../NotebookDirectory';
 import { NotebookRelatedErrors } from '../NotebookRelatedErrors';
 import { TableOfContents } from '../TableOfContents';
 import { DeleteNotebookNote } from '../DeleteNotebookNote';
+import { FavoriteToggle } from '../FavoriteToggle';
 import ui from '../../_shared/ui.module.css';
 import styles from '../notebook.module.css';
 
@@ -26,6 +27,7 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
   const note = getNotebookNote(db, id);
   if (note === null) notFound();
   const folders = listNotebookFolders(db);
+  const favorites = listFavoriteNotebookNotes(db);
   const folder = folders.find((item) => item.id === note.folderId);
   const parent = folders.find((item) => item.id === folder?.parentId);
   const analysis = analyzeNotebookMarkdown(note.contentMarkdown);
@@ -46,13 +48,14 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
       </nav>
       <div className={`${styles.layout} ${headings.length > 0 ? styles.readerLayout : ''}`}>
         <aside className={styles.sidebar}>
-          <NotebookDirectory folders={folders} selectedFolderId={note.folderId} />
+          <NotebookDirectory folders={folders} favorites={favorites} selectedFolderId={note.folderId} />
         </aside>
         {headings.length > 0 && <aside className={styles.tocArea}>
           <TableOfContents key={note.id} headings={headings} />
         </aside>}
         <div className={styles.readerColumn}>
           <div className={styles.readerActions}>
+            <FavoriteToggle id={note.id} title={note.title} favoritedAt={note.favoritedAt} />
             <a href={`/exportar/notebook-${String(note.id)}.md`} download className={ui.secondary}>Exportar .md</a>
             <Link href={`${notebookNoteHref(note)}/editar`} className={styles.newNoteLink}>Editar</Link>
             <DeleteNotebookNote key={note.revision} note={{ id: note.id, uid: note.uid, revision: note.revision, title: note.title }} />
