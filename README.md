@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <b>Spanish interface · Runs locally · No account</b><br>
+  <b>English or Spanish interface · Runs locally · No account</b><br>
   <a href="#quick-start">Try it locally</a> &nbsp;·&nbsp;
   <a href="#documentation">Documentation</a>
 </p>
@@ -138,8 +138,9 @@ sure, unsure or guessed. Mistakes you were *sure* about get their own list,
 | Task format | You broke a rule of the task | Review the instructions |
 | Time pressure | You ran out of time or rushed | Practise time management |
 
-The first three causes are eligible for Anki cards. The interface and import format use
-the Spanish names; the [specification](docs/SPEC.md) lists all values and thresholds.
+The first three causes are eligible for Anki cards. The import format uses the Spanish
+names, and the interface shows them in its language; the [specification](docs/SPEC.md)
+lists all values and thresholds.
 
 </details>
 
@@ -292,9 +293,10 @@ preparation, and that's what it's used for.
   sessions count in the general reports and rules but don't have a dedicated view.
 - Accuracy reflects the answers you record. It isn't an official Cambridge score or a
   prediction of your result.
-- The interface is in Spanish and designed for one person on a computer. Layouts adapt to
-  narrow screens, but the documented setup is accessible only from the computer running
-  it; it does not provide access from a separate phone.
+- The interface is in English, with Spanish in **Settings → Language**, and is designed for
+  one person on a computer. Changing the language never touches your notes or errors.
+  Layouts adapt to narrow screens, but the documented setup is accessible only from the
+  computer running it; it does not provide access from a separate phone.
 
 **Current limits**
 
@@ -304,7 +306,7 @@ preparation, and that's what it's used for.
 
 ## Documentation
 
-The detailed guides are in Spanish, like the interface.
+The detailed guides are in Spanish.
 
 | Document | What's in it |
 | --- | --- |
