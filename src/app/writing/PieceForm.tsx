@@ -268,8 +268,10 @@ export function WritingEditor(props: Omit<Parameters<typeof WritingDrawer>[0], '
   readonly initiallyOpen: boolean;
   readonly closeHref: string;
   readonly label?: string;
+  /** El botón que lo abre; secundario cuando hay otra acción principal en la cabecera. */
+  readonly buttonClassName?: string;
 }) {
-  const { initiallyOpen, closeHref, label, ...drawer } = props;
+  const { initiallyOpen, closeHref, label, buttonClassName = ui.primary, ...drawer } = props;
   const [open, setOpen] = useState(initiallyOpen);
   // Cada apertura empieza de cero: lo guardado antes no se arrastra al siguiente texto.
   const [round, setRound] = useState(0);
@@ -282,7 +284,7 @@ export function WritingEditor(props: Omit<Parameters<typeof WritingDrawer>[0], '
   return (
     <>
       {label !== undefined && (
-        <button type="button" className={ui.primary} onClick={() => { setRound(round + 1); setOpen(true); }} aria-haspopup="dialog">
+        <button type="button" className={buttonClassName} onClick={() => { setRound(round + 1); setOpen(true); }} aria-haspopup="dialog">
           <Plus size={16} aria-hidden="true" />
           {label}
         </button>

@@ -192,6 +192,31 @@ export const es: PartialMessages<Messages> = {
       YO: 'Yo',
       IA: 'IA',
     },
+    writingStatus: {
+      AWAITING: 'Pendiente de corrección',
+      CORRECTED: 'Corregida',
+      NOT_SUBMITTED: 'Sin entregar',
+    },
+    annotationKind: {
+      ERROR: 'Error',
+      IMPROVEMENT: 'Mejora',
+      STRENGTH: 'Fortaleza',
+      COMMENT: 'Comentario',
+    },
+    annotationFocus: {
+      GRAMMAR: 'Gramática',
+      SPELLING: 'Ortografía',
+      PUNCTUATION: 'Puntuación',
+      WORD_ORDER: 'Orden de palabras',
+      VOCABULARY: 'Vocabulario',
+      COLLOCATION: 'Colocación',
+      REGISTER: 'Registro',
+      CLARITY: 'Claridad',
+      LINKING: 'Conectores',
+      ORGANISATION: 'Organización',
+      CONTENT: 'Contenido',
+      OTHER: 'Otro',
+    },
     ankiState: {
       PENDING: 'Pendiente',
       CONVERTED: 'Convertida',
@@ -984,6 +1009,170 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     wordRange: 'El rango necesita 1 ≤ mínimo ≤ máximo ≤ 2000 palabras',
     correctedBeforeWritten: 'La corrección no puede ser anterior a la fecha en que se escribió',
     tooManyAnnotations: (n: number) => `Como mucho ${String(n)} ${n === 1 ? 'anotación' : 'anotaciones'} por importación`,
+    title: 'Importar Writing',
+    backToWriting: 'Volver a Writing',
+    intro: 'Pega el JSON que ChatGPT o Claude prepararon a partir de las fotos de tu redacción. No se guarda nada hasta que confirmes.',
+    jsonLabel: 'JSON de la IA',
+    fileLabel: 'O elige un archivo .json',
+    readFailed: 'No se pudo leer el archivo. Vuelve a elegirlo.',
+    review: 'Revisar importación',
+    reviewing: 'Comprobando…',
+    reviewFailed: 'No se pudo comprobar el JSON. Inténtalo de nuevo.',
+    aiTitle: 'Prepáralo con ChatGPT o Claude',
+    aiStep1: 'Copia las instrucciones y pégalas en un chat nuevo.',
+    aiStep2: 'Adjunta las fotos de tu redacción y, si la tienes, de la corrección de la profesora.',
+    aiStep3: 'Pega aquí el JSON que te devuelva. Para añadir la corrección más tarde, vuelve a importar: se actualiza la misma redacción.',
+    manualTitle: '¿Sin IA? Pega el texto',
+    manualTitleField: 'Título',
+    manualTextField: 'Texto',
+    manualReview: 'Revisar este texto',
+    issuesTitle: 'Todavía no se puede importar el JSON',
+    issueRoot: 'JSON',
+    newWriting: 'Redacción nueva',
+    updateOf: (title) => `Actualización de «${title}»`,
+    matchedBy: {
+      id: 'Mismo ID que una redacción guardada.',
+      fingerprint: 'Mismo texto que una redacción guardada.',
+      similarity: (pct) => `El ${pct} de las palabras coincide con una redacción guardada.`,
+    },
+    destination: '¿Dónde va?',
+    createNew: 'Crear una redacción nueva',
+    updateOption: (title, pct) => `Actualizar «${title}» · coincide el ${pct} de las palabras`,
+    untitled: 'Sin título',
+    originalText: 'Texto original',
+    detailsTitle: 'Datos',
+    written: 'Escrita',
+    corrected: 'Corregida',
+    approximate: 'aproximada',
+    dateWritten: 'Fecha de escritura',
+    dateHelp: 'Déjala vacía si no la sabes: se usa la de corrección, o la de hoy, marcada como aproximada.',
+    assessmentTitle: 'Evaluación',
+    notAssessed: 'Aún sin evaluar',
+    totalLabel: 'Total',
+    total: (total) => `${total} / 20`,
+    partial: (n) => `${String(n)} de 4 criterios: sin total`,
+    teacherComment: 'Comentario de la profesora',
+    changesTitle: 'Cambios en la redacción guardada',
+    transcriptionAdded: 'Se añade la transcripción',
+    yes: 'Sí',
+    no: 'No',
+    annotationsTitle: 'Anotaciones',
+    noAnnotations: 'Sin anotaciones.',
+    outcome: {
+      placed: (n) => `${String(n)} ${n === 1 ? 'colocada' : 'colocadas'} en el texto`,
+      loose: (n) => `${String(n)} ${n === 1 ? 'colocada' : 'colocadas'} sin fijarse en espacios, comillas o mayúsculas`,
+      unplaced: (n) => `${String(n)} por colocar a mano`,
+      paragraph: (n) => `${String(n)} sobre un párrafo entero`,
+      document: (n) => `${String(n)} sobre todo el texto`,
+      duplicate: (n) => `${String(n)} ya ${n === 1 ? 'importada' : 'importadas'}`,
+    },
+    toPlace: 'Por colocar a mano después de importar',
+    loosely: 'Colocadas sin fijarse en espacios, comillas o mayúsculas: compruébalas',
+    reason: {
+      notFound: 'no aparece en el texto',
+      several: (n) => `aparece ${String(n)} veces`,
+      contradicts: 'no encaja con la aparición o el contexto indicados',
+    },
+    inParagraph: (n) => `párrafo ${String(n)}`,
+    annotationLabel: (index, kind) => `#${String(index + 1)} · ${kind}`,
+    warning: {
+      totalMismatch: (total, sum) => `El JSON dice ${total} / 20, pero los criterios suman ${sum}. El total siempre se calcula con los criterios.`,
+      totalIncomplete: (total) => `El JSON da un total de ${total} / 20 sin los cuatro criterios: no se guarda ningún total.`,
+      textDiffers: (pct) => `Esta transcripción difiere de la guardada (${pct} de palabras en común). Se conserva el texto guardado y las anotaciones se colocan sobre él.`,
+      dateCorrected: (date) => `Sin fecha de escritura: se usa la de corrección (${date}), marcada como aproximada.`,
+      dateImported: (date) => `Sin fecha de escritura: se usa la de hoy (${date}), marcada como aproximada.`,
+    },
+    error: {
+      targetMissing: 'La redacción elegida para actualizar ya no existe. Elige otro destino.',
+      paragraphOutOfRange: (index, paragraph, paragraphs) => `La anotación #${String(index + 1)} apunta al párrafo ${String(paragraph)}, pero el texto tiene ${String(paragraphs)}.`,
+      correctedBeforeWritten: (date, corrected) => `La corrección (${corrected}) es anterior a la fecha de escritura (${date}).`,
+    },
+    beforeImport: 'Antes de importar',
+    blockedTitle: 'Corrige esto antes de importar',
+    nothingToDo: 'Esta redacción ya tiene todo lo que trae este JSON: no hay nada que cambiar.',
+    sessionSource: 'De dónde sale la tarea',
+    linkedSession: (title) => `Se enlazará con la sesión de Writing «${title}».`,
+    confirmCreate: 'Importar redacción',
+    confirmUpdate: 'Actualizar redacción',
+    importing: 'Importando…',
+    created: 'Redacción importada',
+    updated: 'Redacción actualizada',
+    unplacedAfter: (n) => `${String(n)} ${n === 1 ? 'anotación espera a que la coloques' : 'anotaciones esperan a que las coloques'}.`,
+    stale: 'La redacción cambió desde esta vista previa. Revisa la nueva antes de confirmar.',
+    receiptChanged: 'Esta importación ya se confirmó con otros datos. Revísala de nuevo antes de confirmar.',
+    deleted: 'Esta importación ya se hizo y la redacción se borró después: no se vuelve a crear.',
+    sessionUnavailable: 'Esa sesión de Writing ya no está libre. Vuelve a abrir la importación desde Writing.',
+    uncertain: 'No se pudo confirmar la importación. Pulsa el botón otra vez: no se duplicará.',
+    field: {
+      title: 'Título',
+      genre: 'Tipo',
+      date: 'Fecha de escritura',
+      dateBasis: 'Origen de la fecha',
+      taskPrompt: 'Tarea',
+      originalText: 'Texto',
+      textFingerprint: 'Huella del texto',
+      wordCount: 'Palabras',
+      wordMin: 'Mínimo de palabras',
+      wordMax: 'Máximo de palabras',
+      timed: 'Cronometrado',
+      minutes: 'Minutos',
+      status: 'Estado',
+      corrector: 'Corrector',
+      correctedOn: 'Corregida',
+      bandContent: 'Content',
+      bandCommunicative: 'Communicative Achievement',
+      bandOrganisation: 'Organisation',
+      bandLanguage: 'Language',
+      teacherComment: 'Comentario de la profesora',
+      personalNotes: 'Notas personales',
+    },
+    aiPrompt: (v) => `Convierte en JSON las fotos de mi redacción manuscrita del Cambridge C1 Advanced para importarla en mi Error Log C1. Las fotos pueden incluir las correcciones, comentarios y notas a mano de mi profesora.
+
+FORMATO DE SALIDA
+
+Devuelve solo este objeto JSON, sin Markdown, sin bloques de código y sin explicaciones antes o después. Respeta los tipos del ejemplo: los números van como números, nunca como texto.
+
+${v.example}
+
+Valores permitidos, escritos exactamente como aparecen aquí:
+- writing.type: ${v.types} (LETTER incluye también un email).
+- assessment.status: ${v.statuses}. AWAITING significa que aún no está corregida.
+- assessment.assessedBy y annotations[].source: ${v.sources}. PROFESOR es mi profesora, IA eres tú, YO soy yo.
+- annotations[].kind: ${v.kinds}.
+- annotations[].focus: ${v.focuses}, o null.
+- annotations[].target: {"scope": "DOCUMENT"}, {"scope": "PARAGRAPH", "paragraph": 2} o {"scope": "SPAN", "quote": "…", "paragraph": 2, "occurrence": null}.
+
+EL TEXTO
+
+- Transcribe mi texto exactamente como lo escribí, con sus errores. Nunca lo corrijas, mejores ni completes.
+- Separa los párrafos con una línea en blanco. No partas líneas dentro de un párrafo, salvo en un encabezado, un saludo o una despedida.
+- Incluye en el texto el título o los encabezados que yo escribí.
+- Si una palabra se lee mal, escribe tu mejor lectura y añade una anotación de tipo COMMENT y fuente IA que lo diga. Nunca escribas "ilegible".
+
+LA CORRECCIÓN
+
+- Usa PROFESOR solo para lo que escribió o marcó mi profesora. Nunca presentes tus opiniones como suyas.
+- Copia sus comentarios y correcciones palabra por palabra, en el idioma en que los escribió.
+- scores: solo las notas que puso, de 0 a 5 (se admiten medios puntos). Deja en null el criterio que no puntuó; nunca lo estimes. Escribe total solo si ella lo escribió.
+- teacherComment es su comentario general sobre todo el texto.
+- Si aún no hay corrección, usa "assessment": {"status": "AWAITING"} y una lista de anotaciones vacía.
+
+ANOTACIONES
+
+- quote se copia exactamente de tu transcripción: el fragmento más corto que identifique el punto, sin espacios en los extremos.
+- paragraph es el número del párrafo (desde 1) que contiene la cita. Si la misma cita aparece más de una vez en ese párrafo, añade occurrence: 1 para la primera, 2 para la segunda, etc.
+- Usa PARAGRAPH para un comentario sobre un párrafo entero y DOCUMENT para todo el texto o su estructura.
+- suggestion es la corrección o una alternativa mejor; comment la explica. Incluye al menos una de las dos; una STRENGTH puede llevar solo su foco.
+- Añade anotaciones propias (fuente IA) solo si te las pido. Como mucho ${String(v.maxAnnotations)} anotaciones en total.
+
+LO QUE NO DEBES INVENTAR
+
+- writtenOn y correctedOn son fechas (AAAA-MM-DD) solo si aparecen o te las doy; si no, null.
+- Nunca inventes fechas, notas, la tarea ni comentarios. Ante la duda, null.
+- id es null salvo que yo te dé uno. Si pego un JSON exportado de Error Log para añadir la corrección, conserva su id y su texto tal cual.
+
+Fotos y datos de la tarea:
+`,
   },
 
   export: {

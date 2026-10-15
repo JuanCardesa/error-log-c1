@@ -16,8 +16,7 @@ import { normalizeWritingText } from './text';
 
 export const WRITING_FORMAT = 'error-log-writing';
 export const WRITING_FORMAT_VERSION = 1;
-/** Una redacción con trescientas anotaciones largas cabe de sobra. */
-export const MAX_WRITING_IMPORT_LENGTH = 500_000;
+export const MAX_WRITING_IMPORT_LENGTH = WRITING_LIMITS.importChars;
 /** Contexto de una cita: unas palabras, no un párrafo. */
 const MAX_CONTEXT = 200;
 

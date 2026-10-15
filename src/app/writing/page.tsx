@@ -1,3 +1,4 @@
+import { Upload } from 'lucide-react';
 import Link from 'next/link';
 
 import { getDb } from '@/lib/db/client';
@@ -60,15 +61,22 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
       <div className={styles.head}>
         <div className={ui.pageHead}>
           <h1 className={ui.pageTitle}>{t.nav.writing}</h1>
-          <WritingEditor
-            {...editorProps}
-            label={t.writing.logWriting}
-            editing={null}
-            editingSession={null}
-            initiallyOpen={openNew || Number.isInteger(rewriteOf) && rewriteOf > 0}
-            initialSessionId={Number.isInteger(requestedSession) ? requestedSession : null}
-            initialRewriteOf={Number.isInteger(rewriteOf) && rewriteOf > 0 ? rewriteOf : null}
-          />
+          <div className={styles.headActions}>
+            <WritingEditor
+              {...editorProps}
+              label={t.writing.logWriting}
+              buttonClassName={ui.secondary}
+              editing={null}
+              editingSession={null}
+              initiallyOpen={openNew || Number.isInteger(rewriteOf) && rewriteOf > 0}
+              initialSessionId={Number.isInteger(requestedSession) ? requestedSession : null}
+              initialRewriteOf={Number.isInteger(rewriteOf) && rewriteOf > 0 ? rewriteOf : null}
+            />
+            <Link href="/writing/importar" className={ui.primary}>
+              <Upload size={16} aria-hidden="true" />
+              {t.writingImport.title}
+            </Link>
+          </div>
         </div>
         <RouteTabs
           label={t.writing.views}
