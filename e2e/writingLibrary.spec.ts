@@ -64,6 +64,30 @@ function cleanUp(tag: string) {
   });
 }
 
+async function selectText(page: Page, quote: string) {
+  await page.evaluate((value) => {
+    const root = document.querySelector('[data-reading-mode]');
+    if (root === null) throw new Error('No se encuentra el texto');
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node !== null) {
+      const offset = node.textContent?.indexOf(value) ?? -1;
+      if (offset >= 0) {
+        const range = document.createRange();
+        range.setStart(node, offset);
+        range.setEnd(node, offset + value.length);
+        const selected = window.getSelection();
+        selected?.removeAllRanges();
+        selected?.addRange(range);
+        node.parentElement?.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        return;
+      }
+      node = walker.nextNode();
+    }
+    throw new Error(`No se encontró el texto: ${value}`);
+  }, quote);
+}
+
 const entries = (page: Page) => page.getByRole('list', { name: /^\d+ redacci/ });
 
 /** Abrir y cerrar un menú exige que los manejadores de cliente ya estén hidratados. */
@@ -186,6 +210,47 @@ test('el lector filtra anotaciones, las recorre con teclado y abre el panel móv
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog', { name: 'Anotaciones' })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  } finally { cleanUp(tag); }
+});
+
+test('crear, editar, revisar, borrar y deshacer anotaciones; colocar una cita sin ancla', async ({ page }) => {
+  const tag = randomUUID().slice(0, 8);
+  try {
+    const { essay } = shelf(tag);
+    await page.goto(`/writing/${String(essay)}-cities-${tag}`);
+    await selectText(page, 'although both measures are valuable');
+    await page.getByRole('button', { name: 'Anotar selección', exact: true }).click();
+    const editor = page.getByRole('region', { name: 'Anotar selección' });
+    await editor.getByLabel('Comentario').fill(`Created ${tag}`);
+    await editor.getByRole('button', { name: 'Guardar anotación' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Anotación guardada.' })).toBeVisible();
+
+    const panel = page.getByRole('region', { name: 'Anotaciones' });
+    const note = panel.getByRole('listbox').locator('li').filter({ hasText: `Created ${tag}` });
+    await expect(note).toBeVisible();
+    await note.getByRole('button', { name: 'Editar anotación' }).click();
+    const edit = page.getByRole('region', { name: 'Editar anotación' });
+    await edit.getByLabel('Comentario').fill(`Edited ${tag}`);
+    await edit.getByRole('button', { name: 'Guardar anotación' }).click();
+    await expect(panel.getByRole('listbox').locator('li').filter({ hasText: `Edited ${tag}` })).toBeVisible();
+
+    const edited = panel.getByRole('listbox').locator('li').filter({ hasText: `Edited ${tag}` });
+    await edited.getByRole('button', { name: 'Marcar como estudiada' }).click();
+    await expect(edited).toContainText('Estudiada');
+    await edited.getByRole('button', { name: 'Borrar anotación' }).click();
+    await page.getByRole('button', { name: 'Deshacer' }).click();
+    await expect(panel.getByRole('listbox').locator('li').filter({ hasText: `Edited ${tag}` })).toBeVisible();
+
+    const pending = essayImport();
+    Object.assign(pending.writing, { title: `Unplaced ${tag}`, text: 'The word is unclear.' });
+    pending.annotations = [{ kind: 'ERROR', focus: 'GRAMMAR', source: 'PROFESOR', target: { scope: 'SPAN', quote: 'missingword' }, comment: 'Place this.', suggestion: null }];
+    const unplacedId = importPiece(pending);
+    await page.goto(`/writing/${String(unplacedId)}-unplaced-${tag}`);
+    const placePanel = page.getByRole('region', { name: 'Anotaciones' });
+    await placePanel.getByRole('option').filter({ hasText: 'Place this.' }).click();
+    await selectText(page, 'unclear');
+    await page.getByRole('button', { name: 'Colocar aquí', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Anotaciones' }).getByRole('option').filter({ hasText: 'unclear' })).toBeVisible();
   } finally { cleanUp(tag); }
 });
 

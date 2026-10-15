@@ -117,18 +117,32 @@ export default async function WritingReaderPage({ params, searchParams }: {
             <p>{w.noTextBody}</p>
           </div>
         ) : (
-          <WritingReadingView text={text} annotations={annotations} labels={{
+          <WritingReadingView pieceId={piece.id} text={text} annotations={annotations} labels={{
               wordCount: w.reading.wordCount(piece.wordCount ?? countWords(text),
                 piece.wordMin === null || piece.wordMax === null ? '220–260' : `${String(piece.wordMin)}–${String(piece.wordMax)}`),
               annotated: w.reading.annotated, clean: w.reading.clean,
               annotationsOne: w.reading.annotations(1).replace('1', '{count}'),
               annotationsMany: w.reading.annotations(2).replace('2', '{count}'),
               closeAnnotations: w.reading.closeAnnotations, annotationPanel: w.reading.annotationPanel,
-              filterType: w.reading.filterType, allKinds: w.reading.allKinds, pendingOnly: w.reading.pendingOnly,
-              wholeText: w.reading.wholeText, paragraphPrefix: w.reading.paragraph(1).replace('1', ''),
+              filterType: w.reading.filterType, kindLabel: w.reading.kindLabel, focusLabel: w.reading.focusLabel,
+              allKinds: w.reading.allKinds, pendingOnly: w.reading.pendingOnly,
+              wholeText: w.reading.wholeText, needsPlacing: w.reading.needsPlacing,
+              paragraphPrefix: w.reading.paragraph(1).replace('1', ''),
               noAnnotations: w.reading.noAnnotations, noAnnotationsYet: w.reading.noAnnotationsYet,
               reviewed: w.reading.reviewed, unreviewed: w.reading.unreviewed,
               previous: w.reading.previous, next: w.reading.next, jump: w.reading.jump,
+              createAnnotation: w.reading.createAnnotation, editAnnotation: w.reading.editAnnotation,
+              deleteAnnotation: w.reading.deleteAnnotation, placeHere: w.reading.placeHere,
+              chooseCandidate: w.reading.chooseCandidate, saving: w.reading.saving,
+              comment: w.reading.comment, suggestion: w.reading.suggestion,
+              savingSource: w.reading.savingSource, missingAnnotation: w.reading.missingAnnotation,
+              missingText: w.reading.missingText, invalidTarget: w.reading.invalidTarget, staleAnchor: w.reading.staleAnchor,
+              restoreConflict: w.reading.restoreConflict, invalidInput: w.reading.invalidInput,
+              annotationSaved: w.reading.annotationSaved, annotationPlaced: w.reading.annotationPlaced,
+              annotationStudied: w.reading.annotationStudied, annotationDeleted: w.reading.annotationDeleted,
+              annotationRestored: w.reading.annotationRestored, noMatches: w.reading.noMatches,
+              aiSuggestion: w.reading.aiSuggestion, markStudied: w.reading.markStudied,
+              saveAnnotation: w.reading.saveAnnotation,
               kind: w.reading.kind, source: w.reading.source, focus: w.reading.focus,
             }} />
         )}

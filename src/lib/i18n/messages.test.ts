@@ -187,7 +187,6 @@ function render(t: Messages, n: number) {
     'writing.reading.wordCount': t.writing.reading.wordCount(245, '220–260'),
     'writing.reading.annotations': t.writing.reading.annotations(n),
     'writing.reading.paragraph': t.writing.reading.paragraph(n),
-    'writing.reading.needsPlacing': t.writing.reading.needsPlacing(n),
     'writingImport.tooLong': t.writingImport.tooLong(488),
     'writingImport.tooManyAnnotations': t.writingImport.tooManyAnnotations(n),
     'writingImport.updateOf': t.writingImport.updateOf("Mi apunte — café"),
