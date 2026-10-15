@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { getDb } from '@/lib/db/client';
+import { updateWritingText } from '@/lib/db/writingTextRepo';
 import {
   createWritingAnnotation,
   deleteWritingAnnotation,
@@ -16,6 +17,8 @@ import {
   type WritingAnnotationRow,
 } from '@/lib/db/writingAnnotationRepo';
 import { createWritingAnnotationSchema, placeWritingAnnotationSchema, updateWritingAnnotationSchema, writingAnnotationIdSchema } from '@/lib/writing/annotation';
+import { WRITING_LIMITS } from '@/lib/writing/limits';
+import { normalizeWritingText } from '@/lib/writing/text';
 import { getT } from '../_shared/i18nServer';
 
 const undoTokens = new Map<string, WritingAnnotationRow>();
@@ -110,4 +113,16 @@ export async function restoreWritingAnnotationAction(rawToken: unknown): Promise
   undoTokens.delete(parsed.data);
   refreshWriting();
   return { ok: true, message: t.writing.reading.annotationRestored };
+}
+
+export async function updateWritingTextAction(rawId: unknown, rawText: unknown): Promise<AnnotationActionResult> {
+  const t = await getT();
+  const id = z.number().int().positive().safeParse(rawId);
+  const parsedText = z.string().max(WRITING_LIMITS.text).transform(normalizeWritingText)
+    .pipe(z.string().min(1).max(WRITING_LIMITS.text)).safeParse(rawText);
+  if (!id.success || !parsedText.success) return { ok: false, message: t.writing.reading.transcriptionInvalid };
+  const result = updateWritingText(getDb(), id.data, parsedText.data, new Date());
+  if (!result.ok) return { ok: false, message: t.writing.reading.writingMissing };
+  refreshWriting();
+  return { ok: true, message: t.writing.reading.transcriptionSaved };
 }

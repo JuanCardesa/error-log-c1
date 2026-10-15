@@ -1033,6 +1033,12 @@ Session details and corrections (text or attached images):
       aiSuggestion: 'AI suggestion',
       markStudied: 'Mark studied',
       saveAnnotation: 'Save annotation',
+      correctTranscription: 'Correct transcription',
+      saveTranscription: 'Save text',
+      transcription: 'Transcription',
+      transcriptionSaved: 'Transcription corrected. Anchors and word count have been updated.',
+      transcriptionInvalid: 'The transcription must contain between 1 and 20,000 characters.',
+      writingMissing: 'This Writing record no longer exists.',
       kind: { ERROR: 'Error', IMPROVEMENT: 'Improvement', STRENGTH: 'Strength', COMMENT: 'Comment' },
       source: { PROFESOR: 'Teacher', IA: 'AI', YO: 'Me' },
       focus: {

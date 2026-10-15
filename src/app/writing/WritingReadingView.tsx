@@ -14,6 +14,7 @@ import {
   reviewWritingAnnotationAction,
   updateWritingAnnotationAction,
 } from './annotationActions';
+import { WritingTranscriptionEditor } from './WritingTranscriptionEditor';
 
 import styles from './writing.module.css';
 import ui from '../_shared/ui.module.css';
@@ -80,6 +81,10 @@ type Labels = {
   readonly aiSuggestion: string;
   readonly markStudied: string;
   readonly saveAnnotation: string;
+  readonly correctTranscription: string;
+  readonly saveTranscription: string;
+  readonly transcription: string;
+  readonly cancel: string;
   readonly kind: Readonly<Record<AnnotationKind, string>>;
   readonly source: Readonly<Record<Corrector, string>>;
   readonly focus: Readonly<Record<AnnotationFocus, string>>;
@@ -275,6 +280,10 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
           <button type="button" className={`${ui.secondary} ${ui.compact} ${styles.mobileAnnotations}`}
             onClick={() => setDrawerOpen(true)}>{annotationLabel(visible.length)}</button>
           <button type="button" className={`${ui.ghost} ${ui.compact}`} onClick={() => openCreate('DOCUMENT')}>{labels.wholeText}</button>
+          <WritingTranscriptionEditor pieceId={pieceId} initialText={text} labels={{
+            correct: labels.correctTranscription, save: labels.saveTranscription, transcription: labels.transcription,
+            saving: labels.saving, cancel: labels.cancel,
+          }} />
           {selection !== null && <button type="button" className={`${ui.secondary} ${ui.compact}`}
             onMouseDown={(event) => event.preventDefault()} onClick={() => {
               if (selectedAnnotation?.scope === 'SPAN' && selectedAnnotation.anchor === null) {

@@ -384,6 +384,18 @@ export const writingAnnotation = sqliteTable('writing_annotation', {
     ELSE 0 END)`),
 ]);
 
+/** Transcripciones reemplazadas, con la revisión que estuvo vigente hasta el cambio. */
+export const writingTextHistory = sqliteTable('writing_text_history', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  pieceId: integer('piece_id').notNull().references(() => writingPiece.id, { onDelete: 'cascade' }),
+  text: text('text').notNull(),
+  textRevision: integer('text_revision').notNull(),
+  replacedAt: text('replaced_at').notNull(),
+}, (table) => [
+  uniqueIndex('writing_text_history_piece_revision_unique').on(table.pieceId, table.textRevision),
+  check('writing_text_history_revision_positive', sql`${table.textRevision} >= 1`),
+]);
+
 /** Como `session_import_receipt`: un reintento no recrea un texto aunque se haya borrado. */
 export const writingImportReceipt = sqliteTable('writing_import_receipt', {
   importId: text('import_id').primaryKey(),

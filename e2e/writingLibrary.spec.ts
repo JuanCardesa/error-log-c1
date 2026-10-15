@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
 import { type Page, expect, test } from '@playwright/test';
-import { and, inArray, isNotNull, isNull, like } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, like } from 'drizzle-orm';
 
 import { createDb } from '../src/lib/db/client';
-import { session, writingPiece } from '../src/lib/db/schema';
+import { session, writingAnnotation, writingPiece, writingTextHistory } from '../src/lib/db/schema';
 import { applyWritingImport, previewWritingImport } from '../src/lib/db/writingRepo';
 import { getMessages } from '../src/lib/i18n';
 import { toIsoDate } from '../src/lib/time/dates';
@@ -251,6 +251,44 @@ test('crear, editar, revisar, borrar y deshacer anotaciones; colocar una cita si
     await selectText(page, 'unclear');
     await page.getByRole('button', { name: 'Colocar aquí', exact: true }).click();
     await expect(page.getByRole('dialog', { name: 'Anotaciones' }).getByRole('option').filter({ hasText: 'unclear' })).toBeVisible();
+  } finally { cleanUp(tag); }
+});
+
+test('corregir la transcripción guarda historial, actualiza palabras y reancla o deja por colocar', async ({ page }) => {
+  const tag = randomUUID().slice(0, 8);
+  try {
+    const { essay } = shelf(tag);
+    const old = withDb((db) => ({
+      piece: db.select().from(writingPiece).where(eq(writingPiece.id, essay)).get(),
+      there: db.select().from(writingAnnotation).where(eq(writingAnnotation.pieceId, essay)).all()
+        .find((row) => row.quote === 'there'),
+      linker: db.select().from(writingAnnotation).where(eq(writingAnnotation.pieceId, essay)).all()
+        .find((row) => row.quote === 'as a result'),
+    }));
+    if (old.piece === undefined || old.there === undefined || old.linker === undefined) throw new Error('Faltan datos de prueba');
+    const thereId = old.there.id;
+    const linkerId = old.linker.id;
+    await page.goto(`/writing/${String(essay)}-cities-${tag}`);
+    await page.getByRole('button', { name: 'Corregir transcripción' }).click();
+    const revised = `A short new introduction.\n\n${old.piece.originalText?.replace('there effect', 'their effect') ?? ''}`;
+    await page.getByRole('textbox', { name: 'Transcripción' }).fill(revised);
+    await page.getByRole('button', { name: 'Guardar texto' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Transcripción corregida.' })).toBeVisible();
+    await expect(page.getByText('their effect is more limited.')).toBeVisible();
+    await expect(page.getByText(/\d+ palabras? · 220–260/u)).toBeVisible();
+
+    const after = withDb((db) => ({
+      piece: db.select().from(writingPiece).where(eq(writingPiece.id, essay)).get(),
+      there: db.select().from(writingAnnotation).where(eq(writingAnnotation.id, thereId)).get(),
+      linker: db.select().from(writingAnnotation).where(eq(writingAnnotation.id, linkerId)).get(),
+      history: db.select().from(writingTextHistory).where(eq(writingTextHistory.pieceId, essay)).all(),
+    }));
+    expect(after.piece).toMatchObject({ originalText: revised, textRevision: 2 });
+    expect(after.there).toMatchObject({ anchor: null, quote: 'there' });
+    expect(after.linker?.anchor).toMatchObject({ exact: 'as a result', start: revised.indexOf('as a result') });
+    expect(after.history).toHaveLength(1);
+    expect(after.history[0]).toMatchObject({ text: old.piece.originalText, textRevision: 1 });
+    await expect(page.getByRole('region', { name: 'Anotaciones' }).getByRole('listbox').getByRole('option').filter({ hasText: 'Possessive.' })).toBeVisible();
   } finally { cleanUp(tag); }
 });
 

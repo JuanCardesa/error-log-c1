@@ -977,6 +977,12 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
       aiSuggestion: 'Sugerencia de IA',
       markStudied: 'Marcar como estudiada',
       saveAnnotation: 'Guardar anotación',
+      correctTranscription: 'Corregir transcripción',
+      saveTranscription: 'Guardar texto',
+      transcription: 'Transcripción',
+      transcriptionSaved: 'Transcripción corregida. Se actualizaron anclajes y contador de palabras.',
+      transcriptionInvalid: 'La transcripción debe tener entre 1 y 20.000 caracteres.',
+      writingMissing: 'Esta redacción ya no existe.',
       kind: { ERROR: 'Error', IMPROVEMENT: 'Mejora', STRENGTH: 'Fortaleza', COMMENT: 'Comentario' },
       source: { PROFESOR: 'Profesora', IA: 'IA', YO: 'Yo' },
       focus: {

@@ -18,6 +18,7 @@ import { editableRow, libraryItems, pieceOptions } from '../entries';
 import { WritingEditor } from '../PieceForm';
 import { WritingStatusText } from '../WritingStatusText';
 import { WritingReadingView } from '../WritingReadingView';
+import { WritingTranscriptionEditor } from '../WritingTranscriptionEditor';
 import styles from '../writing.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -115,6 +116,10 @@ export default async function WritingReaderPage({ params, searchParams }: {
           <div className={styles.noText}>
             <p className={styles.noTextTitle}>{w.noTranscription}</p>
             <p>{w.noTextBody}</p>
+            <WritingTranscriptionEditor pieceId={piece.id} initialText="" labels={{
+              correct: w.reading.correctTranscription, save: w.reading.saveTranscription,
+              transcription: w.reading.transcription, saving: w.reading.saving, cancel: t.common.cancel,
+            }} />
           </div>
         ) : (
           <WritingReadingView pieceId={piece.id} text={text} annotations={annotations} labels={{
@@ -133,6 +138,9 @@ export default async function WritingReaderPage({ params, searchParams }: {
               previous: w.reading.previous, next: w.reading.next, jump: w.reading.jump,
               createAnnotation: w.reading.createAnnotation, editAnnotation: w.reading.editAnnotation,
               deleteAnnotation: w.reading.deleteAnnotation, placeHere: w.reading.placeHere,
+              correctTranscription: w.reading.correctTranscription,
+              saveTranscription: w.reading.saveTranscription, transcription: w.reading.transcription,
+              cancel: t.common.cancel,
               chooseCandidate: w.reading.chooseCandidate, saving: w.reading.saving,
               comment: w.reading.comment, suggestion: w.reading.suggestion,
               savingSource: w.reading.savingSource, missingAnnotation: w.reading.missingAnnotation,
