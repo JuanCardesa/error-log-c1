@@ -1,6 +1,6 @@
 import { type SQL, and, asc, desc, eq, inArray, isNotNull, isNull, notInArray, or, sql } from 'drizzle-orm';
 
-import { CAUSES, generatesCard, type Category, type Cause, type Confidence, type Paper, type SessionStatus, type Source } from '../domain/enums';
+import { CAUSES, generatesCard, type Category, type Cause, type Confidence, type Paper, type SessionStatus, type Source, type WritingStatus } from '../domain/enums';
 import { withSessionFormat } from '../domain/session';
 import type { ErrorRow, SessionRow, WritingPieceRow } from '../domain/types';
 import type {
@@ -376,14 +376,28 @@ export function getWritingPiece(db: Db, id: number): WritingPieceRow | null {
   return db.select().from(writingPiece).where(eq(writingPiece.id, id)).get() ?? null;
 }
 
+/** Con corrector o alguna banda el texto ya está corregido; es el criterio de la migración 0012. */
+function isAssessed(input: WritingPieceInput): boolean {
+  return input.corrector !== null
+    || [input.bandContent, input.bandCommunicative, input.bandOrganisation, input.bandLanguage].some((band) => band !== null);
+}
+
 export function createWritingPiece(db: Db, input: WritingPieceInput): WritingPieceRow {
-  const created = db.insert(writingPiece).values(input).returning().get();
+  const status: WritingStatus = isAssessed(input) ? 'CORRECTED' : 'AWAITING';
+  const created = db.insert(writingPiece).values({ ...input, status }).returning().get();
   if (created === undefined) throw new Error('No se pudo crear el texto');
   return created;
 }
 
+/**
+ * El formulario aún no edita el estado: una evaluación lo marca como corregido, pero quitarla
+ * no lo devuelve a pendiente, porque el estado puede venir de una importación posterior.
+ */
 export function updateWritingPiece(db: Db, id: number, input: WritingPieceInput): void {
-  db.update(writingPiece).set(input).where(eq(writingPiece.id, id)).run();
+  db.update(writingPiece)
+    .set({ ...input, ...(isAssessed(input) ? { status: 'CORRECTED' as const } : {}), updatedAt: new Date().toISOString() })
+    .where(eq(writingPiece.id, id))
+    .run();
 }
 
 export function deleteWritingPiece(db: Db, id: number): void {

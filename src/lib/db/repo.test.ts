@@ -316,6 +316,23 @@ describe('textos de writing', () => {
     expect(getWritingPiece(db, created.id)?.bandLanguage).toBe(4);
   });
 
+  it('deduce el estado de la evaluacion y no lo deshace al quitarla', () => {
+    const state = (id: number) => db.$client
+      .prepare<[number], { status: string; updated_at: string }>('SELECT status, updated_at FROM writing_piece WHERE id = ?').get(id);
+    const unmarked = { corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null };
+    const pending = createWritingPiece(db, pieceInput(writingSession().id, unmarked));
+    const marked = createWritingPiece(db, pieceInput(writingSession('2026-09-11').id, { bandLanguage: 2.5 }));
+    expect(state(pending.id)?.status).toBe('AWAITING');
+    expect(state(marked.id)?.status).toBe('CORRECTED');
+
+    db.$client.prepare("UPDATE writing_piece SET updated_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").run(pending.id);
+    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, { ...unmarked, bandContent: 4 }));
+    expect(state(pending.id)?.status).toBe('CORRECTED');
+    expect(state(pending.id)?.updated_at).not.toBe('2020-01-01T00:00:00.000Z');
+    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, unmarked));
+    expect(state(pending.id)?.status).toBe('CORRECTED');
+  });
+
   it('borra', () => {
     const session = writingSession();
     const created = createWritingPiece(db, pieceInput(session.id));

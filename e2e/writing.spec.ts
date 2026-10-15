@@ -1,13 +1,15 @@
 import { type Page, expect, test } from '@playwright/test';
 
 import { createDb } from '../src/lib/db/client';
-import { listWritingPieces } from '../src/lib/db/repo';
+import { writingPiece } from '../src/lib/db/schema';
 import { E2E_DB } from './globalSetup';
 
+/** Sin `updatedAt`: guardar siempre lo cambia, y aquí se comprueba que no cambie nada más. */
 function readPieces() {
   const db = createDb(E2E_DB);
   try {
-    return listWritingPieces(db);
+    return db.select().from(writingPiece).orderBy(writingPiece.id).all()
+      .map(({ updatedAt: _updatedAt, ...piece }) => piece);
   } finally {
     db.$client.close();
   }

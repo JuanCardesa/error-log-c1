@@ -205,6 +205,15 @@ describe('texto de writing', () => {
     expect(piece.safeParse({ ...base, bandContent: -1 }).success).toBe(false);
   });
 
+  it('acepta medios puntos y explica por que rechaza otros decimales', () => {
+    const base = { sessionId: 1, date: '2026-09-10', genre: 'ESSAY' as const };
+    expect(piece.safeParse({ ...base, bandLanguage: 2.5 }).data?.bandLanguage).toBe(2.5);
+    expect(piece.safeParse({ ...base, bandLanguage: 0.5 }).success).toBe(true);
+    const wrong = piece.safeParse({ ...base, bandLanguage: 2.3 });
+    expect(wrong.error?.issues.map((issue) => issue.message)).toEqual([t.validation.halfPoints]);
+    expect(piece.safeParse({ ...base, bandLanguage: 5.5 }).success).toBe(false);
+  });
+
   it('deja las bandas sin puntuar como null', () => {
     const result = piece.safeParse({ sessionId: 1, date: '2026-09-10', genre: 'REPORT' });
     expect(result.data?.bandLanguage).toBeNull();

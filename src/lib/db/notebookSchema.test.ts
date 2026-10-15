@@ -55,7 +55,8 @@ describe('migración Notebook y restricciones SQLite', () => {
       const journal = JSON.parse(readFileSync(join(MIGRATIONS_DIR, 'meta', '_journal.json'), 'utf8')) as {
         version: string; dialect: string; entries: Array<{ tag: string }>;
       };
-      const previous = journal.entries.filter((entry) => entry.tag !== '0011_notebook_favorites');
+      // Una base anterior a 0011 no tiene ninguna migración posterior: el migrador salta lo más antiguo que la última aplicada.
+      const previous = journal.entries.slice(0, journal.entries.findIndex((entry) => entry.tag === '0011_notebook_favorites'));
       mkdirSync(join(legacyDir, 'meta'));
       writeFileSync(join(legacyDir, 'meta', '_journal.json'), JSON.stringify({ ...journal, entries: previous }));
       for (const entry of previous) {

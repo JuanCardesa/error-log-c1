@@ -160,6 +160,7 @@ describe('copias y restauracion', () => {
     const old = open(legacy);
     migrate(old, { migrationsFolder: MIGRATIONS_DIR });
     old.$client.pragma('foreign_keys = OFF');
+    for (const table of ['writing_annotation', 'writing_import_receipt']) old.$client.exec(`DROP TABLE ${table}`);
     for (const trigger of ['notebook_folder_insert_depth', 'notebook_folder_update_depth',
       'notebook_note_fts_delete', 'notebook_note_fts_update']) old.$client.exec(`DROP TRIGGER ${trigger}`);
     for (const table of ['notebook_annotation', 'notebook_note_fts', 'notebook_error_link', 'notebook_note',

@@ -184,7 +184,7 @@ export const es: PartialMessages<Messages> = {
       ESSAY: 'Essay',
       REPORT: 'Report',
       PROPOSAL: 'Proposal',
-      LETTER: 'Letter',
+      LETTER: 'Letter / Email',
       REVIEW: 'Review',
     },
     corrector: {
@@ -276,6 +276,7 @@ export const es: PartialMessages<Messages> = {
     duplicateTag: 'Etiqueta duplicada',
     maxBytes: (n) => `Máximo ${String(n)} bytes UTF-8`,
     invalidQuery: 'Consulta inválida',
+    halfPoints: 'Usa puntos enteros o medios (por ejemplo, 2,5)',
   },
 
   import: {
@@ -949,7 +950,7 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     text: 'Texto',
     addAssessment: 'Añadir evaluación',
     ifMarked: '· si ya está corregido',
-    emptyBands: 'Las bandas vacías se guardan como «Sin evaluar», no como cero.',
+    emptyBands: 'Se admiten medios puntos (2,5). Las bandas vacías se guardan como «Sin evaluar», no como cero.',
     isRewrite: 'Es una reescritura',
     original: 'Texto original',
     chooseOriginal: 'Elige el original',

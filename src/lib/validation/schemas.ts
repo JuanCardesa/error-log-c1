@@ -15,6 +15,7 @@ import {
 import type { Messages } from '../i18n';
 import { isIsoDate } from '../time/dates';
 import { withSessionFormat } from '../domain/session';
+import { BAND_STEP } from '../writing/limits';
 
 /**
  * Validacion de entrada. Los mismos invariantes viven tambien como CHECK en la base
@@ -31,7 +32,13 @@ const isoDate = (t: Messages) => z
   .string()
   .refine(isIsoDate, { message: t.validation.invalidDate });
 
-const band = z.number().int().min(0).max(5).nullable();
+/** De 0 a 5 en medios puntos: la profesora puede poner un 2,5. */
+const band = (t: Messages) => z
+  .number()
+  .min(0)
+  .max(5)
+  .multipleOf(BAND_STEP, { message: t.validation.halfPoints })
+  .nullable();
 
 const optionalText = z
   .string()
@@ -190,10 +197,10 @@ export function writingPieceInputSchema(options: SessionSchemaOptions) {
       timed: z.boolean().default(false),
       rewriteOf: z.number().int().positive().nullable().default(null),
       corrector: z.enum(CORRECTORS).nullable().default(null),
-      bandContent: band.default(null),
-      bandCommunicative: band.default(null),
-      bandOrganisation: band.default(null),
-      bandLanguage: band.default(null),
+      bandContent: band(t).default(null),
+      bandCommunicative: band(t).default(null),
+      bandOrganisation: band(t).default(null),
+      bandLanguage: band(t).default(null),
     })
     .superRefine((value, ctx) => {
       if (value.date > options.today) {

@@ -217,7 +217,7 @@ export const en = {
       ESSAY: 'Essay',
       REPORT: 'Report',
       PROPOSAL: 'Proposal',
-      LETTER: 'Letter',
+      LETTER: 'Letter / Email',
       REVIEW: 'Review',
     } satisfies Record<Genre, string>,
     corrector: {
@@ -309,6 +309,7 @@ export const en = {
     duplicateTag: 'Duplicate tag',
     maxBytes: (n: number) => `Maximum ${String(n)} UTF-8 bytes`,
     invalidQuery: 'Invalid search',
+    halfPoints: 'Use whole or half points (for example, 2.5)',
   },
 
   import: {
@@ -989,7 +990,7 @@ Session details and corrections (text or attached images):
     text: 'Text',
     addAssessment: 'Add assessment',
     ifMarked: '· if it has been marked',
-    emptyBands: 'Empty bands are saved as “Not rated”, not as zero.',
+    emptyBands: 'Half points are allowed (2.5). Empty bands are saved as “Not rated”, not as zero.',
     isRewrite: 'It’s a rewrite',
     original: 'Original text',
     chooseOriginal: 'Choose the original',

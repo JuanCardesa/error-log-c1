@@ -194,6 +194,7 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
                         name={band.name}
                         min={0}
                         max={5}
+                        step={0.5}
                         placeholder="0–5"
                         className={ui.input}
                         defaultValue={editing?.[band.name] ?? ''}

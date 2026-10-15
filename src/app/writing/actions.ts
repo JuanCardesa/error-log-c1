@@ -29,6 +29,7 @@ function readPiece(form: FormData) {
     timed: checkbox(form, 'timed'),
     rewriteOf: integer(form, 'rewriteOf'),
     corrector: text(form, 'corrector') === '' ? null : text(form, 'corrector'),
+    // `integer` solo convierte el texto; el esquema admite medios puntos en las bandas.
     bandContent: integer(form, 'bandContent'),
     bandCommunicative: integer(form, 'bandCommunicative'),
     bandOrganisation: integer(form, 'bandOrganisation'),

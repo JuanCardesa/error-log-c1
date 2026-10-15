@@ -8,7 +8,7 @@ import type { SessionRow, WritingPieceRow } from '@/lib/domain/types';
 import type { Messages } from '@/lib/i18n';
 import { q6RewriteEfficacy } from '@/lib/queries/q6RewriteEfficacy';
 import { toIsoDate } from '@/lib/time/dates';
-import { percent, sessionTitle, shortDate } from '../_shared/format';
+import { decimal, percent, sessionTitle, shortDate } from '../_shared/format';
 import { getT } from '../_shared/i18nServer';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
@@ -106,7 +106,7 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
 function bandValue(value: number | null, t: Messages) {
   return value === null
     ? <span className={styles.unrated}>{t.writing.unrated}</span>
-    : <span className="num">{value}</span>;
+    : <span className="num">{decimal(value, t)}</span>;
 }
 
 function Texts({ pieces, sessionById, pieceById, title, editHref, t }: {
@@ -221,7 +221,7 @@ function Rewrites({ data, windowDays, pieceById, title, t }: {
                       <td className={styles.center}>{bandValue(before, t)}</td>
                       <td className={`${styles.center} ${styles.strong}`}>{bandValue(after, t)}</td>
                       <td className={`${styles.rightCell} ${diff !== null && diff > 0 ? ui.ok : diff !== null && diff < 0 ? ui.dangerText : styles.muted}`}>
-                        {diff === null ? '—' : diff > 0 ? `+${String(diff)}` : diff === 0 ? '=' : String(diff)}
+                        {diff === null ? '—' : diff > 0 ? `+${decimal(diff, t)}` : diff === 0 ? '=' : decimal(diff, t)}
                       </td>
                     </tr>
                   );
