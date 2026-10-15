@@ -135,7 +135,7 @@ test('el lector enseña la redacción en su hoja, con el total arriba y la evalu
 
     const sheet = page.getByRole('article', { name: `Cities ${tag}` });
     await expect(sheet.getByRole('heading', { level: 1 })).toHaveText(`Cities ${tag}`);
-    await expect(sheet.locator('header')).toContainText('12,5/20');
+    await expect(sheet.locator(':scope > header')).toContainText('12,5/20');
     await expect(sheet.getByRole('region', { name: 'Enunciado' })).toContainText('Write an essay discussing two of the measures');
     // Los párrafos, tal como se escribieron: errores incluidos.
     await expect(sheet.locator('p').filter({ hasText: 'there effect is more limited' })).toHaveCount(1);
@@ -148,6 +148,44 @@ test('el lector enseña la redacción en su hoja, con el total arriba y la evalu
 
     await page.getByRole('link', { name: 'Volver a Writing' }).click();
     await expect(page).toHaveURL('/writing');
+  } finally { cleanUp(tag); }
+});
+
+test('el lector filtra anotaciones, las recorre con teclado y abre el panel móvil', async ({ page }) => {
+  const tag = randomUUID().slice(0, 8);
+  try {
+    const { essay } = shelf(tag);
+    await page.goto(`/writing/${String(essay)}-cities-${tag}`);
+    await expect(page.getByText(/\d+ palabras? · 220–260/u)).toBeVisible();
+    const marked = page.getByRole('region', { name: 'Con anotaciones' }).getByText('there', { exact: true });
+    await expect(marked).toHaveAttribute('role', 'button');
+    await marked.click();
+    const panel = page.getByRole('dialog', { name: 'Anotaciones' });
+    await expect(panel).toBeVisible();
+    const annotations = panel.getByRole('listbox').getByRole('option');
+    await expect(annotations).toHaveCount(8);
+    await annotations.filter({ hasText: 'Possessive.' }).click();
+    await expect(annotations.filter({ hasText: 'Possessive.' })).toHaveAttribute('aria-selected', 'true');
+
+    await panel.getByLabel('Tipo de anotación').selectOption('STRENGTH');
+    await expect(annotations).toHaveCount(2);
+    await panel.getByLabel('Tipo de anotación').selectOption('ALL');
+    await panel.getByLabel('Solo pendientes').check();
+    await expect(annotations).toHaveCount(8);
+    await page.keyboard.press('ArrowUp');
+    await expect(annotations.filter({ hasText: 'Needs work.' })).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Limpio' }).click();
+    await expect(page.locator('[data-reading-mode="clean"]')).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('button', { name: 'Anotaciones (8)' }).click();
+    await expect(page.getByRole('dialog', { name: 'Anotaciones' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Anotaciones' })).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   } finally { cleanUp(tag); }
 });
 

@@ -2,11 +2,13 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { eq } from 'drizzle-orm';
 import { getDb } from '@/lib/db/client';
+import { writingAnnotation } from '@/lib/db/schema';
 import { listWritingLibrary } from '@/lib/db/writingRepo';
 import { toIsoDate } from '@/lib/time/dates';
 import { assessedCriteria, writingTotal } from '@/lib/writing/library';
-import { paragraphsOf } from '@/lib/writing/text';
+import { countWords } from '@/lib/writing/text';
 import { parseWritingKey, writingHref } from '@/lib/writing/urls';
 import { decimal, mediumDate } from '../../_shared/format';
 import { getT } from '../../_shared/i18nServer';
@@ -15,6 +17,7 @@ import { BANDS } from '../bands';
 import { editableRow, libraryItems, pieceOptions } from '../entries';
 import { WritingEditor } from '../PieceForm';
 import { WritingStatusText } from '../WritingStatusText';
+import { WritingReadingView } from '../WritingReadingView';
 import styles from '../writing.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -42,6 +45,19 @@ export default async function WritingReaderPage({ params, searchParams }: {
   const assessed = assessedCriteria(piece);
   const total = writingTotal(piece);
   const text = piece.originalText;
+  const annotations = text === null ? [] : getDb().select({
+    id: writingAnnotation.id,
+    kind: writingAnnotation.kind,
+    focus: writingAnnotation.focus,
+    source: writingAnnotation.source,
+    scope: writingAnnotation.scope,
+    anchor: writingAnnotation.anchor,
+    paragraph: writingAnnotation.paragraph,
+    quote: writingAnnotation.quote,
+    comment: writingAnnotation.comment,
+    suggestion: writingAnnotation.suggestion,
+    reviewedAt: writingAnnotation.reviewedAt,
+  }).from(writingAnnotation).where(eq(writingAnnotation.pieceId, piece.id)).all();
   const marked = assessed > 0 || piece.corrector !== null || piece.correctedOn !== null || piece.teacherComment !== null;
 
   return (
@@ -101,9 +117,20 @@ export default async function WritingReaderPage({ params, searchParams }: {
             <p>{w.noTextBody}</p>
           </div>
         ) : (
-          <div className={styles.text}>
-            {paragraphsOf(text).map((paragraph) => <p key={paragraph.number}>{text.slice(paragraph.start, paragraph.end)}</p>)}
-          </div>
+          <WritingReadingView text={text} annotations={annotations} labels={{
+              wordCount: w.reading.wordCount(piece.wordCount ?? countWords(text),
+                piece.wordMin === null || piece.wordMax === null ? '220–260' : `${String(piece.wordMin)}–${String(piece.wordMax)}`),
+              annotated: w.reading.annotated, clean: w.reading.clean,
+              annotationsOne: w.reading.annotations(1).replace('1', '{count}'),
+              annotationsMany: w.reading.annotations(2).replace('2', '{count}'),
+              closeAnnotations: w.reading.closeAnnotations, annotationPanel: w.reading.annotationPanel,
+              filterType: w.reading.filterType, allKinds: w.reading.allKinds, pendingOnly: w.reading.pendingOnly,
+              wholeText: w.reading.wholeText, paragraphPrefix: w.reading.paragraph(1).replace('1', ''),
+              noAnnotations: w.reading.noAnnotations, noAnnotationsYet: w.reading.noAnnotationsYet,
+              reviewed: w.reading.reviewed, unreviewed: w.reading.unreviewed,
+              previous: w.reading.previous, next: w.reading.next, jump: w.reading.jump,
+              kind: w.reading.kind, source: w.reading.source, focus: w.reading.focus,
+            }} />
         )}
 
         <section className={styles.assessment} aria-labelledby="writing-assessment">
