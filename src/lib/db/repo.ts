@@ -392,32 +392,16 @@ export function createWritingPiece(db: Db, input: WritingPieceInput): WritingPie
 /**
  * El formulario aún no edita el estado: una evaluación lo marca como corregido, pero quitarla
  * no lo devuelve a pendiente, porque el estado puede venir de una importación posterior.
+ * Con transcripción las palabras se cuentan solas: el número tecleado no las sustituye.
  */
 export function updateWritingPiece(db: Db, id: number, input: WritingPieceInput): void {
+  const wordCount = sql<number | null>`CASE WHEN ${writingPiece.originalText} IS NULL THEN ${input.wordCount} ELSE ${writingPiece.wordCount} END`;
   db.update(writingPiece)
-    .set({ ...input, ...(isAssessed(input) ? { status: 'CORRECTED' as const } : {}), updatedAt: new Date().toISOString() })
+    .set({ ...input, wordCount, ...(isAssessed(input) ? { status: 'CORRECTED' as const } : {}), updatedAt: new Date().toISOString() })
     .where(eq(writingPiece.id, id))
     .run();
 }
 
 export function deleteWritingPiece(db: Db, id: number): void {
   db.delete(writingPiece).where(eq(writingPiece.id, id)).run();
-}
-
-/**
- * Sesiones de Writing que todavia no tienen texto. `writing_piece.session_id` es UNIQUE
- * (decision P1), asi que ofrecer una sesion ya usada solo produciria un error.
- */
-export function writingSessionsWithoutPiece(db: Db): SessionRow[] {
-  const taken = new Set(
-    db.select({ sessionId: writingPiece.sessionId }).from(writingPiece).all().map((r) => r.sessionId),
-  );
-  return db
-    .select()
-    .from(session)
-    .where(eq(session.paper, 'WRITING'))
-    .orderBy(desc(session.date))
-    .all()
-    .filter((row) => !taken.has(row.id))
-    .map(withSessionFormat);
 }

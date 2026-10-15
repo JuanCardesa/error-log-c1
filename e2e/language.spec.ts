@@ -138,9 +138,9 @@ test('recorre las secciones y sus vistas secundarias en inglés', async ({ page 
   await expect(page.getByRole('link', { name: 'New note', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Import .md', exact: true })).toBeVisible();
 
-  await page.getByRole('button', { name: 'More', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Writing', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Log Writing', exact: true })).toBeVisible();
+  await navigation.getByRole('link', { name: 'Writing', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Import Writing', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Status' }).getByRole('link', { name: /^Awaiting \(\d+\)$/ })).toBeVisible();
   await page.getByRole('link', { name: 'Rewrites', exact: true }).click();
   await expect(page.getByRole('navigation', { name: 'Rewrite period' })).toBeVisible();
 

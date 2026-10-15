@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { SOURCES, type Genre, type Source } from '../domain/enums';
+import { withSessionFormat } from '../domain/session';
+import type { SessionRow } from '../domain/types';
 import type { Messages } from '../i18n';
 import { zodErrors } from '../i18n/zod';
 import { isIsoDate } from '../time/dates';
@@ -44,6 +46,29 @@ export function writingImportContext(db: Reader): StoredWriting[] {
     annotationIds: known.get(piece.id)?.ids ?? new Set<string>(),
     importKeys: known.get(piece.id)?.importKeys ?? new Set<string>(),
   }));
+}
+
+export type WritingRow = typeof writingPiece.$inferSelect;
+
+export interface WritingLibraryRow {
+  readonly piece: WritingRow;
+  /** Titula los textos antiguos, que no tienen título propio. */
+  readonly session: SessionRow;
+  /** Anotaciones sin estudiar todavía. */
+  readonly pending: number;
+}
+
+/** Todas las redacciones, con su sesión y lo que queda por revisar de cada una. */
+export function listWritingLibrary(db: Reader): WritingLibraryRow[] {
+  return db.select({
+    piece: writingPiece,
+    session,
+    pending: sql<number>`(
+      SELECT count(*) FROM ${writingAnnotation}
+      WHERE ${writingAnnotation.pieceId} = ${writingPiece.id} AND ${writingAnnotation.reviewedAt} IS NULL
+    )`,
+  }).from(writingPiece).innerJoin(session, eq(session.id, writingPiece.sessionId)).all()
+    .map((row) => ({ ...row, session: withSessionFormat(row.session) }));
 }
 
 /** Essay es la Part 1 del Writing de C1; el resto de tipos, la Part 2. */
@@ -113,10 +138,17 @@ export function previewWritingImport(db: Reader, source: string, rawOptions: unk
   return { ok: true, data: parsed.data, plan, digest: planDigest(plan) };
 }
 
+/** La redacción importada, con lo necesario para abrirla en el lector. */
+interface ImportedPiece {
+  readonly pieceId: number;
+  readonly uid: string;
+  readonly title: string | null;
+}
+
 export type WritingImportResult =
-  | { readonly ok: true; readonly repeated: true; readonly pieceId: number; readonly uid: string }
-  | {
-    readonly ok: true; readonly repeated: false; readonly pieceId: number; readonly uid: string;
+  | ImportedPiece & { readonly ok: true; readonly repeated: true }
+  | ImportedPiece & {
+    readonly ok: true; readonly repeated: false;
     readonly mode: ImportDecision['mode']; readonly added: number; readonly skipped: number; readonly unplaced: number;
   }
   | { readonly ok: false; readonly reason: 'invalid'; readonly issues: readonly ImportIssue[] }
@@ -144,9 +176,11 @@ export function applyWritingImport(db: Db, source: string, rawOptions: unknown, 
     const prior = tx.select().from(writingImportReceipt).where(eq(writingImportReceipt.importId, options.importId)).get();
     if (prior !== undefined) {
       if (prior.payloadHash !== payloadHash) return { ok: false, reason: 'receiptChanged' };
-      const piece = tx.select({ id: writingPiece.id, uid: writingPiece.uid }).from(writingPiece)
+      const piece = tx.select({ id: writingPiece.id, uid: writingPiece.uid, title: writingPiece.title }).from(writingPiece)
         .where(eq(writingPiece.id, prior.pieceId)).get();
-      return piece === undefined ? { ok: false, reason: 'deleted' } : { ok: true, repeated: true, pieceId: piece.id, uid: piece.uid };
+      return piece === undefined
+        ? { ok: false, reason: 'deleted' }
+        : { ok: true, repeated: true, pieceId: piece.id, uid: piece.uid, title: piece.title };
     }
 
     const plan = buildWritingImportPlan(parsed.data, writingImportContext(tx), {
@@ -209,7 +243,7 @@ export function applyWritingImport(db: Db, source: string, rawOptions: unknown, 
     tx.insert(writingImportReceipt).values({ importId: options.importId, payloadHash, pieceId: piece.id, createdAt: at }).run();
 
     return {
-      ok: true, repeated: false, pieceId: piece.id, uid: piece.uid, mode: plan.decision.mode,
+      ok: true, repeated: false, pieceId: piece.id, uid: piece.uid, title: values.title, mode: plan.decision.mode,
       added: rows.length,
       skipped: plan.annotations.filter((item) => item.outcome === 'duplicate').length,
       unplaced: plan.annotations.filter((item) => item.outcome === 'unplaced').length,

@@ -7,6 +7,7 @@ import { applyWritingImport, previewWritingImport } from '@/lib/db/writingRepo';
 import { toIsoDate } from '@/lib/time/dates';
 import type { ImportIssue } from '@/lib/writing/contract';
 import { toImportView, type WritingImportView } from '@/lib/writing/previewView';
+import { writingHref } from '@/lib/writing/urls';
 import { getT } from '../_shared/i18nServer';
 
 /**
@@ -51,7 +52,11 @@ export async function importWritingAction(source: unknown, options: unknown): Pr
     revalidatePath('/', 'layout');
     const done = result.repeated || result.mode === 'create' ? w.created : w.updated;
     const unplaced = result.repeated ? 0 : result.unplaced;
-    return { ok: true, href: '/writing', message: unplaced > 0 ? `${done}. ${w.unplacedAfter(unplaced)}` : done };
+    return {
+      ok: true,
+      href: writingHref({ id: result.pieceId, title: result.title }),
+      message: unplaced > 0 ? `${done}. ${w.unplacedAfter(unplaced)}` : done,
+    };
   }
   switch (result.reason) {
     case 'invalid': return { ok: false, message: w.issuesTitle, issues: result.issues, reload: false };

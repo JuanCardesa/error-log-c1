@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { migrate } from './migrate';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -32,7 +33,6 @@ import {
   listWritingPieces,
   setSessionStatus,
   updateWritingPiece,
-  writingSessionsWithoutPiece,
   unmarkAnkiAdded,
   updateError,
   updateSession,
@@ -353,14 +353,16 @@ describe('textos de writing', () => {
     expect(getWritingPiece(db, rewrite.id)?.rewriteOf).toBe(original.id);
   });
 
-  it('solo ofrece sesiones de Writing que sigan libres', () => {
-    const free = writingSession('2026-09-12');
-    const taken = writingSession('2026-09-01');
-    // Una sesion de RUOE no puede albergar un texto: no debe aparecer.
-    createSession(db, sessionInput({ paper: 'RUOE' }));
-    createWritingPiece(db, pieceInput(taken.id, { date: '2026-09-01' }));
+  it('con transcripción conserva las palabras contadas aunque el formulario mande otras', () => {
+    const transcribed = createWritingPiece(db, pieceInput(writingSession().id, { wordCount: 5 }));
+    db.update(writingPiece).set({ originalText: 'Two words', textFingerprint: 'huella', wordCount: 2 })
+      .where(eq(writingPiece.id, transcribed.id)).run();
+    updateWritingPiece(db, transcribed.id, pieceInput(transcribed.sessionId, { wordCount: 999 }));
+    expect(getWritingPiece(db, transcribed.id)?.wordCount).toBe(2);
 
-    expect(writingSessionsWithoutPiece(db).map((s) => s.id)).toEqual([free.id]);
+    const legacy = createWritingPiece(db, pieceInput(writingSession('2026-09-11').id, { wordCount: 5 }));
+    updateWritingPiece(db, legacy.id, pieceInput(legacy.sessionId, { wordCount: 240 }));
+    expect(getWritingPiece(db, legacy.id)?.wordCount).toBe(240);
   });
 });
 

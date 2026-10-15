@@ -18,75 +18,322 @@
 }
 
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
   padding: var(--space-5) var(--space-3);
   border-top: 1px solid var(--color-ink);
   color: var(--color-ink-2);
 }
 
-.scroll {
-  overflow-x: auto;
-  /* Bloque contenedor: el caption .sr-only, absoluto, no escapa del scroll. */
-  position: relative;
-}
-
-.table {
-  width: 100%;
-  min-width: 720px;
-  border-collapse: collapse;
-  border-top: 1px solid var(--color-ink);
-  font-size: 14px;
-}
-
-.table th {
-  padding: 10px var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  color: var(--color-ink-2);
-  font: var(--text-label);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.table th abbr {
-  text-decoration: none;
-}
-
-.table td {
-  height: 56px;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-}
-
-.table tbody tr:hover {
-  background: var(--color-surface-2);
-}
-
-.colDate { width: 72px; }
-.colGenre { width: 84px; }
-.colBand { width: 76px; text-align: center !important; }
-.colCorrector { width: 96px; }
-
 .muted {
   color: var(--color-ink-2);
 }
 
-.ref {
-  color: var(--color-ink);
-  font: 500 16px/22px var(--font-serif);
-  text-decoration: none;
+/* ── Biblioteca ───────────────────────────────────────────────────────────── */
+
+.library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-.ref:hover {
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1 1 280px;
+  max-width: 380px;
+}
+
+/* Tipo y orden van juntos: si no caben, bajan los dos a la línea siguiente. */
+.toolbarMenus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.filterButton {
+  border: 1px solid var(--color-rule);
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-ink);
+}
+
+/* Un documento por fila: título en serif, sus datos debajo y la nota a la derecha. */
+.entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-1);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.entryMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.entryTitle {
+  color: var(--color-ink);
+  font: 600 19px/26px var(--font-serif);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.entryTitle:hover {
   color: var(--color-brand);
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
+
+/*
+ * «Essay · 2 Oct 2026 · 245 words». Cada dato lleva su punto delante y el bloque se corre a
+ * la izquierda lo que mide un punto, recortado: el de principio de línea queda fuera, así que
+ * una línea partida nunca empieza por «·».
+ */
+.entryMeta,
+.sheetMeta {
+  --meta-dot: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 0 0 calc(-1 * var(--meta-dot));
+  clip-path: inset(0 0 0 var(--meta-dot));
+  color: var(--color-ink-2);
+  font: var(--text-aux);
+}
+
+.entryMeta > *::before,
+.sheetMeta > *::before {
+  content: '·';
+  display: inline-block;
+  width: var(--meta-dot);
+  color: var(--color-ink-disabled);
+  text-align: center;
+}
+
+.entryScore {
+  flex-shrink: 0;
+  color: var(--color-ink);
+  font: 500 15px/22px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Lector ───────────────────────────────────────────────────────────────── */
+
+.readerPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: calc(var(--reading-max) + 2 * var(--space-7));
+  margin: 0 auto;
+}
+
+.readerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* La misma hoja que el lector del Notebook y la vista previa de la importación. */
+.sheet {
+  min-width: 0;
+  padding: var(--space-7);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--study-paper-radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.sheetHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.sheetHeading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.sheetTitle {
+  font: var(--text-page-title);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.sheetTotal {
+  flex-shrink: 0;
+  margin: 0;
+  font: 500 18px/26px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.task {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--color-rule);
+}
+
+.task h2 {
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.task p {
+  margin: 0;
+  color: var(--color-ink-2);
+  font: var(--text-field);
+  font-family: var(--font-serif);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Tal como se escribió: los blancos y los saltos de línea también son del texto. */
+.text p {
+  margin: 0 0 var(--space-5);
+  font: var(--text-prompt);
+  line-height: 30px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.text p:last-child {
+  margin-bottom: 0;
+}
+
+.noText {
+  padding: var(--space-5);
+  border: 1px dashed var(--color-rule);
+  border-radius: var(--radius-panel);
+  color: var(--color-ink-2);
+}
+
+.noTextTitle {
+  margin-bottom: var(--space-1);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.assessment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-rule);
+}
+
+.assessment h2 {
+  font: var(--text-subtitle);
+}
+
+/* Nombre arriba y nota debajo; las notas se alinean aunque «Communicative Achievement» ocupe dos líneas. */
+.scores {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-3);
+  margin: 0;
+}
+
+.scores div {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  row-gap: 2px;
+}
+
+.scores dt {
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.scores dd {
+  margin: 0;
+  font: 500 16px/22px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreTotal dd {
+  font-weight: 600;
+}
+
+.markedBy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  margin: 0;
+  color: var(--color-ink-2);
+  font: var(--text-body);
+}
+
+.comment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.comment figcaption {
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.comment blockquote {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-rule);
+  font: var(--text-field);
+  font-family: var(--font-serif);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .sheet {
+    padding: var(--space-5);
+  }
+
+  .scores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Reescrituras ─────────────────────────────────────────────────────────── */
 
 .unrated {
   font-size: 12px;
   color: var(--color-ink-disabled);
   white-space: nowrap;
 }
-
-/* ── Reescrituras ─────────────────────────────────────────────────────────── */
 
 .rewrites {
   display: flex;
@@ -191,12 +438,4 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   padding-top: var(--space-3);
-}
-
-.noSession {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-4);
-  color: var(--color-ink-2);
 }

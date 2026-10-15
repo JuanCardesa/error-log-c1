@@ -247,7 +247,7 @@ describe('corregir errores existentes', () => {
 });
 
 describe('guardar Writing con datos cambiados en otra pestaña', () => {
-  it('rechaza una sesion que ya tiene texto sin sobrescribirlo', async () => {
+  it('no da de alta textos: las redacciones nuevas entran por la importación', async () => {
     const before = loadDataset(db);
     const original = before.pieces[0];
     if (original === undefined) throw new Error('Falta Writing en el seed');
@@ -255,7 +255,7 @@ describe('guardar Writing con datos cambiados en otra pestaña', () => {
     input.delete('id');
     const result = await saveWritingPieceAction(EMPTY_STATE, input);
     expect(result.ok).toBe(false);
-    expect(result.fieldErrors['sessionId']?.[0]).toContain('ya tiene un texto');
+    expect(result.message).toContain('no es válido');
     expect(loadDataset(db)).toEqual(before);
   });
 
@@ -266,17 +266,6 @@ describe('guardar Writing con datos cambiados en otra pestaña', () => {
     const result = await saveWritingPieceAction(EMPTY_STATE, form(original));
     expect(result.ok).toBe(false);
     expect(result.message).toContain('ya no existe');
-  });
-
-  it('avisa si se ha borrado la sesion seleccionada para un texto nuevo', async () => {
-    const original = listWritingPieces(db)[0];
-    if (original === undefined) throw new Error('Falta Writing en el seed');
-    deleteSession(db, original.sessionId);
-    const input = form(original);
-    input.delete('id');
-    const result = await saveWritingPieceAction(EMPTY_STATE, input);
-    expect(result.ok).toBe(false);
-    expect(result.fieldErrors['sessionId']?.[0]).toContain('ya no está disponible');
   });
 
   it('no convierte una edicion con identificador invalido en una creacion', async () => {

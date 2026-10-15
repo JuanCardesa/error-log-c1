@@ -23,6 +23,9 @@ function withDb<T>(run: (db: ReturnType<typeof createDb>) => T): T {
   try { return run(db); } finally { db.$client.close(); }
 }
 
+/** Al confirmar se abre el lector de la redacción: `/writing/<id>-<título>`. */
+const readerUrl = (slug: string) => new RegExp(`/writing/\\d+-${slug}$`, 'u');
+
 const piecesTitled = (tag: string) => withDb((db) => db.select().from(writingPiece).where(like(writingPiece.title, `%${tag}%`)).all());
 
 /** Borra lo creado: la sesión arrastra su redacción y sus anotaciones. */
@@ -67,7 +70,10 @@ test('importa un JSON corregido desde Writing: vista previa, confirmación y tex
 
     await preview.getByRole('button', { name: 'Importar redacción' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Redacción importada' })).toBeVisible();
-    await expect(page).toHaveURL('/writing');
+    // Termina en el lector, con el texto tal como llegó.
+    await expect(page).toHaveURL(readerUrl(`cities-${tag}`));
+    await expect(page.getByRole('heading', { level: 1, name: `Cities ${tag}` })).toBeVisible();
+    await expect(page.getByText('there effect is more limited', { exact: false })).toBeVisible();
 
     const [piece] = piecesTitled(tag);
     expect(piece).toMatchObject({ originalText: value.writing['text'], status: 'CORRECTED', bandLanguage: 2.5, date: '2026-10-02' });
@@ -121,7 +127,7 @@ test('la corrección posterior actualiza la misma redacción y un doble clic no 
 
     await preview.getByRole('button', { name: 'Actualizar redacción' }).dblclick();
     await expect(page.getByRole('status').filter({ hasText: 'Redacción actualizada' })).toBeVisible();
-    await expect(page).toHaveURL('/writing');
+    await expect(page).toHaveURL(readerUrl(`cities-${tag}`));
 
     const pieces = piecesTitled(tag);
     expect(pieces).toHaveLength(1);
@@ -147,7 +153,7 @@ test('sin fecha de escritura la pregunta y guarda la que se elige', async ({ pag
     await expect(notices).toHaveCount(0);
     await expect(preview.getByRole('region', { name: 'Datos' })).toContainText('1 oct 2026');
     await preview.getByRole('button', { name: 'Importar redacción' }).click();
-    await expect(page).toHaveURL('/writing');
+    await expect(page).toHaveURL(readerUrl(`cities-${tag}`));
     expect(piecesTitled(tag)[0]).toMatchObject({ date: '2026-10-01', dateBasis: 'WRITTEN', status: 'AWAITING' });
   } finally { cleanUp(tag); }
 });
@@ -171,7 +177,7 @@ test('ofrece las instrucciones para la IA y, sin IA, revisa un texto pegado', as
     const preview = page.getByRole('form', { name: 'Redacción nueva' });
     await expect(preview.getByRole('region', { name: 'Anotaciones' })).toContainText('Sin anotaciones.');
     await preview.getByRole('button', { name: 'Importar redacción' }).click();
-    await expect(page).toHaveURL('/writing');
+    await expect(page).toHaveURL(readerUrl(`report-${tag}`));
     expect(piecesTitled(tag)[0]).toMatchObject({
       genre: 'REPORT', status: 'AWAITING', dateBasis: 'IMPORTED',
       originalText: 'Introduction\n\nThe aim of this report is to evaluate   the sports centre.',

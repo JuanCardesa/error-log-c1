@@ -10,7 +10,7 @@ import { createDb, type Db } from './client';
 import { migrate } from './migrate';
 import { MIGRATIONS_DIR } from './paths';
 import { session, writingAnnotation, writingImportReceipt, writingPiece } from './schema';
-import { applyWritingImport, previewWritingImport, type WritingImportApplyOptions } from './writingRepo';
+import { applyWritingImport, listWritingLibrary, previewWritingImport, type WritingImportApplyOptions } from './writingRepo';
 
 const TODAY = '2026-10-15';
 const NOW = new Date('2026-10-15T10:00:00.000Z');
@@ -61,7 +61,9 @@ describe('vista previa', () => {
 describe('importar', () => {
   it('crea la sesión, el texto exacto y las anotaciones ancladas', () => {
     const result = importNow(essayImport());
-    expect(result).toMatchObject({ ok: true, repeated: false, mode: 'create', added: 8, skipped: 0, unplaced: 0 });
+    expect(result).toMatchObject({
+      ok: true, repeated: false, title: 'Making cities more liveable', mode: 'create', added: 8, skipped: 0, unplaced: 0,
+    });
     if (!result.ok) return;
 
     const piece = db.select().from(writingPiece).where(eq(writingPiece.id, result.pieceId)).get();
@@ -93,7 +95,9 @@ describe('importar', () => {
       sessionId: null, digest: seen.digest };
     const send = (value: unknown) => applyWritingImport(db, JSON.stringify(value), options, { today: TODAY, now: NOW, t });
     const first = send(essayImport());
-    expect(send(essayImport())).toEqual({ ok: true, repeated: true, pieceId: first.ok ? first.pieceId : 0, uid: first.ok ? first.uid : '' });
+    expect(send(essayImport())).toEqual({
+      ok: true, repeated: true, pieceId: first.ok ? first.pieceId : 0, uid: first.ok ? first.uid : '', title: 'Making cities more liveable',
+    });
     expect([count(session), count(writingPiece), count(writingAnnotation)]).toEqual([1, 1, 8]);
     expect(send(uncorrectedImport())).toEqual({ ok: false, reason: 'receiptChanged' });
   });
@@ -201,5 +205,24 @@ describe('importar', () => {
     expect(importNow(value, { decision: { mode: 'update', uid: piece?.uid ?? '' } })).toMatchObject({ ok: true, mode: 'update' });
     expect(db.select().from(session).get()?.part).toBe(2);
     expect(db.select().from(writingPiece).get()?.genre).toBe('REPORT');
+  });
+});
+
+describe('biblioteca', () => {
+  it('lista cada redacción con su sesión y las anotaciones que quedan por estudiar', () => {
+    const imported = importNow(essayImport());
+    if (!imported.ok) throw new Error('La importación debía salir bien');
+    const legacy = db.insert(session).values({ date: '2026-09-01', kind: 'WRITING', paper: 'WRITING', part: 2, source: 'LIBRO', sourceRef: null })
+      .returning().get();
+    db.insert(writingPiece).values({ sessionId: legacy.id, date: '2026-09-01', genre: 'REVIEW', wordCount: 240 }).run();
+    const [first] = db.select().from(writingAnnotation).all();
+    db.update(writingAnnotation).set({ reviewedAt: NOW.toISOString() }).where(eq(writingAnnotation.id, first?.id ?? '')).run();
+
+    const rows = listWritingLibrary(db);
+    expect(rows.map((row) => [row.piece.title, row.piece.originalText === null, row.pending])).toEqual(expect.arrayContaining([
+      ['Making cities more liveable', false, 7],
+      [null, true, 0],
+    ]));
+    expect(rows.find((row) => row.piece.title === null)?.session).toMatchObject({ id: legacy.id, paper: 'WRITING', part: 2, sourceRef: null });
   });
 });
