@@ -1,3 +1,6 @@
+'use client';
+
+import { useT } from './i18nClient';
 import styles from './correction.module.css';
 
 /**
@@ -12,16 +15,17 @@ export function CorrectionPair({ mine, correct, variant = 'inline' }: {
   readonly correct: string;
   readonly variant?: 'inline' | 'detail';
 }) {
+  const t = useT();
   const hasMine = mine !== null && mine.trim() !== '';
 
   if (variant === 'detail') {
     return (
       <dl className={styles.detail}>
-        <dt>Tu respuesta</dt>
+        <dt>{t.correction.yourAnswer}</dt>
         <dd className={hasMine ? styles.mineSerif : styles.missingSerif}>
-          {hasMine ? mine : 'Mi respuesta no registrada'}
+          {hasMine ? mine : t.correction.noAnswer}
         </dd>
-        <dt>Corrección</dt>
+        <dt>{t.correction.correction}</dt>
         <dd className={styles.correctSerif}>{correct}</dd>
       </dl>
     );
@@ -32,14 +36,14 @@ export function CorrectionPair({ mine, correct, variant = 'inline' }: {
       {hasMine ? (
         <>
           <s className={styles.mine}>
-            <span className="sr-only">Tu respuesta: </span>
+            <span className="sr-only">{t.correction.yourAnswerSr}</span>
             {mine}
           </s>
           <span className={styles.arrow} aria-hidden="true">→</span>
         </>
       ) : null}
       <span className={styles.correct}>
-        <span className="sr-only">Corrección: </span>
+        <span className="sr-only">{t.correction.correctionSr}</span>
         {correct}
       </span>
     </span>

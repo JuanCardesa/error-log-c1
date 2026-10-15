@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
+import { getMessages } from '../i18n';
 import { checkRewriteLink } from './rewriteChain';
 import { errorInputSchema, sessionInputSchema, writingPieceInputSchema } from './schemas';
 
 const TODAY = '2026-09-14';
-const session = sessionInputSchema({ today: TODAY });
-const error = errorInputSchema();
-const piece = writingPieceInputSchema({ today: TODAY });
+const t = getMessages('es');
+const session = sessionInputSchema({ today: TODAY, t });
+const error = errorInputSchema(t);
+const piece = writingPieceInputSchema({ today: TODAY, t });
 
 function validSession() {
   return {

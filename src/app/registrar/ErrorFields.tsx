@@ -5,7 +5,7 @@ import { type RefObject, useId, useState } from 'react';
 
 import { CATEGORIES, CAUSES, CAUSE_META, CONFIDENCES, type Cause } from '@/lib/domain/enums';
 import { RULE_NOTE_MIN_LENGTH } from '@/lib/validation/schemas';
-import { CATEGORY_LABELS, CAUSE_LABELS, CONFIDENCE_LABELS } from '../_shared/labels';
+import { useT } from '../_shared/i18nClient';
 import styles from './capture.module.css';
 import ui from '../_shared/ui.module.css';
 
@@ -35,13 +35,6 @@ export interface ErrorFieldDefaults {
 /** Los campos que la captura conserva de un error al siguiente. */
 type CarriedField = 'cause' | 'category' | 'subcategory' | 'confidence';
 
-const CARRIED_LABELS: Readonly<Record<CarriedField, string>> = {
-  category: 'categoría',
-  cause: 'causa',
-  confidence: 'confianza',
-  subcategory: 'subcategoría',
-};
-
 interface Props {
   /** Si la sesión es cronometrada. `late_in_session` no significa nada sin cronómetro. */
   readonly timed: boolean;
@@ -70,6 +63,7 @@ export function ErrorFields({
   carryVersion,
   layout = 'capture',
 }: Props) {
+  const t = useT();
   const scope = useId();
 
   const initialCategory = defaults?.category ?? '';
@@ -127,12 +121,12 @@ export function ErrorFields({
   const errorRef = (field: string): string | false => invalid(field) && errorId(field);
   const carriedRef = (field: CarriedField): string | false => carried(field) && carriedId;
 
-  const causeMeta = isCause(cause) ? CAUSE_META[cause] : null;
+  const knownCause = isCause(cause) ? cause : null;
   const detailInvalid = ['itemRef', 'subcategory', 'lateInSession'].some(invalid);
 
   const itemField = (
     <div className={`${ui.field} ${styles.fItem}`}>
-      <label htmlFor={`${scope}-f1`}>Ítem</label>
+      <label htmlFor={`${scope}-f1`}>{t.errorForm.item}</label>
       <input id={`${scope}-f1`}
         ref={firstFieldRef}
         name="itemRef"
@@ -146,7 +140,7 @@ export function ErrorFields({
 
   const promptField = (
     <div className={`${ui.field} ${styles.fPrompt}`}>
-      <label htmlFor={`${scope}-prompt`}>Enunciado</label>
+      <label htmlFor={`${scope}-prompt`}>{t.errorForm.prompt}</label>
       {layout === 'panel' ? (
         <textarea
           id={`${scope}-prompt`}
@@ -168,7 +162,7 @@ export function ErrorFields({
           defaultValue={defaults?.prompt ?? ''}
           aria-invalid={invalid('prompt')}
           aria-describedby={describedBy(errorRef('prompt'))}
-          placeholder="Frase o contexto del ítem"
+          placeholder={t.errorForm.promptPlaceholder}
         />
       )}
       {fieldError('prompt')}
@@ -177,14 +171,14 @@ export function ErrorFields({
 
   const mineField = (
     <div className={ui.field}>
-      <label htmlFor={`${scope}-f2`}><span>Tu respuesta <span className={ui.optional}>· opcional</span></span></label>
+      <label htmlFor={`${scope}-f2`}><span>{t.correction.yourAnswer} <span className={ui.optional}>{t.common.optional}</span></span></label>
       <input id={`${scope}-f2`} name="myAnswer" autoComplete="off" className={ui.input} defaultValue={defaults?.myAnswer ?? ''} />
     </div>
   );
 
   const correctField = (
     <div className={ui.field}>
-      <label htmlFor={`${scope}-f3`}>Corrección</label>
+      <label htmlFor={`${scope}-f3`}>{t.correction.correction}</label>
       <input id={`${scope}-f3`}
         name="correctAnswer"
         autoComplete="off"
@@ -200,7 +194,7 @@ export function ErrorFields({
 
   const categoryField = (
     <div className={ui.field}>
-      <label htmlFor={`${scope}-f4`}>Categoría</label>
+      <label htmlFor={`${scope}-f4`}>{t.errorForm.category}</label>
       <select id={`${scope}-f4`}
         name="category"
         required
@@ -217,14 +211,14 @@ export function ErrorFields({
           carriedRef('category'),
         )}
       >
-        <option value="" disabled>Elegir…</option>
+        <option value="" disabled>{t.errorForm.choose}</option>
         {CATEGORIES.map((value) => (
-          <option key={value} value={value}>{CATEGORY_LABELS[value]}</option>
+          <option key={value} value={value}>{t.labels.category[value]}</option>
         ))}
       </select>
       {proposedCategory !== null && category === '' && (
         <span className={ui.help} id={`${scope}-category-proposed`}>
-          El bloque traía «{proposedCategory}», que no está en la lista: elige una.
+          {t.errorForm.proposedCategory(proposedCategory)}
         </span>
       )}
       {fieldError('category')}
@@ -233,7 +227,7 @@ export function ErrorFields({
 
   const causeField = (
     <div className={ui.field}>
-      <label htmlFor={`${scope}-f5`}>Causa</label>
+      <label htmlFor={`${scope}-f5`}>{t.errorForm.cause}</label>
       <select id={`${scope}-f5`}
         name="cause"
         className={ui.select}
@@ -245,7 +239,7 @@ export function ErrorFields({
         aria-describedby={describedBy(`${scope}-cause-help`, carriedRef('cause'))}
       >
         {CAUSES.map((value) => (
-          <option key={value} value={value}>{CAUSE_LABELS[value]}</option>
+          <option key={value} value={value}>{t.labels.cause[value]}</option>
         ))}
       </select>
     </div>
@@ -253,7 +247,7 @@ export function ErrorFields({
 
   const confidenceField = (
     <div className={ui.field}>
-      <label htmlFor={`${scope}-f6`}>Confianza</label>
+      <label htmlFor={`${scope}-f6`}>{t.errorForm.confidence}</label>
       <select id={`${scope}-f6`}
         name="confidence"
         className={ui.select}
@@ -265,21 +259,21 @@ export function ErrorFields({
         aria-describedby={describedBy(carriedRef('confidence'))}
       >
         {CONFIDENCES.map((value) => (
-          <option key={value} value={value}>{CONFIDENCE_LABELS[value]}</option>
+          <option key={value} value={value}>{t.labels.confidence[value]}</option>
         ))}
       </select>
     </div>
   );
 
-  const causeHelp = causeMeta === null ? null : (
+  const causeHelp = knownCause === null ? null : (
     <span id={`${scope}-cause-help`} className={`${ui.helpInfo} ${styles.causeHelp}`}>
-      {causeMeta.meaning}. {causeMeta.generatesCard ? 'Generará una tarjeta pendiente en Anki.' : 'No genera tarjeta.'}
+      {t.labels.causeMeaning[knownCause]}. {CAUSE_META[knownCause].generatesCard ? t.errorForm.createsCard : t.errorForm.noCard}
     </span>
   );
 
   const ruleField = (
     <div className={`${ui.field} ${styles.fRule}`}>
-      <label htmlFor={`${scope}-rule`}>Regla</label>
+      <label htmlFor={`${scope}-rule`}>{t.errorForm.rule}</label>
       <textarea
         id={`${scope}-rule`}
         name="ruleNote"
@@ -291,12 +285,12 @@ export function ErrorFields({
         onChange={(event) => { setRuleLength(event.target.value.trim().length); }}
         aria-invalid={invalid('ruleNote')}
         aria-describedby={describedBy(errorRef('ruleNote'), `${scope}-rule-count`)}
-        placeholder="Qué debes recordar (mín. 15 caracteres, distinta de la respuesta)"
+        placeholder={t.errorForm.rulePlaceholder(RULE_NOTE_MIN_LENGTH)}
       />
       <span id={`${scope}-rule-count`} className={ruleLength >= RULE_NOTE_MIN_LENGTH ? ui.help : ui.helpWarn}>
         {ruleLength >= RULE_NOTE_MIN_LENGTH
-          ? `${String(ruleLength)} caracteres`
-          : `Faltan ${String(RULE_NOTE_MIN_LENGTH - ruleLength)} caracteres (mínimo ${String(RULE_NOTE_MIN_LENGTH)})`}
+          ? t.errorForm.characters(ruleLength)
+          : t.errorForm.charactersMissing(RULE_NOTE_MIN_LENGTH - ruleLength, RULE_NOTE_MIN_LENGTH)}
       </span>
       {fieldError('ruleNote')}
     </div>
@@ -304,7 +298,7 @@ export function ErrorFields({
 
   const subcategoryField = (
     <div className={ui.field}>
-      <label htmlFor={`${scope}-f7`}><span>Subcategoría <span className={ui.optional}>· opcional</span></span></label>
+      <label htmlFor={`${scope}-f7`}><span>{t.errorForm.subcategory} <span className={ui.optional}>{t.common.optional}</span></span></label>
       <input id={`${scope}-f7`}
         name="subcategory"
         list={`${scope}-subcategories`}
@@ -328,15 +322,15 @@ export function ErrorFields({
   const lateField = timed ? (
     <label className={ui.check}>
       <input type="checkbox" name="lateInSession" defaultChecked={defaults?.lateInSession ?? false} />
-      Al final de la sesión
+      {t.errorForm.lateInSession}
     </label>
   ) : null;
 
   const carriedNote = carriedFields.length === 0 ? null : (
     <span id={carriedId} className={`${ui.help} ${styles.carriedNote}`}>
       {carryVersion === 0 && carriedFields.length === 1 && carriedFields[0] === 'category'
-        ? 'Categoría: la última usada.'
-        : `${capitalize(joinList(carriedFields.map((field) => CARRIED_LABELS[field])))} ${carriedFields.length === 1 ? 'heredada' : 'heredadas'} del error anterior.`}
+        ? t.errorForm.lastCategory
+        : t.errorForm.carriedFrom(carriedFields.map((field) => t.errorForm.carriedLabels[field]))}
     </span>
   );
 
@@ -392,7 +386,7 @@ export function ErrorFields({
       <details className={ui.disclosure} open={detailInvalid || undefined}>
         <summary>
           <ChevronRight size={14} className="chevron" aria-hidden="true" />
-          Más detalles <span className={ui.optional}>· subcategoría{timed ? ', al final de la sesión' : ''}</span>
+          {t.errorForm.moreDetails} <span className={ui.optional}>{t.errorForm.moreDetailsHint(timed)}</span>
         </summary>
         <div className={styles.moreFields}>
           {subcategoryField}
@@ -404,11 +398,3 @@ export function ErrorFields({
   );
 }
 
-function joinList(items: readonly string[]): string {
-  if (items.length <= 1) return items.join('');
-  return `${items.slice(0, -1).join(', ')} y ${items[items.length - 1] ?? ''}`;
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}

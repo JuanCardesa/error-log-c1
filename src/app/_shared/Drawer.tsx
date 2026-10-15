@@ -3,6 +3,7 @@
 import { X } from 'lucide-react';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 
+import { useT } from './i18nClient';
 import styles from './overlay.module.css';
 import ui from './ui.module.css';
 
@@ -22,6 +23,7 @@ export function Drawer({ open, title, onClose, children, footer, keepMounted = f
   readonly footer?: ReactNode;
   readonly keepMounted?: boolean;
 }) {
+  const t = useT();
   const titleId = useId();
   const ref = useRef<HTMLElement>(null);
   const trigger = useRef<Element | null>(null);
@@ -56,7 +58,7 @@ export function Drawer({ open, title, onClose, children, footer, keepMounted = f
     >
       <div className={styles.drawerHead}>
         <h2 id={titleId} className={styles.drawerTitle}>{title}</h2>
-        <button type="button" className={ui.iconButton} aria-label="Cerrar" onClick={onClose}>
+        <button type="button" className={ui.iconButton} aria-label={t.common.close} onClick={onClose}>
           <X size={18} aria-hidden="true" />
         </button>
       </div>

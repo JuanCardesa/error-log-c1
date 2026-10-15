@@ -15,6 +15,10 @@ vi.mock('@/lib/db/client', async (importOriginal) => {
   return { ...actual, getDb: () => testDb };
 });
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+// Las acciones leen el idioma de la cookie de Ajustes; estas comprobaciones están en español.
+vi.mock('next/headers', () => ({
+  cookies: () => Promise.resolve({ get: (name: string) => (name === 'errorlog-locale' ? { value: 'es' } : undefined) }),
+}));
 
 beforeEach(() => {
   testDb = createDb(':memory:');

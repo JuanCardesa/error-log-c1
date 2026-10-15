@@ -7,11 +7,12 @@ function inTimezone(tz: string, instant: string) {
   return JSON.parse(execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
     import { toIsoDate, windowStart, inWindow, isIsoDate } from './src/lib/time/dates.ts';
     import { sessionInputSchema } from './src/lib/validation/schemas.ts';
+    import { getMessages } from './src/lib/i18n/index.ts';
     const now = new Date('${instant}');
     const today = toIsoDate(now);
     console.log(JSON.stringify({ today, start30: windowStart(now, 30), start60: windowStart(now, 60),
       includesToday: inWindow('2026-09-20', now, 30),
-      valid: sessionInputSchema({ today }).safeParse({ date: '2026-09-20', kind: 'DRILL',
+      valid: sessionInputSchema({ today, t: getMessages('es') }).safeParse({ date: '2026-09-20', kind: 'DRILL',
         paper: null, part: null, source: 'LIBRO', itemsTotal: 8, itemsCorrect: 6 }).success,
       leap: isIsoDate('2024-02-29'), invalid: isIsoDate('2026-02-29') }));
   `], { encoding: 'utf8', env: { ...process.env, TZ: tz } }));

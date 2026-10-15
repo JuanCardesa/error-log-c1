@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { CommandPalette } from './CommandPalette';
+import { useT } from './i18nClient';
 import { Kbd } from './Kbd';
 import { Menu } from './Menu';
 import { isPlainKey, useShortcutLabels } from './shortcuts';
@@ -13,7 +14,8 @@ import styles from './header.module.css';
 import overlay from './overlay.module.css';
 
 /**
- * Cabecera fija en cristal: marca, cinco destinos, «Más» y la búsqueda global.
+ * Cabecera fija en cristal: marca, cinco destinos, «Más» (Writing, Exportar, Ajustes) y la
+ * búsqueda global.
  *
  * Atajos globales: Ctrl/⌘+K abre la búsqueda; G seguida de S, E, P, A o N (en menos de un
  * segundo) va a Sesiones, Errores, Progreso, Anki o Notebook. Las teclas sueltas no se disparan
@@ -21,16 +23,17 @@ import overlay from './overlay.module.css';
  */
 
 const NAV = [
-  { href: '/registrar', label: 'Sesiones', key: 's', match: ['/registrar'] },
-  { href: '/errores', label: 'Errores', key: 'e', match: ['/errores', '/certezas'] },
-  { href: '/informe', label: 'Progreso', key: 'p', match: ['/informe', '/ruoe'] },
-  { href: '/anki', label: 'Anki', key: 'a', match: ['/anki'] },
-  { href: '/notebook', label: 'Notebook', key: 'n', match: ['/notebook'] },
+  { href: '/registrar', label: 'sessions', key: 's', match: ['/registrar'] },
+  { href: '/errores', label: 'errors', key: 'e', match: ['/errores', '/certezas'] },
+  { href: '/informe', label: 'progress', key: 'p', match: ['/informe', '/ruoe'] },
+  { href: '/anki', label: 'anki', key: 'a', match: ['/anki'] },
+  { href: '/notebook', label: 'notebook', key: 'n', match: ['/notebook'] },
 ] as const;
 
 const MORE = [
-  { href: '/writing', label: 'Writing' },
-  { href: '/exportar', label: 'Exportar datos' },
+  { href: '/writing', label: 'writing' },
+  { href: '/exportar', label: 'exportData' },
+  { href: '/ajustes', label: 'settings' },
 ] as const;
 
 const G_WINDOW_MS = 900;
@@ -41,6 +44,7 @@ export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const keys = useShortcutLabels();
+  const t = useT();
   const [palette, setPalette] = useState(false);
   const gAt = useRef(0);
 
@@ -79,7 +83,7 @@ export function AppHeader() {
         </Link>
 
         <div className={styles.navGroup}>
-          <nav className={styles.nav} aria-label="Secciones">
+          <nav className={styles.nav} aria-label={t.nav.sections}>
             {NAV.map((item) => {
               const current = item.match.some((base) => within(pathname, base));
               return (
@@ -89,14 +93,14 @@ export function AppHeader() {
                   className={styles.navLink}
                   aria-current={current ? 'page' : undefined}
                 >
-                  {item.label}
+                  {t.nav[item.label]}
                 </Link>
               );
             })}
           </nav>
 
           <Menu
-            label="Más secciones"
+            label={t.nav.moreSections}
             align="start"
             trigger={(props) => (
               <button
@@ -105,7 +109,7 @@ export function AppHeader() {
                 className={`${styles.navLink} ${styles.moreButton}`}
                 data-active={moreActive ? 'true' : undefined}
               >
-                Más
+                {t.nav.more}
                 <ChevronDown size={14} aria-hidden="true" />
               </button>
             )}
@@ -119,7 +123,7 @@ export function AppHeader() {
                 aria-current={within(pathname, item.href) ? 'page' : undefined}
                 onClick={close}
               >
-                {item.label}
+                {t.nav[item.label]}
               </Link>
             ))}
           </Menu>
@@ -130,12 +134,12 @@ export function AppHeader() {
         <button
           type="button"
           className={styles.search}
-          aria-label={`Buscar (${keys.search})`}
+          aria-label={t.nav.search(keys.search)}
           aria-haspopup="dialog"
           onClick={() => { setPalette(true); }}
         >
           <Search size={16} aria-hidden="true" />
-          <span className={styles.searchText}>Buscar errores, sesiones, apuntes</span>
+          <span className={styles.searchText}>{t.nav.searchPlaceholder}</span>
           <Kbd>{keys.search}</Kbd>
         </button>
       </div>

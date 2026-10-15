@@ -73,51 +73,20 @@ export const MAX_PART: Readonly<Record<Paper, number>> = {
  */
 export type CauseSide = 'study' | 'exec';
 
+/** Qué significa y qué remedio tiene cada causa se lee en el diccionario de la interfaz. */
 export interface CauseMeta {
   readonly side: CauseSide;
   /** Si genera deuda de Anki (`DEBT`). SPEC §3. */
   readonly generatesCard: boolean;
-  readonly meaning: string;
-  readonly remedy: string;
 }
 
 export const CAUSE_META: Readonly<Record<Cause, CauseMeta>> = {
-  DESCONOCIMIENTO: {
-    side: 'study',
-    generatesCard: true,
-    meaning: 'No lo sabía, no podía saberlo',
-    remedy: 'Tarjeta Anki y nada más',
-  },
-  CONFUSION: {
-    side: 'study',
-    generatesCard: true,
-    meaning: 'Lo sabía, elegí mal entre dos',
-    remedy: 'Tarjeta de contraste con el par confundido',
-  },
-  DESPISTE: {
-    side: 'exec',
-    generatesCard: false,
-    meaning: 'Lo sabía. No leí / no releí / no comprobé',
-    remedy: 'No se estudia. Cambia el protocolo de revisión',
-  },
-  FORMATO: {
-    side: 'exec',
-    generatesCard: false,
-    meaning: 'Rompí una norma de la tarea',
-    remedy: 'Releer instrucciones del paper, checklist',
-  },
-  TIEMPO: {
-    side: 'exec',
-    generatesCard: false,
-    meaning: 'Se acabó el tiempo o fui con prisa',
-    remedy: 'Gestión del tiempo, no contenido',
-  },
-  ORTOGRAFIA: {
-    side: 'study',
-    generatesCard: true,
-    meaning: 'Sabía la palabra, la escribí mal',
-    remedy: 'Tarjeta de spelling. Crítico en Listening P2',
-  },
+  DESCONOCIMIENTO: { side: 'study', generatesCard: true },
+  CONFUSION: { side: 'study', generatesCard: true },
+  DESPISTE: { side: 'exec', generatesCard: false },
+  FORMATO: { side: 'exec', generatesCard: false },
+  TIEMPO: { side: 'exec', generatesCard: false },
+  ORTOGRAFIA: { side: 'study', generatesCard: true },
 };
 
 export function generatesCard(cause: Cause): boolean {

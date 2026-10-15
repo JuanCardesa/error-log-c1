@@ -1,6 +1,7 @@
 import { migrate } from './migrate';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
+import { getMessages } from '../i18n';
 import { errorInputSchema, sessionInputSchema } from '../validation/schemas';
 import { createDb, type Db } from './client';
 import { MIGRATIONS_DIR } from './paths';
@@ -8,17 +9,18 @@ import { createSession, importErrors, listErrors, setSessionStatus } from './rep
 
 let db: Db;
 let sessionId: number;
+const t = getMessages('es');
 
 beforeEach(() => {
   db = createDb(':memory:');
   migrate(db, { migrationsFolder: MIGRATIONS_DIR });
-  sessionId = createSession(db, sessionInputSchema({ today: '2026-09-15' }).parse({
+  sessionId = createSession(db, sessionInputSchema({ today: '2026-09-15', t }).parse({
     date: '2026-09-15', paper: 'RUOE', part: 1, kind: 'DRILL', source: 'LIBRO', itemsTotal: 8, itemsCorrect: 6,
   })).id;
 });
 afterEach(() => { db.$client.close(); });
 
-const input = (id: number, itemRef: string) => errorInputSchema().parse({
+const input = (id: number, itemRef: string) => errorInputSchema(t).parse({
   sessionId: id, itemRef, prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off',
   category: 'PHRASAL_VERB', cause: 'CONFUSION', confidence: 'DUDABA',
   ruleNote: 'Call off significa cancelar una actividad.', lateInSession: true,

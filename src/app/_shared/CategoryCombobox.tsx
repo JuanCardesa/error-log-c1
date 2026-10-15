@@ -3,7 +3,7 @@
 import { useId, useRef, useState } from 'react';
 
 import { CATEGORIES, type Category } from '@/lib/domain/enums';
-import { CATEGORY_LABELS } from './labels';
+import { useT } from './i18nClient';
 import styles from './combobox.module.css';
 import ui from './ui.module.css';
 
@@ -22,6 +22,7 @@ export function CategoryCombobox({ id, value, onChange, pending = false, invalid
   readonly invalid?: boolean;
   readonly describedBy?: string;
 }) {
+  const t = useT();
   const generated = useId();
   const inputId = id ?? generated;
   const listId = `${inputId}-list`;
@@ -31,7 +32,7 @@ export function CategoryCombobox({ id, value, onChange, pending = false, invalid
   const input = useRef<HTMLInputElement>(null);
 
   const q = query.trim().toLowerCase();
-  const options = CATEGORIES.filter((category) => q === '' || CATEGORY_LABELS[category].toLowerCase().includes(q));
+  const options = CATEGORIES.filter((category) => q === '' || t.labels.category[category].toLowerCase().includes(q));
   const current = Math.min(active, Math.max(0, options.length - 1));
   const shown = open && options.length > 0;
 
@@ -54,9 +55,9 @@ export function CategoryCombobox({ id, value, onChange, pending = false, invalid
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         autoComplete="off"
-        placeholder="Escribe para filtrar…"
+        placeholder={t.categoryCombobox.placeholder}
         className={`${ui.input} ${pending ? ui.pending : ''}`}
-        value={open ? query : isCategory(value) ? CATEGORY_LABELS[value] : ''}
+        value={open ? query : isCategory(value) ? t.labels.category[value] : ''}
         onFocus={() => {
           setOpen(true);
           setQuery('');
@@ -90,7 +91,7 @@ export function CategoryCombobox({ id, value, onChange, pending = false, invalid
           }
         }}
       />
-      <div id={listId} role="listbox" aria-label="Categorías" className={styles.list} hidden={!shown}>
+      <div id={listId} role="listbox" aria-label={t.categoryCombobox.list} className={styles.list} hidden={!shown}>
         {shown && options.map((category, index) => (
           <div
             key={category}
@@ -105,7 +106,7 @@ export function CategoryCombobox({ id, value, onChange, pending = false, invalid
             }}
             onMouseEnter={() => { setActive(index); }}
           >
-            {CATEGORY_LABELS[category]}
+            {t.labels.category[category]}
             {index === current && <span className={styles.hint} aria-hidden="true">↵</span>}
           </div>
         ))}

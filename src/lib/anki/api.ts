@@ -21,7 +21,7 @@ export type AnkiReview = z.infer<typeof reviewSchema>;
 
 export function parseAnki<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
-  if (!result.success) throw new AnkiError('ANKI_RESPUESTA_RARA', 'AnkiConnect devolvió datos inesperados. Actualiza el complemento y vuelve a intentarlo.');
+  if (!result.success) throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.unexpectedData);
   return result.data;
 }
 
@@ -31,7 +31,7 @@ export function ankiApi(transport: Transport) {
     try { return unwrap(await transport({ action, version: 6, params })); }
     catch (error) {
       if (error instanceof AnkiError) throw error;
-      throw new AnkiError('ANKI_CERRADO', 'No se puede conectar con AnkiConnect. Abre Anki y vuelve a intentarlo.');
+      throw new AnkiError('ANKI_CERRADO', (t) => t.ankiErrors.cantConnect);
     }
   };
   return {
@@ -42,11 +42,11 @@ export function ankiApi(transport: Transport) {
     async findNotes(query: string) { return parseAnki(z.array(id), await call('findNotes', { query })); },
     async notesInfo(notes: readonly number[]): Promise<(AnkiNote | null)[]> {
       const rows = parseAnki(z.array(z.unknown()), await call('notesInfo', { notes }));
-      if (rows.length !== notes.length) throw new AnkiError('ANKI_RESPUESTA_RARA', 'Faltan notas en la respuesta de Anki.');
+      if (rows.length !== notes.length) throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.missingNotes);
       return rows.map((row, index) => {
         if (row !== null && typeof row === 'object' && !Array.isArray(row) && Object.keys(row).length === 0) return null;
         const note = parseAnki(noteSchema, row);
-        if (note.noteId !== notes[index]) throw new AnkiError('ANKI_RESPUESTA_RARA', 'Las notas recibidas no coinciden con las solicitadas.');
+        if (note.noteId !== notes[index]) throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.notesMismatch);
         return note;
       });
     },
@@ -59,13 +59,13 @@ export function ankiApi(transport: Transport) {
       // cardsInfo devuelve {} por cada carta que ya no existe. Pasarlo por el esquema
       // daria «actualiza el complemento», que manda a arreglar lo que no esta roto.
       if (raw.some((row) => row !== null && typeof row === 'object' && Object.keys(row).length === 0)) {
-        throw new AnkiError('ANKI_RESPUESTA_RARA', 'Alguna carta dejó de existir durante la lectura. Vuelve a sincronizar.');
+        throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.cardVanished);
       }
       const info = parseAnki(z.array(cardSchema), raw);
       const reviews = parseAnki(z.record(z.string(), z.array(reviewSchema)), unwrap(rows[1]));
       if (info.length !== cards.length || info.some((card, i) => card.cardId !== cards[i])
         || Object.keys(reviews).length !== cards.length || cards.some((card) => reviews[String(card)] === undefined)) {
-        throw new AnkiError('ANKI_RESPUESTA_RARA', 'La colección cambió durante la lectura. Vuelve a sincronizar.');
+        throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.collectionChanged);
       }
       return { cards: info, reviews };
     },

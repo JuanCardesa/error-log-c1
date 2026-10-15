@@ -26,13 +26,17 @@ import {
 import type {
   NotebookErrorCode, NotebookFolder, NotebookNote, NotebookNoteSummary, NotebookPage,
 } from '../notebook/types';
+import { DEFAULT_LOCALE, type LazyText, getMessages } from '../i18n';
 import type { Db } from './client';
 import { notebookAnnotation, notebookFolder, notebookNote } from './schema';
 
-/** Errores esperados de dominio; las acciones los convierten en respuestas tipadas. */
+/**
+ * Errores esperados de dominio; las acciones los convierten en respuestas tipadas. El aviso
+ * va sin redactar (`text`): la acción lo escribe en el idioma de la interfaz.
+ */
 export class NotebookRepoError extends Error {
-  constructor(readonly code: NotebookErrorCode, message: string, readonly current?: NotebookNote) {
-    super(message);
+  constructor(readonly code: NotebookErrorCode, readonly text: LazyText, readonly current?: NotebookNote) {
+    super(text(getMessages(DEFAULT_LOCALE)));
     this.name = 'NotebookRepoError';
   }
 }
@@ -69,7 +73,7 @@ export function createNotebookFolder(
     if (parentId !== null) {
       const parent = tx.select().from(notebookFolder).where(eq(notebookFolder.id, parentId)).get();
       if (parent === undefined || parent.parentId !== null) {
-        throw new NotebookRepoError('INVALID_PARENT', 'La carpeta padre debe estar en la raíz');
+        throw new NotebookRepoError('INVALID_PARENT', (t) => t.notebookErrors.parentMustBeRoot);
       }
     }
     const nameKey = normalizeFolderNameKey(name);
@@ -79,7 +83,7 @@ export function createNotebookFolder(
         eq(notebookFolder.nameKey, nameKey),
       )).get();
     if (sibling !== undefined) {
-      throw new NotebookRepoError('VALIDATION', 'Ya existe una carpeta con ese nombre en este nivel');
+      throw new NotebookRepoError('VALIDATION', (t) => t.notebookErrors.folderExists);
     }
     return tx.insert(notebookFolder).values({ name, nameKey, parentId, createdAt: at, updatedAt: at })
       .returning().get();
@@ -94,17 +98,17 @@ export function updateNotebookFolder(
   const { id, name, parentId } = updateNotebookFolderSchema.parse(input);
   return db.transaction((tx) => {
     const existing = tx.select().from(notebookFolder).where(eq(notebookFolder.id, id)).get();
-    if (existing === undefined) throw new NotebookRepoError('NOT_FOUND', 'Carpeta no encontrada');
-    if (parentId === id) throw new NotebookRepoError('INVALID_PARENT', 'Una carpeta no puede ser su propio padre');
+    if (existing === undefined) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.folderNotFound);
+    if (parentId === id) throw new NotebookRepoError('INVALID_PARENT', (t) => t.notebookErrors.ownParent);
     if (parentId !== null) {
       const parent = tx.select().from(notebookFolder).where(eq(notebookFolder.id, parentId)).get();
       if (parent === undefined || parent.parentId !== null) {
-        throw new NotebookRepoError('INVALID_PARENT', 'La carpeta padre debe estar en la raíz');
+        throw new NotebookRepoError('INVALID_PARENT', (t) => t.notebookErrors.parentMustBeRoot);
       }
       const child = tx.select({ id: notebookFolder.id }).from(notebookFolder)
         .where(eq(notebookFolder.parentId, id)).get();
       if (child !== undefined) {
-        throw new NotebookRepoError('INVALID_PARENT', 'Una carpeta con subcarpetas debe seguir en la raíz');
+        throw new NotebookRepoError('INVALID_PARENT', (t) => t.notebookErrors.subfoldersStayRoot);
       }
     }
     const nameKey = normalizeFolderNameKey(name);
@@ -115,7 +119,7 @@ export function updateNotebookFolder(
         ne(notebookFolder.id, id),
       )).get();
     if (sibling !== undefined) {
-      throw new NotebookRepoError('VALIDATION', 'Ya existe una carpeta con ese nombre en este nivel');
+      throw new NotebookRepoError('VALIDATION', (t) => t.notebookErrors.folderExists);
     }
     return tx.update(notebookFolder).set({ name, nameKey, parentId, updatedAt: at })
       .where(eq(notebookFolder.id, id)).returning().get();
@@ -127,13 +131,13 @@ export function deleteNotebookFolder(db: Db, id: number): void {
   db.transaction((tx) => {
     const existing = tx.select({ id: notebookFolder.id }).from(notebookFolder)
       .where(eq(notebookFolder.id, parsed.id)).get();
-    if (existing === undefined) throw new NotebookRepoError('NOT_FOUND', 'Carpeta no encontrada');
+    if (existing === undefined) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.folderNotFound);
     const hasChildren = tx.select({ count: sql<number>`count(*)` }).from(notebookFolder)
       .where(eq(notebookFolder.parentId, parsed.id)).get()?.count !== 0;
     const hasNotes = tx.select({ count: sql<number>`count(*)` }).from(notebookNote)
       .where(eq(notebookNote.folderId, parsed.id)).get()?.count !== 0;
     if (hasChildren || hasNotes) {
-      throw new NotebookRepoError('FOLDER_NOT_EMPTY', 'La carpeta contiene subcarpetas o apuntes');
+      throw new NotebookRepoError('FOLDER_NOT_EMPTY', (t) => t.notebookErrors.folderNotEmpty);
     }
     tx.delete(notebookFolder).where(eq(notebookFolder.id, parsed.id)).run();
   });
@@ -154,7 +158,7 @@ export function listNotebookNotes(
   pageSize = 20,
 ): NotebookPage<NotebookNoteSummary> {
   if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(pageSize) || pageSize < 1) {
-    throw new NotebookRepoError('VALIDATION', 'Página inválida');
+    throw new NotebookRepoError('VALIDATION', (t) => t.notebookErrors.invalidPage);
   }
   const rows = db.select(noteSummary).from(notebookNote)
     .where(folderId === null ? isNull(notebookNote.folderId) : eq(notebookNote.folderId, folderId))
@@ -185,7 +189,7 @@ export function setNotebookNoteFavorite(
     favoritedAt: favorite ? sql`coalesce(${notebookNote.favoritedAt}, ${at})` : null,
   })
     .where(eq(notebookNote.id, id)).returning().get();
-  if (updated === undefined) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+  if (updated === undefined) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteNotFound);
   return updated;
 }
 
@@ -203,7 +207,7 @@ export function createNotebookNote(
     if (data.folderId !== null) {
       const folder = tx.select({ id: notebookFolder.id }).from(notebookFolder)
         .where(eq(notebookFolder.id, data.folderId)).get();
-      if (folder === undefined) throw new NotebookRepoError('INVALID_PARENT', 'Carpeta no encontrada');
+      if (folder === undefined) throw new NotebookRepoError('INVALID_PARENT', (t) => t.notebookErrors.folderNotFound);
     }
     const inserted = tx.insert(notebookNote).values({ ...data, revision: 1, createdAt: at, updatedAt: at })
       .onConflictDoNothing({ target: notebookNote.uid }).returning().get();
@@ -213,7 +217,7 @@ export function createNotebookNote(
       return { note: inserted, created: true };
     }
     const existing = tx.select().from(notebookNote).where(eq(notebookNote.uid, data.uid)).get();
-    if (existing === undefined) throw new NotebookRepoError('PERSISTENCE', 'No se pudo confirmar el alta');
+    if (existing === undefined) throw new NotebookRepoError('PERSISTENCE', (t) => t.notebookErrors.createNotConfirmed);
     return { note: existing, created: false };
   });
 }
@@ -229,7 +233,7 @@ export function saveNotebookNote(db: Db, input: SaveNotebookNoteInput, at: strin
     if (changes.folderId !== null) {
       const folder = tx.select({ id: notebookFolder.id }).from(notebookFolder)
         .where(eq(notebookFolder.id, changes.folderId)).get();
-      if (folder === undefined) throw new NotebookRepoError('INVALID_PARENT', 'Carpeta no encontrada');
+      if (folder === undefined) throw new NotebookRepoError('INVALID_PARENT', (t) => t.notebookErrors.folderNotFound);
     }
     const saved = tx.update(notebookNote).set({
       ...changes,
@@ -255,8 +259,8 @@ export function saveNotebookNote(db: Db, input: SaveNotebookNoteInput, at: strin
       return saved;
     }
     const current = tx.select().from(notebookNote).where(eq(notebookNote.id, id)).get();
-    if (current === undefined) throw new NotebookRepoError('NOT_FOUND', 'Apunte eliminado');
-    throw new NotebookRepoError('CONFLICT', 'El apunte cambió en otra pestaña', current);
+    if (current === undefined) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteDeleted);
+    throw new NotebookRepoError('CONFLICT', (t) => t.notebookErrors.changedInOtherTab, current);
   });
 }
 
@@ -270,16 +274,16 @@ export function saveNotebookAnnotation(db: Db, raw: SaveStudyAnnotationInput, at
   const input = saveStudyAnnotationSchema.parse(raw);
   return db.transaction((tx) => {
     const note = tx.select().from(notebookNote).where(eq(notebookNote.id, input.noteId)).get();
-    if (note === undefined || note.uid !== input.uid) throw new NotebookRepoError('NOT_FOUND', 'Apunte eliminado');
+    if (note === undefined || note.uid !== input.uid) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteDeleted);
     if (note.revision !== input.expectedRevision) {
-      throw new NotebookRepoError('CONFLICT', 'El apunte ha cambiado. Recarga antes de seguir marcando.');
+      throw new NotebookRepoError('CONFLICT', (t) => t.notebookErrors.changedReload);
     }
     const text = notebookStudyText(note.contentMarkdown);
     const { start, end } = input.anchor;
     const anchor = studyAnchor(text, start, end);
     if (end <= start || end > text.length || !anchor.exact.trim() || anchor.exact.includes(STUDY_BARRIER)
       || anchor.exact !== input.anchor.exact || anchor.prefix !== input.anchor.prefix || anchor.suffix !== input.anchor.suffix) {
-      throw new NotebookRepoError('VALIDATION', 'Selecciona texto del apunte, sin código ni controles.');
+      throw new NotebookRepoError('VALIDATION', (t) => t.notebookErrors.selectText);
     }
     const before = listNotebookAnnotations(tx, note.id);
     const after = applyStudyCommand(before, text, anchor, input.command, note.id, at, randomUUID);
@@ -308,7 +312,7 @@ export function deleteNotebookNote(db: Db, input: DeleteNotebookNoteInput): void
     )).returning({ id: notebookNote.id }).get();
     if (deleted !== undefined) return;
     const current = tx.select().from(notebookNote).where(eq(notebookNote.id, id)).get();
-    if (current === undefined) throw new NotebookRepoError('NOT_FOUND', 'Apunte eliminado');
-    throw new NotebookRepoError('CONFLICT', 'El apunte cambió en otra pestaña', current);
+    if (current === undefined) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteDeleted);
+    throw new NotebookRepoError('CONFLICT', (t) => t.notebookErrors.changedInOtherTab, current);
   });
 }

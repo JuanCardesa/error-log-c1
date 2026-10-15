@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import type { SessionRow } from '@/lib/domain/types';
 import { ErrorExplorer, type ExplorerRow } from '../_shared/errors/ErrorExplorer';
+import { useT } from '../_shared/i18nClient';
 import ui from '../_shared/ui.module.css';
 import capture from './capture.module.css';
 import { CaptureForm } from './CaptureForm';
@@ -25,6 +26,7 @@ export function SessionErrors({ session, rows, subcategorySuggestions, lastCateg
   readonly initialMode: 'capture' | null;
   readonly initialErrorId: number | null;
 }) {
+  const t = useT();
   const open = session.status === 'OPEN';
   const [mode, setMode] = useState<'capture' | 'paste' | null>(open ? initialMode : null);
   const active = open ? mode : null;
@@ -44,18 +46,18 @@ export function SessionErrors({ session, rows, subcategorySuggestions, lastCateg
       {open && <StoredDraftNotice />}
       <div className={styles.errorsHead}>
         <h2 id="errors-heading" className={ui.sectionTitle}>
-          Errores <span className={ui.sectionCount}>· {rows.length}</span>
+          {t.nav.errors} <span className={ui.sectionCount}>· {rows.length}</span>
         </h2>
         <span className={ui.spacer} />
         {open && (
           <>
             <button type="button" className={ui.secondary} aria-expanded={active === 'paste'} onClick={() => { setMode(active === 'paste' ? null : 'paste'); }}>
               <ClipboardPaste size={16} aria-hidden="true" />
-              Pegar varios
+              {t.sessionView.pasteMany}
             </button>
             <button type="button" className={ui.primary} aria-expanded={active === 'capture'} onClick={() => { setMode(active === 'capture' ? null : 'capture'); }}>
               <Plus size={16} aria-hidden="true" />
-              Añadir error
+              {t.errorForm.addError}
             </button>
           </>
         )}
@@ -63,7 +65,7 @@ export function SessionErrors({ session, rows, subcategorySuggestions, lastCateg
 
       {active === 'paste' && (
         <div className={`${ui.surface} ${capture.block}`}>
-          <h3 className={capture.blockTitle}>Pegar errores en esta sesión</h3>
+          <h3 className={capture.blockTitle}>{t.sessionView.pasteIntoSession}</h3>
           <PasteEntry variant="session" onCancel={() => { setMode(null); }} />
         </div>
       )}
@@ -83,12 +85,12 @@ export function SessionErrors({ session, rows, subcategorySuggestions, lastCateg
         mode="session"
         initialSelectedId={initialErrorId}
         subcategorySuggestions={subcategorySuggestions}
-        caption="Errores registrados en esta sesión"
+        caption={t.sessionView.errorsCaption}
         empty={(
           <p className={styles.noErrors}>
             {session.itemsTotal === null
-              ? 'Sesión sin errores. Cuenta igual en tus estadísticas.'
-              : `Sesión sin errores: ${String(session.itemsCorrect ?? 0)} de ${String(session.itemsTotal)} aciertos. Cuenta igual en tus estadísticas.`}
+              ? t.sessionView.noErrors
+              : t.sessionView.noErrorsScore(session.itemsCorrect ?? 0, session.itemsTotal)}
           </p>
         )}
       />

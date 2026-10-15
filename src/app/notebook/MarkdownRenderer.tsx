@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import Markdown, { type Components, type ExtraProps } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
+import type { Messages } from '@/lib/i18n';
 import { analyzeNotebookMarkdown, type NotebookMarkdownAnalysis } from '@/lib/notebook/markdown';
 import { classifyNotebookUrl } from '@/lib/notebook/urls';
 import { remarkStudyText } from '@/lib/notebook/studyText';
@@ -18,8 +19,11 @@ const remarkPlugins = [remarkGfm];
 const studyPlugins = [remarkGfm, remarkStudyText];
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
-/** Una única política para lectura y futura vista previa. Nunca interpreta HTML ni carga imágenes. */
-export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH1 = false, analysis: given, study = false }: {
+/**
+ * Una única política para lectura y futura vista previa. Nunca interpreta HTML ni carga imágenes.
+ * Lo pintan el servidor (lector) y el cliente (editor): por eso el diccionario llega como prop.
+ */
+export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH1 = false, analysis: given, study = false, t }: {
   readonly markdown: string;
   readonly basePath?: string;
   /** El lector coloca el mismo anchor en el título cuando el primer H1 lo repite. */
@@ -27,6 +31,7 @@ export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH
   /** El lector ya analizó este Markdown para el índice: sin repetirlo, un parseo menos por visita. */
   readonly analysis?: NotebookMarkdownAnalysis;
   readonly study?: boolean;
+  readonly t: Messages;
 }) {
   const analysis = given ?? analyzeNotebookMarkdown(markdown);
   const headingByOffset = new Map(analysis.headingOffsets.map((offset, index) => [offset, analysis.headings[index]?.slug]));
@@ -69,9 +74,9 @@ export function MarkdownRenderer({ markdown, basePath = '/notebook/', hideFirstH
       const source = start === undefined || end === undefined ? `![${alt ?? ''}]` : markdown.slice(start, end);
       return <code className={styles.imageSyntax}>{source}</code>;
     },
-    input: ({ checked }) => <input type="checkbox" checked={Boolean(checked)} disabled aria-label={checked ? 'Tarea completada' : 'Tarea pendiente'} />,
+    input: ({ checked }) => <input type="checkbox" checked={Boolean(checked)} disabled aria-label={checked ? t.notebook.taskDone : t.notebook.taskPending} />,
     table: ({ children }) => (
-      <div className={styles.tableScroll} role="region" aria-label="Tabla del apunte" tabIndex={0}>
+      <div className={styles.tableScroll} role="region" aria-label={t.notebook.noteTable} tabIndex={0}>
         <table>{children}</table>
       </div>
     ),

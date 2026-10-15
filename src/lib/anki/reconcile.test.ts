@@ -26,9 +26,9 @@ it('incluye repasos importados anteriores al último conocido y es idempotente',
   expect(plan.notes[0]?.firstSeenAt).toBe(current.notes[0]?.firstSeenAt);
 });
 it('rechaza notas ausentes y colisiones de identificadores', () => {
-  expect(() => reconcile({ cards: [card()], notes: [], reviews: {}, missingNoteIds: [] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER)).toThrow('Falta la nota');
-  expect(() => reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review(), review()] }, missingNoteIds: [] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER)).toThrow('repetido');
-  expect(() => reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review({ id: Number.MAX_SAFE_INTEGER })] }, missingNoteIds: [] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER)).toThrow('inválido');
+  expect(() => reconcile({ cards: [card()], notes: [], reviews: {}, missingNoteIds: [] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER)).toThrow('note is missing');
+  expect(() => reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review(), review()] }, missingNoteIds: [] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER)).toThrow('repeated');
+  expect(() => reconcile({ cards: [card()], notes: [note()], reviews: { '10': [review({ id: Number.MAX_SAFE_INTEGER })] }, missingNoteIds: [] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER)).toThrow('Invalid');
 });
 it('permite cartas sin repasos y conserva las notas declaradas ausentes', () => {
   expect(reconcile({ cards: [card()], notes: [note()], reviews: {}, missingNoteIds: [99] }, EMPTY_ANKI_DATASET, NOW, ROLLOVER)).toMatchObject({ reviews: [], missingNoteIds: [99] });

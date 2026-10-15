@@ -6,6 +6,7 @@ import type {
   SessionInput,
   WritingPieceInput,
 } from '../validation/schemas';
+import { getMessages } from '../i18n';
 import { sessionInputSchema } from '../validation/schemas';
 import { type Db, createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
@@ -42,7 +43,7 @@ import { linkAnkiNote } from './ankiRepo';
 let db: Db;
 
 function sessionInput(overrides: Partial<SessionInput> = {}): SessionInput {
-  return sessionInputSchema({ today: '2026-09-14' }).parse({
+  return sessionInputSchema({ today: '2026-09-14', t: getMessages('es') }).parse({
     date: '2026-09-10',
     kind: 'DRILL',
     paper: 'RUOE',

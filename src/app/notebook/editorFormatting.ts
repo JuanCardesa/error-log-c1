@@ -1,5 +1,11 @@
 export type Formatting = 'heading' | 'bold' | 'italic' | 'list' | 'quote' | 'link';
 
+/** Texto de relleno que queda seleccionado para escribir encima; va en el idioma de la interfaz. */
+export interface FormattingPlaceholders {
+  readonly text: string;
+  readonly linkText: string;
+}
+
 export interface FormattingResult {
   readonly value: string;
   readonly selectionStart: number;
@@ -12,6 +18,7 @@ export function formatNotebookSelection(
   start: number,
   end: number,
   kind: Formatting,
+  placeholders: FormattingPlaceholders,
 ): FormattingResult {
   const selected = value.slice(start, end);
   let replacement: string;
@@ -20,13 +27,13 @@ export function formatNotebookSelection(
 
   if (kind === 'bold' || kind === 'italic') {
     const marker = kind === 'bold' ? '**' : '*';
-    replacement = `${marker}${selected || 'texto'}${marker}`;
+    replacement = `${marker}${selected || placeholders.text}${marker}`;
     selectionStart = start + marker.length;
-    selectionEnd = selectionStart + (selected || 'texto').length;
+    selectionEnd = selectionStart + (selected || placeholders.text).length;
   } else if (kind === 'link') {
-    replacement = `[${selected || 'texto del enlace'}](https://)`;
+    replacement = `[${selected || placeholders.linkText}](https://)`;
     selectionStart = selected ? start + replacement.length - 1 - 'https://'.length : start + 1;
-    selectionEnd = selected ? selectionStart + 'https://'.length : selectionStart + 'texto del enlace'.length;
+    selectionEnd = selected ? selectionStart + 'https://'.length : selectionStart + placeholders.linkText.length;
   } else {
     const prefix = kind === 'heading' ? '## ' : kind === 'list' ? '- ' : '> ';
     const lineStart = value.lastIndexOf('\n', start - 1) + 1;

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { DEFAULT_WINDOW_DAYS, WINDOW_DAYS_OPTIONS } from '@/lib/domain/thresholds';
+import { getT } from './i18nServer';
 import ui from './ui.module.css';
 
 /**
@@ -9,18 +10,21 @@ import ui from './ui.module.css';
  * cambiar el periodo no cierre una pestaña ni un filtro.
  *
  * Q4 y la regla 2 no lo obedecen: van siempre a 30 días (decisión P2).
+ *
+ * Componente de servidor: lee el idioma de la petición.
  */
-export function WindowSwitch({
+export async function WindowSwitch({
   current,
   basePath,
   keep = {},
-  label = 'Periodo',
+  label,
 }: {
   readonly current: number;
   readonly basePath: string;
   readonly keep?: Readonly<Record<string, string | undefined>>;
   readonly label?: string;
 }) {
+  const t = await getT();
   const href = (days: number): string => {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(keep)) {
@@ -32,7 +36,7 @@ export function WindowSwitch({
   };
 
   return (
-    <nav className={ui.segmented} aria-label={label}>
+    <nav className={ui.segmented} aria-label={label ?? t.common.period}>
       {WINDOW_DAYS_OPTIONS.map((days) => (
         <Link
           key={days}
@@ -41,7 +45,7 @@ export function WindowSwitch({
           aria-current={days === current ? 'true' : undefined}
           scroll={false}
         >
-          {days} días
+          {t.format.days(days)}
         </Link>
       ))}
     </nav>

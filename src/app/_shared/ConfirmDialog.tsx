@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 
+import { useT } from './i18nClient';
 import styles from './overlay.module.css';
 import ui from './ui.module.css';
 
@@ -33,6 +34,7 @@ export function ConfirmDialog({
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
 }) {
+  const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const bodyId = useId();
@@ -66,10 +68,10 @@ export function ConfirmDialog({
           {error !== null && <p role="alert" className={ui.fieldError}>{error}</p>}
           <div className={styles.dialogActions}>
             <button type="button" className={ui.secondary} autoFocus onClick={onCancel} disabled={pending}>
-              Cancelar
+              {t.common.cancel}
             </button>
             <button type="button" className={ui.danger} onClick={onConfirm} disabled={pending} aria-busy={pending}>
-              {pending ? (pendingLabel ?? 'Borrando…') : confirmLabel}
+              {pending ? (pendingLabel ?? t.common.deleting) : confirmLabel}
             </button>
           </div>
         </>

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { errorsForRow, IMPORT_PROMPT, IMPORT_TEMPLATE, MAX_IMPORT_LENGTH, MAX_SESSION_IMPORT_ROWS, parseImportedBatch } from './errors';
+import { getMessages } from '../i18n';
+import { errorsForRow, importPrompt, importTemplate, MAX_IMPORT_LENGTH, MAX_SESSION_IMPORT_ROWS, parseImportedBatch } from './errors';
 
-const draftsOf = (source: string) => parseImportedBatch(source).errors;
+const t = getMessages('es');
+const en = getMessages('en');
+const draftsOf = (source: string) => parseImportedBatch(source, t).errors;
 
 const example = {
   itemRef: 4, prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off',
@@ -31,14 +34,14 @@ it.each([
 });
 
 it('acepta un sobre sin ítems ni aciertos: quien solo ve los fallos no los sabe', () => {
-  const parsed = parseImportedBatch(JSON.stringify({ session: { ...session, itemsTotal: null, itemsCorrect: null }, errors: [example] }));
+  const parsed = parseImportedBatch(JSON.stringify({ session: { ...session, itemsTotal: null, itemsCorrect: null }, errors: [example] }), t);
   expect(parsed.session).toMatchObject({ itemsTotal: null, itemsCorrect: null });
   expect(parsed.errors).toHaveLength(1);
 });
 
 describe('pegar errores', () => {
   it('acepta errors sin session igual que el array para que la UI indique dónde pegarlo', () => {
-    const parsed = parseImportedBatch(JSON.stringify({ errors: [example] }));
+    const parsed = parseImportedBatch(JSON.stringify({ errors: [example] }), t);
     expect(parsed.session).toBe(null);
     expect(parsed.errors).toEqual(draftsOf(JSON.stringify([example])));
   });
@@ -69,7 +72,11 @@ describe('pegar errores', () => {
   });
 
   it('admite la plantilla y cabeceras en distinto orden con acentos', () => {
-    expect(draftsOf(IMPORT_TEMPLATE)[0]?.correctAnswer).toBe('off');
+    expect(draftsOf(importTemplate(t))[0]?.correctAnswer).toBe('off');
+    // La plantilla inglesa usa sus propias cabeceras y el importador las acepta igual.
+    expect(draftsOf(importTemplate(en))[0]).toMatchObject({
+      itemRef: '4', prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off', category: 'PHRASAL_VERB',
+    });
     expect(draftsOf('Correcta\tEnunciado\tCategoría\tCausa\tConfianza\noff\tcalled ___\tPHRASAL_VERB\tconfusión\tseguro')[0]).toMatchObject({
       correctAnswer: 'off', category: 'PHRASAL_VERB', cause: 'CONFUSION', confidence: 'SEGURO',
     });
@@ -103,14 +110,22 @@ describe('pegar errores', () => {
   ])('explica un pegado invalido sin descartar silenciosamente filas', (source, expected) => {
     expect(() => draftsOf(source)).toThrow(expected);
   });
+
+  it('explica el problema en el idioma de la interfaz', () => {
+    expect(() => parseImportedBatch('', en)).toThrow('Paste your errors first.');
+    expect(() => parseImportedBatch('a\tb\tc', en)).toThrow('6 columns');
+    expect(() => parseImportedBatch(JSON.stringify({ session: { ...session, date: '2999-01-01' }, errors: [example] }), en))
+      .toThrow('Invalid batch. session.date: The date can’t be in the future');
+  });
 });
 
 describe('el ejemplo de las instrucciones', () => {
   // Si el prompt y el importador divergen, la IA obedece y la importacion se rechaza.
-  const example = IMPORT_PROMPT.slice(IMPORT_PROMPT.indexOf('{'), IMPORT_PROMPT.lastIndexOf('}') + 1);
+  const prompt = importPrompt(t);
+  const example = prompt.slice(prompt.indexOf('{'), prompt.lastIndexOf('}') + 1);
 
   it('lo acepta el importador tal cual', () => {
-    const parsed = parseImportedBatch(example, '2026-09-23');
+    const parsed = parseImportedBatch(example, t, '2026-09-23');
     expect(parsed.session).toMatchObject({ date: '2026-09-15', kind: 'DRILL', source: 'LIBRO', itemsTotal: 8, timed: false });
     expect(parsed.errors).toHaveLength(1);
     expect(parsed.errors[0]).toMatchObject({
@@ -120,12 +135,19 @@ describe('el ejemplo de las instrucciones', () => {
   });
 
   it('declara part como numero o null, que es lo que exige el esquema', () => {
-    expect(IMPORT_PROMPT).toContain('part: entero positivo, o null.');
-    expect(() => parseImportedBatch(example.replace('"part": null', '"part": "3"'), '2026-09-23'))
+    expect(prompt).toContain('part: entero positivo, o null.');
+    expect(importPrompt(en)).toContain('part: positive integer, or null.');
+    expect(() => parseImportedBatch(example.replace('"part": null', '"part": "3"'), t, '2026-09-23'))
       .toThrow('Sobre inválido');
   });
 
   it('anuncia el limite de filas del sobre, no el del array suelto', () => {
-    expect(IMPORT_PROMPT).toContain(`${String(MAX_SESSION_IMPORT_ROWS)} errores por sesion`);
+    expect(prompt).toContain(`${String(MAX_SESSION_IMPORT_ROWS)} errores por sesion`);
+    expect(importPrompt(en)).toContain(`${String(MAX_SESSION_IMPORT_ROWS)} errors per session`);
+  });
+
+  it('lleva el mismo ejemplo en los dos idiomas: el contrato no se traduce', () => {
+    const english = importPrompt(en);
+    expect(english.slice(english.indexOf('{'), english.lastIndexOf('}') + 1)).toBe(example);
   });
 });

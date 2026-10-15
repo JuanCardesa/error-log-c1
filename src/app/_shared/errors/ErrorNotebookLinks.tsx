@@ -10,6 +10,7 @@ import {
 import { normalizeNotebookSearchText } from '@/lib/notebook/searchText';
 import type { NotebookHeading, NotebookLinkedNote, NotebookNoteSummary, NotebookPage } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
+import { useT } from '../i18nClient';
 import ui from '../ui.module.css';
 import styles from './notebookLinks.module.css';
 
@@ -17,6 +18,7 @@ const EMPTY_RESULTS: NotebookPage<NotebookNoteSummary> = { items: [], hasMore: f
 
 /** The shared error panel mounts this with the error ID as key, so requests cannot paint another error. */
 export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
+  const t = useT();
   const [links, setLinks] = useState<readonly NotebookLinkedNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -40,10 +42,10 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
       else setMessage(result.message);
       setLoading(false);
     }).catch(() => {
-      if (active) { setMessage('No se pudieron cargar los apuntes vinculados.'); setLoading(false); }
+      if (active) { setMessage(t.noteLinks.loadFailed); setLoading(false); }
     });
     return () => { active = false; };
-  }, [errorId]);
+  }, [errorId, t]);
 
   useEffect(() => {
     if (!pickerOpen || selectedNote !== null) return;
@@ -56,11 +58,11 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
         else setMessage(result.message);
         setSearching(false);
       }).catch(() => {
-        if (active) { setMessage('No se pudo buscar en los apuntes.'); setSearching(false); }
+        if (active) { setMessage(t.noteLinks.searchFailed); setSearching(false); }
       });
     }, query === '' ? 0 : 200);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [pickerOpen, query, page, selectedNote]);
+  }, [pickerOpen, query, page, selectedNote, t]);
 
   const chooseNote = async (note: NotebookNoteSummary) => {
     setSelectedNote(note);
@@ -73,7 +75,7 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
       if (result.ok) setHeadings(result.data.headings);
       else setMessage(result.message);
     } catch {
-      setMessage('No se pudo cargar el índice del apunte.');
+      setMessage(t.noteLinks.outlineFailed);
     } finally {
       setOutlineLoading(false);
     }
@@ -96,7 +98,7 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
         setSelectedNote(null);
         setPickerOpen(false);
       } catch {
-        setMessage('No se pudo guardar el vínculo. Inténtalo de nuevo.');
+        setMessage(t.noteLinks.saveFailed);
       }
     });
   };
@@ -109,7 +111,7 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
         if (!result.ok) { setMessage(result.message); return; }
         await refreshLinks();
       } catch {
-        setMessage('No se pudo desvincular el apunte. Inténtalo de nuevo.');
+        setMessage(t.noteLinks.unlinkFailed);
       }
     });
   };
@@ -125,7 +127,7 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
   const selectedValid = headingSlug === null || available.some((heading) => heading.slug === headingSlug);
 
   return (
-    <section className={styles.section} aria-label="Apuntes vinculados" onKeyDown={(event) => {
+    <section className={styles.section} aria-label={t.noteLinks.section} onKeyDown={(event) => {
       if (event.key === 'Escape' && pickerOpen) {
         event.stopPropagation();
         setSelectedNote(null);
@@ -136,14 +138,14 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
       }
     }}>
       <div className={styles.heading}>
-        <h2>Apuntes vinculados</h2>
+        <h2>{t.noteLinks.section}</h2>
         <button ref={toggleRef} type="button" className={ui.textLink} onClick={() => {
           setSelectedNote(null); setQuery(''); setPage(1); setMessage(null); setPickerOpen(!pickerOpen);
-        }}>{pickerOpen ? 'Cerrar selector' : 'Vincular apunte'}</button>
+        }}>{pickerOpen ? t.noteLinks.closePicker : t.noteLinks.linkNote}</button>
       </div>
 
-      {loading ? <p className={styles.muted}>Cargando apuntes…</p> : links.length === 0 ? (
-        <p className={styles.muted}>Este error aún no tiene apuntes vinculados.</p>
+      {loading ? <p className={styles.muted}>{t.noteLinks.loading}</p> : links.length === 0 ? (
+        <p className={styles.muted}>{t.noteLinks.none}</p>
       ) : (
         <ul className={styles.links}>
           {links.map(({ link, note, headingStatus }) => (
@@ -155,12 +157,12 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
                 <span className={styles.linkActions}>
                   <button type="button" className={ui.textLink} disabled={pending} onClick={() => {
                     setPickerOpen(true); void chooseNote(note);
-                  }}>Elegir apartado</button>
-                  <button type="button" className={ui.textLink} disabled={pending} onClick={() => { remove(note.id); }}>Desvincular</button>
+                  }}>{t.noteLinks.chooseSection}</button>
+                  <button type="button" className={ui.textLink} disabled={pending} onClick={() => { remove(note.id); }}>{t.noteLinks.unlink}</button>
                 </span>
               </div>
-              {headingStatus === 'valid' && <p className={styles.muted}>Apartado: {link.headingText}</p>}
-              {headingStatus === 'changed' && <p className={styles.changed}>Apartado cambiado · El vínculo al apunte se conserva.</p>}
+              {headingStatus === 'valid' && <p className={styles.muted}>{t.noteLinks.sectionValue(link.headingText ?? '')}</p>}
+              {headingStatus === 'changed' && <p className={styles.changed}>{t.noteLinks.sectionChanged}</p>}
             </li>
           ))}
         </ul>
@@ -170,43 +172,43 @@ export function ErrorNotebookLinks({ errorId }: { readonly errorId: number }) {
         <div className={styles.picker}>
           {selectedNote === null ? (
             <>
-              <label className={styles.searchLabel} htmlFor={`note-search-${String(errorId)}`}>Buscar apuntes</label>
+              <label className={styles.searchLabel} htmlFor={`note-search-${String(errorId)}`}>{t.noteLinks.searchNotes}</label>
               <input id={`note-search-${String(errorId)}`} className={ui.input} type="search" value={query}
-                placeholder="Título, contenido o etiqueta" maxLength={200}
+                placeholder={t.noteLinks.searchPlaceholder} maxLength={200}
                 onChange={(event) => { setQuery(event.target.value); setPage(1); }} />
-              {searching && <p className={styles.muted} role="status">Buscando…</p>}
-              {!searching && results.items.length === 0 && <p className={styles.muted}>No hay apuntes para esta búsqueda.</p>}
-              <ul className={styles.results} aria-label="Apuntes encontrados">
+              {searching && <p className={styles.muted} role="status">{t.noteLinks.searching}</p>}
+              {!searching && results.items.length === 0 && <p className={styles.muted}>{t.noteLinks.noResults}</p>}
+              <ul className={styles.results} aria-label={t.noteLinks.found}>
                 {results.items.map((note) => (
                   <li key={note.id}>
                     <button type="button" onClick={() => { void chooseNote(note); }}>{note.title}</button>
-                    {links.some((item) => item.note.id === note.id) && <span className={styles.muted}>Vinculado</span>}
+                    {links.some((item) => item.note.id === note.id) && <span className={styles.muted}>{t.noteLinks.linked}</span>}
                   </li>
                 ))}
               </ul>
               <div className={styles.paging}>
-                <button type="button" className={ui.ghost} disabled={page === 1 || searching} onClick={() => { setPage(page - 1); }}>Anterior</button>
-                <span>Página {page}</span>
-                <button type="button" className={ui.ghost} disabled={!results.hasMore || searching} onClick={() => { setPage(page + 1); }}>Siguiente</button>
+                <button type="button" className={ui.ghost} disabled={page === 1 || searching} onClick={() => { setPage(page - 1); }}>{t.common.previous}</button>
+                <span>{t.common.page(page)}</span>
+                <button type="button" className={ui.ghost} disabled={!results.hasMore || searching} onClick={() => { setPage(page + 1); }}>{t.common.next}</button>
               </div>
             </>
           ) : (
             <>
-              <button type="button" className={ui.textLink} onClick={() => { setSelectedNote(null); setMessage(null); }}>← Volver a la búsqueda</button>
+              <button type="button" className={ui.textLink} onClick={() => { setSelectedNote(null); setMessage(null); }}>{t.noteLinks.backToSearch}</button>
               <h3 className={styles.selectedTitle}>{selectedNote.title}</h3>
-              {outlineLoading ? <p className={styles.muted}>Cargando apartados…</p> : (
-                <label className={styles.searchLabel}>Apartado
+              {outlineLoading ? <p className={styles.muted}>{t.noteLinks.loadingSections}</p> : (
+                <label className={styles.searchLabel}>{t.noteLinks.sectionLabel}
                   <select className={ui.select} value={headingSlug ?? ''} onChange={(event) => { setHeadingSlug(event.target.value || null); }}>
-                    <option value="">Todo el apunte</option>
-                    {!selectedValid && <option value={headingSlug ?? ''} disabled>Apartado cambiado · elige otro</option>}
+                    <option value="">{t.noteLinks.wholeNote}</option>
+                    {!selectedValid && <option value={headingSlug ?? ''} disabled>{t.noteLinks.sectionChangedOption}</option>}
                     {available.map((heading) => <option key={heading.slug} value={heading.slug}>{heading.text}</option>)}
                   </select>
                 </label>
               )}
-              {headings.length > available.length && <p className={styles.muted}>Los apartados repetidos no se pueden vincular.</p>}
+              {headings.length > available.length && <p className={styles.muted}>{t.noteLinks.duplicateSections}</p>}
               <div className={styles.saveRow}>
                 <button type="button" className={ui.secondary} disabled={pending || outlineLoading || !selectedValid}
-                  onClick={save}>{pending ? 'Guardando…' : 'Guardar vínculo'}</button>
+                  onClick={save}>{pending ? t.common.saving : t.noteLinks.saveLink}</button>
               </div>
             </>
           )}

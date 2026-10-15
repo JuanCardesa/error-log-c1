@@ -8,8 +8,10 @@ import { createNotebookNoteSchema, NOTEBOOK_LIMITS, saveNotebookNoteSchema } fro
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import type { NotebookFolder, NotebookNote } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
+import { formErrors } from '@/lib/i18n/zod';
 import ui from '../_shared/ui.module.css';
 import { ConfirmDialog } from '../_shared/ConfirmDialog';
+import { useT } from '../_shared/i18nClient';
 import { createNoteAction, finishEditingAction, getNoteAction, getNoteByUidAction, saveNoteAction } from './actions';
 import { formatNotebookSelection, type Formatting } from './editorFormatting';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -39,6 +41,8 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
   readonly initialFolderId?: number | null;
   readonly requestedDraftKey?: string;
 }) {
+  const t = useT();
+  const n = t.notebook;
   const router = useRouter();
   const [form, setForm] = useState<Form>(() => note === undefined
     ? { title: '', folderId: initialFolderId, tagsText: '', contentMarkdown: '' }
@@ -110,7 +114,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
     const textarea = textareaRef.current;
     if (textarea === null) return;
     const { start, end } = selectionRef.current;
-    const result = formatNotebookSelection(formRef.current.contentMarkdown, start, end, kind);
+    const result = formatNotebookSelection(formRef.current.contentMarkdown, start, end, kind, n.formatPlaceholders);
     change({ contentMarkdown: result.value });
     requestAnimationFrame(() => {
       textarea.focus();
@@ -250,8 +254,8 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
     const fields = { uid, title: snapshot.title, folderId: snapshot.folderId, tags, contentMarkdown: snapshot.contentMarkdown };
     const current = savedRef.current;
     const parsed = current === undefined
-      ? createNotebookNoteSchema.safeParse(fields)
-      : saveNotebookNoteSchema.safeParse({ ...fields, id: current.id, expectedRevision: current.revision });
+      ? createNotebookNoteSchema.safeParse(fields, { error: formErrors(t) })
+      : saveNotebookNoteSchema.safeParse({ ...fields, id: current.id, expectedRevision: current.revision }, { error: formErrors(t) });
     if (!parsed.success) {
       if (manual) {
         const errors: Record<string, string[]> = {};
@@ -260,7 +264,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
           (errors[key] ??= []).push(issue.message);
         }
         setFieldErrors(errors);
-        setError('Revisa los campos indicados.');
+        setError(n.checkFields);
       }
       return false;
     }
@@ -361,7 +365,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
       navigating = true;
       router.push(notebookNoteHref(result.data));
     } catch {
-      setError('No se pudo terminar la edición. Vuelve a intentarlo.');
+      setError(n.finishFailed);
     } finally {
       if (!navigating) {
         finishingRef.current = false;
@@ -406,87 +410,85 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
     <div className={styles.editor} onKeyDownCapture={onEditorKeyDown}>
       <div className={styles.heading}>
         <div>
-          <p className={styles.eyebrow}>Notebook</p>
-          <h1>{savedNote === undefined ? 'Nuevo apunte' : 'Editar apunte'}</h1>
+          <p className={styles.eyebrow}>{t.nav.notebook}</p>
+          <h1>{savedNote === undefined ? n.newNote : n.editNote}</h1>
         </div>
         <Link href={readerHref} className={ui.backLink} onClick={(event) => {
           if (finishingRef.current) { event.preventDefault(); return; }
           if (pendingChanges || issueRef.current !== null) {
-            if (!window.confirm('Hay cambios sin confirmar. ¿Salir de todos modos?')) event.preventDefault();
+            if (!window.confirm(n.leaveConfirm)) event.preventDefault();
             else draft.flushNow();
           } else if (savedRef.current !== undefined && !editorLocked) {
             event.preventDefault();
             void finishEditing();
           }
         }}>
-          {savedNote === undefined ? 'Volver a Notebook' : 'Volver a lectura'}
+          {savedNote === undefined ? n.backToNotebook : n.backToReading}
         </Link>
       </div>
 
       {draft.candidate !== null && (
-        <section className={styles.draftNotice} aria-label="Borrador recuperable">
-          <h2>Hay un borrador local de este apunte</h2>
-          <p>Guardado {new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(draft.candidate.savedAt))}.
-            {draft.fromOtherTab ? ' Proviene de otra pestaña; al recuperarlo se conservará allí una copia.' : ''}
-            {draft.hasAnotherRequested ? ' Esta pestaña tiene otro borrador pendiente; decide sobre él antes de abrir el seleccionado.' : ''}
+        <section className={styles.draftNotice} aria-label={n.recoverableDraft}>
+          <h2>{n.localDraftTitle}</h2>
+          <p>{n.savedAt(new Intl.DateTimeFormat(t.format.intl, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(draft.candidate.savedAt)))}
+            {draft.fromOtherTab ? n.fromOtherTab : ''}
+            {draft.hasAnotherRequested ? n.anotherPending : ''}
           </p>
           <div className={styles.draftActions}>
-            <button type="button" className={ui.primary} onClick={draft.recover}>Recuperar borrador</button>
+            <button type="button" className={ui.primary} onClick={draft.recover}>{n.recoverDraft}</button>
             <button type="button" className={ui.secondary} onClick={() => {
               if (draft.candidate !== null) downloadNotebookDraft(draft.candidate);
-            }}>Descargar borrador</button>
-            <button type="button" className={ui.dangerLink} onClick={() => { setDiscardError(null); setConfirmDiscard(true); }}>Descartar borrador…</button>
+            }}>{n.downloadDraft}</button>
+            <button type="button" className={ui.dangerLink} onClick={() => { setDiscardError(null); setConfirmDiscard(true); }}>{n.discardDraftMenu}</button>
           </div>
         </section>
       )}
       {issue !== null && <div role="alert" className={styles.draftNotice}>
         <p>{issue.kind === 'conflict'
-          ? 'El apunte guardado cambió en otra pestaña. Tus cambios siguen aquí; el guardado está detenido.'
+          ? n.issueConflict
           : issue.kind === 'deleted'
-            ? 'Este apunte fue borrado. Tus cambios siguen aquí; el guardado está detenido.'
+            ? n.issueDeleted
             : issue.kind === 'uncertainCreate'
-              ? 'No se pudo confirmar si este borrador ya se creó. Comprueba su estado antes de guardarlo.'
-              : 'No se pudo confirmar el último guardado. Tus cambios siguen aquí; comprueba su estado.'}</p>
+              ? n.issueUncertainCreate
+              : n.issueUncertain}</p>
         <div className={styles.draftActions}>
           {(issue.kind === 'uncertain' || issue.kind === 'uncertainCreate') &&
             <button type="button" className={ui.secondary} disabled={checking} onClick={() => { void checkUncertain(); }}>
-              {checking ? 'Comprobando…' : 'Comprobar estado'}
+              {checking ? n.checking : n.checkStatus}
             </button>}
           {issue.kind === 'conflict' &&
             <button type="button" className={ui.secondary} onClick={() => { setConfirmLoadRemote(true); }}>
-              Cargar versión guardada…
+              {n.loadSavedMenu}
             </button>}
-          <button type="button" className={ui.secondary} onClick={keepAsNew}>Conservar como nuevo apunte</button>
-          <button type="button" className={ui.secondary} onClick={draft.downloadCurrent}>Descargar borrador</button>
+          <button type="button" className={ui.secondary} onClick={keepAsNew}>{n.keepAsNew}</button>
+          <button type="button" className={ui.secondary} onClick={draft.downloadCurrent}>{n.downloadDraft}</button>
         </div>
       </div>}
       {draft.storageProblem !== null && <div role="alert" className={styles.storageWarning}>
-        {draft.storageProblem === 'quota'
-          ? 'Se agotó el espacio para borradores locales. Tu texto sigue en esta pestaña.'
-          : 'No se pudo guardar una copia local. Tu texto sigue en esta pestaña.'}
-        <button type="button" className={ui.secondary} onClick={draft.downloadCurrent}>Descargar borrador</button>
+        {draft.storageProblem === 'quota' ? n.storageQuota : n.storageFailed}
+        <button type="button" className={ui.secondary} onClick={draft.downloadCurrent}>{n.downloadDraft}</button>
       </div>}
 
       <div className={styles.metaFields}>
-        <label className={ui.field}>Título
+        <label className={ui.field}>{n.title}
           <input className={ui.input} value={form.title} maxLength={NOTEBOOK_LIMITS.title} required
             disabled={editorLocked || finishing}
             aria-invalid={fieldErrors['title'] !== undefined}
             onChange={(event) => { change({ title: event.target.value }); }} />
           {fieldError('title')}
         </label>
-        <label className={ui.field}>Carpeta
+        <label className={ui.field}>{n.folder}
           <select className={ui.select} value={form.folderId ?? ''} disabled={editorLocked || finishing}
             onChange={(event) => { change({ folderId: event.target.value === '' ? null : Number(event.target.value) }); }}>
-            <option value="">Sin carpeta</option>
+            <option value="">{n.noFolder}</option>
             {folders.map((folder) => <option key={folder.id} value={folder.id}>
               {folder.parentId === null ? folder.name : `${folders.find((parent) => parent.id === folder.parentId)?.name ?? ''} / ${folder.name}`}
             </option>)}
           </select>
           {fieldError('folderId')}
         </label>
-        <label className={ui.field}>Etiquetas <span className={ui.optional}>separadas por comas</span>
-          <input className={ui.input} value={form.tagsText} placeholder="gramática, part4" disabled={editorLocked || finishing}
+        <label className={ui.field}>{n.tags} <span className={ui.optional}>{n.commaSeparated}</span>
+          <input className={ui.input} value={form.tagsText} placeholder={n.tagsPlaceholder} disabled={editorLocked || finishing}
             aria-invalid={fieldErrors['tags'] !== undefined}
             onChange={(event) => { change({ tagsText: event.target.value }); }} />
           {fieldError('tags')}
@@ -494,24 +496,25 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
       </div>
 
       <div className={styles.editorHeader}>
-        <div role="tablist" aria-label="Vista del apunte" className={ui.tabs}>
+        <div role="tablist" aria-label={n.noteView} className={ui.tabs}>
           <button id="notebook-tab-edit" role="tab" type="button" className={`${ui.tab} ${styles.tabButton}`}
             aria-selected={activeTab === 'edit'} aria-controls="notebook-panel-edit" tabIndex={activeTab === 'edit' ? 0 : -1}
-            onKeyDown={(event) => { onTabKeyDown(event, 'edit'); }} onClick={() => { setActiveTab('edit'); }}>Editar</button>
+            onKeyDown={(event) => { onTabKeyDown(event, 'edit'); }} onClick={() => { setActiveTab('edit'); }}>{n.edit}</button>
           <button id="notebook-tab-preview" role="tab" type="button" className={`${ui.tab} ${styles.tabButton}`}
             aria-selected={activeTab === 'preview'} aria-controls="notebook-panel-preview" tabIndex={activeTab === 'preview' ? 0 : -1}
-            onKeyDown={(event) => { onTabKeyDown(event, 'preview'); }} onClick={() => { setActiveTab('preview'); }}>Vista previa</button>
+            onKeyDown={(event) => { onTabKeyDown(event, 'preview'); }} onClick={() => { setActiveTab('preview'); }}>{n.preview}</button>
         </div>
         <span aria-live="polite" className={styles.saveStatus}>
-          {finishing ? 'Finalizando…' : pending ? 'Guardando…' : issue !== null || error !== null ? 'No guardado' : pendingChanges ? 'Sin guardar' : savedNote === undefined ? 'Nuevo apunte' : 'Guardado'}
+          {finishing ? n.finishing : pending ? t.common.saving : issue !== null || error !== null ? n.notSaved : pendingChanges ? n.unsaved : savedNote === undefined ? n.newNote : n.saved}
         </span>
       </div>
 
       <div id="notebook-panel-edit" role="tabpanel" aria-labelledby="notebook-tab-edit" hidden={activeTab !== 'edit'}>
-        <div role="toolbar" aria-label="Formato Markdown" className={styles.toolbar}>
+        <div role="toolbar" aria-label={n.markdownFormat} className={styles.toolbar}>
           {([
-            ['heading', 'Encabezado', 'H2'], ['bold', 'Negrita', 'B'], ['italic', 'Cursiva', 'I'],
-            ['list', 'Lista', 'Lista'], ['quote', 'Cita', 'Cita'], ['link', 'Enlace', 'Enlace'],
+            ['heading', n.formatting.heading, 'H2'], ['bold', n.formatting.bold, 'B'], ['italic', n.formatting.italic, 'I'],
+            ['list', n.formatting.list, n.formatting.list], ['quote', n.formatting.quote, n.formatting.quote],
+            ['link', n.formatting.link, n.formatting.link],
           ] as const).map(([kind, label, text]) => (
             <button key={kind} type="button" className={`${ui.secondary} ${ui.compact}`} aria-label={label}
               disabled={editorLocked || finishing}
@@ -519,43 +522,43 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
               onClick={() => { applyFormatting(kind); }}>{text}</button>
           ))}
         </div>
-        <label className={`${ui.field} ${styles.bodyLabel}`} htmlFor="notebook-body">Contenido Markdown</label>
+        <label className={`${ui.field} ${styles.bodyLabel}`} htmlFor="notebook-body">{n.markdownContent}</label>
         <textarea id="notebook-body" ref={textareaRef} className={`${ui.textarea} ${styles.textarea}`}
           value={form.contentMarkdown} disabled={editorLocked || finishing}
           aria-invalid={fieldErrors['contentMarkdown'] !== undefined}
           onChange={(event) => { change({ contentMarkdown: event.target.value }); }}
           onSelect={(event) => { selectionRef.current = { start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }; }} />
         {fieldError('contentMarkdown')}
-        <p className={ui.help}>Markdown original · máximo 256 KiB · Ctrl/⌘+S para guardar.</p>
+        <p className={ui.help}>{n.editorHelp}</p>
       </div>
 
       <div id="notebook-panel-preview" role="tabpanel" aria-labelledby="notebook-tab-preview" hidden={activeTab !== 'preview'}>
         {/* Oculta no se pinta: parsear el Markdown entero en cada pulsación frenaba la escritura en apuntes largos. */}
         {activeTab === 'preview' && <article className={styles.preview}>
-          <h1 id={hideFirstH1 ? firstHeading?.slug : undefined} className={styles.previewTitle}>{form.title.trim() || 'Sin título'}</h1>
-          {form.contentMarkdown === '' ? <p className={ui.help}>Todavía no hay contenido para mostrar.</p> : (
-            <MarkdownRenderer markdown={form.contentMarkdown} basePath={savedNote === undefined ? '/notebook/' : readerHref} hideFirstH1={hideFirstH1} />
+          <h1 id={hideFirstH1 ? firstHeading?.slug : undefined} className={styles.previewTitle}>{form.title.trim() || n.untitled}</h1>
+          {form.contentMarkdown === '' ? <p className={ui.help}>{n.nothingToShow}</p> : (
+            <MarkdownRenderer markdown={form.contentMarkdown} basePath={savedNote === undefined ? '/notebook/' : readerHref} hideFirstH1={hideFirstH1} t={t} />
           )}
         </article>}
       </div>
 
       <div className={styles.actions}>
-        <button type="button" className={ui.primary} disabled={editorLocked || finishing || issue !== null || !pendingChanges} onClick={() => { void save(true); }}>Guardar ahora</button>
+        <button type="button" className={ui.primary} disabled={editorLocked || finishing || issue !== null || !pendingChanges} onClick={() => { void save(true); }}>{n.saveNow}</button>
         <button type="button" className={ui.secondary} disabled={editorLocked || finishing || issue !== null}
-          onClick={() => { void finishEditing(); }}>Terminar edición</button>
+          onClick={() => { void finishEditing(); }}>{n.finishEditing}</button>
         {error !== null && <p role="alert" className={ui.fieldError}>{error}</p>}
       </div>
-      <ConfirmDialog open={confirmDiscard} title="Descartar borrador local" confirmLabel="Descartar borrador"
+      <ConfirmDialog open={confirmDiscard} title={n.discardDraftTitle} confirmLabel={n.discardDraft}
         error={discardError}
         onConfirm={() => {
           if (draft.discard()) setConfirmDiscard(false);
-          else setDiscardError('No se pudo borrar la copia local. Inténtalo de nuevo.');
+          else setDiscardError(n.discardFailed);
         }} onCancel={() => { setConfirmDiscard(false); setDiscardError(null); }}>
-        Se borrará la copia local seleccionada. Esta acción no se puede deshacer.
+        {n.discardSelectedBody}
       </ConfirmDialog>
-      <ConfirmDialog open={confirmLoadRemote} title="Cargar versión guardada" confirmLabel="Cargar versión guardada"
+      <ConfirmDialog open={confirmLoadRemote} title={n.loadSaved} confirmLabel={n.loadSaved}
         onConfirm={loadSavedVersion} onCancel={() => { setConfirmLoadRemote(false); }}>
-        Se sustituirá el texto de este editor por la versión guardada. Descarga primero el borrador si quieres conservar una copia.
+        {n.loadSavedBody}
       </ConfirmDialog>
     </div>
   );

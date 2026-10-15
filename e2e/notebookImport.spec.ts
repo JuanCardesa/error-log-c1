@@ -58,10 +58,10 @@ test('importa un .md desde la portada: revisa avisos y vista previa y crea un ap
 
     const notices = form.getByRole('region', { name: 'Antes de importar' });
     await expect(notices.getByText(/1 fragmento HTML o comentario/u)).toBeVisible();
-    await expect(notices.getByText(/1 imagen: se conservan como texto/u)).toBeVisible();
+    await expect(notices.getByText(/1 imagen: se conserva como texto/u)).toBeVisible();
     await expect(notices.getByText(/1 enlace apunta a otros archivos/u)).toBeVisible();
     await expect(notices.getByText('Campos del frontmatter que no se importan: autor.')).toBeVisible();
-    await expect(notices.getByText(/notebook_uid vienen de otra exportación/u)).toBeVisible();
+    await expect(notices.getByText(/Campos de otra exportación que no se aplican: notebook_uid\./u)).toBeVisible();
 
     const preview = form.getByRole('region', { name: 'Vista previa del apunte' });
     await expect(preview.getByRole('heading', { level: 1, name: 'Modales en pasado' })).toHaveCount(1);

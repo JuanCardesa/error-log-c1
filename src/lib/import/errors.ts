@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import { CATEGORIES, CAUSES, CONFIDENCES, PAPERS, SESSION_KINDS, SOURCES } from '../domain/enums';
+import type { Messages } from '../i18n';
+import { zodErrors } from '../i18n/zod';
 import { sessionInputSchema } from '../validation/schemas';
 import { toIsoDate } from '../time/dates';
 
@@ -8,9 +10,12 @@ export const MAX_IMPORT_ROWS = 100;
 export const MAX_IMPORT_LENGTH = 200_000;
 export const MAX_SESSION_IMPORT_ROWS = 300;
 
-const spanishError = z.locales.es().localeError;
-export const importParseOptions = { error: ((issue) => issue.code === 'unrecognized_keys'
-  ? `campos no permitidos (${issue.keys.join(', ')})` : spanishError(issue)) satisfies z.core.$ZodErrorMap };
+/** Opciones de análisis de una tanda: mensajes de Zod en el idioma de quien la revisa. */
+export function importParseOptions(t: Messages) {
+  const base = zodErrors(t);
+  return { error: ((issue) => issue.code === 'unrecognized_keys'
+    ? t.import.unknownFields(issue.keys.join(', ')) : base(issue)) satisfies z.core.$ZodErrorMap };
+}
 
 // Lista cerrada de campos de la cabecera pegada. Ni id, status ni duración.
 export const importedSessionSchema = z.strictObject({
@@ -30,22 +35,22 @@ function pendingCount(value: ImportedSession, path: readonly PropertyKey[]): boo
   return (field === 'itemsTotal' || field === 'itemsCorrect') && value[field] === null;
 }
 
-export function importEnvelopeSchema(today: string) {
+export function importEnvelopeSchema(today: string, t: Messages) {
   return z.strictObject({
     session: importedSessionSchema.superRefine((value, ctx) => {
-      const parsed = sessionInputSchema({ today }).safeParse(value, importParseOptions);
+      const parsed = sessionInputSchema({ today, t }).safeParse(value, importParseOptions(t));
       if (!parsed.success) for (const issue of parsed.error.issues) {
         if (pendingCount(value, issue.path)) continue;
         ctx.addIssue({ code: 'custom', path: issue.path, message: issue.message });
       }
     }),
-    errors: sessionImportRowsSchema,
+    errors: sessionImportRowsSchema(t),
   });
 }
 
-export function importIssues(error: z.ZodError): string {
-  return error.issues.map((issue) => `${issue.path.join('.') || 'sobre'}: ${
-    issue.code === 'unrecognized_keys' ? `campos no permitidos (${issue.keys.join(', ')})` : issue.message
+export function importIssues(error: z.ZodError, t: Messages): string {
+  return error.issues.map((issue) => `${issue.path.join('.') || t.import.envelope}: ${
+    issue.code === 'unrecognized_keys' ? t.import.unknownFields(issue.keys.join(', ')) : issue.message
   }`).join('; ');
 }
 
@@ -73,9 +78,11 @@ export const importDraftSchema = z.object({
 export type ImportDraft = z.infer<typeof importDraftSchema>;
 
 export const importBatchSchema = z.array(importDraftSchema).min(1).max(MAX_IMPORT_ROWS);
-export const sessionImportRowsSchema = z.array(importDraftSchema).max(MAX_SESSION_IMPORT_ROWS, {
-  error: `El bloque admite como máximo ${String(MAX_SESSION_IMPORT_ROWS)} errores. Divide la tanda en partes.`,
-});
+export function sessionImportRowsSchema(t: Messages) {
+  return z.array(importDraftSchema).max(MAX_SESSION_IMPORT_ROWS, {
+    error: t.import.tooManyRows(MAX_SESSION_IMPORT_ROWS),
+  });
+}
 
 /** Ambos validadores identifican la posición enviada, con o sin el prefijo del sobre. */
 export function errorsForRow(fieldErrors: Record<string, string[]>, position: number): Record<string, string[]> {
@@ -92,6 +99,7 @@ const columns = [
   'cause', 'confidence', 'subcategory',
 ] as const;
 
+// Se aceptan las cabeceras de la plantilla en los dos idiomas, sin acentos ni espacios.
 const headers: Readonly<Record<string, string>> = {
   item: 'itemRef', itemref: 'itemRef', enunciado: 'prompt', prompt: 'prompt',
   mirespuesta: 'myAnswer', myanswer: 'myAnswer', correcta: 'correctAnswer',
@@ -106,7 +114,7 @@ function normalize(value: string): string {
 }
 
 /** Lee tabulaciones de una hoja de calculo, incluidas celdas con saltos de linea. */
-function readTable(text: string): string[][] {
+function readTable(text: string, t: Messages): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = '';
@@ -123,7 +131,7 @@ function readTable(text: string): string[][] {
       if (char === '\n') { rows.push(row); row = []; }
     } else cell += char;
   }
-  if (quoted) throw new Error('Hay una celda con comillas sin cerrar. Copia de nuevo la tabla completa.');
+  if (quoted) throw new Error(t.import.unclosedQuote);
   row.push(cell);
   rows.push(row);
   return rows.filter((values) => values.some((value) => value.trim() !== ''));
@@ -131,69 +139,75 @@ function readTable(text: string): string[][] {
 
 export interface ImportedBatch { session: ImportedSession | null; errors: ImportDraft[] }
 
-export function parseImportedBatch(source: string, today = toIsoDate(new Date())): ImportedBatch {
-  if (source.length > MAX_IMPORT_LENGTH) throw new Error('El texto es demasiado largo. Divide la importación en tandas más pequeñas.');
+export function parseImportedBatch(source: string, t: Messages, today = toIsoDate(new Date())): ImportedBatch {
+  if (source.length > MAX_IMPORT_LENGTH) throw new Error(t.import.tooLong);
   const text = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').replace(/^\n+|\n+$/g, '')
     .replace(/^\s*```(?:json|tsv)?[^\S\n]*\n/i, '').replace(/\n```\s*$/, '');
-  if (text.trim() === '') throw new Error('Pega primero tus errores.');
+  if (text.trim() === '') throw new Error(t.import.empty);
   let data: unknown;
   let session: ImportedSession | null = null;
   if (text.trimStart().startsWith('[') || text.trimStart().startsWith('{')) {
     try { data = JSON.parse(text); }
-    catch { throw new Error('El bloque está incompleto o no es JSON válido. Copia la respuesta completa de la IA.'); }
+    catch { throw new Error(t.import.invalidJson); }
     if (data !== null && typeof data === 'object' && !Array.isArray(data) && ('errors' in data || 'session' in data)) {
       if ('errors' in data && !('session' in data)) data = data.errors;
       else {
-        const envelope = importEnvelopeSchema(today).safeParse(data, importParseOptions);
-        if (!envelope.success) throw new Error(`Sobre inválido. ${importIssues(envelope.error)}`);
+        const envelope = importEnvelopeSchema(today, t).safeParse(data, importParseOptions(t));
+        if (!envelope.success) throw new Error(t.import.invalidEnvelope(importIssues(envelope.error, t)));
         session = envelope.data.session;
         data = envelope.data.errors;
       }
     } else if (!Array.isArray(data)) data = [data];
   } else {
-    if (!text.includes('\t')) throw new Error('Para texto libre, usa «Copiar instrucciones para la IA» y pega aquí su respuesta. También puedes pegar filas de una hoja de calculo.');
-    const rows = readTable(text);
+    if (!text.includes('\t')) throw new Error(t.import.freeText);
+    const rows = readTable(text, t);
     const first = rows[0] ?? [];
     const mapped = first.map((cell) => headers[normalize(cell).toLowerCase().replace(/[\s_]/g, '')]);
     const hasHeader = mapped.includes('prompt') && mapped.includes('correctAnswer');
     const fields = hasHeader ? mapped : columns;
     if (hasHeader && (fields.some((field) => field === undefined) || new Set(fields).size !== fields.length)) {
-      throw new Error('Hay columnas desconocidas o repetidas. Usa las cabeceras de la plantilla.');
+      throw new Error(t.import.unknownColumns);
     }
     data = (hasHeader ? rows.slice(1) : rows).map((values, index) => {
       if (values.length !== fields.length && (hasHeader || values.length !== 6)) {
-        throw new Error(`Fila ${String(index + 1)}: usa las 6 columnas de la plantilla o incluye cabeceras.`);
+        throw new Error(t.import.rowColumns(index + 1));
       }
       return Object.fromEntries(values.map((value, i) => [fields[i], value]));
     });
   }
   // El sobre admite mas filas que el array suelto: el aviso tiene que decir su propio limite.
   const limit = session === null ? MAX_IMPORT_ROWS : MAX_SESSION_IMPORT_ROWS;
-  const parsed = (session === null ? importBatchSchema : sessionImportRowsSchema).safeParse(data, importParseOptions);
+  const parsed = (session === null ? importBatchSchema : sessionImportRowsSchema(t)).safeParse(data, importParseOptions(t));
   if (!parsed.success) {
-    throw new Error(`Se esperan entre 1 y ${String(limit)} errores con campos de texto. Comprueba que has copiado el bloque completo.`);
+    throw new Error(t.import.rowCount(limit));
   }
   const errors = parsed.data.map((row, index) => {
     // Una celda en blanco de Causa o Confianza equivale a no traer la columna: vale la propuesta.
     const cause = normalize(row.cause) || DEFAULT_CAUSE;
     const confidence = normalize(row.confidence) || DEFAULT_CONFIDENCE;
     if (!CAUSES.some((value) => value === cause) || !CONFIDENCES.some((value) => value === confidence)) {
-      throw new Error(`Error ${String(index + 1)}: causa o confianza no reconocida. Usa los valores de las instrucciones.`);
+      throw new Error(t.import.unknownCauseOrConfidence(index + 1));
     }
     return { ...row, cause, confidence, category: normalize(row.category).replace(/\s+/g, '_') };
   });
   return { session, errors };
 }
 
-export const IMPORT_TEMPLATE = 'Item\tEnunciado\tMi respuesta\tCorrecta\tCategoria\tRegla\n4\tThey called ___ the meeting.\tof\toff\tPHRASAL_VERB\tCall off significa cancelar; se escribe con doble f.';
+/**
+ * Fila de ejemplo de la plantilla. Es contenido de muestra, igual en los dos idiomas: lo
+ * que cambia con la interfaz son las cabeceras, que el importador acepta en ambos.
+ */
+const TEMPLATE_EXAMPLE = '4\tThey called ___ the meeting.\tof\toff\tPHRASAL_VERB\tCall off significa cancelar; se escribe con doble f.';
 
-export const IMPORT_PROMPT = `Convierte en JSON las correcciones de ingles que pegue o adjunte como fotos o capturas, para importarlas en mi Error Log C1. Procesa una sola sesion de practica por tanda: todos los errores deben pertenecer a esa misma sesion.
+export function importTemplate(t: Messages): string {
+  return `${t.import.templateHeaders.join('\t')}\n${TEMPLATE_EXAMPLE}`;
+}
 
-FORMATO DE SALIDA
-
-Devuelve exclusivamente este objeto JSON, sin Markdown, sin bloques de codigo y sin explicaciones antes ni despues. Respeta los tipos del ejemplo: part, itemsTotal e itemsCorrect son numeros o null, nunca cadenas; timed es booleano; los campos de cada error son cadenas.
-
-{
+/**
+ * El ejemplo del prompt es el contrato con el importador: nombres de campo, tipos y valores
+ * no cambian con el idioma. Un test comprueba que el importador lo acepta tal cual.
+ */
+const PROMPT_EXAMPLE = `{
   "session": {
     "date": "2026-09-15",
     "kind": "DRILL",
@@ -216,37 +230,18 @@ Devuelve exclusivamente este objeto JSON, sin Markdown, sin bloques de codigo y 
       "ruleNote": "Call off significa cancelar; se escribe con doble f."
     }
   ]
+}`;
+
+/** Instrucciones para preparar una tanda con una IA externa. La app no llama a ninguna. */
+export function importPrompt(t: Messages): string {
+  return t.import.aiPrompt({
+    example: PROMPT_EXAMPLE,
+    kinds: SESSION_KINDS.join(', '),
+    papers: PAPERS.join(', '),
+    sources: SOURCES.join(', '),
+    categories: CATEGORIES.join(', '),
+    causes: CAUSES.join(', '),
+    confidences: CONFIDENCES.join(', '),
+    maxRows: MAX_SESSION_IMPORT_ROWS,
+  });
 }
-
-Valores admitidos, exactamente como se escriben aqui:
-- kind: ${SESSION_KINDS.join(', ')}.
-- paper: ${PAPERS.join(', ')}, o null.
-- part: entero positivo, o null.
-- source: ${SOURCES.join(', ')}.
-- category: ${CATEGORIES.join(', ')}.
-
-Añade a un error las claves opcionales cause (${CAUSES.join(', ')}) y confidence (${CONFIDENCES.join(', ')}) SOLO si yo las he indicado expresamente para ese error. No las deduzcas por el tipo de fallo ni por haber respondido mal; si faltan, el formulario propondra DESCONOCIMIENTO y DUDABA y yo los revisare.
-
-QUE NO DEBES INVENTAR
-
-Un dato inventado no se distingue de uno real y se queda en mi historial. Ante la duda, deja "" o null.
-
-- No inventes pagina, unidad, paper, part, sourceRef, itemsTotal, itemsCorrect ni nada sobre el tiempo. Conserva tal cual los datos de sesion que yo te de.
-- No deduzcas paper ni part por el tipo de ejercicio. Calcula itemsCorrect solo si consta la sesion entera con todos sus errores.
-- Transcribe myAnswer exactamente, con su ortografia original: no la corrijas al copiarla.
-- correctAnswer solo puede salir del solucionario o de una correccion visible. Si no la hay, dejala como "".
-- Incluye solo lo que yo señale, lo marcado como incorrecto o lo que puedas comparar con una correccion fiable. No conviertas en errores todos los ejercicios de la foto.
-- Si un texto no se lee con claridad, dejalo como "" para que yo lo revise. Nunca escribas "ilegible" ni "pendiente" en su lugar.
-- Si no puedes identificar que he fallado, pideme mis respuestas, el solucionario o una captura mejor antes de generar nada.
-
-LECTURA Y DETALLE
-
-- Relaciona cada respuesta con su numero de ejercicio y su enunciado, conservando huecos, puntuacion y ortografia.
-- prompt lleva el enunciado necesario para entender el error, con sus opciones o instrucciones si hacen falta.
-- ruleNote explica en español, breve y concreta, la regla o criterio que evita repetir el error: al menos 15 caracteres y sin limitarse a repetir correctAnswer. Si no puedes justificar una regla util, dejala como "".
-- subcategory afina la categoria cuando aporte algo; si no, "".
-- itemRef es el identificador tal como aparece. Dos actividades distintas pueden repetir numero: conserva el de cada una y distinguelas por el prompt.
-- Si varias capturas se solapan, incluye cada error una sola vez. Como maximo ${String(MAX_SESSION_IMPORT_ROWS)} errores por sesion.
-
-Datos de la sesion y correcciones (texto o imagenes adjuntas):
-`;

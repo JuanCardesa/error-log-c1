@@ -1,4 +1,5 @@
 import type { SessionRow } from '@/lib/domain/types';
+import type { Messages } from '@/lib/i18n';
 import { addDays, parseIsoDate, toIsoDate, toUtcIsoDate, windowStart } from '@/lib/time/dates';
 import { isoWeekOf } from '@/lib/time/isoWeek';
 import { dateRange } from './format';
@@ -21,7 +22,7 @@ export interface WeekColumn {
   readonly range: string;
 }
 
-export function windowWeeks(now: Date, days: number): WeekColumn[] {
+export function windowWeeks(now: Date, days: number, t: Messages): WeekColumn[] {
   const first = windowStart(now, days);
   const last = toIsoDate(now);
   const weeks: WeekColumn[] = [];
@@ -37,7 +38,7 @@ export function windowWeeks(now: Date, days: number): WeekColumn[] {
       start,
       end,
       partial: start !== mondayIso || end !== sundayIso,
-      range: dateRange(start, end),
+      range: dateRange(start, end, t),
     });
     monday = addDays(monday, 7);
   }

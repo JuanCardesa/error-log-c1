@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import type { Messages } from '../i18n';
+import { localized } from '../i18n/zod';
+
 export const NOTEBOOK_LIMITS = {
   folderName: 80,
   title: 160,
@@ -16,11 +19,17 @@ export const NOTEBOOK_IMPORT_MAX_FILE_BYTES = NOTEBOOK_LIMITS.contentBytes + NOT
 export const NOTEBOOK_IMPORT_ACCEPT = '.md,.markdown,text/markdown';
 
 /** El navegador lo comprueba antes de enviar; el servidor lo repite antes de leer el archivo. */
-export function notebookImportSizeError(bytes: number): string | null {
+export function notebookImportSizeError(bytes: number, t: Messages): string | null {
   return bytes > NOTEBOOK_IMPORT_MAX_FILE_BYTES
-    ? `El archivo supera ${String(Math.floor(NOTEBOOK_IMPORT_MAX_FILE_BYTES / 1024))} KiB.`
+    ? t.notebookImport.fileTooBig(Math.floor(NOTEBOOK_IMPORT_MAX_FILE_BYTES / 1024))
     : null;
 }
+
+/*
+ * Los mensajes no se escriben aquí: estos esquemas son constantes y no saben en qué idioma
+ * se leerán. `localized` deja el texto como función del diccionario, y quien valida pasa
+ * `zodErrors(t)` o `formErrors(t)` para redactarlo. Un texto vacío lo dice ese mismo mapa.
+ */
 
 const singleLineControl = /[\u0000-\u001f\u007f]/u;
 const multilineControl = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u;
@@ -44,29 +53,29 @@ export function normalizeFolderNameKey(value: string): string {
 function label(maxLength: number) {
   return z.string().transform(normalizeLabel).pipe(
     z.string()
-      .min(1, 'No puede estar vacío')
+      .min(1)
       .refine((value) => characterCount(value) <= maxLength,
-        `Máximo ${String(maxLength)} caracteres`)
-      .refine((value) => !singleLineControl.test(value), 'No admite caracteres de control'),
+        localized((t) => t.validation.maxChars(maxLength)))
+      .refine((value) => !singleLineControl.test(value), localized((t) => t.validation.noControlChars)),
   );
 }
 
 export const notebookFolderNameSchema = label(NOTEBOOK_LIMITS.folderName)
   .refine((value) => characterCount(normalizeFolderNameKey(value)) <= NOTEBOOK_LIMITS.folderName,
-    `Máximo ${String(NOTEBOOK_LIMITS.folderName)} caracteres tras normalizar`);
+    localized((t) => t.validation.maxCharsNormalized(NOTEBOOK_LIMITS.folderName)));
 export const notebookTitleSchema = label(NOTEBOOK_LIMITS.title);
 export const notebookTagSchema = label(NOTEBOOK_LIMITS.tagLength)
   .transform((value) => value.toLowerCase().normalize('NFC'))
   .pipe(z.string().refine((value) => characterCount(value) <= NOTEBOOK_LIMITS.tagLength,
-    `Máximo ${String(NOTEBOOK_LIMITS.tagLength)} caracteres`));
+    localized((t) => t.validation.maxChars(NOTEBOOK_LIMITS.tagLength))));
 
 export const notebookTagsSchema = z.array(notebookTagSchema)
-  .max(NOTEBOOK_LIMITS.tagCount, `Máximo ${String(NOTEBOOK_LIMITS.tagCount)} etiquetas`)
+  .refine((tags) => tags.length <= NOTEBOOK_LIMITS.tagCount, localized((t) => t.validation.maxTags(NOTEBOOK_LIMITS.tagCount)))
   .superRefine((tags, ctx) => {
     const seen = new Set<string>();
     tags.forEach((tag, index) => {
       if (seen.has(tag)) {
-        ctx.addIssue({ code: 'custom', path: [index], message: 'Etiqueta duplicada' });
+        ctx.addIssue({ code: 'custom', path: [index], ...localized((t) => t.validation.duplicateTag) });
       }
       seen.add(tag);
     });
@@ -74,10 +83,10 @@ export const notebookTagsSchema = z.array(notebookTagSchema)
 
 /** Se conserva el Markdown original: no se recorta ni se normalizan sus saltos. */
 export const notebookContentSchema = z.string()
-  .refine((value) => !multilineControl.test(value), 'Contiene caracteres de control')
+  .refine((value) => !multilineControl.test(value), localized((t) => t.validation.containsControlChars))
   .refine(
     (value) => new TextEncoder().encode(value).length <= NOTEBOOK_LIMITS.contentBytes,
-    `Máximo ${String(NOTEBOOK_LIMITS.contentBytes)} bytes UTF-8`,
+    localized((t) => t.validation.maxBytes(NOTEBOOK_LIMITS.contentBytes)),
   );
 
 const noteFields = {
@@ -136,8 +145,8 @@ export const searchNotebookSchema = z.strictObject({
   query: z.string().transform(normalizeLabel).pipe(
     z.string()
       .refine((value) => characterCount(value) <= NOTEBOOK_LIMITS.searchQuery,
-        `Máximo ${String(NOTEBOOK_LIMITS.searchQuery)} caracteres`)
-      .refine((value) => !singleLineControl.test(value), 'Consulta inválida'),
+        localized((t) => t.validation.maxChars(NOTEBOOK_LIMITS.searchQuery)))
+      .refine((value) => !singleLineControl.test(value), localized((t) => t.validation.invalidQuery)),
   ),
   folderId: safeId.nullable().default(null),
   unfiledOnly: z.boolean().optional(),

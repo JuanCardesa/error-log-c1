@@ -20,13 +20,6 @@ export interface RowSnapshot {
 
 export type MissingField = 'correctAnswer' | 'category' | 'ruleNote' | 'prompt';
 
-export const MISSING_LABELS: Readonly<Record<MissingField, string>> = {
-  correctAnswer: 'corrección',
-  category: 'categoría',
-  ruleNote: 'regla',
-  prompt: 'enunciado',
-};
-
 export function snapshotFromDraft(draft: ImportDraft): RowSnapshot {
   const { itemRef, prompt, myAnswer, correctAnswer, category, ruleNote } = draft;
   return { itemRef, prompt, myAnswer, correctAnswer, category, ruleNote };

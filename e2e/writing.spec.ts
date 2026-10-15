@@ -118,7 +118,7 @@ test('conserva los cambios de Writing al rechazar un ciclo y permite corregirlo'
   await drawer(page).getByLabel('Es una reescritura').check();
   await drawer(page).getByRole('combobox', { name: 'Texto original' }).selectOption(String(rewrite.id));
   await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click();
-  await expect(drawer(page).getByText('Ese enlace crearia un ciclo de reescrituras', { exact: true })).toBeVisible();
+  await expect(drawer(page).getByText('Ese enlace crearía un ciclo de reescrituras', { exact: true })).toBeVisible();
   await expect(drawer(page).getByLabel('Palabras', { exact: true })).toHaveValue('299');
   await expect(drawer(page).getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('REVIEW');
   await expect(drawer(page).getByRole('combobox', { name: 'Corrector', exact: true })).toHaveValue('IA');

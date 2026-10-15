@@ -3,16 +3,19 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
+import { getMessages } from '@/lib/i18n';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
+const t = getMessages('es');
+
 function render(markdown: string, basePath = '/notebook/42-example', hideFirstH1 = false): string {
-  return renderToStaticMarkup(createElement(MarkdownRenderer, { markdown, basePath, hideFirstH1 }));
+  return renderToStaticMarkup(createElement(MarkdownRenderer, { markdown, basePath, hideFirstH1, t }));
 }
 
 describe('MarkdownRenderer', () => {
   it('el modo estudio indexa texto visible sin introducir HTML del usuario', () => {
     const html = renderToStaticMarkup(createElement(MarkdownRenderer, {
-      markdown: 'One **two** &amp; [three](https://example.com).\n\n`code`\n\n<script>bad()</script>', study: true,
+      markdown: 'One **two** &amp; [three](https://example.com).\n\n`code`\n\n<script>bad()</script>', study: true, t,
     }));
     expect(html).toContain('data-study-start="0"');
     expect(html).toContain('data-study-start="4"');

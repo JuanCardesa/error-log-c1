@@ -3,7 +3,8 @@ import { assertAnkiScope, getAnkiSync, linkedAnkiNotes, saveAnkiSnapshot } from 
 import { loadAnkiDataset } from '../db/load';
 import { ankiApi, searchTerm, type AnkiNote, type AnkiCard, type AnkiReview } from './api';
 import { ankiConfig, type AnkiConfig } from './config';
-import { AnkiError, ankiMessage, httpTransport, withRetry, type Transport } from './connect';
+import type { LazyText } from '../i18n';
+import { AnkiError, httpTransport, withRetry, type Transport } from './connect';
 import { reconcile } from './reconcile';
 import { resolveRollover } from './schedule';
 
@@ -26,7 +27,8 @@ export function batches<T>(values: readonly T[], size: number): T[][] {
 
 export interface AnkiStatus {
   readonly available: boolean;
-  readonly message: string;
+  /** Sin redactar: el estado se guarda en caché y cada página lo lee en su idioma. */
+  readonly text: LazyText;
 }
 
 /**
@@ -60,21 +62,19 @@ export async function ankiStatus(db: Db, config?: AnkiConfig, transport?: Transp
     assertAnkiScope(getAnkiSync(db), resolved, profile);
     if (fresh && cached.profile === profile) return cached.status;
     if (fresh) await api.version();
-    const status = { available: true, message: `Anki conectado · perfil ${profile}` };
+    const status: AnkiStatus = { available: true, text: (t) => t.ankiErrors.connected(profile) };
     statusCache.set(db, { key, profile, at: now, status });
     return status;
   } catch (error) {
     forgetAnkiStatus(db);
-    return { available: false, message: ankiMessage(error) };
+    return { available: false, text: error instanceof AnkiError ? error.text : (t) => t.ankiErrors.unexpected };
   }
 }
 
 export async function syncAnki(db: Db, transport?: Transport, now = new Date(), config: AnkiConfig = ankiConfig()) {
   const deadline = Date.now() + config.syncBudgetMs;
   const controller = new AbortController();
-  const timeout = new AnkiError('ANKI_LENTO',
-    `La sincronización ha agotado su plazo de ${String(config.syncBudgetMs / 1000)} s y se ha detenido sin guardar nada. `
-    + 'Comprueba que Anki responde y vuelve a intentarlo; si tu colección es muy grande, sube ANKI_SYNC_BUDGET_MS.');
+  const timeout = new AnkiError('ANKI_LENTO', (t) => t.ankiErrors.syncBudget(config.syncBudgetMs / 1000));
   const checkDeadline = (): void => {
     if (Date.now() >= deadline) controller.abort(timeout);
     controller.signal.throwIfAborted();
@@ -96,7 +96,7 @@ export async function syncAnki(db: Db, transport?: Transport, now = new Date(), 
     const profile = await api.profile();
     assertAnkiScope(getAnkiSync(db), config, profile);
     const decks = await api.deckNames();
-    if (!decks.includes(config.sourceDeck)) throw new AnkiError('ANKI_CONFIG', `No se encuentra el mazo «${config.sourceDeck}» en el perfil abierto.`);
+    if (!decks.includes(config.sourceDeck)) throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.deckNotFound(config.sourceDeck));
     const rollover = resolveRollover(config.rolloverHour);
     // Incluir nuevas: una carta restablecida puede seguir teniendo historial.
     const ids = [...new Set(await api.findCards(`(${searchTerm('deck', config.sourceDeck)} OR ${searchTerm('deck', config.targetDeck)})`))];
@@ -118,7 +118,7 @@ export async function syncAnki(db: Db, transport?: Transport, now = new Date(), 
         else notes.push(note);
       });
     }
-    if (await api.profile() !== profile) throw new AnkiError('ANKI_CONFIG', 'El perfil cambió durante la lectura. No se ha guardado; vuelve a sincronizar.');
+    if (await api.profile() !== profile) throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.profileChangedRead);
     const plan = reconcile({ cards, notes, reviews, missingNoteIds }, loadAnkiDataset(db), now, rollover);
     checkDeadline();
     saveAnkiSnapshot(db, plan, config, profile, now.toISOString(), checkDeadline);

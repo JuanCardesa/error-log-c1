@@ -5,7 +5,7 @@ import { searchNotebookNotes } from '@/lib/db/notebookSearch';
 import { searchErrors, searchSessions } from '@/lib/db/repo';
 import { SOURCES } from '@/lib/domain/enums';
 import { practiceLabel, sessionTitle, shortDate } from './format';
-import { CATEGORY_LABELS, SOURCE_LABELS } from './labels';
+import { getT } from './i18nServer';
 
 /**
  * Resultados de la paleta Ctrl/⌘+K. Se consultan en el servidor, paginados: nunca se
@@ -44,26 +44,28 @@ export async function searchPaletteAction(query: string): Promise<PaletteResults
   const q = typeof query === 'string' ? query.trim().slice(0, MAX_QUERY) : '';
   if (q === '') return { errors: [], sessions: [], notes: [] };
   const db = getDb();
+  const t = await getT();
   const lower = q.toLowerCase();
-  const sources = SOURCES.filter((source) => SOURCE_LABELS[source].toLowerCase().includes(lower));
+  // La fuente se busca por su nombre en el idioma en que se lee.
+  const sources = SOURCES.filter((source) => t.labels.source[source].toLowerCase().includes(lower));
 
   const errors = searchErrors(db, { q, limit: 5, offset: 0, includeTotal: false }).rows.map(({ error, session }) => ({
     id: error.id,
     sessionId: session.id,
     mine: error.myAnswer,
     correct: error.correctAnswer,
-    sub: `${CATEGORY_LABELS[error.category]} · ${sessionTitle(session)} · ${shortDate(session.date)}`,
+    sub: `${t.labels.category[error.category]} · ${sessionTitle(session, t)} · ${shortDate(session.date, t)}`,
   }));
   const sessions = searchSessions(db, { q, sources, limit: 3, offset: 0, includeTotal: false }).rows.map((session) => ({
     id: session.id,
-    title: sessionTitle(session),
-    sub: `${shortDate(session.date)} · ${practiceLabel(session)}`,
+    title: sessionTitle(session, t),
+    sub: `${shortDate(session.date, t)} · ${practiceLabel(session, t)}`,
   }));
   const notes = searchNotebookNotes(db, { query: q, folderId: null, tag: null, page: 1 }).items
     .slice(0, 3).map((note) => ({
       id: note.id,
       title: note.title,
-      sub: note.tags.length > 0 ? note.tags.join(' · ') : 'Apunte',
+      sub: note.tags.length > 0 ? note.tags.join(' · ') : t.palette.note,
     }));
   return { errors, sessions, notes };
 }

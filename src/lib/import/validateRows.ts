@@ -1,3 +1,5 @@
+import type { Messages } from '../i18n';
+import { formErrors } from '../i18n/zod';
 import { errorInputSchema, type ErrorInput } from '../validation/schemas';
 import type { ImportDraft } from './errors';
 
@@ -11,15 +13,16 @@ import type { ImportDraft } from './errors';
  * verificarla; por eso aqui ya no hace falta reloj.
  */
 export function validateImportRows(drafts: readonly ImportDraft[], options: {
-  sessionId: number; timed: boolean;
+  sessionId: number; timed: boolean; t: Messages;
 }) {
   const fieldErrors: Record<string, string[]> = {};
   const inputs: ErrorInput[] = [];
-  const { sessionId, timed } = options;
+  const { sessionId, timed, t } = options;
+  const schema = errorInputSchema(t);
   drafts.forEach((draft, index) => {
-    const parsed = errorInputSchema().safeParse({
+    const parsed = schema.safeParse({
       ...draft, sessionId, lateInSession: timed && draft.lateInSession,
-    });
+    }, { error: formErrors(t) });
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
         const key = `${String(index)}.${issue.path.join('.')}`;

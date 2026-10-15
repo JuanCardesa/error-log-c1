@@ -1,9 +1,16 @@
+import { DEFAULT_LOCALE, type LazyText, type Messages, getMessages } from '../i18n';
 import type { AnkiConfig } from './config';
 
 export type AnkiErrorCode = 'ANKI_CERRADO' | 'ANKI_LENTO' | 'ANKI_ERROR' | 'ANKI_RESPUESTA_RARA' | 'ANKI_CONFIG';
+
+/**
+ * Error de Anki con su aviso sin redactar: nace en capas que no saben en qué idioma se va
+ * a leer. `ankiMessage` lo escribe en el de la interfaz; `message` lo lleva en el idioma
+ * por defecto para registros y tests.
+ */
 export class AnkiError extends Error {
-  constructor(readonly code: AnkiErrorCode, message: string) {
-    super(message);
+  constructor(readonly code: AnkiErrorCode, readonly text: LazyText) {
+    super(text(getMessages(DEFAULT_LOCALE)));
     this.name = 'AnkiError';
   }
 }
@@ -71,7 +78,7 @@ function isTimeout(error: unknown): boolean {
 export function httpTransport(config: AnkiConfig, fetcher: typeof fetch = globalThis.fetch): Transport {
   return async (body, signal) => {
     signal?.throwIfAborted();
-    if (config.disabled) throw new AnkiError('ANKI_CONFIG', 'Anki está desactivado en la demo y en las pruebas.');
+    if (config.disabled) throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.disabled);
     let response: Response;
     // multi vuelve a pasar cada acción por el validador de claves de AnkiConnect.
     const authorized = {
@@ -96,15 +103,16 @@ export function httpTransport(config: AnkiConfig, fetcher: typeof fetch = global
       signal?.throwIfAborted();
       // Expirar y no poder conectar se arreglan de formas distintas: una espera, la otra no.
       if (isTimeout(error)) {
-        throw new AnkiError('ANKI_LENTO', 'Anki tardó demasiado en responder. Con colecciones grandes puede pasar mientras está ocupado; vuelve a intentarlo.');
+        throw new AnkiError('ANKI_LENTO', (t) => t.ankiErrors.slow);
       }
-      throw new AnkiError('ANKI_CERRADO', 'No se puede conectar. Abre Anki con AnkiConnect instalado y vuelve a intentarlo.');
+      throw new AnkiError('ANKI_CERRADO', (t) => t.ankiErrors.closed);
     }
-    if (!response.ok) throw new AnkiError('ANKI_ERROR', `AnkiConnect respondió con HTTP ${String(response.status)}.`);
+    const status = response.status;
+    if (!response.ok) throw new AnkiError('ANKI_ERROR', (t) => t.ankiErrors.http(status));
     try { return await response.json() as unknown; }
     catch {
       signal?.throwIfAborted();
-      throw new AnkiError('ANKI_RESPUESTA_RARA', 'AnkiConnect no devolvió JSON válido.');
+      throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.invalidJson);
     }
   };
 }
@@ -146,14 +154,16 @@ export function withRetry(transport: Transport, options: RetryOptions = {}): Tra
 export function unwrap(response: unknown): unknown {
   if (response === null || typeof response !== 'object'
     || !('result' in response) || !('error' in response)) {
-    throw new AnkiError('ANKI_RESPUESTA_RARA', 'Respuesta incompleta de AnkiConnect. No se ha guardado.');
+    throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.incomplete);
   }
   // Se cita como ajeno: es el texto de AnkiConnect, no un mensaje escrito para esta app.
-  if (typeof response.error === 'string') throw new AnkiError('ANKI_ERROR', `AnkiConnect responde: ${response.error}`);
-  if (response.error !== null) throw new AnkiError('ANKI_RESPUESTA_RARA', 'Error de AnkiConnect con formato desconocido.');
+  const reply = response.error;
+  if (typeof reply === 'string') throw new AnkiError('ANKI_ERROR', (t) => t.ankiErrors.says(reply));
+  if (reply !== null) throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.unknownFormat);
   return response.result;
 }
 
-export function ankiMessage(error: unknown): string {
-  return error instanceof AnkiError ? error.message : 'No se pudo completar la operación. Vuelve a intentarlo; se comprobará si la nota ya existe.';
+/** El aviso de un fallo de Anki, en el idioma de quien lo lee. Nunca el detalle interno. */
+export function ankiMessage(error: unknown, t: Messages): string {
+  return error instanceof AnkiError ? error.text(t) : t.ankiErrors.unexpected;
 }

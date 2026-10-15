@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useSyncExternalStore } from 'react';
 
+import { useT } from '../_shared/i18nClient';
 import ui from '../_shared/ui.module.css';
 
 /**
@@ -41,13 +42,14 @@ export function useListHref(): string {
 }
 
 export function BackToList() {
+  const t = useT();
   const href = useListHref();
   const kept = href !== '/registrar';
   return (
     <Link href={href} className={ui.backLink}>
       <ArrowLeft size={16} aria-hidden="true" />
-      Sesiones
-      {kept && <span className={ui.backHint}>· filtro conservado</span>}
+      {t.nav.sessions}
+      {kept && <span className={ui.backHint}>{t.sessionView.filterKept}</span>}
     </Link>
   );
 }

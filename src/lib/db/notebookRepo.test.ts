@@ -165,21 +165,21 @@ describe('repositorio de carpetas Notebook', () => {
 
   it('rechaza nombres equivalentes en el mismo nivel pero los permite en otro', () => {
     const grammar = create('Café');
-    expect(() => create('Cafe\u0301')).toThrow(/Ya existe/);
+    expect(() => create('Cafe\u0301')).toThrow(/already exists/);
     expect(() => create('Café', grammar.id)).not.toThrow();
   });
 
   it('rechaza padres inexistentes, tercer nivel y ciclos', () => {
-    expect(() => create('Huérfana', 999)).toThrow(/padre/);
+    expect(() => create('Huérfana', 999)).toThrow(/parent/);
     const root = create('Grammar');
     const child = create('Modal verbs', root.id);
-    expect(() => create('Third level', child.id)).toThrow(/padre/);
+    expect(() => create('Third level', child.id)).toThrow(/parent/);
     expect(() => updateNotebookFolder(db, {
       id: root.id, name: root.name, parentId: child.id,
-    }, NOW)).toThrow(/padre|subcarpetas/);
+    }, NOW)).toThrow(/parent|subfolders/);
     expect(() => updateNotebookFolder(db, {
       id: child.id, name: child.name, parentId: child.id,
-    }, NOW)).toThrow(/propio padre/);
+    }, NOW)).toThrow(/own parent/);
     expect(getNotebookFolder(db, root.id)?.parentId).toBeNull();
   });
 
@@ -198,13 +198,13 @@ describe('repositorio de carpetas Notebook', () => {
     }, NOW).parentId).toBeNull();
     expect(() => updateNotebookFolder(db, {
       id: 999, name: 'Missing', parentId: null,
-    }, NOW)).toThrow(/no encontrada/);
+    }, NOW)).toThrow(/not found/);
   });
 
   it('no borra carpetas con subcarpetas o apuntes', () => {
     const root = create('Grammar');
     const child = create('Modal verbs', root.id);
-    expect(() => deleteNotebookFolder(db, root.id)).toThrow(/contiene/);
+    expect(() => deleteNotebookFolder(db, root.id)).toThrow(/contains/);
     db.insert(notebookNote).values({
       uid: '9c8de1e3-03e6-42ec-a098-ac0db92331d0',
       folderId: child.id,
@@ -214,11 +214,11 @@ describe('repositorio de carpetas Notebook', () => {
       createdAt: NOW,
       updatedAt: NOW,
     }).run();
-    expect(() => deleteNotebookFolder(db, child.id)).toThrow(/contiene/);
+    expect(() => deleteNotebookFolder(db, child.id)).toThrow(/contains/);
     db.delete(notebookNote).run();
     deleteNotebookFolder(db, child.id);
     deleteNotebookFolder(db, root.id);
     expect(listNotebookFolders(db)).toEqual([]);
-    expect(() => deleteNotebookFolder(db, root.id)).toThrow(/no encontrada/);
+    expect(() => deleteNotebookFolder(db, root.id)).toThrow(/not found/);
   });
 });
