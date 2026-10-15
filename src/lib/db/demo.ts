@@ -6,6 +6,7 @@ import { migrate } from './migrate';
 import { createDb } from './client';
 import { MIGRATIONS_DIR } from './paths';
 import { seedDemoNotebook } from './demoNotebook';
+import { seedDemoWriting } from './demoWriting';
 import { seedIfEmpty } from './seedSafe';
 
 /** Cada demostracion tiene su propia base; no usa DB_FILE_OVERRIDE ni la base personal. */
@@ -16,6 +17,7 @@ export function prepareDemo(directory: string, today: Date): string {
   try {
     migrate(db, { migrationsFolder: MIGRATIONS_DIR });
     seedIfEmpty(db, today);
+    seedDemoWriting(db, today);
     seedDemoNotebook(db, today.toISOString());
   } finally {
     db.$client.close();

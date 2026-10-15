@@ -1049,12 +1049,13 @@ Session details and corrections (text or attached images):
     },
     editWriting: 'Edit Writing',
     editDetails: 'Edit details',
+    exportJson: 'Export JSON',
     views: 'Writing views',
     library: 'Library',
     progressTab: 'Progress',
     progress: {
       title: 'Progress',
-      count: (n: number) => `${String(n)} writings`,
+      count: (n: number) => `${String(n)} ${n === 1 ? 'writing' : 'writings'}`,
       corrected: (n: number) => `${String(n)} corrected`,
       awaiting: (n: number) => `${String(n)} awaiting`,
       metric: 'Measure',
@@ -1169,6 +1170,7 @@ Session details and corrections (text or attached images):
     startEnd: '“start” and “end” go together, with “end” after “start”',
     wordRange: 'The range needs 1 ≤ minimum ≤ maximum ≤ 2,000 words',
     correctedBeforeWritten: 'The correction can’t be earlier than the date it was written',
+    invalidRecordedDate: 'The recorded date does not match its declared date and source',
     tooManyAnnotations: (n: number) => `At most ${String(n)} ${n === 1 ? 'annotation' : 'annotations'} per import`,
     title: 'Import Writing',
     backToWriting: 'Back to Writing',
@@ -1338,6 +1340,10 @@ WHAT YOU MUST NOT MAKE UP
 
 Photos and details of the task:
 `,
+  },
+
+  writingExport: {
+    noTranscription: 'This writing has no transcription to export in the Writing format.',
   },
 
   export: {

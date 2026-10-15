@@ -298,6 +298,19 @@ ha guardado nada».
 - **Don't** usar `window.confirm`: las confirmaciones son `ConfirmDialog`.
 - **Don't** poner más de un primario por tarea visible.
 
+## Writing
+
+- Writing es un destino principal con Biblioteca, Reescrituras y Progreso. La biblioteca
+  filtra redacciones por búsqueda, estado, tipo y orden; el lector presenta el texto en
+  una hoja serif y las correcciones en un panel, con Drawer en móvil.
+- El lector permite alternar texto anotado y limpio, revisar anotaciones y editar la
+  transcripción o evaluación. La pestaña Progreso muestra medidas, filtros, evolución
+  ordinal y estadísticas por criterio; cada vacío conserva su significado y las fechas
+  aproximadas se distinguen visualmente.
+- La acción de exportación del lector descarga JSON reimportable con evaluación,
+  anotaciones y anclajes. Exportar datos incluye esas anotaciones en el volcado v4.
+  [Contrato JSON](docs/WRITING-JSON.md) y [plan](docs/WRITING-PLAN.md).
+
 ## Notebook
 
 - Entrada principal en la cabecera y en la paleta, junto a los otros cuatro destinos. La

@@ -1,5 +1,6 @@
 import { Readable } from 'node:stream';
 
+import { asc, eq } from 'drizzle-orm';
 import { ZipFile } from 'yazl';
 
 import { getDb } from '@/lib/db/client';
@@ -9,6 +10,10 @@ import { getNotebookNote } from '@/lib/db/notebookRepo';
 import { openNotebookSnapshot, type NotebookSnapshot } from '@/lib/db/notebookSnapshot';
 import { isCsvExport, toCsvExport, toJsonDump } from '@/lib/export/dump';
 import { notebookNoteFileName, notebookNoteToMarkdown } from '@/lib/notebook/export';
+import { toWritingJson } from '@/lib/writing/export';
+import { writingAnnotation } from '@/lib/db/schema';
+import { listWritingLibrary } from '@/lib/db/writingRepo';
+import { sessionTitle } from '../../_shared/format';
 import { getT } from '../../_shared/i18nServer';
 import { parseWindow } from '../../_shared/window';
 
@@ -69,7 +74,9 @@ async function fullDump(signal: AbortSignal, now: Date): Promise<Response> {
   const snapshot = await openNotebookSnapshot();
   let stream: Readable;
   try {
-    const head = toJsonDump(loadDataset(snapshot.db), now, loadAnkiDataset(snapshot.db));
+    const writingAnnotations = snapshot.db.select().from(writingAnnotation)
+      .orderBy(asc(writingAnnotation.createdAt), asc(writingAnnotation.id)).all();
+    const head = toJsonDump(loadDataset(snapshot.db), now, loadAnkiDataset(snapshot.db), writingAnnotations);
     stream = Readable.from(notebookDumpChunks(snapshot.db, head));
   } catch (error) {
     snapshot.close();
@@ -90,6 +97,24 @@ export async function GET(
 ): Promise<Response> {
   const { file } = await context.params;
   const windowDays = parseWindow(new URL(request.url).searchParams.get('w') ?? undefined);
+
+  const writing = /^writing-([1-9]\d*)\.json$/.exec(file);
+  if (writing !== null) {
+    const id = Number(writing[1]);
+    const t = await getT();
+    const item = listWritingLibrary(getDb()).find((entry) => entry.piece.id === id);
+    if (item === undefined) return new Response(t.export.fileNotFound, { status: 404 });
+    if (item.piece.originalText === null) return new Response(t.writingExport.noTranscription, { status: 409 });
+    const annotations = getDb().select().from(writingAnnotation).where(eq(writingAnnotation.pieceId, id))
+      .orderBy(asc(writingAnnotation.createdAt), asc(writingAnnotation.id)).all();
+    const json = toWritingJson(item.piece, item.piece.title ?? sessionTitle(item.session, t), annotations);
+    return new Response(`${JSON.stringify(json, null, 2)}\n`, {
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'content-disposition': `attachment; filename="writing-${String(id)}.json"`,
+      },
+    });
+  }
 
   // Un apunte se descarga por ID: el sufijo del nombre lo pone la respuesta, no la ruta.
   const note = /^notebook-([1-9]\d*)\.md$/.exec(file);

@@ -68,6 +68,11 @@ export default async function WritingReaderPage({ params, searchParams }: {
           <ArrowLeft size={16} aria-hidden="true" />
           {t.writingImport.backToWriting}
         </Link>
+        {text !== null && (
+          <Link href={`/exportar/writing-${String(piece.id)}.json`} className={`${ui.secondary} ${ui.compact}`} download>
+            {w.exportJson}
+          </Link>
+        )}
         <WritingEditor
           editing={editableRow(piece)}
           editingSession={session}

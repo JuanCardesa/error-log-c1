@@ -3,8 +3,7 @@
 > Plan aprobado el 15 de octubre de 2026.
 > Rama de trabajo: **feature/writing-workspace**, creada desde **develop**, commit **7d23bfe**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **9 de 10 tareas completadas** (más 3 aplazadas en la fase D). Fases A y B cerradas; fase C en curso.
-> Próximo paso: **TASK C3 — exportación y documentación**.
+> Estado: **10 de 10 tareas completadas** (más 3 tareas opcionales en la fase D). Fases A, B y C cerradas.
 
 ## Cómo continuar
 
@@ -387,7 +386,9 @@ en `error_row` así:
 
 - Q6, la regla 6 y la pestaña de reescrituras conservan su semántica; las diferencias admiten «+0,5».
 - `/writing?edit=<id>` y el regreso desde Sesiones (`/writing?registrar=1&sesion=<id>`) siguen funcionando.
-- El volcado JSON incluye las columnas nuevas; TASK C3 añade las anotaciones y sube el formato a 4.
+- El dump completo JSON usa `formatVersion: 4` e incluye las filas crudas de anotaciones.
+  La exportación individual v2 conserva fecha y procedencia, evaluación y anotaciones;
+  su contrato está en [WRITING-JSON.md](WRITING-JSON.md).
 - Las copias de seguridad exigen el esquema actual, incluidas las tablas nuevas.
 - Taxonomías cerradas de SPEC §3 sin cambios.
 
@@ -447,9 +448,10 @@ en `error_row` así:
   editable. **Pruebas:** total solo con los cuatro criterios, decimales, parciales y transiciones.
 - [x] **TASK C2 — Progreso.** `src/lib/writing/progress.ts` y la pestaña con SVG. **Pruebas:** orden
   cronológico, fechas aproximadas, filtros, medias sin pendientes, umbral de n y sin duplicados.
-- [ ] **TASK C3 — Exportación y documentación.** `/exportar/writing-<id>.json`, volcado v4 con
+- [x] **TASK C3 — Exportación y documentación.** `/exportar/writing-<id>.json`, volcado v4 con
   anotaciones, `docs/WRITING-JSON.md`, GUIDE, README, SPEC, PRODUCT, DESIGN y demo.
-  **Pruebas:** exportar y reimportar da lo mismo.
+  Exportación individual v2 retiene `recordedDate` y `dateBasis`; la importación v1 sigue
+  siendo el contrato del prompt de IA. **Pruebas:** exportar y reimportar da lo mismo.
 
 ### Fase D — Solo si se justifica
 
@@ -479,3 +481,4 @@ más allá del historial de transcripciones, conversión a la Cambridge English 
 | 2026-10-15 | TASK B3: migración `0013` con `writing_text_history` por redacción y revisión; edición de transcripción incluso en textos históricos vacíos; recuento y huella recalculados. El historial y la actualización comparten una transacción. Los fragmentos buscan anclaje exacto y contextual en el texto nuevo; si no hay coincidencia segura pasan a «Por colocar». Los párrafos sobreviven cambios de número si su texto exacto sigue siendo único; si desaparecen o resultan ambiguos, quedan por colocar. Backups ahora exigen también la tabla de historial. | `pnpm typecheck`, `pnpm lint` (4 avisos anteriores), 994 pruebas Vitest, build y 8 E2E de `writingLibrary.spec.ts`; `pnpm db:migrate` aplicó 0013 tras crear y verificar la copia previa `data/backups/previa-a-migrar-2026-10-15T18-09-34-851Z.db`. Fase B cerrada. Siguiente TASK C1. |
 | 2026-10-15 | TASK C1: el drawer permite editar estado, fecha de corrección, corrector, bandas de 0,5, comentario de la profesora y notas personales; fecha validada entre la fecha de escritura y hoy. El repositorio guarda el estado indicado sin inferirlo de las bandas. La suma sigue derivándose solo cuando existen los cuatro criterios y los parciales conservan el detalle disponible. | `pnpm typecheck`, `pnpm lint` (4 avisos anteriores), `pnpm exec vitest run --maxWorkers=2` (996 pruebas), build E2E y 4 pruebas de `e2e/writing.spec.ts`. Commit: `feat(writing): make assessments editable`. Siguiente TASK C2. |
 | 2026-10-15 | TASK C2: `/writing?tab=progreso` con recuentos, filtros en URL por medida/tipo/fechas, gráfico SVG ordinal y tabla accesible. Las fechas aproximadas conservan su punto con marcador hueco; las medias, n y última nota por criterio excluyen pendientes y aceptan parciales. Solo se destacan criterio más fuerte y margen de mejora con n ≥ 3 y diferencia ≥ 0,5. | `pnpm typecheck`, ESLint de los archivos nuevos, 7 pruebas de `progress.test.ts`, build E2E y 9 E2E de `writingLibrary.spec.ts` correctas (incluida vista móvil). Commit: `feat(writing): add progress dashboard`. Siguiente TASK C3. |
+| 2026-10-15 | TASK C3: exportación individual v2 con fecha registrada y procedencia, evaluación y anotaciones reimportables; dump completo v4 con anotaciones crudas. Documentados los contratos y el flujo en GUIDE, README, SPEC, PRODUCT y DESIGN; demo con transcripción, evaluación y dos anotaciones. | `pnpm typecheck`, `pnpm lint` (sin errores; 4 avisos previos), 1.005 pruebas Vitest, build E2E y 5 E2E de `export.spec.ts` y `writing.spec.ts`. La exportación se reimporta sin cambios. Fase C cerrada. |

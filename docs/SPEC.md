@@ -345,9 +345,12 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
    actualización y deshacer explícitos, y consulta de repasos/fallos por categoría (Q7).
    No hay marca manual: una conversión solo se sella tras verificar la tarjeta.
 5. **Falsas certezas** — Q4.
-6. **Writing** — alta y edición de `writing_piece` con las cuatro bandas, y Q6.
+6. **Writing** — biblioteca, lector, evaluación, anotaciones y progreso sobre
+   `writing_piece`, además de Q6. El lector exporta cada redacción transcrita a JSON;
+   el contrato y las reglas de reimportación están en [WRITING-JSON.md](WRITING-JSON.md).
 7. **Exportar** — un CSV por cada query que sea una tabla (Q1–Q4 y Q7), más un dump JSON
-   con solo los datos: filas y espejo de Anki, sin agregaciones ni ventana.
+   con solo los datos: filas, anotaciones de Writing y espejo de Anki, sin agregaciones
+   ni ventana (`formatVersion: 4`).
 
 CRUD completo: crear sesión, cerrarla, reabrirla, corregir sesiones pasadas, editar y
 borrar filas de error. Borrado con confirmación. Nada de datos irrecuperables por un clic.
@@ -430,7 +433,7 @@ tras confirmación del servidor. Un conflicto conserva el borrador y permite car
 versión guardada o conservar el trabajo como apunte nuevo.
 
 Se admite importar un `.md` por operación, exportar un apunte `.md`, el cuaderno ZIP y
-Notebook en el dump JSON (`formatVersion: 2`). Reimportar los `.md` del ZIP crea apuntes
+Notebook en el dump JSON v4 (`formatVersion: 4`). Reimportar los `.md` del ZIP crea apuntes
 nuevos y no restaura los vínculos con errores. El backup SQLite es la recuperación íntegra.
 No se importan adjuntos ni se cargan imágenes remotas al leer: se muestra su sintaxis.
 HTML embebido no se representa; se rechazan protocolos de URL activos. Los enlaces

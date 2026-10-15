@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ANNOTATION_FOCUSES, ANNOTATION_KINDS, CORRECTORS, GENRES, WRITING_STATUSES } from '../domain/enums';
+import { ANNOTATION_FOCUSES, ANNOTATION_KINDS, CORRECTORS, GENRES, WRITING_DATE_BASES, WRITING_STATUSES } from '../domain/enums';
 import type { Messages } from '../i18n';
 import { importParseOptions } from '../import/errors';
 import { isIsoDate } from '../time/dates';
@@ -15,7 +15,9 @@ import { normalizeWritingText } from './text';
  */
 
 export const WRITING_FORMAT = 'error-log-writing';
+/** El prompt sigue generando v1; v2 añade metadatos de fecha para las exportaciones fieles. */
 export const WRITING_FORMAT_VERSION = 1;
+export const WRITING_EXPORT_VERSION = 2;
 export const MAX_WRITING_IMPORT_LENGTH = WRITING_LIMITS.importChars;
 /** Contexto de una cita: unas palabras, no un párrafo. */
 const MAX_CONTEXT = 200;
@@ -85,13 +87,19 @@ export function writingImportSchema(today: string, t: Messages) {
   const date = isoDate(today, t);
   return z.strictObject({
     format: z.literal(WRITING_FORMAT, { error: t.writingImport.wrongFormat }),
-    version: z.literal(WRITING_FORMAT_VERSION, { error: t.writingImport.wrongVersion }),
+    version: z.union([
+      z.literal(WRITING_FORMAT_VERSION),
+      z.literal(WRITING_EXPORT_VERSION),
+    ], { error: t.writingImport.wrongVersion }),
     writing: z.strictObject({
       id: z.uuid().nullish().transform(absent),
       title: z.string().trim().min(1).max(WRITING_LIMITS.title)
         .refine((value) => !CONTROL.test(value), { message: t.validation.containsControlChars }),
       type: z.enum(GENRES),
       writtenOn: date.nullish().transform(absent),
+      /** Solo v2: conserva la fecha y su procedencia sin presentarla como escrita. */
+      recordedDate: date.optional(),
+      dateBasis: z.enum(WRITING_DATE_BASES).optional(),
       taskPrompt: optionalText(WRITING_LIMITS.taskPrompt, t),
       // Se guarda tal cual llega, salvo los saltos de Windows y los blancos de los bordes.
       text: z.string().transform(normalizeWritingText).pipe(z.string().min(1).max(WRITING_LIMITS.text)
@@ -126,6 +134,20 @@ export function writingImportSchema(today: string, t: Messages) {
     const corrected = value.assessment?.correctedOn ?? null;
     if (written !== null && corrected !== null && corrected < written) {
       ctx.addIssue({ code: 'custom', path: ['assessment', 'correctedOn'], message: t.writingImport.correctedBeforeWritten });
+    }
+    if (value.version === WRITING_FORMAT_VERSION
+      && (value.writing.recordedDate !== undefined || value.writing.dateBasis !== undefined)) {
+      ctx.addIssue({ code: 'custom', path: ['version'], message: t.writingImport.wrongVersion });
+    }
+    if (value.version === WRITING_EXPORT_VERSION) {
+      const { recordedDate, dateBasis } = value.writing;
+      if (recordedDate === undefined || dateBasis === undefined) {
+        ctx.addIssue({ code: 'custom', path: ['writing', 'recordedDate'], message: t.validation.invalidDate });
+      } else if (dateBasis === 'WRITTEN' ? written !== recordedDate
+        : written !== null || dateBasis === 'CORRECTED' && corrected !== recordedDate
+          || corrected !== null && corrected < recordedDate) {
+        ctx.addIssue({ code: 'custom', path: ['writing', 'recordedDate'], message: t.writingImport.invalidRecordedDate });
+      }
     }
   });
 }

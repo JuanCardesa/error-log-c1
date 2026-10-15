@@ -993,14 +993,15 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     },
     editWriting: 'Editar Writing',
     editDetails: 'Editar datos',
+    exportJson: 'Exportar JSON',
     views: 'Vistas de Writing',
     library: 'Biblioteca',
     progressTab: 'Progreso',
     progress: {
       title: 'Progreso',
-      count: (n) => `${String(n)} redacciones`,
-      corrected: (n) => `${String(n)} corregidas`,
-      awaiting: (n) => `${String(n)} pendientes`,
+      count: (n) => `${String(n)} ${n === 1 ? 'redacción' : 'redacciones'}`,
+      corrected: (n) => `${String(n)} ${n === 1 ? 'corregida' : 'corregidas'}`,
+      awaiting: (n) => `${String(n)} ${n === 1 ? 'pendiente' : 'pendientes'}`,
       metric: 'Medida',
       metrics: { TOTAL: 'Total', CONTENT: 'Contenido', COMMUNICATIVE: 'Comunicación', ORGANISATION: 'Organización', LANGUAGE: 'Idioma' },
       type: 'Tipo',
@@ -1113,6 +1114,7 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     startEnd: '«start» y «end» van juntos, y «end» después de «start»',
     wordRange: 'El rango necesita 1 ≤ mínimo ≤ máximo ≤ 2000 palabras',
     correctedBeforeWritten: 'La corrección no puede ser anterior a la fecha en que se escribió',
+    invalidRecordedDate: 'La fecha registrada no coincide con la fecha y procedencia declaradas',
     tooManyAnnotations: (n: number) => `Como mucho ${String(n)} ${n === 1 ? 'anotación' : 'anotaciones'} por importación`,
     title: 'Importar Writing',
     backToWriting: 'Volver a Writing',
@@ -1278,6 +1280,10 @@ LO QUE NO DEBES INVENTAR
 
 Fotos y datos de la tarea:
 `,
+  },
+
+  writingExport: {
+    noTranscription: 'Esta redacción no tiene transcripción para exportar en el formato de Writing.',
   },
 
   export: {

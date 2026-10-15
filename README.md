@@ -157,9 +157,12 @@ within that category; sessions without item counts, such as Writing, are exclude
 
 [![Progress: a recommendation to review pending Anki cards, with its evidence and the category and cause breakdowns](docs/screenshots/informe.png)](docs/screenshots/informe.png)
 
-**Writing** records the four assessment bands you enter and links originals to rewrites.
-It checks for repeated logged errors by matching category, subcategory and corrected answer.
-It does not grade essays or detect mistakes in the text automatically.
+**Writing** is a workspace for your transcribed essays and teacher corrections. Import a
+strict JSON prepared from your paper, annotate the exact text, edit four half-point bands,
+track progress by score or criterion, and compare rewrites. The library can export one
+transcribed writing with its annotations as JSON; the full-data dump includes Writing
+annotations as well. It does not read photos, grade essays or detect mistakes automatically.
+See the [Writing JSON contract](docs/WRITING-JSON.md).
 
 ### Notes next to your mistakes
 
@@ -191,8 +194,10 @@ finds mistakes, sessions and notes from any page.
 - **Markdown / ZIP:** portable notes without study marks. ZIP includes a metadata and
   error-link manifest, but only individual `.md` files can be imported, without restoring
   those links.
-- **JSON:** saved records, Anki history and the notebook, including study marks. Full JSON
-  import is not implemented.
+- **Writing JSON:** an individual transcribed writing and its annotations can be reimported
+  into Writing. The [format](docs/WRITING-JSON.md) preserves approximate date provenance.
+- **Full JSON:** all records, Anki history, Writing annotations and the notebook, including
+  study marks. This portability dump is not an import or restore file.
 - **SQLite backup:** the complete saved database for restoration. Browser drafts are
   separate and are not included in exports or backups.
 

@@ -293,16 +293,18 @@ export function buildWritingImportPlan(data: WritingImport, stored: readonly Sto
   const marked = (given.length > 0 && assessment?.assessedBy !== 'IA') || assessment?.assessedBy === 'PROFESOR'
     || added.some((row) => row.source === 'PROFESOR');
 
+  const hasRecordedDate = incoming.recordedDate !== undefined && incoming.dateBasis !== undefined;
   const written = incoming.writtenOn ?? (typeof options.writtenOn === 'string' ? options.writtenOn : null);
   const correctedOn = assessment?.correctedOn ?? target?.correctedOn ?? null;
   const dated = ((): Pick<PieceValues, 'date' | 'dateBasis'> => {
+    if (hasRecordedDate) return { date: incoming.recordedDate!, dateBasis: incoming.dateBasis! };
     if (written !== null) return { date: written, dateBasis: 'WRITTEN' };
     if (target !== null && target.dateBasis === 'WRITTEN') return { date: target.date, dateBasis: 'WRITTEN' };
     if (correctedOn !== null) return { date: correctedOn, dateBasis: 'CORRECTED' };
     return target === null ? { date: options.today, dateBasis: 'IMPORTED' } : { date: target.date, dateBasis: target.dateBasis };
   })();
   if (dated.dateBasis !== 'WRITTEN') warnings.push({ code: 'dateFallback', basis: dated.dateBasis, date: dated.date });
-  const needsDate = dated.dateBasis !== 'WRITTEN' && options.writtenOn === undefined;
+  const needsDate = !hasRecordedDate && dated.dateBasis !== 'WRITTEN' && options.writtenOn === undefined;
 
   // Al actualizar: lo descriptivo (título, enunciado, notas propias) solo rellena huecos, para
   // no pisar lo retocado a mano; la evaluación y los datos de la tarea se sustituyen si llegan.

@@ -70,7 +70,21 @@ describe('parseWritingImport', () => {
 
   it('rechaza otro formato u otra versión', () => {
     expect(issues({ ...essayImport(), format: 'notebook' })).toEqual([{ path: 'format', message: t.writingImport.wrongFormat }]);
-    expect(issues({ ...essayImport(), version: 2 })).toEqual([{ path: 'version', message: t.writingImport.wrongVersion }]);
+    expect(issues({ ...essayImport(), version: 3 })).toEqual([{ path: 'version', message: t.writingImport.wrongVersion }]);
+  });
+
+  it('acepta v2 con fecha registrada y su procedencia, sin fingir que se escribió ese día', () => {
+    const value = essayImport();
+    value['version'] = 2;
+    value.writing['writtenOn'] = null;
+    value.writing['recordedDate'] = '2026-10-09';
+    value.writing['dateBasis'] = 'CORRECTED';
+    value.assessment['correctedOn'] = '2026-10-09';
+    expect(parse(value)).toMatchObject({ ok: true, data: { writing: { writtenOn: null, recordedDate: '2026-10-09', dateBasis: 'CORRECTED' } } });
+
+    value.writing['dateBasis'] = 'IMPORTED';
+    value.writing['writtenOn'] = '2026-10-02';
+    expect(issues(value).map((issue) => issue.path)).toContain('writing.recordedDate');
   });
 
   it('exige título, tipo y texto', () => {
