@@ -1,14 +1,17 @@
 import { randomUUID } from 'node:crypto';
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { createDb } from '../src/lib/db/client';
 import { loadDataset } from '../src/lib/db/load';
 import { createNotebookNote, deleteNotebookNote, getNotebookNote } from '../src/lib/db/notebookRepo';
+import { CSV_EXPORTS } from '../src/lib/export/dump';
 import { LOCALE_COOKIE } from '../src/lib/i18n';
+import { notebookNoteFileName } from '../src/lib/notebook/export';
 import type { NotebookNote } from '../src/lib/notebook/types';
 import { notebookNoteHref } from '../src/lib/notebook/urls';
 import { E2E_DB } from './globalSetup';
+import { readZipEntries } from './zip';
 
 /**
  * Idioma de la interfaz. El resto de pruebas fija el español con la cookie de Ajustes;
@@ -108,4 +111,131 @@ test('los mensajes del servidor llegan en el idioma elegido', async ({ page }) =
   await drawer.getByLabel('Correct', { exact: true }).fill('8');
   await drawer.getByRole('button', { name: 'Create session' }).click();
   await expect(drawer.getByText('You can’t get more items right than you attempted')).toBeVisible();
+});
+
+test('recorre las secciones y sus vistas secundarias en inglés', async ({ page }) => {
+  await page.goto('/registrar');
+  const navigation = page.getByRole('navigation', { name: 'Sections' });
+
+  await navigation.getByRole('link', { name: 'Errors', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Errors' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Filters', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'False certainties', exact: true }).click();
+  await expect(page.getByRole('searchbox', { name: 'Search false certainties' })).toBeVisible();
+
+  await navigation.getByRole('link', { name: 'Progress', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Progress' })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Progress views' })
+    .getByRole('link', { name: 'Reading & Use of English', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Accuracy by part and week', exact: true })).toBeVisible();
+
+  await navigation.getByRole('link', { name: 'Anki', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Sync', exact: true })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Anki views' }).getByRole('link', { name: 'Reviews', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Reviews in Anki', exact: true })).toBeVisible();
+
+  await navigation.getByRole('link', { name: 'Notebook', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'New note', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Import .md', exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Writing', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Log Writing', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Rewrites', exact: true }).click();
+  await expect(page.getByRole('navigation', { name: 'Rewrite period' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Export data', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'CSV reports', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Download full data as JSON' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Download the notebook as a ZIP' })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+});
+
+async function expectLanguage(page: Page, locale: 'en' | 'es', title: string) {
+  await expect(page.locator('html')).toHaveAttribute('lang', locale);
+  await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: locale === 'en' ? 'Sections' : 'Secciones' })).toBeVisible();
+}
+
+test('Atrás y Adelante actualizan las vistas visitadas al cambiar de idioma sin recargar', async ({ page }) => {
+  await page.goto('/registrar');
+  await page.evaluate(() => { (window as Window & { sinRecarga?: boolean }).sinRecarga = true; });
+  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Errors', exact: true }).click();
+  await expectLanguage(page, 'en', 'Errors');
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Settings' }).click();
+
+  for (const locale of ['es', 'en'] as const) {
+    await page.getByRole('radio', { name: locale === 'es' ? 'Español' : 'English' }).click();
+    await expectLanguage(page, locale, locale === 'es' ? 'Ajustes' : 'Settings');
+    await page.goBack();
+    await expectLanguage(page, locale, locale === 'es' ? 'Errores' : 'Errors');
+    // El título viene del servidor; el botón usa el contexto de cliente.
+    await expect(page.getByRole('button', { name: locale === 'es' ? 'Filtros' : 'Filters', exact: true })).toBeVisible();
+    await page.goBack();
+    await expectLanguage(page, locale, locale === 'es' ? 'Sesiones' : 'Sessions');
+    await expect(page.getByRole('button', { name: locale === 'es' ? /Nueva sesión manual/ : /New manual session/ })).toBeVisible();
+    await page.goForward();
+    await expectLanguage(page, locale, locale === 'es' ? 'Errores' : 'Errors');
+    await page.goForward();
+    await expectLanguage(page, locale, locale === 'es' ? 'Ajustes' : 'Settings');
+    expect(await page.evaluate(() => (window as Window & { sinRecarga?: boolean }).sinRecarga)).toBe(true);
+  }
+});
+
+/** Solo cambia el instante de la descarga; las fechas de los datos se comparan intactas. */
+function withoutExportTime(text: string): string {
+  const { exportedAt, ...data } = JSON.parse(text) as Record<string, unknown>;
+  expect(exportedAt).toEqual(expect.any(String));
+  expect(new Date(String(exportedAt)).toISOString()).toBe(exportedAt);
+  return JSON.stringify(data);
+}
+
+test('cambiar la preferencia no altera JSON, CSV, Markdown ni el contenido del ZIP', async ({ page }) => {
+  const files = ['dump.json', ...CSV_EXPORTS.map((key) => `${key}.csv`), `notebook-${String(note.id)}.md`, 'notebook.zip'];
+  const download = async (file: string) => {
+    const response = await page.request.get(`/exportar/${file}`);
+    expect(response.ok(), file).toBe(true);
+    return {
+      type: response.headers()['content-type'],
+      disposition: response.headers()['content-disposition'],
+      body: await response.body(),
+    };
+  };
+
+  await page.goto('/ajustes');
+  await expectLanguage(page, 'en', 'Settings');
+  const english = new Map<string, Awaited<ReturnType<typeof download>>>();
+  for (const file of files) english.set(file, await download(file));
+
+  await page.getByRole('radio', { name: 'Español' }).click();
+  await expectLanguage(page, 'es', 'Ajustes');
+  for (const file of files) {
+    const before = english.get(file);
+    if (before === undefined) throw new Error(`Falta la descarga inglesa de ${file}`);
+    const after = await download(file);
+    expect(after.type, file).toBe(before.type);
+    expect(after.disposition, file).toBe(before.disposition);
+
+    if (file === 'dump.json') {
+      expect(withoutExportTime(after.body.toString('utf8'))).toBe(withoutExportTime(before.body.toString('utf8')));
+      expect(after.body.toString('utf8')).toContain(JSON.stringify(note.contentMarkdown));
+    } else if (file === 'notebook.zip') {
+      // El contenedor tiene fechas de generación; comparamos rutas y todos sus ficheros.
+      const enEntries = readZipEntries(before.body);
+      const esEntries = readZipEntries(after.body);
+      const manifest = 'Notebook/manifest.json';
+      for (const entries of [enEntries, esEntries]) {
+        expect(entries.get(`Notebook/${notebookNoteFileName(note)}`)?.toString('utf8')).toContain(note.contentMarkdown);
+        const content = entries.get(manifest);
+        if (content === undefined) throw new Error('El ZIP debe contener su manifiesto');
+        entries.set(manifest, Buffer.from(withoutExportTime(content.toString('utf8'))));
+      }
+      expect(esEntries).toEqual(enEntries);
+    } else {
+      // Incluye cabeceras CSV, BOM, valores internos y todos los bytes del Markdown.
+      expect(after.body, file).toEqual(before.body);
+    }
+  }
 });
