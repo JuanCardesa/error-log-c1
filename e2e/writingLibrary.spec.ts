@@ -324,6 +324,35 @@ test('G W lleva a Writing desde otra sección', async ({ page }) => {
   await expect(writing).toHaveAttribute('aria-current', 'page');
 });
 
+test('el progreso filtra fechas y medidas, distingue fechas aproximadas y expone una tabla', async ({ page }) => {
+  const tag = randomUUID().slice(0, 8);
+  try {
+    const { essay } = shelf(tag);
+    withDb((db) => db.update(writingPiece).set({ dateBasis: 'IMPORTED' }).where(eq(writingPiece.id, essay)).run());
+    await page.goto('/writing');
+    await page.getByRole('navigation', { name: 'Vistas de Writing' }).getByRole('link', { name: 'Progreso' }).click();
+    await expect(page).toHaveURL('/writing?tab=progreso');
+    await expect(page.getByRole('heading', { name: 'Evolución de Total' })).toBeVisible();
+
+    await page.getByLabel('Medida').selectOption('LANGUAGE');
+    await page.getByLabel('Tipo').selectOption('ESSAY');
+    await page.getByLabel('Desde').fill('2026-10-02');
+    await page.getByLabel('Hasta').fill('2026-10-02');
+    await page.getByRole('button', { name: 'Aplicar filtros' }).click();
+    await expect(page).toHaveURL(/tab=progreso&measure=LANGUAGE&type=ESSAY&from=2026-10-02&to=2026-10-02/u);
+    await expect(page.getByRole('img', { name: 'Evolución de Idioma' })).toBeVisible();
+    await page.getByText('Mostrar datos', { exact: true }).click();
+    const data = page.getByRole('table', { name: 'Puntuaciones incluidas en el gráfico' });
+    await expect(data).toBeVisible();
+    const essayRow = data.getByRole('row').filter({ has: page.locator(`a[href^="/writing/${String(essay)}"]`) });
+    await expect(essayRow).toContainText('Fecha aproximada');
+
+    await page.setViewportSize({ width: 320, height: 844 });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  } finally { cleanUp(tag); }
+});
+
 test('en el móvil la biblioteca y el lector se leen sin desplazamiento horizontal', async ({ page }) => {
   const tag = randomUUID().slice(0, 8);
   try {

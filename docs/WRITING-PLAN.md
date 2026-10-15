@@ -3,8 +3,8 @@
 > Plan aprobado el 15 de octubre de 2026.
 > Rama de trabajo: **feature/writing-workspace**, creada desde **develop**, commit **7d23bfe**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **8 de 10 tareas completadas** (más 3 aplazadas en la fase D). Fases A y B cerradas; fase C en curso.
-> Próximo paso: **TASK C2 — progreso**.
+> Estado: **9 de 10 tareas completadas** (más 3 aplazadas en la fase D). Fases A y B cerradas; fase C en curso.
+> Próximo paso: **TASK C3 — exportación y documentación**.
 
 ## Cómo continuar
 
@@ -445,7 +445,7 @@ en `error_row` así:
 
 - [x] **TASK C1 — Evaluación editable.** Drawer de detalles y bloque al pie de la hoja; estado
   editable. **Pruebas:** total solo con los cuatro criterios, decimales, parciales y transiciones.
-- [ ] **TASK C2 — Progreso.** `src/lib/writing/progress.ts` y la pestaña con SVG. **Pruebas:** orden
+- [x] **TASK C2 — Progreso.** `src/lib/writing/progress.ts` y la pestaña con SVG. **Pruebas:** orden
   cronológico, fechas aproximadas, filtros, medias sin pendientes, umbral de n y sin duplicados.
 - [ ] **TASK C3 — Exportación y documentación.** `/exportar/writing-<id>.json`, volcado v4 con
   anotaciones, `docs/WRITING-JSON.md`, GUIDE, README, SPEC, PRODUCT, DESIGN y demo.
@@ -478,3 +478,4 @@ más allá del historial de transcripciones, conversión a la Cambridge English 
 | 2026-10-15 | TASK B2: acciones de servidor con Zod estricto y transacciones para crear, editar, borrar, estudiar y colocar; cada ancla se genera leyendo el texto guardado y comprobando los offsets UTF-16. Admite solapes y los tipos Documento, Párrafo y Fragmento. Las citas pendientes muestran coincidencias exactas elegibles o se colocan tras seleccionar texto. Borrar ofrece Deshacer mediante un token de corta duración ligado a la instancia local; restaurar comprueba de nuevo que el ancla siga coincidiendo. E2E recorre alta, edición, revisión, borrado, deshacer y colocación manual. | `pnpm typecheck`, `pnpm lint` (4 avisos anteriores), 4 pruebas SQLite del repositorio de anotaciones, 10 pruebas de mensajes, build y 7 E2E de `writingLibrary.spec.ts` correctas. Siguiente TASK B3. |
 | 2026-10-15 | TASK B3: migración `0013` con `writing_text_history` por redacción y revisión; edición de transcripción incluso en textos históricos vacíos; recuento y huella recalculados. El historial y la actualización comparten una transacción. Los fragmentos buscan anclaje exacto y contextual en el texto nuevo; si no hay coincidencia segura pasan a «Por colocar». Los párrafos sobreviven cambios de número si su texto exacto sigue siendo único; si desaparecen o resultan ambiguos, quedan por colocar. Backups ahora exigen también la tabla de historial. | `pnpm typecheck`, `pnpm lint` (4 avisos anteriores), 994 pruebas Vitest, build y 8 E2E de `writingLibrary.spec.ts`; `pnpm db:migrate` aplicó 0013 tras crear y verificar la copia previa `data/backups/previa-a-migrar-2026-10-15T18-09-34-851Z.db`. Fase B cerrada. Siguiente TASK C1. |
 | 2026-10-15 | TASK C1: el drawer permite editar estado, fecha de corrección, corrector, bandas de 0,5, comentario de la profesora y notas personales; fecha validada entre la fecha de escritura y hoy. El repositorio guarda el estado indicado sin inferirlo de las bandas. La suma sigue derivándose solo cuando existen los cuatro criterios y los parciales conservan el detalle disponible. | `pnpm typecheck`, `pnpm lint` (4 avisos anteriores), `pnpm exec vitest run --maxWorkers=2` (996 pruebas), build E2E y 4 pruebas de `e2e/writing.spec.ts`. Commit: `feat(writing): make assessments editable`. Siguiente TASK C2. |
+| 2026-10-15 | TASK C2: `/writing?tab=progreso` con recuentos, filtros en URL por medida/tipo/fechas, gráfico SVG ordinal y tabla accesible. Las fechas aproximadas conservan su punto con marcador hueco; las medias, n y última nota por criterio excluyen pendientes y aceptan parciales. Solo se destacan criterio más fuerte y margen de mejora con n ≥ 3 y diferencia ≥ 0,5. | `pnpm typecheck`, ESLint de los archivos nuevos, 7 pruebas de `progress.test.ts`, build E2E y 9 E2E de `writingLibrary.spec.ts` correctas (incluida vista móvil). Commit: `feat(writing): add progress dashboard`. Siguiente TASK C3. |

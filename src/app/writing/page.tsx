@@ -9,6 +9,7 @@ import { REWRITE_REPEAT_PCT } from '@/lib/domain/thresholds';
 import type { Messages } from '@/lib/i18n';
 import { q6RewriteEfficacy } from '@/lib/queries/q6RewriteEfficacy';
 import { countByStatus, searchLibrary, selectLibrary, type LibraryQuery } from '@/lib/writing/library';
+import { parseProgressFilters } from '@/lib/writing/progress';
 import { writingHref } from '@/lib/writing/urls';
 import { decimal, mediumDate, percent, shortDate } from '../_shared/format';
 import { getT } from '../_shared/i18nServer';
@@ -20,6 +21,7 @@ import { BANDS } from './bands';
 import { libraryItems, type LibraryItem } from './entries';
 import { isFiltered, parseLibraryQuery } from './libraryParams';
 import { LibraryToolbar } from './LibraryToolbar';
+import { ProgressView } from './ProgressView';
 import { WritingStatusText } from './WritingStatusText';
 import styles from './writing.module.css';
 
@@ -52,7 +54,8 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
   const editing = ID.test(edit) ? items.find((item) => item.id === Number(edit)) : undefined;
   if (editing !== undefined) redirect(`${writingHref(editing.row.piece)}?editar=1`);
 
-  const tab = one(params['tab']) === 'reescrituras' ? 'reescrituras' : 'biblioteca';
+  const tab = one(params['tab']) === 'reescrituras' ? 'reescrituras'
+    : one(params['tab']) === 'progreso' ? 'progreso' : 'biblioteca';
   const windowDays = parseWindow(params['w']);
 
   return (
@@ -69,6 +72,7 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
           label={w.views}
           items={[
             { href: '/writing', label: w.library, current: tab === 'biblioteca' },
+            { href: '/writing?tab=progreso', label: w.progressTab, current: tab === 'progreso' },
             { href: `/writing?tab=reescrituras${windowDays === 30 ? '' : `&w=${String(windowDays)}`}`, label: w.rewrites, current: tab === 'reescrituras' },
           ]}
         />
@@ -78,6 +82,8 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
 
       {tab === 'biblioteca' ? (
         <Library items={items} query={parseLibraryQuery(params)} t={t} />
+      ) : tab === 'progreso' ? (
+        <ProgressView items={items} filters={parseProgressFilters(params)} t={t} />
       ) : (
         <Rewrites windowDays={windowDays} items={items} t={t} />
       )}
