@@ -115,7 +115,7 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
       { key: 'ge', group: 'Acciones', icon: List, label: 'Ir a Errores', kbd: 'G E', href: '/errores' },
       { key: 'gp', group: 'Acciones', icon: ChartColumn, label: 'Ir a Progreso', kbd: 'G P', href: '/informe' },
       { key: 'ga', group: 'Acciones', icon: RefreshCw, label: 'Ir a Anki', kbd: 'G A', href: '/anki' },
-      { key: 'gn', group: 'Acciones', icon: BookOpen, label: 'Ir a Notebook', href: '/notebook' },
+      { key: 'gn', group: 'Acciones', icon: BookOpen, label: 'Ir a Notebook', kbd: 'G N', href: '/notebook' },
       { key: 'export', group: 'Acciones', icon: Download, label: 'Exportar datos', href: '/exportar' },
     ];
     return [...found, ...actions.filter((action) => q === '' || action.label.toLowerCase().includes(q))];

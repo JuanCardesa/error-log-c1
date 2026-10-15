@@ -20,6 +20,7 @@ export interface NotebookNote {
   readonly revision: number;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly favoritedAt: string | null;
 }
 
 export type NotebookNoteSummary = Omit<NotebookNote, 'contentMarkdown'>;

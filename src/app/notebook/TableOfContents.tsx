@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 
 import { buildNotebookToc, type NotebookTocNode } from '@/lib/notebook/toc';
 import type { NotebookHeading } from '@/lib/notebook/types';
@@ -33,6 +33,17 @@ function TocLinks({ nodes, active, onNavigate }: {
 export function TableOfContents({ headings }: { readonly headings: readonly NotebookHeading[] }) {
   const tree = useMemo(() => buildNotebookToc(headings), [headings]);
   const [active, setActive] = useState<string | null>(headings[0]?.slug ?? null);
+  const desktop = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const container = desktop.current;
+    const selected = container?.querySelector<HTMLElement>('a[aria-current="location"]');
+    if (container === null || selected === null || selected === undefined) return;
+    const area = container.getBoundingClientRect();
+    const item = selected.getBoundingClientRect();
+    if (item.top < area.top) container.scrollTop += item.top - area.top;
+    else if (item.bottom > area.bottom) container.scrollTop += item.bottom - area.bottom;
+  }, [active]);
 
   useEffect(() => {
     const slugs = new Set(headings.map((heading) => heading.slug));
@@ -111,12 +122,16 @@ export function TableOfContents({ headings }: { readonly headings: readonly Note
   };
 
   if (headings.length === 0) return null;
-  return (
+  return <>
+    <nav ref={desktop} aria-label="Índice del apunte" className={styles.desktop}>
+      <h2>En esta nota</h2>
+      <TocLinks nodes={tree} active={active} onNavigate={onNavigate} />
+    </nav>
     <details className={styles.compact}>
       <summary>En esta nota · {headings.length} {headings.length === 1 ? 'sección' : 'secciones'}</summary>
       <nav aria-label="Índice del apunte">
         <TocLinks nodes={tree} active={active} onNavigate={onNavigate} />
       </nav>
     </details>
-  );
+  </>;
 }

@@ -13,10 +13,10 @@ import styles from './header.module.css';
 import overlay from './overlay.module.css';
 
 /**
- * Cabecera fija en cristal: marca, cuatro destinos, «Más» y la búsqueda global.
+ * Cabecera fija en cristal: marca, cinco destinos, «Más» y la búsqueda global.
  *
- * Atajos globales: Ctrl/⌘+K abre la búsqueda; G seguida de S, E, P o A (en menos de un
- * segundo) va a Sesiones, Errores, Progreso o Anki. Las teclas sueltas no se disparan
+ * Atajos globales: Ctrl/⌘+K abre la búsqueda; G seguida de S, E, P, A o N (en menos de un
+ * segundo) va a Sesiones, Errores, Progreso, Anki o Notebook. Las teclas sueltas no se disparan
  * dentro de un campo ni con un diálogo abierto.
  */
 
@@ -25,10 +25,10 @@ const NAV = [
   { href: '/errores', label: 'Errores', key: 'e', match: ['/errores', '/certezas'] },
   { href: '/informe', label: 'Progreso', key: 'p', match: ['/informe', '/ruoe'] },
   { href: '/anki', label: 'Anki', key: 'a', match: ['/anki'] },
+  { href: '/notebook', label: 'Notebook', key: 'n', match: ['/notebook'] },
 ] as const;
 
 const MORE = [
-  { href: '/notebook', label: 'Notebook' },
   { href: '/writing', label: 'Writing' },
   { href: '/exportar', label: 'Exportar datos' },
 ] as const;

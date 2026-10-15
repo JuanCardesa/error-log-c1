@@ -19,6 +19,7 @@ function note(changes: Partial<NotebookNote> = {}): NotebookNote {
     revision: 3,
     createdAt: '2026-09-01T10:00:00.000Z',
     updatedAt: '2026-09-28T18:30:00.000Z',
+    favoritedAt: null,
     ...changes,
   };
 }

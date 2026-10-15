@@ -9,6 +9,7 @@ import {
   notebookContentSchema,
   notebookTagsSchema,
   saveNotebookNoteSchema,
+  setNotebookNoteFavoriteSchema,
   searchNotebookSchema,
   updateNotebookFolderSchema,
 } from './schemas';
@@ -24,6 +25,14 @@ function note() {
 }
 
 describe('contrato de apuntes', () => {
+  it('valida la marca de favorito sin admitir campos adicionales', () => {
+    expect(setNotebookNoteFavoriteSchema.parse({ id: 1, favorite: true })).toEqual({ id: 1, favorite: true });
+    for (const raw of [{ id: 0, favorite: true }, { id: 1, favorite: 'true' },
+      { id: 1, favorite: false, revision: 2 }]) {
+      expect(setNotebookNoteFavoriteSchema.safeParse(raw).success).toBe(false);
+    }
+  });
+
   it('normaliza los metadatos sin modificar el Markdown', () => {
     expect(createNotebookNoteSchema.parse({
       ...note(),

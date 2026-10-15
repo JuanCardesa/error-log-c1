@@ -279,9 +279,12 @@ export const notebookNote = sqliteTable('notebook_note', {
   revision: integer('revision').notNull().default(1),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
+  favoritedAt: text('favorited_at'),
 }, (table) => [
   index('notebook_note_folder_title_id_idx').on(table.folderId, table.title, table.id),
   index('notebook_note_updated_id_idx').on(table.updatedAt, table.id),
+  index('notebook_note_favorited_id_idx').on(table.favoritedAt, table.id)
+    .where(sql`${table.favoritedAt} IS NOT NULL`),
   check('notebook_note_title_length', sql`length(trim(${table.title})) BETWEEN 1 AND ${sql.raw(String(NOTEBOOK_LIMITS.title))}`),
   check('notebook_note_content_size', sql`length(CAST(${table.contentMarkdown} AS BLOB)) <= ${sql.raw(String(NOTEBOOK_LIMITS.contentBytes))}`),
   check('notebook_note_tags_array', sql`CASE WHEN json_valid(${table.tags}) THEN json_type(${table.tags}) = 'array' AND json_array_length(${table.tags}) <= ${sql.raw(String(NOTEBOOK_LIMITS.tagCount))} ELSE 0 END`),

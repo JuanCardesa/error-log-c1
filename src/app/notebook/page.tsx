@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { getDb } from '@/lib/db/client';
-import { listNotebookFolders, listRecentNotebookNotes } from '@/lib/db/notebookRepo';
+import { listFavoriteNotebookNotes, listNotebookFolders, listRecentNotebookNotes } from '@/lib/db/notebookRepo';
 import { searchNotebookHits, searchNotebookNotes } from '@/lib/db/notebookSearch';
 import { searchNotebookSchema } from '@/lib/notebook/schemas';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import type { NotebookNoteSummary } from '@/lib/notebook/types';
 import ui from '../_shared/ui.module.css';
 import { FolderManager } from './FolderManager';
+import { FavoriteToggle } from './FavoriteToggle';
 import { NotebookDraftNotice } from './NotebookDraftNotice';
 import { NotebookDirectory } from './NotebookDirectory';
 import { NotebookSearchControls } from './NotebookSearchControls';
@@ -22,6 +23,7 @@ type SearchParams = {
   readonly p?: string | string[];
   readonly q?: string | string[];
   readonly tag?: string | string[];
+  readonly vista?: string | string[];
 };
 
 function one(value: string | string[] | undefined): string {
@@ -33,7 +35,10 @@ function noteRows(notes: readonly NotebookNoteSummary[]) {
     <ul className={styles.noteList}>
       {notes.map((note) => (
         <li key={note.id}>
-          <Link href={notebookNoteHref(note)} className={styles.noteLink}>{note.title}</Link>
+          <div className={styles.noteRowMain}>
+            <FavoriteToggle id={note.id} title={note.title} favoritedAt={note.favoritedAt} compact />
+            <Link href={notebookNoteHref(note)} className={styles.noteLink}>{note.title}</Link>
+          </div>
           <time dateTime={note.updatedAt} className={styles.noteDate}>
             {new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(note.updatedAt))}
           </time>
@@ -49,8 +54,12 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
   const query = one(params.q);
   const tag = one(params.tag);
   const searching = query.trim() !== '' || tag.trim() !== '';
+  const view = one(params.vista);
+  if (view !== '' && view !== 'favoritos') notFound();
+  const favoritesView = view === 'favoritos' && !searching;
   const db = getDb();
   const folders = listNotebookFolders(db);
+  const favorites = listFavoriteNotebookNotes(db);
 
   let selectedFolderId: number | null | undefined;
   let title = 'Modificados recientemente';
@@ -65,6 +74,10 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
     selectedFolderId = id;
     title = folder.name;
   }
+  if (favoritesView) {
+    selectedFolderId = undefined;
+    title = 'Favoritos';
+  }
 
   const pageParam = one(params.p);
   const parsedPage = Number(pageParam);
@@ -77,7 +90,9 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
     page,
   }) : null;
   const searchResults = searchInput?.success === true ? searchNotebookHits(db, searchInput.data) : null;
-  const listing = searching ? null : selectedFolderId === undefined
+  const listing = searching ? null : favoritesView
+    ? { items: favorites, hasMore: false }
+    : selectedFolderId === undefined
     ? { items: listRecentNotebookNotes(db), hasMore: false }
     : searchNotebookNotes(db, {
       query: '', folderId: selectedFolderId, unfiledOnly: selectedFolderId === null, tag: null, page,
@@ -111,13 +126,13 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
       <NotebookSearchControls folders={folders} folderParam={folderParam} tag={tag} />
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <NotebookDirectory folders={folders} selectedFolderId={selectedFolderId} />
+          <NotebookDirectory folders={folders} favorites={favorites} selectedFolderId={selectedFolderId} favoritesView={favoritesView} />
           <FolderManager key={selectedFolderId ?? 'home'} folders={folders} selected={folders.find((item) => item.id === selectedFolderId)} />
         </aside>
         <section className={styles.content} aria-labelledby="notebook-list-title">
           <div className={styles.listHead}>
             <h2 id="notebook-list-title" className={styles.sectionTitle}>{searching ? 'Resultados de búsqueda' : title}</h2>
-            {(selectedFolderId !== undefined || searching) && <Link href="/notebook" className={styles.backLink}>Ver recientes</Link>}
+            {(selectedFolderId !== undefined || searching || favoritesView) && <Link href="/notebook" className={styles.backLink}>Ver recientes</Link>}
           </div>
           {searching && searchInput?.success === false && (
             <div role="alert" className={styles.empty}><p>Revisa la consulta o la etiqueta. La búsqueda admite hasta 200 caracteres.</p></div>
@@ -132,15 +147,15 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
           ))}
           {listing !== null && (listing.items.length > 0 ? noteRows(listing.items) : (
             <div className={styles.empty}>
-              <p>{selectedFolderId === undefined && folders.length === 0
+              <p>{favoritesView ? 'Aún no tienes favoritos.' : selectedFolderId === undefined && folders.length === 0
                 ? 'Tu Notebook está vacío.'
                 : selectedFolderId === undefined
                   ? 'Todavía no hay apuntes.'
                   : 'Aquí aún no hay apuntes.'}</p>
-              <p>Los apuntes que guardes aparecerán aquí.</p>
+              <p>{favoritesView ? 'Pulsa la estrella de un apunte para tenerlo aquí a mano.' : 'Los apuntes que guardes aparecerán aquí.'}</p>
             </div>
           ))}
-          {(searchResults !== null || listing !== null && selectedFolderId !== undefined)
+          {(searchResults !== null || listing !== null && selectedFolderId !== undefined && !favoritesView)
             && (page > 1 || (searchResults?.hasMore ?? listing?.hasMore ?? false)) && (
             <nav aria-label="Páginas de apuntes" className={styles.pagination}>
               {page > 1 && <Link href={pageHref(page - 1)}>Anterior</Link>}

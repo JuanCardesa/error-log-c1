@@ -3,15 +3,20 @@
 import Link from 'next/link';
 import { useId, useState } from 'react';
 
-import type { NotebookFolder } from '@/lib/notebook/types';
+import type { NotebookFolder, NotebookNoteSummary } from '@/lib/notebook/types';
+import { notebookNoteHref } from '@/lib/notebook/urls';
 import styles from './notebook.module.css';
 
 export function NotebookDirectory({
   folders,
+  favorites,
   selectedFolderId,
+  favoritesView = false,
 }: {
   readonly folders: readonly NotebookFolder[];
+  readonly favorites: readonly NotebookNoteSummary[];
   readonly selectedFolderId?: number | null;
+  readonly favoritesView?: boolean;
 }) {
   const idPrefix = useId();
   const roots = folders.filter((folder) => folder.parentId === null);
@@ -26,9 +31,22 @@ export function NotebookDirectory({
   return (
     <nav aria-label="Directorio de Notebook" className={styles.directory}>
       <h2 className={styles.directoryTitle}>Directorio</h2>
+      <div className={styles.favoriteDirectory}>
+        <Link href="/notebook?vista=favoritos" aria-current={favoritesView ? 'page' : undefined}>
+          Favoritos {favorites.length > 0 && <span>{favorites.length}</span>}
+        </Link>
+        {favorites.length > 0 && <ul className={styles.favoriteLinks}>
+          {favorites.slice(0, 8).map((note) => <li key={note.id}>
+            <Link href={notebookNoteHref(note)} title={note.title}>{note.title}</Link>
+          </li>)}
+        </ul>}
+        {favorites.length > 8 && <Link href="/notebook?vista=favoritos" className={styles.favoriteAll}>
+          Ver todos ({favorites.length})
+        </Link>}
+      </div>
       <ul className={styles.folderList}>
         <li>
-          <Link href="/notebook" aria-current={selectedFolderId === undefined ? 'page' : undefined}>
+          <Link href="/notebook" aria-current={selectedFolderId === undefined && !favoritesView ? 'page' : undefined}>
             Recientes
           </Link>
         </li>

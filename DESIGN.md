@@ -300,7 +300,7 @@ ha guardado nada».
 
 ## Notebook
 
-- Entrada en Más y en la paleta, conservando los cuatro destinos de la cabecera. La
+- Entrada principal en la cabecera y en la paleta, junto a los otros cuatro destinos. La
   portada abre con búsqueda, carpetas, modificados recientes, la acción «Nuevo apunte» y
   la secundaria «Importar .md». El estado vacío explica cómo crear el primero.
 - Portada en `/notebook`, alta en `/notebook/nuevo`, importación en `/notebook/importar`,
@@ -317,6 +317,8 @@ ha guardado nada».
 - La lectura usa Source Serif 4 y `--reading-max`; directorio e índice acompañan al
   texto en pantallas amplias. Bajo 1024 px, directorio e índice se despliegan y el
   contenido ocupa una columna. Las tablas Markdown desplazan dentro de su contenedor.
+- La estrella de favoritos confirma con el servidor antes de cambiar. El directorio muestra
+  hasta ocho y la vista Favoritos reúne todos; la marca no altera la fecha ni la revisión.
 - El editor usa Plex, textarea nativo, toolbar pequeña y pestañas Editar/Vista previa.
   La vista previa comparte renderizador con el lector. Guardar ahora y Ctrl/⌘+S
   complementan autosave; un estado visible distingue pendiente, guardando, guardado,

@@ -1,0 +1,2 @@
+ALTER TABLE `notebook_note` ADD `favorited_at` text;--> statement-breakpoint
+CREATE INDEX `notebook_note_favorited_id_idx` ON `notebook_note` (`favorited_at`,`id`) WHERE "notebook_note"."favorited_at" IS NOT NULL;
