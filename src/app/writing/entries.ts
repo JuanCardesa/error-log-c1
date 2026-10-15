@@ -1,9 +1,8 @@
 import type { WritingLibraryRow, WritingRow } from '@/lib/db/writingRepo';
-import type { WritingPieceRow } from '@/lib/domain/types';
 import type { Messages } from '@/lib/i18n';
 import { writingTotal, type LibraryEntry } from '@/lib/writing/library';
 import { sessionTitle, shortDate } from '../_shared/format';
-import type { PieceOption } from './PieceForm';
+import type { PieceOption, WritingEditablePiece } from './PieceForm';
 
 /** El título guardado o, en los textos antiguos, el nombre de su sesión. Nunca uno inventado. */
 export function writingTitle(row: Pick<WritingLibraryRow, 'piece' | 'session'>, t: Messages): string {
@@ -32,8 +31,8 @@ export function pieceOptions(items: readonly LibraryItem[], t: Messages): PieceO
 }
 
 /** Lo que edita el drawer: sin el texto, que no hace falta mandar al navegador dos veces. */
-export function editableRow(piece: WritingRow): WritingPieceRow {
-  const { id, sessionId, date, genre, wordCount, minutes, timed, rewriteOf, corrector } = piece;
+export function editableRow(piece: WritingRow): WritingEditablePiece {
+  const { id, sessionId, date, genre, status, correctedOn, teacherComment, personalNotes, wordCount, minutes, timed, rewriteOf, corrector } = piece;
   const { bandContent, bandCommunicative, bandOrganisation, bandLanguage } = piece;
-  return { id, sessionId, date, genre, wordCount, minutes, timed, rewriteOf, corrector, bandContent, bandCommunicative, bandOrganisation, bandLanguage };
+  return { id, sessionId, date, genre, status, correctedOn, teacherComment, personalNotes, wordCount, minutes, timed, rewriteOf, corrector, bandContent, bandCommunicative, bandOrganisation, bandLanguage };
 }

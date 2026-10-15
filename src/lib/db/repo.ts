@@ -397,7 +397,7 @@ export function createWritingPiece(db: Db, input: WritingPieceInput): WritingPie
 export function updateWritingPiece(db: Db, id: number, input: WritingPieceInput): void {
   const wordCount = sql<number | null>`CASE WHEN ${writingPiece.originalText} IS NULL THEN ${input.wordCount} ELSE ${writingPiece.wordCount} END`;
   db.update(writingPiece)
-    .set({ ...input, wordCount, ...(isAssessed(input) ? { status: 'CORRECTED' as const } : {}), updatedAt: new Date().toISOString() })
+    .set({ ...input, wordCount, updatedAt: new Date().toISOString() })
     .where(eq(writingPiece.id, id))
     .run();
 }

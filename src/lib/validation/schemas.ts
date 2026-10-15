@@ -11,6 +11,7 @@ import {
   SESSION_KINDS,
   SESSION_STATUSES,
   SOURCES,
+  WRITING_STATUSES,
 } from '../domain/enums';
 import type { Messages } from '../i18n';
 import { isIsoDate } from '../time/dates';
@@ -192,6 +193,10 @@ export function writingPieceInputSchema(options: SessionSchemaOptions) {
       sessionId: z.number().int().positive(),
       date: isoDate(t),
       genre: z.enum(GENRES),
+      status: z.enum(WRITING_STATUSES).default('AWAITING'),
+      correctedOn: isoDate(t).nullable().default(null),
+      teacherComment: z.string().trim().max(5000).transform((value) => value === '' ? null : value).nullable().default(null),
+      personalNotes: z.string().trim().max(5000).transform((value) => value === '' ? null : value).nullable().default(null),
       wordCount: z.number().int().min(0).nullable().default(null),
       minutes: z.number().int().min(0).nullable().default(null),
       timed: z.boolean().default(false),
@@ -209,6 +214,12 @@ export function writingPieceInputSchema(options: SessionSchemaOptions) {
           path: ['date'],
           message: t.validation.futureDate,
         });
+      }
+      if (value.correctedOn !== null && value.correctedOn > options.today) {
+        ctx.addIssue({ code: 'custom', path: ['correctedOn'], message: t.validation.futureDate });
+      }
+      if (value.correctedOn !== null && value.correctedOn < value.date) {
+        ctx.addIssue({ code: 'custom', path: ['correctedOn'], message: t.writingImport.correctedBeforeWritten });
       }
     });
 }

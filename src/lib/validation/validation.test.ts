@@ -218,6 +218,17 @@ describe('texto de writing', () => {
     const result = piece.safeParse({ sessionId: 1, date: '2026-09-10', genre: 'REPORT' });
     expect(result.data?.bandLanguage).toBeNull();
   });
+
+  it('valida fecha, estado y notas de la evaluación', () => {
+    const base = { sessionId: 1, date: '2026-09-10', genre: 'ESSAY' as const };
+    expect(piece.parse({ ...base, status: 'CORRECTED', correctedOn: '2026-09-11', teacherComment: 'Buen argumento', personalNotes: 'Revisar los conectores' }))
+      .toMatchObject({ status: 'CORRECTED', correctedOn: '2026-09-11', teacherComment: 'Buen argumento' });
+    expect(piece.safeParse({ ...base, correctedOn: '2026-09-09' }).success).toBe(false);
+    expect(piece.safeParse({ ...base, correctedOn: '2026-09-15' }).success).toBe(false);
+    expect(piece.safeParse({ ...base, status: 'UNKNOWN' }).success).toBe(false);
+    expect(piece.parse({ ...base, teacherComment: '   ', personalNotes: '' }))
+      .toMatchObject({ teacherComment: null, personalNotes: null });
+  });
 });
 
 describe('cadena de reescrituras', () => {

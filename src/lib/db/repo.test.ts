@@ -261,6 +261,10 @@ describe('textos de writing', () => {
       sessionId,
       date: '2026-09-10',
       genre: 'ESSAY',
+      status: 'AWAITING',
+      correctedOn: null,
+      teacherComment: null,
+      personalNotes: null,
       wordCount: 240,
       minutes: 45,
       timed: true,
@@ -316,6 +320,17 @@ describe('textos de writing', () => {
     expect(getWritingPiece(db, created.id)?.bandLanguage).toBe(4);
   });
 
+  it('persiste los campos de evaluacion editables', () => {
+    const session = writingSession();
+    const created = createWritingPiece(db, pieceInput(session.id));
+    updateWritingPiece(db, created.id, pieceInput(session.id, {
+      status: 'CORRECTED', correctedOn: '2026-09-12', teacherComment: 'Clear argument', personalNotes: 'Review linking',
+    }));
+    expect(getWritingPiece(db, created.id)).toMatchObject({
+      status: 'CORRECTED', correctedOn: '2026-09-12', teacherComment: 'Clear argument', personalNotes: 'Review linking',
+    });
+  });
+
   it('deduce el estado de la evaluacion y no lo deshace al quitarla', () => {
     const state = (id: number) => db.$client
       .prepare<[number], { status: string; updated_at: string }>('SELECT status, updated_at FROM writing_piece WHERE id = ?').get(id);
@@ -326,11 +341,13 @@ describe('textos de writing', () => {
     expect(state(marked.id)?.status).toBe('CORRECTED');
 
     db.$client.prepare("UPDATE writing_piece SET updated_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").run(pending.id);
-    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, { ...unmarked, bandContent: 4 }));
+    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, { ...unmarked, bandContent: 4, status: 'CORRECTED' }));
     expect(state(pending.id)?.status).toBe('CORRECTED');
     expect(state(pending.id)?.updated_at).not.toBe('2020-01-01T00:00:00.000Z');
-    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, unmarked));
-    expect(state(pending.id)?.status).toBe('CORRECTED');
+    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, { ...unmarked, status: 'AWAITING' }));
+    expect(state(pending.id)?.status).toBe('AWAITING');
+    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, { ...unmarked, status: 'NOT_SUBMITTED' }));
+    expect(state(pending.id)?.status).toBe('NOT_SUBMITTED');
   });
 
   it('borra', () => {
@@ -452,8 +469,8 @@ describe('consecuencias de borrar una sesion', () => {
   it('cuenta sus errores, los convertidos, su texto y las reescrituras que pierden el vinculo', () => {
     const essay = createSession(db, sessionInput({ kind: 'WRITING', paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null }));
     const rewrite = createSession(db, sessionInput({ kind: 'WRITING', paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null }));
-    const piece = createWritingPiece(db, { sessionId: essay.id, date: '2026-09-10', genre: 'ESSAY', wordCount: null, minutes: null, timed: false, rewriteOf: null, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
-    createWritingPiece(db, { sessionId: rewrite.id, date: '2026-09-11', genre: 'ESSAY', wordCount: null, minutes: null, timed: false, rewriteOf: piece.id, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
+    const piece = createWritingPiece(db, { sessionId: essay.id, date: '2026-09-10', genre: 'ESSAY', status: 'AWAITING', correctedOn: null, teacherComment: null, personalNotes: null, wordCount: null, minutes: null, timed: false, rewriteOf: null, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
+    createWritingPiece(db, { sessionId: rewrite.id, date: '2026-09-11', genre: 'ESSAY', status: 'AWAITING', correctedOn: null, teacherComment: null, personalNotes: null, wordCount: null, minutes: null, timed: false, rewriteOf: piece.id, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
     const converted = createError(db, errorInput(essay.id));
     createError(db, errorInput(essay.id, { itemRef: '9' }));
     linkAnkiNote(db, converted.id, {

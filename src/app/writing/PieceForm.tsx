@@ -4,8 +4,9 @@ import { ChevronRight, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect, useId, useRef, useState } from 'react';
 
-import { CORRECTORS, GENRES } from '@/lib/domain/enums';
-import type { SessionRow, WritingPieceRow } from '@/lib/domain/types';
+import { CORRECTORS, GENRES, WRITING_STATUSES } from '@/lib/domain/enums';
+import type { SessionRow } from '@/lib/domain/types';
+import type { WritingRow } from '@/lib/db/writingRepo';
 import { Drawer } from '../_shared/Drawer';
 import { mediumDate, sessionTitle } from '../_shared/format';
 import { useT } from '../_shared/i18nClient';
@@ -29,11 +30,17 @@ export interface PieceOption {
   readonly label: string;
 }
 
+export type WritingEditablePiece = Pick<WritingRow,
+  | 'id' | 'sessionId' | 'date' | 'genre' | 'status' | 'correctedOn' | 'teacherComment' | 'personalNotes'
+  | 'wordCount' | 'minutes' | 'timed' | 'rewriteOf' | 'corrector'
+  | 'bandContent' | 'bandCommunicative' | 'bandOrganisation' | 'bandLanguage'
+>;
+
 export function WritingDrawer({ open, onClose, originals, editing, editingSession, transcribed, today }: {
   readonly open: boolean;
   readonly onClose: () => void;
   readonly originals: readonly PieceOption[];
-  readonly editing: WritingPieceRow;
+  readonly editing: WritingEditablePiece;
   readonly editingSession: SessionRow | null;
   /** Con transcripción, las palabras se cuentan solas y no se editan. */
   readonly transcribed: boolean;
@@ -67,7 +74,9 @@ export function WritingDrawer({ open, onClose, originals, editing, editingSessio
     if (messages.length === 0) return null;
     return <p className={ui.fieldError} id={errorId(field)}>{messages.map((message) => <span key={message}>{message}</span>)}</p>;
   };
-  const evaluated = editing.corrector !== null || BANDS.some((band) => editing[band.name] !== null);
+  const evaluated = editing.corrector !== null || editing.correctedOn !== null
+    || editing.teacherComment !== null || editing.personalNotes !== null
+    || BANDS.some((band) => editing[band.name] !== null);
   const evaluationInvalid = BANDS.some((band) => invalid(band.name));
 
   return (
@@ -126,6 +135,13 @@ export function WritingDrawer({ open, onClose, originals, editing, editingSessio
             </div>
           </div>
 
+          <div className={ui.field}>
+            <label htmlFor={`${formId}-status`}>{t.writing.statusFilter}</label>
+            <select id={`${formId}-status`} name="status" className={ui.select} defaultValue={editing.status}>
+              {WRITING_STATUSES.map((value) => <option key={value} value={value}>{t.labels.writingStatus[value]}</option>)}
+            </select>
+          </div>
+
           <details className={`${ui.disclosure} ${session.timeGroup}`} open={evaluated || evaluationInvalid || undefined}>
             <summary>
               <ChevronRight size={14} className="chevron" aria-hidden="true" />
@@ -139,6 +155,12 @@ export function WritingDrawer({ open, onClose, originals, editing, editingSessio
                   <option value="">{t.writing.notMarked}</option>
                   {CORRECTORS.map((value) => <option key={value} value={value}>{t.labels.corrector[value]}</option>)}
                 </select>
+              </div>
+              <div className={ui.field}>
+                <label htmlFor={`${formId}-corrected-on`}>{t.writingImport.field.correctedOn}</label>
+                <input id={`${formId}-corrected-on`} type="date" name="correctedOn" max={today} className={ui.input}
+                  defaultValue={editing.correctedOn ?? ''} aria-invalid={invalid('correctedOn')} aria-describedby={describedBy('correctedOn')} />
+                {fieldError('correctedOn')}
               </div>
               <div className={session.grid2}>
                 {BANDS.map((band) => (
@@ -159,6 +181,18 @@ export function WritingDrawer({ open, onClose, originals, editing, editingSessio
                     {fieldError(band.name)}
                   </label>
                 ))}
+              </div>
+              <div className={ui.field}>
+                <label htmlFor={`${formId}-teacher-comment`}>{t.writingImport.teacherComment}</label>
+                <textarea id={`${formId}-teacher-comment`} name="teacherComment" maxLength={5000} className={ui.input}
+                  defaultValue={editing.teacherComment ?? ''} aria-invalid={invalid('teacherComment')} aria-describedby={describedBy('teacherComment')} />
+                {fieldError('teacherComment')}
+              </div>
+              <div className={ui.field}>
+                <label htmlFor={`${formId}-personal-notes`}>{t.writingImport.field.personalNotes}</label>
+                <textarea id={`${formId}-personal-notes`} name="personalNotes" maxLength={5000} className={ui.input}
+                  defaultValue={editing.personalNotes ?? ''} aria-invalid={invalid('personalNotes')} aria-describedby={describedBy('personalNotes')} />
+                {fieldError('personalNotes')}
               </div>
               <span className={ui.help}>{t.writing.emptyBands}</span>
             </div>

@@ -43,7 +43,11 @@ test('el enlace antiguo ?edit abre los datos en el lector y un ciclo se rechaza 
   await openDetails(page, 'Añadir evaluación');
   await drawer(page).getByLabel('Palabras', { exact: true }).fill('299');
   await drawer(page).getByRole('combobox', { name: 'Género', exact: true }).selectOption('REVIEW');
+  await drawer(page).getByRole('combobox', { name: 'Estado', exact: true }).selectOption('AWAITING');
   await drawer(page).getByRole('combobox', { name: 'Corrector', exact: true }).selectOption('IA');
+  await drawer(page).getByLabel('Corregida').fill('2026-10-08');
+  await drawer(page).getByLabel('Comentario de la profesora').fill('A stronger opening.');
+  await drawer(page).getByLabel('Notas personales').fill('Review formal linking.');
   await drawer(page).getByLabel('Cronometrado', { exact: true }).uncheck();
   await drawer(page).getByLabel('Language', { exact: true }).fill('4');
   await drawer(page).getByLabel('Es una reescritura').check();
@@ -52,7 +56,11 @@ test('el enlace antiguo ?edit abre los datos en el lector y un ciclo se rechaza 
   await expect(drawer(page).getByText('Ese enlace crearía un ciclo de reescrituras', { exact: true })).toBeVisible();
   await expect(drawer(page).getByLabel('Palabras', { exact: true })).toHaveValue('299');
   await expect(drawer(page).getByRole('combobox', { name: 'Género', exact: true })).toHaveValue('REVIEW');
+  await expect(drawer(page).getByRole('combobox', { name: 'Estado', exact: true })).toHaveValue('AWAITING');
   await expect(drawer(page).getByRole('combobox', { name: 'Corrector', exact: true })).toHaveValue('IA');
+  await expect(drawer(page).getByLabel('Corregida')).toHaveValue('2026-10-08');
+  await expect(drawer(page).getByLabel('Comentario de la profesora')).toHaveValue('A stronger opening.');
+  await expect(drawer(page).getByLabel('Notas personales')).toHaveValue('Review formal linking.');
   await expect(drawer(page).getByLabel('Cronometrado', { exact: true })).not.toBeChecked();
   await expect(drawer(page).getByLabel('Language', { exact: true })).toHaveValue('4');
   await expect(drawer(page).getByRole('combobox', { name: 'Texto original' })).toHaveValue(String(rewrite.id));
@@ -64,8 +72,16 @@ test('el enlace antiguo ?edit abre los datos en el lector y un ciclo se rechaza 
   // Cerrado el drawer, la URL deja de abrirlo al recargar.
   await expect(page).toHaveURL(`/writing/${String(original.id)}`);
   expect(readPieces().find((piece) => piece.id === original.id)).toEqual({
-    ...original, wordCount: 299, genre: 'REVIEW', corrector: 'IA', timed: false, bandLanguage: 4,
+    ...original, wordCount: 299, genre: 'REVIEW', status: 'AWAITING', corrector: 'IA', correctedOn: '2026-10-08',
+    teacherComment: 'A stronger opening.', personalNotes: 'Review formal linking.', timed: false, bandLanguage: 4,
   });
+
+  await page.getByRole('button', { name: 'Editar datos' }).click();
+  const status = drawer(page).getByRole('combobox', { name: 'Estado', exact: true });
+  await status.selectOption('NOT_SUBMITTED');
+  await expect(status).toHaveValue('NOT_SUBMITTED');
+  await drawer(page).getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect.poll(() => readPieces().find((piece) => piece.id === original.id)?.status).toBe('NOT_SUBMITTED');
 });
 
 test('desde la biblioteca se edita un texto con sus datos y se conserva su reescritura', async ({ page }) => {
