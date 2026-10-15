@@ -1013,6 +1013,19 @@ Session details and corrections (text or attached images):
     saveFailed: 'The text couldn’t be saved. Your changes are still here so you can try again.',
   },
 
+  writingImport: {
+    empty: 'Paste the JSON first.',
+    tooLong: (kib: number) => `The JSON is too long: the limit is ${String(kib)} KiB.`,
+    notJson: 'This isn’t valid JSON. Copy the AI’s whole reply again, without any text around it.',
+    wrongFormat: 'This JSON isn’t a Writing import: it needs "format": "error-log-writing".',
+    wrongVersion: 'This JSON uses a format version Error Log doesn’t know. Ask the AI for version 1.',
+    needsContent: 'Add a comment or a correction; a strength can carry just its focus',
+    startEnd: '“start” and “end” go together, with “end” after “start”',
+    wordRange: 'The range needs 1 ≤ minimum ≤ maximum ≤ 2,000 words',
+    correctedBeforeWritten: 'The correction can’t be earlier than the date it was written',
+    tooManyAnnotations: (n: number) => `At most ${String(n)} ${n === 1 ? 'annotation' : 'annotations'} per import`,
+  },
+
   export: {
     csvTitle: 'CSV reports',
     reportsPeriod: 'Report period',

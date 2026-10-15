@@ -221,6 +221,8 @@ Session details and corrections (text or attached images):
   "writing.rewritesOf": "Rewrites “Mi apunte — café” from 15/10/2026",
   "writing.sessionNumber": "Session #7",
   "writing.words": "0 words",
+  "writingImport.tooLong": "The JSON is too long: the limit is 488 KiB.",
+  "writingImport.tooManyAnnotations": "At most 0 annotations per import",
 }
 `;
 
@@ -445,6 +447,8 @@ Session details and corrections (text or attached images):
   "writing.rewritesOf": "Rewrites “Mi apunte — café” from 15/10/2026",
   "writing.sessionNumber": "Session #7",
   "writing.words": "1 word",
+  "writingImport.tooLong": "The JSON is too long: the limit is 488 KiB.",
+  "writingImport.tooManyAnnotations": "At most 1 annotation per import",
 }
 `;
 
@@ -669,6 +673,8 @@ Session details and corrections (text or attached images):
   "writing.rewritesOf": "Rewrites “Mi apunte — café” from 15/10/2026",
   "writing.sessionNumber": "Session #7",
   "writing.words": "2 words",
+  "writingImport.tooLong": "The JSON is too long: the limit is 488 KiB.",
+  "writingImport.tooManyAnnotations": "At most 2 annotations per import",
 }
 `;
 
@@ -893,6 +899,8 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
   "writing.rewritesOf": "Reescribe «Mi apunte — café» del 15/10/2026",
   "writing.sessionNumber": "Sesión #7",
   "writing.words": "0 palabras",
+  "writingImport.tooLong": "El JSON es demasiado largo: el límite es 488 KiB.",
+  "writingImport.tooManyAnnotations": "Como mucho 0 anotaciones por importación",
 }
 `;
 
@@ -1117,6 +1125,8 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
   "writing.rewritesOf": "Reescribe «Mi apunte — café» del 15/10/2026",
   "writing.sessionNumber": "Sesión #7",
   "writing.words": "1 palabra",
+  "writingImport.tooLong": "El JSON es demasiado largo: el límite es 488 KiB.",
+  "writingImport.tooManyAnnotations": "Como mucho 1 anotación por importación",
 }
 `;
 
@@ -1341,5 +1351,7 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
   "writing.rewritesOf": "Reescribe «Mi apunte — café» del 15/10/2026",
   "writing.sessionNumber": "Sesión #7",
   "writing.words": "2 palabras",
+  "writingImport.tooLong": "El JSON es demasiado largo: el límite es 488 KiB.",
+  "writingImport.tooManyAnnotations": "Como mucho 2 anotaciones por importación",
 }
 `;

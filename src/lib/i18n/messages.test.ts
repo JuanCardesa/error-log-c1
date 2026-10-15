@@ -169,6 +169,8 @@ function render(t: Messages, n: number) {
     'writing.newCol': t.writing.newCol("15/10/2026"),
     'writing.pairRepeat': t.writing.pairRepeat(n, 12, "42.5%"),
     'writing.sessionNumber': t.writing.sessionNumber(7),
+    'writingImport.tooLong': t.writingImport.tooLong(488),
+    'writingImport.tooManyAnnotations': t.writingImport.tooManyAnnotations(n),
     'export.downloadLabel': t.export.downloadLabel("[label]"),
     'notebookImport.kept': t.notebookImport.kept("[reason]"),
     'notebookImport.frontmatterTooBig': t.notebookImport.frontmatterTooBig(512),

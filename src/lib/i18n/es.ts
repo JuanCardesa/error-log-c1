@@ -973,6 +973,19 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     saveFailed: 'No se pudo guardar el texto. Tus cambios siguen aquí para reintentarlo.',
   },
 
+  writingImport: {
+    empty: 'Pega primero el JSON.',
+    tooLong: (kib: number) => `El JSON es demasiado largo: el límite es ${String(kib)} KiB.`,
+    notJson: 'Esto no es un JSON válido. Vuelve a copiar la respuesta entera de la IA, sin texto alrededor.',
+    wrongFormat: 'Este JSON no es una importación de Writing: necesita "format": "error-log-writing".',
+    wrongVersion: 'Este JSON usa una versión del formato que Error Log no conoce. Pide a la IA la versión 1.',
+    needsContent: 'Añade un comentario o una corrección; una fortaleza puede llevar solo su foco',
+    startEnd: '«start» y «end» van juntos, y «end» después de «start»',
+    wordRange: 'El rango necesita 1 ≤ mínimo ≤ máximo ≤ 2000 palabras',
+    correctedBeforeWritten: 'La corrección no puede ser anterior a la fecha en que se escribió',
+    tooManyAnnotations: (n: number) => `Como mucho ${String(n)} ${n === 1 ? 'anotación' : 'anotaciones'} por importación`,
+  },
+
   export: {
     csvTitle: 'Informes CSV',
     reportsPeriod: 'Periodo de los informes',
