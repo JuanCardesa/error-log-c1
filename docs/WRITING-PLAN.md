@@ -3,8 +3,8 @@
 > Plan aprobado el 15 de octubre de 2026.
 > Rama de trabajo: **feature/writing-workspace**, creada desde **develop**, commit **7d23bfe**.
 > Este documento conserva las decisiones, contratos y tareas del plan acordado.
-> Estado: **1 de 10 tareas completadas** (más 3 aplazadas en la fase D).
-> Próximo paso: **TASK A2 — motor de importación**.
+> Estado: **2 de 10 tareas completadas** (más 3 aplazadas en la fase D).
+> Próximo paso: **TASK A3 — pantalla de importación e instrucciones para la IA**.
 
 ## Cómo continuar
 
@@ -263,6 +263,8 @@ La relación vive en `src/lib/domain/enums.ts`; no se guarda en la base.
 - Si no, se crea una redacción nueva con su sesión: `kind` y `paper` WRITING, `part` 1 para Essay y 2
   para el resto, fecha de la redacción, fuente elegida en la vista previa, `source_ref` = título,
   `duration_min` = minutos, `timed` y estado `CLOSED`.
+- Con `?sesion=<id>` se enlaza esa sesión Writing libre en vez de crear otra. La sesión es de la
+  persona: solo recibe el título como referencia si no tenía ninguna.
 
 **Reglas al actualizar:**
 
@@ -270,6 +272,12 @@ La relación vive en `src/lib/domain/enums.ts`; no se guarda en la base.
   sobre el guardado.
 - Un campo null o ausente no cambia nada. Los valores distintos se enumeran en la vista previa
   («Language: — → 2,5») y se aplican al confirmar.
+- Lo descriptivo (título, enunciado y notas personales) solo rellena huecos: cada transcripción de la
+  IA redacta el título a su manera y no debe pisar uno retocado a mano. La evaluación, las fechas y los
+  datos de la tarea sí se sustituyen cuando llegan distintos.
+- La sesión acompaña a su texto: si cambia la fecha o el tipo, cambian su fecha y su parte.
+- Unas puntuaciones con `assessedBy: IA` no marcan el texto como corregido: lo corrige la profesora o
+  uno mismo.
 - Las anotaciones solo se añaden. Las repetidas (mismo `import_key` o mismo id) se omiten. Las que ya
   existen, también las propias, nunca se borran ni se modifican.
 - Si llegan puntuaciones o anotaciones de la profesora, el estado pasa a `CORRECTED`.
@@ -405,7 +413,7 @@ en `error_row` así:
   uid, estado, fechas), CHECK de bandas y de anotaciones, Zod con decimales.
   **Aceptación:** typecheck, lint, test y build; `e2e/writing.spec.ts` en verde.
 
-- [ ] **TASK A2 — Motor de importación.**
+- [x] **TASK A2 — Motor de importación.**
   Contrato Zod, texto (normalización, párrafos, palabras, huella), localización de citas, plan de
   creación o actualización y transacción con recibo.
   **Archivos:** src/lib/writing/{contract,text,locate,plan}.ts, src/lib/db/writingRepo.ts y pruebas.
@@ -462,3 +470,4 @@ más allá del historial de transcripciones, conversión a la Cambridge English 
 | --- | --- | --- |
 | 2026-10-15 | Análisis y plan aprobados con las cinco decisiones; rama feature/writing-workspace creada desde develop 7d23bfe | Continuar por TASK A1 |
 | 2026-10-15 | TASK A1: `writing_piece` reconstruida con bandas REAL en medios puntos (CHECK `band*2` entero), `uid` UUID v4 por DEFAULT de SQLite, texto, huella, estado, base de la fecha, corrección, comentarios, rango de palabras y fechas de alta; tablas `writing_annotation` y `writing_import_receipt`; enums y relación foco → criterio en `enums.ts`; límites en `src/lib/writing/limits.ts`; «Letter / Email»; formulario con paso 0,5 y cifras con el separador del idioma. La migración 0012 se reescribió a mano: el `INSERT … SELECT` de drizzle-kit leía columnas inexistentes de la tabla vieja; ahora exige `foreign_keys` desactivadas como 0001 (con ellas activas `DROP TABLE` vaciaría `rewrite_of`), conserva la secuencia, rellena los textos antiguos y crea las tablas hijas después de la reconstrucción. Decisiones al implementar: guardar desde el formulario marca `CORRECTED` si hay evaluación, pero quitarla no devuelve a `AWAITING` (el estado puede venir de una importación); el seed y la grabación declaran `CORRECTED` en sus textos evaluados; la prueba de favoritos del Notebook ahora parte de «todo lo anterior a 0011». | `pnpm typecheck`, `pnpm lint` (solo los 4 avisos previos de `data/notebook-import/import.run.ts`, fuera del repositorio), 897 pruebas unitarias, cobertura 97,77 % sentencias y 93,39 % ramas, build E2E y suite Playwright completa (156 correctas, 7 omitidas por `SHOOT`). `data/errorlog.db` sin migrar. Siguiente TASK A2. |
+| 2026-10-15 | TASK A1 confirmada en `8ec6218` (modelo) y `3a900af` (plan). TASK A2: `src/lib/writing/` con `text.ts` (normalización, párrafos, palabras, parecido), `locate.ts` (citas exactas o tolerantes a blancos, comillas, guiones y mayúsculas; límite de palabra; párrafo, aparición y contexto; nunca adivina), `contract.ts` (Zod estricto del JSON v1, lectura con valla de código y BOM, rutas de error como `annotations[4].target.quote`), `fingerprint.ts` (huellas de texto, anotación y contenido; solo servidor), `plan.ts` (crear o actualizar, cambios, fechas, estado, avisos, errores y `planDigest`) y `fixtures.ts`; `src/lib/db/writingRepo.ts` con vista previa sin escrituras y confirmación en una transacción `immediate` con recibo. Decisiones al implementar: lo descriptivo solo rellena huecos al actualizar; enlazar una sesión libre no cambia su fecha ni su parte; las notas de la IA no marcan el texto como corregido; un reintento reenvía la misma decisión y el recibo lo reconoce aunque el plan ya fuera otro. | `pnpm typecheck`, `pnpm lint` (mismos 4 avisos ajenos), 962 pruebas unitarias (65 nuevas), cobertura 97,9 % sentencias y 93,56 % ramas. Sin cambios de interfaz: E2E no necesarias. Siguiente TASK A3. |
