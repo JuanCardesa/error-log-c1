@@ -90,7 +90,7 @@ export function noteForError(error: ErrorRow, namespace: string, deck: string) {
 
 async function assertProfile(api: ReturnType<typeof ankiApi>, profile: string): Promise<void> {
   if (await api.profile() !== profile) {
-    throw new AnkiError('ANKI_CONFIG', 'El perfil cambió. Vuelve a intentarlo con el perfil original.');
+    throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.profileChanged);
   }
 }
 
@@ -98,21 +98,18 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
   forgetAnkiStatus(db);
   return withAnkiLock(db, async () => {
     const error = getError(db, errorId);
-    if (error === null || !generatesCard(error.cause)) throw new AnkiError('ANKI_CONFIG', 'Ese error no existe o su causa no genera tarjeta.');
+    if (error === null || !generatesCard(error.cause)) throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.noCardForError);
     const api = ankiApi(transport ?? withRetry(httpTransport(config)));
     await api.version();
     const profile = await api.profile();
     const state = ensureAnkiScope(db, config, profile);
     const note = noteForError(error, state.namespace, config.targetDeck);
     const matches = await api.findNotes(identityQuery(note.fields.ErrorLogId));
-    if (matches.length > 1) throw new AnkiError('ANKI_ERROR', 'Hay varias notas con la identidad de este error. Revísalas en Anki antes de continuar.');
+    if (matches.length > 1) throw new AnkiError('ANKI_ERROR', (t) => t.ankiErrors.duplicateIdentity);
     let noteId = matches[0];
     if (noteId !== undefined && notePredatesError(noteId, error.createdAt)) {
-      throw new AnkiError('ANKI_CONFIG',
-        `La nota que lleva la identidad de este error se creó el ${new Date(noteId).toLocaleDateString('es-ES')}, `
-        + 'antes que el propio error. Suele significar que esta base se ha restaurado de una copia anterior y los '
-        + 'identificadores se han reutilizado: esa tarjeta es de otro error. No se ha vinculado ni modificado nada. '
-        + 'Revísala en Anki, o usa otra base con DB_FILE_OVERRIDE para esta colección.');
+      const created = new Date(noteId);
+      throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.noteOlderThanError(created.toLocaleDateString(t.format.intl)));
     }
     if (noteId === undefined) {
       if (!(await api.modelNames()).includes(ERRORLOG_MODEL)) {
@@ -125,7 +122,7 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
         });
       }
       const fields = await api.modelFields(ERRORLOG_MODEL);
-      if (fields.join('|') !== ERRORLOG_FIELDS.join('|')) throw new AnkiError('ANKI_CONFIG', 'Ya existe un tipo «Error Log C1» con otros campos. No se ha modificado.');
+      if (fields.join('|') !== ERRORLOG_FIELDS.join('|')) throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.modelConflict);
       await assertProfile(api, profile);
       await api.createDeck(config.targetDeck);
       await assertProfile(api, profile);
@@ -133,9 +130,9 @@ export async function createAnkiNote(db: Db, errorId: number, transport?: Transp
     }
     const [confirmed] = await api.notesInfo([noteId]);
     if (!confirmed || confirmed.fields['ErrorLogId']?.value !== note.fields.ErrorLogId || confirmed.cards.length === 0) {
-      throw new AnkiError('ANKI_RESPUESTA_RARA', 'No se ha podido verificar una tarjeta para este error. Vuelve a intentarlo.');
+      throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.notVerified);
     }
-    if (await api.profile() !== profile) throw new AnkiError('ANKI_CONFIG', 'El perfil cambió antes de verificar la nota. Vuelve a intentarlo.');
+    if (await api.profile() !== profile) throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.profileChangedBeforeVerify);
     // Recuperar una identidad no implica que sus campos coincidan con el error actual.
     // La huella describe lo leído, también tras deshacer o reintentar un timeout.
     const confirmedFields = Object.fromEntries(ERRORLOG_FIELDS.map((name) => [name, confirmed.fields[name]?.value ?? '']));
@@ -159,7 +156,7 @@ export async function updateAnkiNote(db: Db, errorId: number, transport?: Transp
   return withAnkiLock(db, async () => {
     const error = getError(db, errorId);
     if (error === null || error.ankiNoteId === null) {
-      throw new AnkiError('ANKI_CONFIG', 'Ese error no tiene una tarjeta verificada que actualizar.');
+      throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.noVerifiedCard);
     }
     const api = ankiApi(transport ?? withRetry(httpTransport(config)));
     await api.version();
@@ -169,17 +166,17 @@ export async function updateAnkiNote(db: Db, errorId: number, transport?: Transp
     // La nota tiene que seguir siendo la de este error: no se pisa el trabajo de otra.
     const [current] = await api.notesInfo([error.ankiNoteId]);
     if (!current || current.fields[ERRORLOG_ID_FIELD]?.value !== note.fields.ErrorLogId) {
-      throw new AnkiError('ANKI_CONFIG', 'Esa nota ya no corresponde a este error. Sincroniza y vuelve a intentarlo.');
+      throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.noteMismatch);
     }
     await assertProfile(api, profile);
     await api.updateNoteFields({ id: error.ankiNoteId, fields: note.fields });
     if (await api.profile() !== profile) {
-      throw new AnkiError('ANKI_CONFIG', 'El perfil cambió durante la escritura. Vuelve a intentarlo con el perfil original.');
+      throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.profileChangedWrite);
     }
     // Solo se sella tras confirmar: si no cuajo, el aviso de «texto cambiado» sigue ahi.
     const [confirmed] = await api.notesInfo([error.ankiNoteId]);
     if (!confirmed || Object.entries(note.fields).some(([name, value]) => confirmed.fields[name]?.value !== value)) {
-      throw new AnkiError('ANKI_RESPUESTA_RARA', 'Anki no ha confirmado todos los campos de la actualización. Vuelve a intentarlo.');
+      throw new AnkiError('ANKI_RESPUESTA_RARA', (t) => t.ankiErrors.updateNotConfirmed);
     }
     await assertProfile(api, profile);
     setAnkiContentHash(db, errorId, contentHash(note.fields));

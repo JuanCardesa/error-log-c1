@@ -26,14 +26,6 @@ export function isCsvExport(value: string): value is CsvExport {
   return (CSV_EXPORTS as readonly string[]).includes(value);
 }
 
-export const CSV_LABELS: Readonly<Record<CsvExport, string>> = {
-  q1: 'Reparto de causas',
-  q2: 'Categorías por tasa',
-  q3: 'Precisión RUOE por part y semana',
-  q4: 'Falsas certezas',
-  q7: 'Repasos y fallos en Anki',
-};
-
 export function toCsvExport(
   which: CsvExport,
   data: Dataset,

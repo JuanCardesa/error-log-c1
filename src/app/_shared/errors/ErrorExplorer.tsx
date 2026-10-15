@@ -5,7 +5,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ErrorRow, SessionRow } from '@/lib/domain/types';
 import { CorrectionPair } from '../CorrectionPair';
 import { sessionTitle, shortDate } from '../format';
-import { ANKI_STATE_LABELS, CATEGORY_LABELS, CAUSE_LABELS, ankiState } from '../labels';
+import { useT } from '../i18nClient';
+import { ankiState } from '../labels';
 import { ankiClass } from './ankiClass';
 import { ErrorDetailPanel } from './ErrorDetailPanel';
 import styles from './explorer.module.css';
@@ -43,6 +44,7 @@ export function ErrorExplorer({
   readonly empty: ReactNode;
   readonly caption: string;
 }) {
+  const t = useT();
   const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId);
   const openerId = useRef<number | null>(null);
 
@@ -83,17 +85,17 @@ export function ErrorExplorer({
           <thead>
             {mode === 'session' ? (
               <tr>
-                <th scope="col" className={styles.colItem}>Ítem</th>
-                <th scope="col">Tu respuesta → Corrección</th>
-                <th scope="col" className={styles.colCategory}>Categoría</th>
-                <th scope="col" className={`${styles.colCause} ${styles.wide}`}>Causa</th>
+                <th scope="col" className={styles.colItem}>{t.errorForm.item}</th>
+                <th scope="col">{t.errors.answerToCorrection}</th>
+                <th scope="col" className={styles.colCategory}>{t.errorForm.category}</th>
+                <th scope="col" className={`${styles.colCause} ${styles.wide}`}>{t.errorForm.cause}</th>
                 <th scope="col" className={`${styles.colAnki} ${styles.wide}`}>Anki</th>
               </tr>
             ) : (
               <tr>
-                <th scope="col" className={styles.colCorrection}>Corrección</th>
-                <th scope="col" className={styles.wide}>Contexto</th>
-                <th scope="col" className={styles.colSession}>Sesión</th>
+                <th scope="col" className={styles.colCorrection}>{t.correction.correction}</th>
+                <th scope="col" className={styles.wide}>{t.errors.context}</th>
+                <th scope="col" className={styles.colSession}>{t.errors.session}</th>
                 <th scope="col" className={styles.colAnki}>Anki</th>
               </tr>
             )}
@@ -104,7 +106,7 @@ export function ErrorExplorer({
               const isSelected = error.id === selectedId;
               const state = ankiState(error);
               const select = () => { openerId.current = error.id; setSelectedId(error.id); };
-              const label = error.itemRef === null ? `Ver error: ${error.correctAnswer}` : `Ver error ${error.itemRef}: ${error.correctAnswer}`;
+              const label = t.errors.viewError(error.itemRef, error.correctAnswer);
               return (
                 <tr
                   key={error.id}
@@ -119,16 +121,16 @@ export function ErrorExplorer({
                           <CorrectionPair mine={error.myAnswer} correct={error.correctAnswer} />
                         </button>
                       </td>
-                      <td className={styles.colCategory}>{CATEGORY_LABELS[error.category]}</td>
-                      <td className={`${styles.colCause} ${styles.wide}`}>{CAUSE_LABELS[error.cause]}</td>
-                      <td className={`${styles.colAnki} ${styles.wide} ${ankiClass(state)}`}>{ANKI_STATE_LABELS[state]}</td>
+                      <td className={styles.colCategory}>{t.labels.category[error.category]}</td>
+                      <td className={`${styles.colCause} ${styles.wide}`}>{t.labels.cause[error.cause]}</td>
+                      <td className={`${styles.colAnki} ${styles.wide} ${ankiClass(state)}`}>{t.labels.ankiState[state]}</td>
                     </>
                   ) : (
                     <>
                       <td className={styles.colCorrection}>
                         <button type="button" className={styles.rowButton} aria-label={label} aria-current={isSelected || undefined} data-error-row={error.id} onClick={(event) => { event.stopPropagation(); select(); }}>
                           <span className={styles.correctMono}>{error.correctAnswer}</span>
-                          <span className={ui.cellSub}>{CATEGORY_LABELS[error.category]}</span>
+                          <span className={ui.cellSub}>{t.labels.category[error.category]}</span>
                         </button>
                       </td>
                       <td className={`${styles.wide} ${styles.context}`}>
@@ -136,11 +138,11 @@ export function ErrorExplorer({
                       </td>
                       <td className={styles.colSession}>
                         <span className={ui.cellStack}>
-                          <span className={ui.ellipsis}>{sessionTitle(session)}</span>
-                          <span className={ui.cellSub}>{shortDate(session.date)}</span>
+                          <span className={ui.ellipsis}>{sessionTitle(session, t)}</span>
+                          <span className={ui.cellSub}>{shortDate(session.date, t)}</span>
                         </span>
                       </td>
-                      <td className={`${styles.colAnki} ${ankiClass(state)}`}>{ANKI_STATE_LABELS[state]}</td>
+                      <td className={`${styles.colAnki} ${ankiClass(state)}`}>{t.labels.ankiState[state]}</td>
                     </>
                   )}
                 </tr>

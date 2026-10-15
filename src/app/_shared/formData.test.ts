@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { getMessages } from '@/lib/i18n';
+import { formErrors } from '@/lib/i18n/zod';
 import { checkbox, collectIssues, integer, isValidId, text } from './formData';
 
 const form = (entries: Record<string, string>): FormData => {
@@ -58,15 +60,18 @@ describe('agrupacion de errores de Zod', () => {
     expect(fieldErrors['part']).toHaveLength(1);
   });
 
-  it('traduce el mensaje por defecto de un valor fuera de lista', () => {
-    const parsed = z.object({ category: z.enum(['LEXICO', 'REGISTRO']) }).safeParse({ category: 'foo' });
-    if (parsed.success) throw new Error('un valor fuera de lista deberia fallar');
-    expect(collectIssues(parsed.error)['category']).toEqual(['Elige una opción de la lista.']);
+  it('traduce el mensaje por defecto de un valor fuera de lista, en el idioma de la interfaz', () => {
+    const schema = z.object({ category: z.enum(['LEXICO', 'REGISTRO']) });
+    const es = schema.safeParse({ category: 'foo' }, { error: formErrors(getMessages('es')) });
+    const en = schema.safeParse({ category: 'foo' }, { error: formErrors(getMessages('en')) });
+    if (es.success || en.success) throw new Error('un valor fuera de lista deberia fallar');
+    expect(collectIssues(es.error)['category']).toEqual(['Elige una opción de la lista.']);
+    expect(collectIssues(en.error)['category']).toEqual(['Choose an option from the list.']);
   });
 
   it('conserva el mensaje propio de un enum', () => {
     const schema = z.object({ category: z.enum(['LEXICO'], { error: 'Categoria desconocida.' }) });
-    const parsed = schema.safeParse({ category: 'foo' });
+    const parsed = schema.safeParse({ category: 'foo' }, { error: formErrors(getMessages('es')) });
     if (parsed.success) throw new Error('un valor fuera de lista deberia fallar');
     expect(collectIssues(parsed.error)['category']).toEqual(['Categoria desconocida.']);
   });

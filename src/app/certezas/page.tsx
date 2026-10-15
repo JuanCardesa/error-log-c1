@@ -6,6 +6,7 @@ import { distinctSubcategories } from '@/lib/db/repo';
 import { FIXED_WINDOW_DAYS } from '@/lib/domain/thresholds';
 import { q4FalseCertainties } from '@/lib/queries/q4FalseCertainties';
 import { ErrorExplorer, type ExplorerRow } from '../_shared/errors/ErrorExplorer';
+import { getT } from '../_shared/i18nServer';
 import { LiveSearch } from '../_shared/LiveSearch';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
@@ -22,6 +23,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function CertezasPage({ searchParams }: { readonly searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  const t = await getT();
   const q = typeof params['q'] === 'string' ? params['q'].trim().toLowerCase() : '';
   const selected = Number(typeof params['error'] === 'string' ? params['error'] : '');
   const db = getDb();
@@ -40,25 +42,24 @@ export default async function CertezasPage({ searchParams }: { readonly searchPa
   return (
     <div className={styles.page}>
       <div className={styles.head}>
-        <h1 className={ui.pageTitle}>Errores</h1>
+        <h1 className={ui.pageTitle}>{t.nav.errors}</h1>
         <RouteTabs
-          label="Vistas de errores"
+          label={t.errors.views}
           items={[
-            { href: '/errores', label: 'Todos', current: false },
-            { href: '/certezas', label: 'Falsas certezas', current: true },
+            { href: '/errores', label: t.errors.all, current: false },
+            { href: '/certezas', label: t.errors.falseCertainties, current: true },
           ]}
         />
       </div>
       <p className={styles.intro}>
-        Errores registrados con confianza «Seguro» · <strong>últimos {FIXED_WINDOW_DAYS} días, periodo fijo</strong>.
-        Incluye despistes: no todos implican desconocer la regla.
+        {t.certainties.introBefore}<strong>{t.certainties.introStrong(FIXED_WINDOW_DAYS)}</strong>{t.certainties.introAfter}
       </p>
 
       <div className={styles.toolbar}>
-        <LiveSearch placeholder="Buscar en respuestas, enunciados y reglas…" label="Buscar falsas certezas" className={styles.search} />
+        <LiveSearch placeholder={t.errors.searchPlaceholder} label={t.certainties.searchLabel} className={styles.search} />
         <span className={ui.spacer} />
         <span className={styles.count}>
-          {rows.length} {rows.length === 1 ? 'caso' : 'casos'} · últimos {FIXED_WINDOW_DAYS} días
+          {t.certainties.count(rows.length, FIXED_WINDOW_DAYS)}
         </span>
       </div>
 
@@ -68,21 +69,21 @@ export default async function CertezasPage({ searchParams }: { readonly searchPa
         mode="global"
         initialSelectedId={Number.isInteger(selected) && selected > 0 ? selected : null}
         subcategorySuggestions={distinctSubcategories(db)}
-        caption="Falsas certezas de los últimos 30 días"
+        caption={t.certainties.caption(FIXED_WINDOW_DAYS)}
         empty={(
           <div className={`${ui.tableEmpty} ${styles.emptyTable}`}>
             {q !== '' ? (
               <>
-                <span>Ningún caso coincide con «{q}».</span>
-                <Link href="/certezas" className={ui.textLink}>Limpiar búsqueda</Link>
+                <span>{t.certainties.noMatch(q)}</span>
+                <Link href="/certezas" className={ui.textLink}>{t.common.clearSearch}</Link>
               </>
             ) : data.errors.length === 0 ? (
               <>
-                <span>Todavía no hay errores registrados.</span>
-                <Link href="/registrar" className={ui.textLink}>Ir a Sesiones</Link>
+                <span>{t.certainties.noErrors}</span>
+                <Link href="/registrar" className={ui.textLink}>{t.common.goToSessions}</Link>
               </>
             ) : (
-              <span>Sin errores registrados con confianza «Seguro» en {FIXED_WINDOW_DAYS} días.</span>
+              <span>{t.certainties.noneSure(FIXED_WINDOW_DAYS)}</span>
             )}
           </div>
         )}

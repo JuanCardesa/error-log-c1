@@ -9,6 +9,7 @@ import { getNotebookNote } from '@/lib/db/notebookRepo';
 import { openNotebookSnapshot, type NotebookSnapshot } from '@/lib/db/notebookSnapshot';
 import { isCsvExport, toCsvExport, toJsonDump } from '@/lib/export/dump';
 import { notebookNoteFileName, notebookNoteToMarkdown } from '@/lib/notebook/export';
+import { getT } from '../../_shared/i18nServer';
 import { parseWindow } from '../../_shared/window';
 
 /**
@@ -94,7 +95,7 @@ export async function GET(
   const note = /^notebook-([1-9]\d*)\.md$/.exec(file);
   if (note !== null) {
     const found = getNotebookNote(getDb(), Number(note[1]));
-    if (found === null) return new Response('No existe ese apunte.', { status: 404 });
+    if (found === null) return new Response((await getT()).export.noteNotFound, { status: 404 });
     const encodedName = encodeURIComponent(notebookNoteFileName(found))
       .replace(/['()*]/gu, (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`);
     return new Response(notebookNoteToMarkdown(found), {
@@ -116,7 +117,7 @@ export async function GET(
   const match = /^(q\d+)\.csv$/.exec(file);
   const which = match?.[1];
   if (which === undefined || !isCsvExport(which)) {
-    return new Response('No existe ese fichero.', { status: 404 });
+    return new Response((await getT()).export.fileNotFound, { status: 404 });
   }
 
   // La marca UTF-8 debe estar en el cuerpo, no basta con declarar el charset.

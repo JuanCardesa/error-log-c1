@@ -1,18 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
+import { getMessages } from '../i18n';
 import { parseNotebookMarkdownImport, type NotebookImportDraft } from './import';
+
+const t = getMessages('es');
 import { NOTEBOOK_IMPORT_MAX_FILE_BYTES, NOTEBOOK_LIMITS } from './schemas';
 
 const encode = (text: string) => new TextEncoder().encode(text);
 
 function draft(text: string, fileName = 'past-modals.md'): NotebookImportDraft {
-  const result = parseNotebookMarkdownImport(fileName, encode(text));
+  const result = parseNotebookMarkdownImport(fileName, encode(text), t);
   if (!result.ok) throw new Error(result.message);
   return result.draft;
 }
 
 function failure(bytes: Uint8Array, fileName = 'past-modals.md'): string {
-  const result = parseNotebookMarkdownImport(fileName, bytes);
+  const result = parseNotebookMarkdownImport(fileName, bytes, t);
   if (result.ok) throw new Error('Se esperaba un rechazo');
   return result.message;
 }
@@ -30,7 +33,7 @@ describe('archivo', () => {
   it('rechaza UTF-8 inválido y quita la marca BOM antes de buscar el frontmatter', () => {
     expect(failure(new Uint8Array([0x23, 0x20, 0xc3, 0x28]))).toMatch(/UTF-8/u);
     const withBom = new Uint8Array([0xef, 0xbb, 0xbf, ...encode('---\ntitle: Con BOM\n---\nCuerpo')]);
-    const result = parseNotebookMarkdownImport('a.md', withBom);
+    const result = parseNotebookMarkdownImport('a.md', withBom, t);
     expect(result.ok && result.draft).toMatchObject({ title: 'Con BOM', frontmatter: 'applied', contentMarkdown: 'Cuerpo' });
   });
 

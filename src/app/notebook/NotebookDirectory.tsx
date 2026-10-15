@@ -5,6 +5,7 @@ import { useId, useState } from 'react';
 
 import type { NotebookFolder, NotebookNoteSummary } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
+import { useT } from '../_shared/i18nClient';
 import styles from './notebook.module.css';
 
 export function NotebookDirectory({
@@ -18,6 +19,7 @@ export function NotebookDirectory({
   readonly selectedFolderId?: number | null;
   readonly favoritesView?: boolean;
 }) {
+  const t = useT();
   const idPrefix = useId();
   const roots = folders.filter((folder) => folder.parentId === null);
   /**
@@ -29,11 +31,11 @@ export function NotebookDirectory({
   const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(() => new Set());
 
   return (
-    <nav aria-label="Directorio de Notebook" className={styles.directory}>
-      <h2 className={styles.directoryTitle}>Directorio</h2>
+    <nav aria-label={t.notebook.directoryLabel} className={styles.directory}>
+      <h2 className={styles.directoryTitle}>{t.notebook.directory}</h2>
       <div className={styles.favoriteDirectory}>
         <Link href="/notebook?vista=favoritos" aria-current={favoritesView ? 'page' : undefined}>
-          Favoritos {favorites.length > 0 && <span>{favorites.length}</span>}
+          {t.notebook.favorites} {favorites.length > 0 && <span>{favorites.length}</span>}
         </Link>
         {favorites.length > 0 && <ul className={styles.favoriteLinks}>
           {favorites.slice(0, 8).map((note) => <li key={note.id}>
@@ -41,13 +43,13 @@ export function NotebookDirectory({
           </li>)}
         </ul>}
         {favorites.length > 8 && <Link href="/notebook?vista=favoritos" className={styles.favoriteAll}>
-          Ver todos ({favorites.length})
+          {t.notebook.seeAll(favorites.length)}
         </Link>}
       </div>
       <ul className={styles.folderList}>
         <li>
           <Link href="/notebook" aria-current={selectedFolderId === undefined && !favoritesView ? 'page' : undefined}>
-            Recientes
+            {t.notebook.recent}
           </Link>
         </li>
         {roots.map((folder) => {
@@ -61,7 +63,7 @@ export function NotebookDirectory({
                   <button
                     type="button"
                     className={styles.folderToggle}
-                    aria-label={`${isExpanded ? 'Contraer' : 'Expandir'} ${folder.name}`}
+                    aria-label={isExpanded ? t.notebook.collapse(folder.name) : t.notebook.expand(folder.name)}
                     aria-expanded={isExpanded}
                     aria-controls={childListId}
                     onClick={() => {
@@ -102,7 +104,7 @@ export function NotebookDirectory({
         })}
         <li>
           <Link href="/notebook?carpeta=sin-carpeta" aria-current={selectedFolderId === null ? 'page' : undefined}>
-            Sin carpeta
+            {t.notebook.noFolder}
           </Link>
         </li>
       </ul>

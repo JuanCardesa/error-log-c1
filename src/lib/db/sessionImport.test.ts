@@ -4,12 +4,13 @@ import { migrate } from './migrate';
 import { MIGRATIONS_DIR } from './paths';
 import { countSessions, getSession, listErrors } from './repo';
 import { importSessionWithErrors } from './sessionImport';
+import { getMessages } from '../i18n';
 import { errorsForRow, MAX_SESSION_IMPORT_ROWS } from '../import/errors';
 
 let db: Db;
 beforeEach(() => { db = createDb(':memory:'); migrate(db, { migrationsFolder: MIGRATIONS_DIR }); });
 afterEach(() => db.$client.close());
-const options = { today: '2026-09-20', now: '2026-09-20T10:00:00Z', elapsed: 20, durationMin: null };
+const options = { today: '2026-09-20', now: '2026-09-20T10:00:00Z', elapsed: 20, durationMin: null, t: getMessages('es') };
 const session = { date: options.today, kind: 'DRILL', paper: null, part: null, source: 'LIBRO',
   sourceRef: 'Libro · págs. 6-7', itemsTotal: 8, itemsCorrect: 6, timed: false };
 const row = { itemRef: '1', prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off',

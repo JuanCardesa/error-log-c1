@@ -3,6 +3,7 @@
 import { Check, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
+import { useT } from './i18nClient';
 import styles from './overlay.module.css';
 
 /**
@@ -26,6 +27,7 @@ const ToastContext = createContext<(toast: ToastInput) => void>(() => undefined)
 const DURATION_MS = 5000;
 
 export function ToastProvider({ children }: { readonly children: ReactNode }) {
+  const t = useT();
   const [toast, setToast] = useState<ToastState | null>(null);
   const counter = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,10 +72,10 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
                   clear();
                 }}
               >
-                Deshacer
+                {t.common.undo}
               </button>
             )}
-            <button type="button" className={styles.toastClose} aria-label="Cerrar aviso" onClick={clear}>
+            <button type="button" className={styles.toastClose} aria-label={t.common.closeNotice} onClick={clear}>
               <X size={16} aria-hidden="true" />
             </button>
           </div>

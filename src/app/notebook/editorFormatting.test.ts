@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatNotebookSelection as format } from './editorFormatting';
+import { getMessages } from '@/lib/i18n';
+import { type Formatting, formatNotebookSelection } from './editorFormatting';
+
+const format = (value: string, start: number, end: number, kind: Formatting) =>
+  formatNotebookSelection(value, start, end, kind, getMessages('es').notebook.formatPlaceholders);
 
 describe('toolbar Notebook', () => {
   it('envuelve solo la selección y la mantiene para seguir escribiendo', () => {

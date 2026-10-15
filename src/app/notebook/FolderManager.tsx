@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import type { NotebookFolder } from '@/lib/notebook/types';
 import { ConfirmDialog } from '../_shared/ConfirmDialog';
+import { useT } from '../_shared/i18nClient';
 import ui from '../_shared/ui.module.css';
 import { createFolderAction, deleteFolderAction, updateFolderAction } from './actions';
 import styles from './notebook.module.css';
@@ -16,6 +17,8 @@ export function FolderManager({
   readonly folders: readonly NotebookFolder[];
   readonly selected?: NotebookFolder;
 }) {
+  const t = useT();
+  const n = t.notebook;
   const router = useRouter();
   const roots = folders.filter((folder) => folder.parentId === null);
   const [newName, setNewName] = useState('');
@@ -36,7 +39,7 @@ export function FolderManager({
       router.push(`/notebook?carpeta=${String(result.data.id)}`);
       router.refresh();
     } catch {
-      setError('No se pudo crear la carpeta. Inténtalo de nuevo.');
+      setError(n.createFolderFailed);
     } finally { setPending(false); }
   }
 
@@ -50,7 +53,7 @@ export function FolderManager({
       if (!result.ok) { setError(result.message); return; }
       router.refresh();
     } catch {
-      setError('No se pudo guardar la carpeta. Inténtalo de nuevo.');
+      setError(n.saveFolderFailed);
     } finally { setPending(false); }
   }
 
@@ -66,47 +69,47 @@ export function FolderManager({
       // mientras el push está en vuelo deja las dos páginas pintadas a la vez.
       router.push('/notebook');
     } catch {
-      setError('No se pudo borrar la carpeta. Inténtalo de nuevo.');
+      setError(n.deleteFolderFailed);
     } finally { setPending(false); }
   }
 
   return (
     <div className={styles.folderManager}>
       <details>
-        <summary>Organizar carpetas</summary>
+        <summary>{n.organiseFolders}</summary>
         <div className={styles.folderForms}>
           {error !== null && <p role="alert" className={ui.fieldError}>{error}</p>}
           <form onSubmit={(event) => { void createFolder(event); }} className={styles.folderForm}>
-            <h3>Nueva carpeta</h3>
-            <label className={ui.field}>Nombre
+            <h3>{n.newFolder}</h3>
+            <label className={ui.field}>{n.name}
               <input className={ui.input} value={newName} onChange={(event) => { setNewName(event.target.value); }} maxLength={80} required />
             </label>
-            <label className={ui.field}>Ubicación
+            <label className={ui.field}>{n.location}
               <select className={ui.select} value={newParent ?? ''} onChange={(event) => { setNewParent(event.target.value === '' ? null : Number(event.target.value)); }}>
-                <option value="">Raíz</option>
+                <option value="">{n.root}</option>
                 {roots.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
               </select>
             </label>
-            <button type="submit" className={ui.secondary} disabled={pending}>Crear carpeta</button>
+            <button type="submit" className={ui.secondary} disabled={pending}>{n.createFolder}</button>
           </form>
           {selected !== undefined && (
             <form onSubmit={(event) => { void updateFolder(event); }} className={styles.folderForm}>
-              <h3>Editar {selected.name}</h3>
-              <label className={ui.field}>Nombre
+              <h3>{n.editFolder(selected.name)}</h3>
+              <label className={ui.field}>{n.name}
                 <input className={ui.input} value={name} onChange={(event) => { setName(event.target.value); }} maxLength={80} required />
               </label>
-              <label className={ui.field}>Ubicación
+              <label className={ui.field}>{n.location}
                 <select className={ui.select} value={parentId ?? ''} onChange={(event) => { setParentId(event.target.value === '' ? null : Number(event.target.value)); }}>
-                  <option value="">Raíz</option>
+                  <option value="">{n.root}</option>
                   {roots.filter((folder) => folder.id !== selected.id).map((folder) => (
                     <option key={folder.id} value={folder.id}>{folder.name}</option>
                   ))}
                 </select>
               </label>
               <div className={styles.folderActions}>
-                <button type="submit" className={ui.secondary} disabled={pending}>Guardar carpeta</button>
+                <button type="submit" className={ui.secondary} disabled={pending}>{n.saveFolder}</button>
                 <button type="button" className={ui.dangerLink} disabled={pending} onClick={() => { setConfirmDelete(true); }}>
-                  Borrar carpeta…
+                  {n.deleteFolderMenu}
                 </button>
               </div>
             </form>
@@ -115,14 +118,14 @@ export function FolderManager({
       </details>
       <ConfirmDialog
         open={confirmDelete}
-        title={`Borrar ${selected?.name ?? 'carpeta'}`}
-        confirmLabel="Borrar carpeta"
+        title={n.deleteFolderTitle(selected?.name ?? null)}
+        confirmLabel={n.deleteFolder}
         pending={pending}
         error={error}
         onConfirm={() => { void deleteFolder(); }}
         onCancel={() => { setConfirmDelete(false); setError(null); }}
       >
-        Solo se puede borrar una carpeta vacía. Esta acción no se puede deshacer.
+        {n.deleteFolderBody}
       </ConfirmDialog>
     </div>
   );

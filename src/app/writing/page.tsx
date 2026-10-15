@@ -5,10 +5,11 @@ import { loadDataset } from '@/lib/db/load';
 import { writingSessionsWithoutPiece } from '@/lib/db/repo';
 import { REWRITE_REPEAT_PCT } from '@/lib/domain/thresholds';
 import type { SessionRow, WritingPieceRow } from '@/lib/domain/types';
+import type { Messages } from '@/lib/i18n';
 import { q6RewriteEfficacy } from '@/lib/queries/q6RewriteEfficacy';
 import { toIsoDate } from '@/lib/time/dates';
 import { percent, sessionTitle, shortDate } from '../_shared/format';
-import { CORRECTOR_LABELS, GENRE_LABELS } from '../_shared/labels';
+import { getT } from '../_shared/i18nServer';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -29,6 +30,7 @@ const one = (value: string | string[] | undefined): string => (typeof value === 
 
 export default async function WritingPage({ searchParams }: { readonly searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  const t = await getT();
   const tab = one(params['tab']) === 'reescrituras' ? 'reescrituras' : 'textos';
   const windowDays = parseWindow(params['w']);
   const db = getDb();
@@ -39,9 +41,9 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
   const pieceById = new Map(pieces.map((piece) => [piece.id, piece]));
   const title = (piece: WritingPieceRow): string => {
     const session = sessionById.get(piece.sessionId);
-    return session === undefined ? `${GENRE_LABELS[piece.genre]} · ${shortDate(piece.date)}` : sessionTitle(session);
+    return session === undefined ? `${t.labels.genre[piece.genre]} · ${shortDate(piece.date, t)}` : sessionTitle(session, t);
   };
-  const originals = pieces.map((piece) => ({ id: piece.id, label: `${shortDate(piece.date)} · ${title(piece)} · ${GENRE_LABELS[piece.genre]}` }));
+  const originals = pieces.map((piece) => ({ id: piece.id, label: `${shortDate(piece.date, t)} · ${title(piece)} · ${t.labels.genre[piece.genre]}` }));
   const available = writingSessionsWithoutPiece(db);
 
   const editId = Number(one(params['edit']));
@@ -57,10 +59,10 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
     <div className={styles.page}>
       <div className={styles.head}>
         <div className={ui.pageHead}>
-          <h1 className={ui.pageTitle}>Writing</h1>
+          <h1 className={ui.pageTitle}>{t.nav.writing}</h1>
           <WritingEditor
             {...editorProps}
-            label="Registrar Writing"
+            label={t.writing.logWriting}
             editing={null}
             editingSession={null}
             initiallyOpen={openNew || Number.isInteger(rewriteOf) && rewriteOf > 0}
@@ -69,10 +71,10 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
           />
         </div>
         <RouteTabs
-          label="Vistas de Writing"
+          label={t.writing.views}
           items={[
-            { href: '/writing', label: 'Textos', current: tab === 'textos' },
-            { href: `/writing?tab=reescrituras${windowDays === 30 ? '' : `&w=${String(windowDays)}`}`, label: 'Reescrituras', current: tab === 'reescrituras' },
+            { href: '/writing', label: t.writing.texts, current: tab === 'textos' },
+            { href: `/writing?tab=reescrituras${windowDays === 30 ? '' : `&w=${String(windowDays)}`}`, label: t.writing.rewrites, current: tab === 'reescrituras' },
           ]}
         />
       </div>
@@ -89,51 +91,52 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
         />
       )}
       {one(params['edit']) !== '' && editing === null && (
-        <p className={ui.helpWarn} role="status">No encontramos ese registro de Writing: puede que se haya borrado con su sesión.</p>
+        <p className={ui.helpWarn} role="status">{t.writing.notFound}</p>
       )}
 
       {tab === 'textos' ? (
-        <Texts pieces={pieces} sessionById={sessionById} pieceById={pieceById} title={title} editHref={editHref} />
+        <Texts pieces={pieces} sessionById={sessionById} pieceById={pieceById} title={title} editHref={editHref} t={t} />
       ) : (
-        <Rewrites data={data} windowDays={windowDays} pieceById={pieceById} title={title} />
+        <Rewrites data={data} windowDays={windowDays} pieceById={pieceById} title={title} t={t} />
       )}
     </div>
   );
 }
 
-function bandValue(value: number | null) {
+function bandValue(value: number | null, t: Messages) {
   return value === null
-    ? <span className={styles.unrated}>Sin evaluar</span>
+    ? <span className={styles.unrated}>{t.writing.unrated}</span>
     : <span className="num">{value}</span>;
 }
 
-function Texts({ pieces, sessionById, pieceById, title, editHref }: {
+function Texts({ pieces, sessionById, pieceById, title, editHref, t }: {
   readonly pieces: readonly WritingPieceRow[];
   readonly sessionById: ReadonlyMap<number, SessionRow>;
   readonly pieceById: ReadonlyMap<number, WritingPieceRow>;
   readonly title: (piece: WritingPieceRow) => string;
   readonly editHref: (id: number) => string;
+  readonly t: Messages;
 }) {
   if (pieces.length === 0) {
     return (
       <div className={styles.empty}>
-        <p>Todavía no hay textos de Writing. Registra la evaluación de un texto cuando lo tengas corregido.</p>
+        <p>{t.writing.empty}</p>
       </div>
     );
   }
   return (
     <div className={styles.scroll}>
       <table className={styles.table}>
-        <caption className="sr-only">Textos de Writing con sus cuatro bandas</caption>
+        <caption className="sr-only">{t.writing.textsCaption}</caption>
         <thead>
           <tr>
-            <th scope="col" className={styles.colDate}>Fecha</th>
-            <th scope="col">Referencia</th>
-            <th scope="col" className={styles.colGenre}>Género</th>
+            <th scope="col" className={styles.colDate}>{t.sessionForm.date}</th>
+            <th scope="col">{t.sessionForm.reference}</th>
+            <th scope="col" className={styles.colGenre}>{t.writing.genre}</th>
             {BANDS.map((band) => (
               <th key={band.name} scope="col" className={styles.colBand}><abbr title={band.label}>{band.short}</abbr></th>
             ))}
-            <th scope="col" className={styles.colCorrector}>Corrector</th>
+            <th scope="col" className={styles.colCorrector}>{t.writing.corrector}</th>
           </tr>
         </thead>
         <tbody>
@@ -141,26 +144,26 @@ function Texts({ pieces, sessionById, pieceById, title, editHref }: {
             const original = piece.rewriteOf === null ? null : pieceById.get(piece.rewriteOf) ?? null;
             const session = sessionById.get(piece.sessionId);
             const sub = original !== null
-              ? `Reescribe «${title(original)}» del ${shortDate(original.date)}`
+              ? t.writing.rewritesOf(title(original), shortDate(original.date, t))
               : piece.corrector === null && BANDS.every((band) => piece[band.name] === null)
-                ? 'Sin corregir'
-                : [piece.wordCount === null ? null : `${String(piece.wordCount)} palabras`, piece.minutes === null ? null : `${String(piece.minutes)} min`]
-                  .filter((part) => part !== null).join(' · ') || (session === undefined ? '' : `Writing Part ${String(session.part)}`);
+                ? t.writing.notMarked
+                : [piece.wordCount === null ? null : t.writing.words(piece.wordCount), piece.minutes === null ? null : `${String(piece.minutes)} min`]
+                  .filter((part) => part !== null).join(' · ') || (session === undefined ? '' : `Writing ${t.format.part(session.part)}`);
             return (
               <tr key={piece.id}>
-                <td className={`${styles.colDate} ${styles.muted}`}>{shortDate(piece.date)}</td>
+                <td className={`${styles.colDate} ${styles.muted}`}>{shortDate(piece.date, t)}</td>
                 <td>
                   <span className={ui.cellStack}>
                     <Link href={editHref(piece.id)} className={styles.ref} scroll={false}>{title(piece)}</Link>
                     <span className={`${ui.cellSub} ${ui.ellipsis}`}>{sub}</span>
                   </span>
                 </td>
-                <td className={styles.colGenre}>{GENRE_LABELS[piece.genre]}</td>
-                <td className={styles.colBand}>{bandValue(piece.bandContent)}</td>
-                <td className={styles.colBand}>{bandValue(piece.bandCommunicative)}</td>
-                <td className={styles.colBand}>{bandValue(piece.bandOrganisation)}</td>
-                <td className={styles.colBand}>{bandValue(piece.bandLanguage)}</td>
-                <td className={`${styles.colCorrector} ${styles.muted}`}>{piece.corrector === null ? '—' : CORRECTOR_LABELS[piece.corrector]}</td>
+                <td className={styles.colGenre}>{t.labels.genre[piece.genre]}</td>
+                <td className={styles.colBand}>{bandValue(piece.bandContent, t)}</td>
+                <td className={styles.colBand}>{bandValue(piece.bandCommunicative, t)}</td>
+                <td className={styles.colBand}>{bandValue(piece.bandOrganisation, t)}</td>
+                <td className={styles.colBand}>{bandValue(piece.bandLanguage, t)}</td>
+                <td className={`${styles.colCorrector} ${styles.muted}`}>{piece.corrector === null ? '—' : t.labels.corrector[piece.corrector]}</td>
               </tr>
             );
           })}
@@ -170,11 +173,12 @@ function Texts({ pieces, sessionById, pieceById, title, editHref }: {
   );
 }
 
-function Rewrites({ data, windowDays, pieceById, title }: {
+function Rewrites({ data, windowDays, pieceById, title, t }: {
   readonly data: ReturnType<typeof loadDataset>;
   readonly windowDays: number;
   readonly pieceById: ReadonlyMap<number, WritingPieceRow>;
   readonly title: (piece: WritingPieceRow) => string;
+  readonly t: Messages;
 }) {
   const q6 = q6RewriteEfficacy(data, { now: new Date(), windowDays });
   return (
@@ -182,28 +186,28 @@ function Rewrites({ data, windowDays, pieceById, title }: {
       <div className={styles.rewritesHead}>
         <p className={ui.help}>
           {q6.pairs.length === 0
-            ? `Ningún par original y reescritura en los últimos ${String(windowDays)} días.`
+            ? t.writing.noPairs(windowDays)
             : q6.pctRepeated === null
-              ? 'Los originales no tenían errores registrados: no hay nada que comparar.'
-              : `${String(q6.totalRepeated)} de ${String(q6.totalOriginalErrors)} errores de los originales se repiten al reescribir (${percent(q6.pctRepeated)}; umbral ${String(REWRITE_REPEAT_PCT)} %). Mismo error = misma categoría, subcategoría y corrección.`}
+              ? t.writing.noOriginalErrors
+              : t.writing.repeatSummary(q6.totalRepeated, q6.totalOriginalErrors, percent(q6.pctRepeated, t), percent(REWRITE_REPEAT_PCT, t))}
         </p>
-        <WindowSwitch current={windowDays} basePath="/writing" keep={{ tab: 'reescrituras' }} label="Periodo de las reescrituras" />
+        <WindowSwitch current={windowDays} basePath="/writing" keep={{ tab: 'reescrituras' }} label={t.writing.rewritesPeriod} />
       </div>
       {q6.pairs.map((pair) => {
         const original = pieceById.get(pair.originalId);
         const rewrite = pieceById.get(pair.rewriteId);
         if (original === undefined || rewrite === undefined) return null;
         return (
-          <section key={pair.rewriteId} className={styles.pair} aria-label={`${title(original)} y su reescritura`}>
-            <h2 className={styles.pairTitle}>{title(original)} → Reescritura</h2>
+          <section key={pair.rewriteId} className={styles.pair} aria-label={t.writing.pairLabel(title(original))}>
+            <h2 className={styles.pairTitle}>{t.writing.pairTitle(title(original))}</h2>
             <table className={styles.compare}>
-              <caption className="sr-only">Bandas del original y de la reescritura</caption>
+              <caption className="sr-only">{t.writing.compareCaption}</caption>
               <thead>
                 <tr>
-                  <th scope="col">Banda</th>
-                  <th scope="col" className={styles.center}>Original · {shortDate(original.date)}</th>
-                  <th scope="col" className={styles.center}>Nueva · {shortDate(rewrite.date)}</th>
-                  <th scope="col" className={styles.rightCell}>Cambio</th>
+                  <th scope="col">{t.writing.band}</th>
+                  <th scope="col" className={styles.center}>{t.writing.originalCol(shortDate(original.date, t))}</th>
+                  <th scope="col" className={styles.center}>{t.writing.newCol(shortDate(rewrite.date, t))}</th>
+                  <th scope="col" className={styles.rightCell}>{t.writing.change}</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,8 +218,8 @@ function Rewrites({ data, windowDays, pieceById, title }: {
                   return (
                     <tr key={band.name}>
                       <th scope="row">{band.label}</th>
-                      <td className={styles.center}>{bandValue(before)}</td>
-                      <td className={`${styles.center} ${styles.strong}`}>{bandValue(after)}</td>
+                      <td className={styles.center}>{bandValue(before, t)}</td>
+                      <td className={`${styles.center} ${styles.strong}`}>{bandValue(after, t)}</td>
                       <td className={`${styles.rightCell} ${diff !== null && diff > 0 ? ui.ok : diff !== null && diff < 0 ? ui.dangerText : styles.muted}`}>
                         {diff === null ? '—' : diff > 0 ? `+${String(diff)}` : diff === 0 ? '=' : String(diff)}
                       </td>
@@ -226,11 +230,11 @@ function Rewrites({ data, windowDays, pieceById, title }: {
             </table>
             <p className={ui.help}>
               {pair.pctRepeated === null
-                ? 'El original no tenía errores registrados.'
-                : `${String(pair.repeatedErrors)} de ${String(pair.originalErrors)} errores del original se repiten en la reescritura (${percent(pair.pctRepeated)}).`}{' '}
-              <Link href={`/registrar?s=${String(original.sessionId)}`}>Errores del original</Link>
+                ? t.writing.originalNoErrors
+                : t.writing.pairRepeat(pair.repeatedErrors, pair.originalErrors, percent(pair.pctRepeated, t))}{' '}
+              <Link href={`/registrar?s=${String(original.sessionId)}`}>{t.writing.originalErrors}</Link>
               {' · '}
-              <Link href={`/registrar?s=${String(rewrite.sessionId)}`}>de la reescritura</Link>
+              <Link href={`/registrar?s=${String(rewrite.sessionId)}`}>{t.writing.rewriteErrorsLink}</Link>
             </p>
           </section>
         );

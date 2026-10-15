@@ -11,10 +11,12 @@ import {
   listWritingPieces,
   updateWritingPiece,
 } from '@/lib/db/repo';
+import { formErrors } from '@/lib/i18n/zod';
 import { toIsoDate } from '@/lib/time/dates';
 import { checkRewriteLink } from '@/lib/validation/rewriteChain';
 import { writingPieceInputSchema } from '@/lib/validation/schemas';
 import { checkbox, collectIssues, integer, isValidId, text } from '../_shared/formData';
+import { getT } from '../_shared/i18nServer';
 import type { FormState } from '../registrar/formState';
 
 function readPiece(form: FormData) {
@@ -39,14 +41,16 @@ export async function saveWritingPieceAction(
   form: FormData,
 ): Promise<FormState> {
   const db = getDb();
+  const t = await getT();
   const editingId = integer(form, 'id');
 
   if (editingId !== null && !isValidId(editingId)) {
-    return { ok: false, fieldErrors: {}, message: 'El identificador del texto no es válido.' };
+    return { ok: false, fieldErrors: {}, message: t.writing.invalidId };
   }
 
-  const parsed = writingPieceInputSchema({ today: toIsoDate(new Date()) }).safeParse(
+  const parsed = writingPieceInputSchema({ today: toIsoDate(new Date()), t }).safeParse(
     readPiece(form),
+    { error: formErrors(t) },
   );
 
   if (!parsed.success) {
@@ -60,32 +64,32 @@ export async function saveWritingPieceAction(
     result = db.$client.transaction((): FormState => {
       const original = editingId === null ? null : getWritingPiece(db, editingId);
       if (editingId !== null && original === null) {
-        return { ok: false, fieldErrors: {}, message: 'Ese texto ya no existe. Tus cambios siguen en el formulario.' };
+        return { ok: false, fieldErrors: {}, message: t.writing.gone };
       }
       if (original !== null && original.sessionId !== parsed.data.sessionId) {
-        return { ok: false, fieldErrors: { sessionId: ['La sesión de un texto existente no se puede cambiar.'] }, message: null };
+        return { ok: false, fieldErrors: { sessionId: [t.writing.sessionLocked] }, message: null };
       }
       const session = getSession(db, parsed.data.sessionId);
       if (session === null || session.paper !== 'WRITING') {
-        return { ok: false, fieldErrors: { sessionId: ['Esa sesión de Writing ya no está disponible.'] }, message: null };
+        return { ok: false, fieldErrors: { sessionId: [t.writing.sessionUnavailable] }, message: null };
       }
       if (editingId === null && hasWritingPiece(db, session.id)) {
-        return { ok: false, fieldErrors: { sessionId: ['Esa sesión ya tiene un texto. Elige otra sesión o edita el existente.'] }, message: null };
+        return { ok: false, fieldErrors: { sessionId: [t.writing.sessionTaken] }, message: null };
       }
 
       const check = checkRewriteLink(listWritingPieces(db), editingId ?? 0, parsed.data.rewriteOf);
       if (!check.ok) {
-        return { ok: false, fieldErrors: { rewriteOf: [check.message] }, message: null };
+        return { ok: false, fieldErrors: { rewriteOf: [t.writing.rewriteErrors[check.reason]] }, message: null };
       }
       if (editingId !== null) {
         updateWritingPiece(db, editingId, parsed.data);
-        return { ok: true, fieldErrors: {}, message: 'Texto actualizado.', createdId: editingId };
+        return { ok: true, fieldErrors: {}, message: t.writing.textUpdated, createdId: editingId };
       }
       const created = createWritingPiece(db, parsed.data);
-      return { ok: true, fieldErrors: {}, message: 'Texto guardado.', createdId: created.id };
+      return { ok: true, fieldErrors: {}, message: t.writing.textSaved, createdId: created.id };
     }).immediate();
   } catch {
-    return { ok: false, fieldErrors: {}, message: 'No se pudo guardar el texto. Tus cambios siguen aquí para reintentarlo.' };
+    return { ok: false, fieldErrors: {}, message: t.writing.saveFailed };
   }
   if (result.ok) revalidatePath('/', 'layout');
   return result;

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import type { SessionStatus } from '@/lib/domain/enums';
+import { useT } from '../_shared/i18nClient';
 import { StatusText } from '../_shared/StatusText';
 import { isPlainKey } from '../_shared/shortcuts';
 import styles from './sessions.module.css';
@@ -26,6 +27,7 @@ export interface SessionTableRow {
  * fila entera es clicable. J y K mueven la selección e Intro la abre.
  */
 export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow[] }) {
+  const t = useT();
   const router = useRouter();
   const [selected, setSelected] = useState<number | null>(null);
   const table = useRef<HTMLTableElement>(null);
@@ -62,15 +64,15 @@ export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow
   return (
     <div className={styles.tableWrap}>
       <table ref={table} className={styles.table}>
-        <caption className="sr-only">Sesiones</caption>
+        <caption className="sr-only">{t.nav.sessions}</caption>
         <thead>
           <tr>
-            <th scope="col" className={styles.colDate}>Fecha</th>
-            <th scope="col">Referencia</th>
-            <th scope="col" className={styles.colPractice}>Práctica</th>
-            <th scope="col" className={`${styles.colScore} ${styles.right}`}>Aciertos</th>
-            <th scope="col" className={`${styles.colErrors} ${styles.right}`}>Errores</th>
-            <th scope="col" className={styles.colStatus}>Estado</th>
+            <th scope="col" className={styles.colDate}>{t.sessionForm.date}</th>
+            <th scope="col">{t.sessionForm.reference}</th>
+            <th scope="col" className={styles.colPractice}>{t.sessionForm.practice}</th>
+            <th scope="col" className={`${styles.colScore} ${styles.right}`}>{t.sessionForm.correct}</th>
+            <th scope="col" className={`${styles.colErrors} ${styles.right}`}>{t.nav.errors}</th>
+            <th scope="col" className={styles.colStatus}>{t.sessionView.status}</th>
           </tr>
         </thead>
         <tbody>

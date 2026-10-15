@@ -9,7 +9,7 @@ import { CORRECTORS, GENRES } from '@/lib/domain/enums';
 import type { SessionRow, WritingPieceRow } from '@/lib/domain/types';
 import { Drawer } from '../_shared/Drawer';
 import { mediumDate, sessionTitle, shortDate } from '../_shared/format';
-import { CORRECTOR_LABELS, GENRE_LABELS } from '../_shared/labels';
+import { useT } from '../_shared/i18nClient';
 import { useToast } from '../_shared/Toast';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { EMPTY_STATE } from '../registrar/formState';
@@ -41,6 +41,7 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
   readonly initialRewriteOf: number | null;
   readonly today: string;
 }) {
+  const t = useT();
   const formId = useId();
   const [state, formAction, pending] = useActionState(saveWritingPieceAction, EMPTY_STATE);
   const { formRef, onReset } = usePreservedForm();
@@ -60,12 +61,12 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
     if (handled.current === state) return;
     handled.current = state;
     if (state.ok) {
-      toast({ message: editing === null ? 'Writing guardado' : 'Writing actualizado' });
+      toast({ message: editing === null ? t.writing.saved : t.writing.updated });
       onClose();
       return;
     }
     formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-  }, [state, editing, onClose, toast, formRef]);
+  }, [state, editing, onClose, toast, formRef, t]);
 
   const errorsFor = (field: string): string[] => state.fieldErrors[field] ?? [];
   const invalid = (field: string): boolean => errorsFor(field).length > 0;
@@ -83,22 +84,22 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
     <Drawer
       open={open}
       onClose={onClose}
-      title={editing === null ? 'Registrar Writing' : 'Editar Writing'}
+      title={editing === null ? t.writing.logWriting : t.writing.editWriting}
       footer={canCreate ? (
         <>
-          <button type="button" className={ui.ghost} onClick={onClose} disabled={pending}>Cancelar</button>
+          <button type="button" className={ui.ghost} onClick={onClose} disabled={pending}>{t.common.cancel}</button>
           <button type="submit" form={formId} className={ui.primary} disabled={pending} aria-busy={pending}>
-            {pending ? 'Guardando…' : editing === null ? 'Guardar Writing' : 'Guardar cambios'}
+            {pending ? t.common.saving : editing === null ? t.writing.saveWriting : t.common.saveChanges}
           </button>
         </>
       ) : undefined}
     >
       {!canCreate ? (
         <div className={styles.noSession}>
-          <p>No hay sesiones de Writing libres. Cada sesión admite un solo texto: crea la sesión y vuelve aquí con ella elegida.</p>
+          <p>{t.writing.noFreeSessions}</p>
           <Link href="/registrar?nueva=writing" className={ui.primary}>
             <Plus size={16} aria-hidden="true" />
-            Crear sesión Writing
+            {t.writing.createSession}
           </Link>
         </div>
       ) : (
@@ -106,11 +107,11 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
           {editing !== null && <input type="hidden" name="id" value={editing.id} />}
 
           <div className={session.group}>
-            <span className={session.groupLabel}>Sesión</span>
+            <span className={session.groupLabel}>{t.errors.session}</span>
             <div className={session.groupStack}>
               {editing === null ? (
                 <div className={ui.field}>
-                  <label htmlFor={`${formId}-f1`}>Sesión Writing libre</label>
+                  <label htmlFor={`${formId}-f1`}>{t.writing.freeSession}</label>
                   <select id={`${formId}-f1`}
                     name="sessionId"
                     className={ui.select}
@@ -120,7 +121,7 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
                     aria-describedby={describedBy('sessionId')}
                   >
                     {availableSessions.map((row) => (
-                      <option key={row.id} value={row.id}>{shortDate(row.date)} · {sessionTitle(row)} · Part {row.part}</option>
+                      <option key={row.id} value={row.id}>{shortDate(row.date, t)} · {sessionTitle(row, t)} · {t.format.part(row.part)}</option>
                     ))}
                   </select>
                   {fieldError('sessionId')}
@@ -129,15 +130,15 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
                 <>
                   <input type="hidden" name="sessionId" value={editing.sessionId} />
                   <p className={styles.fixedSession}>
-                    {editingSession === null ? `Sesión #${String(editing.sessionId)}` : `${mediumDate(editingSession.date)} · ${sessionTitle(editingSession)}`}
+                    {editingSession === null ? t.writing.sessionNumber(editing.sessionId) : `${mediumDate(editingSession.date, t)} · ${sessionTitle(editingSession, t)}`}
                   </p>
                   {fieldError('sessionId')}
                 </>
               )}
               <span className={ui.help}>
                 {editing === null
-                  ? <>Fecha y minutos se proponen desde la sesión; puedes cambiarlos. <Link href="/registrar?nueva=writing">Crear otra sesión Writing</Link></>
-                  : 'La sesión de un texto ya guardado no cambia.'}
+                  ? <>{t.writing.proposedHint} <Link href="/registrar?nueva=writing">{t.writing.createAnother}</Link></>
+                  : t.writing.sessionFixed}
               </span>
             </div>
           </div>
@@ -145,10 +146,10 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
           {/* Con la sesión cambian las propuestas: los campos se vuelven a montar con ellas. */}
           <div key={chosen?.id ?? 'none'} className={styles.drawerGroups}>
             <div className={session.group}>
-              <span className={session.groupLabel}>Texto</span>
+              <span className={session.groupLabel}>{t.writing.text}</span>
               <div className={session.grid2}>
                 <div className={ui.field}>
-                  <label htmlFor={`${formId}-f2`}>Fecha</label>
+                  <label htmlFor={`${formId}-f2`}>{t.sessionForm.date}</label>
                   <input id={`${formId}-f2`}
                     type="date"
                     name="date"
@@ -162,9 +163,9 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
                   {fieldError('date')}
                 </div>
                 <div className={ui.field}>
-                  <label htmlFor={`${formId}-f3`}>Género</label>
+                  <label htmlFor={`${formId}-f3`}>{t.writing.genre}</label>
                   <select id={`${formId}-f3`} name="genre" className={ui.select} defaultValue={editing?.genre ?? 'ESSAY'}>
-                    {GENRES.map((value) => <option key={value} value={value}>{GENRE_LABELS[value]}</option>)}
+                    {GENRES.map((value) => <option key={value} value={value}>{t.labels.genre[value]}</option>)}
                   </select>
                 </div>
               </div>
@@ -173,15 +174,15 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
             <details className={`${ui.disclosure} ${session.timeGroup}`} open={evaluated || evaluationInvalid || undefined}>
               <summary>
                 <ChevronRight size={14} className="chevron" aria-hidden="true" />
-                <span className={session.summaryStrong}>Añadir evaluación</span>
-                <span className={ui.optional}>· si ya está corregido</span>
+                <span className={session.summaryStrong}>{t.writing.addAssessment}</span>
+                <span className={ui.optional}>{t.writing.ifMarked}</span>
               </summary>
               <div className={styles.evaluation}>
                 <div className={`${ui.field} ${styles.corrector}`}>
-                  <label htmlFor={`${formId}-f4`}>Corrector</label>
+                  <label htmlFor={`${formId}-f4`}>{t.writing.corrector}</label>
                   <select id={`${formId}-f4`} name="corrector" className={ui.select} defaultValue={editing?.corrector ?? ''}>
-                    <option value="">Sin corregir</option>
-                    {CORRECTORS.map((value) => <option key={value} value={value}>{CORRECTOR_LABELS[value]}</option>)}
+                    <option value="">{t.writing.notMarked}</option>
+                    {CORRECTORS.map((value) => <option key={value} value={value}>{t.labels.corrector[value]}</option>)}
                   </select>
                 </div>
                 <div className={session.grid2}>
@@ -203,18 +204,18 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
                     </label>
                   ))}
                 </div>
-                <span className={ui.help}>Las bandas vacías se guardan como «Sin evaluar», no como cero.</span>
+                <span className={ui.help}>{t.writing.emptyBands}</span>
               </div>
             </details>
 
             <div className={`${session.timeGroup} ${styles.rewrite}`}>
               <label className={ui.check}>
                 <input type="checkbox" checked={isRewrite} onChange={(event) => { setIsRewrite(event.target.checked); }} />
-                Es una reescritura
+                {t.writing.isRewrite}
               </label>
               {isRewrite && (
                 <div className={ui.field}>
-                  <label htmlFor={`${formId}-f5`}>Texto original</label>
+                  <label htmlFor={`${formId}-f5`}>{t.writing.original}</label>
                   <select id={`${formId}-f5`}
                     name="rewriteOf"
                     className={ui.select}
@@ -222,7 +223,7 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
                     aria-invalid={invalid('rewriteOf')}
                     aria-describedby={describedBy('rewriteOf')}
                   >
-                    <option value="">Elige el original</option>
+                    <option value="">{t.writing.chooseOriginal}</option>
                     {originals.filter((piece) => piece.id !== editing?.id).map((piece) => (
                       <option key={piece.id} value={piece.id}>{piece.label}</option>
                     ))}
@@ -235,20 +236,20 @@ export function WritingDrawer({ open, onClose, availableSessions, originals, edi
             <details className={`${ui.disclosure} ${session.timeGroup}`} open={editing?.wordCount != null || undefined}>
               <summary>
                 <ChevronRight size={14} className="chevron" aria-hidden="true" />
-                <span className={session.summaryStrong}>Palabras y duración</span>
+                <span className={session.summaryStrong}>{t.writing.wordsAndDuration}</span>
               </summary>
               <div className={styles.moreFields}>
                 <div className={ui.field}>
-                  <label htmlFor={`${formId}-f6`}>Palabras</label>
+                  <label htmlFor={`${formId}-f6`}>{t.writing.wordsLabel}</label>
                   <input id={`${formId}-f6`} type="number" name="wordCount" min={0} className={ui.input} defaultValue={editing?.wordCount ?? ''} />
                 </div>
                 <div className={ui.field}>
-                  <label htmlFor={`${formId}-f7`}>Minutos</label>
+                  <label htmlFor={`${formId}-f7`}>{t.writing.minutes}</label>
                   <input id={`${formId}-f7`} type="number" name="minutes" min={0} className={ui.input} defaultValue={editing?.minutes ?? chosen?.durationMin ?? ''} />
                 </div>
                 <label className={ui.check}>
                   <input type="checkbox" name="timed" defaultChecked={editing?.timed ?? chosen?.timed ?? false} />
-                  Cronometrado
+                  {t.writing.timed}
                 </label>
               </div>
             </details>

@@ -41,7 +41,7 @@ test('cuenta los errores pendientes y no envia hasta completarlos', async ({ pag
   await openImport(page);
   await review(page, JSON.stringify([rows[0], { ...rows[1], correctAnswer: '' }]));
   await expect(workspace(page).getByRole('heading', { name: 'Revisar importación' })).toBeFocused();
-  await expect(workspace(page).getByText('1 por completar · no se guarda nada hasta completarlos')).toBeVisible();
+  await expect(workspace(page).getByText('1 por completar · no se guarda nada hasta completarlo', { exact: true })).toBeVisible();
   await expect(indexRow(page, 2)).toContainText('Falta');
   await expect(indexRow(page, 1)).toContainText('Listo');
 

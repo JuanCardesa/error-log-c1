@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { getMessages } from '../src/lib/i18n';
 import { parseImportedBatch } from '../src/lib/import/errors';
 import { createDb } from '../src/lib/db/client';
 import { countSessions, getSession, listErrors } from '../src/lib/db/repo';
@@ -35,7 +36,7 @@ const capturedBatch = {
 
 test('una tanda con cabecera y campos pendientes: vista previa editable y sesión atómica', async ({ page }) => {
   const json = JSON.stringify(capturedBatch);
-  const parsed = parseImportedBatch(json);
+  const parsed = parseImportedBatch(json, getMessages('es'));
   expect(parsed.session).toMatchObject({ itemsTotal: 4, itemsCorrect: 3, sourceRef: 'Libro · págs. 6-7 · actividades 1-2' });
   expect(parsed.errors).toHaveLength(1);
   expect(parsed.session).not.toHaveProperty('durationMin');

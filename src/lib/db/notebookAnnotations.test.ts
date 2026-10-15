@@ -57,11 +57,11 @@ describe('persistencia de marcas', () => {
     const text = notebookStudyText(note.contentMarkdown);
     const input = { noteId: note.id, uid: note.uid, expectedRevision: 1,
       anchor: studyAnchor(text, 0, 7), command: { kind: 'highlight', enabled: true } as const };
-    expect(() => saveNotebookAnnotation(db, { ...input, expectedRevision: 2 }, at)).toThrow(/Recarga/);
-    expect(() => saveNotebookAnnotation(db, { ...input, uid: randomUUID() }, at)).toThrow(/eliminado/);
-    expect(() => saveNotebookAnnotation(db, { ...input, anchor: { ...input.anchor, exact: 'fake' } }, at)).toThrow(/Selecciona/);
-    expect(() => mark('\uFFFC')).toThrow(/Selecciona/);
-    expect(() => saveNotebookAnnotation(db, { ...input, anchor: { ...input.anchor, end: 999999 } }, at)).toThrow(/Selecciona/);
+    expect(() => saveNotebookAnnotation(db, { ...input, expectedRevision: 2 }, at)).toThrow(/Reload/);
+    expect(() => saveNotebookAnnotation(db, { ...input, uid: randomUUID() }, at)).toThrow(/deleted/);
+    expect(() => saveNotebookAnnotation(db, { ...input, anchor: { ...input.anchor, exact: 'fake' } }, at)).toThrow(/Select text/);
+    expect(() => mark('\uFFFC')).toThrow(/Select text/);
+    expect(() => saveNotebookAnnotation(db, { ...input, anchor: { ...input.anchor, end: 999999 } }, at)).toThrow(/Select text/);
     expect(listNotebookAnnotations(db, note.id)).toEqual([]);
   });
 

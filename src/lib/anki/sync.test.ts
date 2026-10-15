@@ -7,6 +7,7 @@ import { ensureAnkiScope, linkAnkiNote, saveAnkiSnapshot } from '../db/ankiRepo'
 import { getError, unmarkAnkiAdded, updateError, deleteError } from '../db/repo';
 import { ankiNote, ankiReview, errorRow, session } from '../db/schema';
 import { ankiContentStale, createAnkiNote, ERRORLOG_FIELDS, escapeAnkiHtml, notePredatesError, updateAnkiNote } from './create';
+import { getMessages } from '../i18n';
 import { AnkiError, type Transport } from './connect';
 import { ankiStatus, batches, syncAnki, withAnkiLock } from './sync';
 import { CONFIG, NOW, REVIEW, ROLLOVER, FakeAnki, ankiFixture, review, card, note } from './fixtures/build';
@@ -311,7 +312,7 @@ it('no actualiza si la escritura falla ni si la nota ya no es de este error', as
   fake.failAction = null;
   const stolen = fake.notes.get(noteId)!;
   fake.notes.set(noteId, { ...stolen, fields: { ...stolen.fields, ErrorLogId: { value: 'errorlog::otra::9', order: 0 } } });
-  await expect(updateAnkiNote(db, 1, fake.transport, CONFIG)).rejects.toThrow('ya no corresponde');
+  await expect(updateAnkiNote(db, 1, fake.transport, CONFIG)).rejects.toThrow('no longer belongs');
 });
 
 it('deshacer olvida la huella: no se avisa de una tarjeta que ya no se reclama', async () => {
@@ -333,7 +334,7 @@ it('no vincula una nota anterior al error: los ids se reutilizan al restaurar', 
   }).where(eq(errorRow.id, 1)).run();
 
   await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toMatchObject({ code: 'ANKI_CONFIG' });
-  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('restaurado');
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('restored');
   // Ni vincula ni escribe: la tarjeta del otro error se queda intacta.
   expect(getError(db, 1)).toMatchObject({ ankiNoteId: null, ankiAdded: false });
   expect(fake.notes.get(noteId)?.fields['Prompt']?.value).toBe('I ___ it');
@@ -479,7 +480,7 @@ it('los errores de red y snapshots incompletos no cambian nada en SQLite', async
   // A proposito sin `deleteNote`: la carta se queda huerfana, que es la coleccion
   // cambiando a mitad de la lectura, no un borrado del usuario.
   fake.notes.delete(20);
-  await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toThrow('Falta la nota');
+  await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toThrow('note is missing');
   expect(loadAnkiDataset(db)).toEqual(before);
 });
 it('impide mezclar perfiles, endpoints y mazos', async () => {
@@ -494,28 +495,30 @@ it('impide mezclar perfiles, endpoints y mazos', async () => {
 });
 it('comprueba el mazo y que el perfil no cambió durante la lectura', async () => {
   fake.decks = [];
-  await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toThrow('No se encuentra');
+  await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toThrow('can’t be found');
   fake.decks = [CONFIG.sourceDeck];
   let profiles = 0;
   fake.override = ({ action }) => action === 'getActiveProfile' ? { result: ++profiles === 1 ? 'Juan' : 'Otro', error: null } : undefined;
-  await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toThrow('perfil cambió');
+  await expect(syncAnki(db, fake.transport, NOW, CONFIG)).rejects.toThrow('profile changed');
   expect(loadAnkiDataset(db).sync).toBeNull();
 });
 it('muestra estado útil con Anki abierto y cerrado', async () => {
   const t0 = Date.now();
   expect(await ankiStatus(db, CONFIG, fake.transport, t0)).toMatchObject({ available: true });
   fake.disconnected = true;
-  expect(await ankiStatus(db, CONFIG, fake.transport, t0 + 10_000)).toMatchObject({ available: false, message: expect.stringContaining('Abre Anki') });
+  const closed = await ankiStatus(db, CONFIG, fake.transport, t0 + 10_000);
+  expect(closed.available).toBe(false);
+  expect(closed.text(getMessages('es'))).toContain('Abre Anki');
+  expect(closed.text(getMessages('en'))).toContain('Open Anki');
 });
 
 it('una configuracion invalida se enseña como estado, no tumba la vista', async () => {
   // `ankiConfig()` se evaluaba como argumento por defecto, fuera del try: lanzaba antes
   // de poder convertirse en mensaje y se llevaba por delante la pagina entera de Anki.
   vi.stubEnv('ANKI_ROLLOVER_HOUR', '99');
-  await expect(ankiStatus(db)).resolves.toMatchObject({
-    available: false,
-    message: expect.stringContaining('ANKI_ROLLOVER_HOUR'),
-  });
+  const status = await ankiStatus(db);
+  expect(status.available).toBe(false);
+  expect(status.text(getMessages('es'))).toContain('ANKI_ROLLOVER_HOUR');
   vi.unstubAllEnvs();
 });
 
@@ -588,7 +591,7 @@ it('revierte SQLite si la escritura del espejo agota el presupuesto', () => {
   let checks = 0;
   expect(() => saveAnkiSnapshot(db, { ...data, noteIdentities: new Map(), missingNoteIds: [], newReviews: 1, rollover: ROLLOVER },
     CONFIG, 'Juan', NOW.toISOString(), () => {
-      if (++checks === 2) throw new AnkiError('ANKI_LENTO', 'presupuesto agotado');
+      if (++checks === 2) throw new AnkiError('ANKI_LENTO', () => 'presupuesto agotado');
     })).toThrow('presupuesto agotado');
   expect(loadAnkiDataset(db)).toEqual({ notes: [], cards: [], reviews: [], sync: null });
 });
@@ -628,12 +631,12 @@ it('dos solicitudes concurrentes producen una sola nota', async () => {
   expect(ids[0]).toBe(ids[1]); expect(fake.added).toBe(1);
 });
 it('rechaza causas que no generan tarjeta, errores borrados y modelos incompatibles', async () => {
-  await expect(createAnkiNote(db, 99, fake.transport, NOW, CONFIG)).rejects.toThrow('no existe');
+  await expect(createAnkiNote(db, 99, fake.transport, NOW, CONFIG)).rejects.toThrow('doesn’t exist');
   db.update(errorRow).set({ cause: 'DESPISTE' }).run();
-  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('no genera');
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('doesn’t create a card');
   db.update(errorRow).set({ cause: 'CONFUSION' }).run();
   fake.models = ['Error Log C1']; fake.fields = ['Foreign'];
-  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('otros campos');
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('different fields');
   expect(fake.added).toBe(0);
 });
 it('escapa HTML, saltos y comillas de los campos enviados a Anki', () => {
@@ -641,20 +644,20 @@ it('escapa HTML, saltos y comillas de los campos enviados a Anki', () => {
 });
 it('no marca una nota sin tarjeta, de identidad errónea o no verificable', async () => {
   fake.override = ({ action }) => action === 'notesInfo' ? { result: [{}], error: null } : undefined;
-  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('verificar');
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('couldn’t be verified');
   expect(getError(db, 1)?.ankiAdded).toBe(false);
 });
 it('impide vincular coincidencias ambiguas y cambios de perfil durante la creación', async () => {
   fake.override = ({ action }) => action === 'findNotes' ? { result: [20, 21], error: null } : undefined;
-  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('varias notas');
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('Several notes');
   let profiles = 0;
   fake.override = ({ action }) => action === 'getActiveProfile' ? { result: ++profiles === 1 ? 'Juan' : 'Otro', error: null } : undefined;
-  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('perfil cambió');
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('profile changed');
   expect(fake.added).toBe(0);
 });
 it('un cambio de perfil al verificar deja la nota recuperable pero no elimina deuda', async () => {
   fake.override = ({ action }) => action === 'getActiveProfile' ? { result: fake.added === 0 ? 'Juan' : 'Otro', error: null } : undefined;
-  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('perfil cambió');
+  await expect(createAnkiNote(db, 1, fake.transport, NOW, CONFIG)).rejects.toThrow('profile changed');
   expect(fake.added).toBe(1);
   expect(getError(db, 1)?.ankiAdded).toBe(false);
 });
@@ -684,10 +687,14 @@ it('una nota nueva sin respuesta del usuario se crea y varios lotes se leen comp
 
 it('con un perfil obligatorio, cualquier otro perfil abierto queda fuera y no se escribe nada', async () => {
   const config = { ...CONFIG, requiredProfile: 'Error Log demo' };
-  expect(await ankiStatus(db, config, fake.transport)).toMatchObject({ available: false, message: expect.stringContaining('Error Log demo') });
+  const other = await ankiStatus(db, config, fake.transport);
+  expect(other.available).toBe(false);
+  expect(other.text(getMessages('es'))).toContain('Error Log demo');
   await expect(createAnkiNote(db, 1, fake.transport, NOW, config)).rejects.toThrow('Error Log demo');
   expect(fake.calls.some((call) => /^(create|add|update)/.test(call.action))).toBe(false);
   expect(loadAnkiDataset(db).sync).toBeNull();
   fake.profile = 'Error Log demo';
-  expect(await ankiStatus(db, config, fake.transport)).toMatchObject({ available: true, message: 'Anki conectado · perfil Error Log demo' });
+  const required = await ankiStatus(db, config, fake.transport);
+  expect(required.available).toBe(true);
+  expect(required.text(getMessages('es'))).toBe('Anki conectado · perfil Error Log demo');
 });

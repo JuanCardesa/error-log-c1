@@ -25,8 +25,11 @@ import { E2E_DB } from './globalSetup';
 const MARKERS = {
   /** Nombre de token de micromark-extension-gfm-table: el parser que usa remark-gfm. */
   parser: 'tableDelimiterRow',
-  /** Etiqueta de las tablas en `MarkdownRenderer`: react-markdown y sus componentes. */
-  renderer: 'Tabla del apunte',
+  /**
+   * Clave de un aviso de react-markdown: delata el renderizador. Antes era la etiqueta de las
+   * tablas, pero los textos de interfaz viven ahora en el diccionario que carga cada página.
+   */
+  renderer: 'change-renderers-to-components',
   /** Prefijo de los borradores locales del editor. */
   editor: 'errorlog:notebook:draft:',
 } as const;

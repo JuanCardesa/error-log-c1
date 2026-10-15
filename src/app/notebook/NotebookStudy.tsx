@@ -3,20 +3,22 @@
 import { startTransition, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { applyStudyCommand, isStudyHighlighted, studyAnchor, studySegments,
   type NotebookAnnotation, type StudyColor, type StudyCommand } from '@/lib/notebook/annotations';
+import { useT } from '../_shared/i18nClient';
 import { saveStudyAnnotationAction } from './actions';
 import { readStudySelection, type StudySelection } from './studySelection';
 import { StudyMarksContext } from './StudyText';
 import styles from './study.module.css';
 
-const colors: ReadonlyArray<{ value: StudyColor | null; label: string }> = [
-  { value: null, label: 'Normal' }, { value: 'green', label: 'Verde' }, { value: 'red', label: 'Rojo' },
-  { value: 'blue', label: 'Azul' }, { value: 'orange', label: 'Naranja' },
+const colors: ReadonlyArray<{ value: StudyColor | null; key: 'normal' | StudyColor }> = [
+  { value: null, key: 'normal' }, { value: 'green', key: 'green' }, { value: 'red', key: 'red' },
+  { value: 'blue', key: 'blue' }, { value: 'orange', key: 'orange' },
 ];
 
 export function NotebookStudy({ noteId, uid, revision, text, children, initialAnnotations }: {
   readonly noteId: number; readonly uid: string; readonly revision: number;
   readonly text: string; readonly children: ReactNode; readonly initialAnnotations: readonly NotebookAnnotation[];
 }) {
+  const t = useT();
   const root = useRef<HTMLDivElement>(null);
   const toolbar = useRef<HTMLDivElement>(null);
   const busy = useRef(false);
@@ -83,7 +85,7 @@ export function NotebookStudy({ noteId, uid, revision, text, children, initialAn
     setAnnotations(applyStudyCommand(before, text, anchor, command, noteId, new Date().toISOString(), () => crypto.randomUUID()));
     setSaving(true);
     setError('');
-    setMessage('Guardando marcas…');
+    setMessage(t.notebook.savingMarks);
     setPalette(false);
     window.getSelection()?.removeAllRanges();
     startTransition(async () => {
@@ -96,11 +98,11 @@ export function NotebookStudy({ noteId, uid, revision, text, children, initialAn
           return;
         }
         setAnnotations(result.data);
-        setMessage('Marcas guardadas');
+        setMessage(t.notebook.marksSaved);
       } catch {
         setAnnotations(before);
         setMessage('');
-        setError('No se pudo guardar. Comprueba la conexión e inténtalo de nuevo.');
+        setError(t.notebook.marksFailed);
       } finally {
         busy.current = false;
         setSaving(false);
@@ -110,25 +112,25 @@ export function NotebookStudy({ noteId, uid, revision, text, children, initialAn
 
   return (
     <>
-      {orphaned > 0 && <p className={styles.notice} role="status">{orphaned} {orphaned === 1 ? 'marca no se ha podido recolocar' : 'marcas no se han podido recolocar'} tras editar. Se conservan guardadas.</p>}
-      {error && <p className={styles.error} role="alert">{error} El cambio de formato se ha revertido.</p>}
+      {orphaned > 0 && <p className={styles.notice} role="status">{t.notebook.orphanedMarks(orphaned)}</p>}
+      {error && <p className={styles.error} role="alert">{error}{t.notebook.formatReverted}</p>}
       <div className={styles.saveStatus} role="status" aria-live="polite">{message}</div>
       <StudyMarksContext value={segments}>
         <div ref={root} data-study-content tabIndex={-1}>{children}</div>
       </StudyMarksContext>
-      {selection !== null && <div ref={toolbar} className={styles.toolbar} role="group" aria-label="Marcar texto"
+      {selection !== null && <div ref={toolbar} className={styles.toolbar} role="group" aria-label={t.notebook.markText}
         style={{ left: selection.left, top: Math.max(12, Math.min(selection.top, selection.viewportHeight - (palette ? 148 : 54))) }}
         onPointerDown={(event) => { if (event.pointerType === 'mouse') event.preventDefault(); }}>
         <div className={styles.tools}>
           <button type="button" disabled={saving} aria-pressed={highlighted}
-            onClick={() => { apply({ kind: 'highlight', enabled: !highlighted }); }}>Rotulador</button>
+            onClick={() => { apply({ kind: 'highlight', enabled: !highlighted }); }}>{t.notebook.highlighter}</button>
           <button type="button" disabled={saving} aria-expanded={palette} aria-controls={`study-colors-${String(noteId)}`}
-            onClick={() => { setPalette(!palette); }}>Color</button>
-          <button type="button" disabled={saving} onClick={() => { apply({ kind: 'clear' }); }}>Limpiar</button>
+            onClick={() => { setPalette(!palette); }}>{t.notebook.colour}</button>
+          <button type="button" disabled={saving} onClick={() => { apply({ kind: 'clear' }); }}>{t.notebook.clear}</button>
         </div>
-        {palette && <div id={`study-colors-${String(noteId)}`} className={styles.palette} role="group" aria-label="Color del texto">
-          {colors.map(({ value, label }) => <button key={label} type="button" onClick={() => { apply({ kind: 'color', color: value }); }}>
-            <span className={styles.swatch} data-study-color={value ?? undefined} aria-hidden="true">A</span>{label}
+        {palette && <div id={`study-colors-${String(noteId)}`} className={styles.palette} role="group" aria-label={t.notebook.textColour}>
+          {colors.map(({ value, key }) => <button key={key} type="button" onClick={() => { apply({ kind: 'color', color: value }); }}>
+            <span className={styles.swatch} data-study-color={value ?? undefined} aria-hidden="true">A</span>{t.notebook.colours[key]}
           </button>)}
         </div>}
       </div>}

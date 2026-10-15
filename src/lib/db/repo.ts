@@ -250,8 +250,9 @@ const fingerprint = (row: Pick<ErrorInput, 'itemRef' | 'prompt' | 'myAnswer' | '
 export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorInput[]) {
   return db.transaction((tx) => {
     const target = tx.select().from(session).where(eq(session.id, sessionId)).get();
-    if (target === undefined) return { ok: false, message: 'Esa sesión ya no existe.' } as const;
-    if (target.status !== 'OPEN') return { ok: false, message: 'La sesión está cerrada. Reábrela para importar.' } as const;
+    // El motivo y no el texto: el aviso lo redacta quien lo enseña, en su idioma.
+    if (target === undefined) return { ok: false, reason: 'missing' } as const;
+    if (target.status !== 'OPEN') return { ok: false, reason: 'closed' } as const;
 
     const existing = tx.select().from(errorRow).where(eq(errorRow.sessionId, sessionId)).all();
     const seen = new Set(existing.map(fingerprint));

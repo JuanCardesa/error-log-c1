@@ -7,6 +7,9 @@ versión corresponde a un tag `vX.Y` en `main`; `package.json` lleva el mismo n�
 
 ### Añadido
 
+- **Idioma de la interfaz:** inglés por defecto y español en Ajustes → Idioma, sin recargar la
+  página. La preferencia se guarda en una cookie de este navegador. Solo cambian los textos de
+  la app: apuntes, errores, reglas, sesiones, JSON, CSV y tarjetas de Anki no se tocan.
 - **Notebook:** apuntes Markdown con carpetas de dos niveles, etiquetas, lector con índice,
   búsqueda FTS5, editor con vista previa, autosave y borradores recuperables. Vínculos
   manuales entre errores y apuntes o apartados, importación individual de `.md` y

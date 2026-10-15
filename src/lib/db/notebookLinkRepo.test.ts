@@ -58,20 +58,20 @@ describe('vínculos entre errores y apuntes', () => {
     expect(removeErrorNoteLink(db, { errorId, noteId: saved.id })).toEqual(wholeNote);
     expect(getErrorNoteLinks(db, errorId)).toEqual([]);
     expect(getNotebookNote(db, saved.id)).toEqual(saved);
-    expect(() => removeErrorNoteLink(db, { errorId, noteId: saved.id })).toThrow(/no encontrado/);
+    expect(() => removeErrorNoteLink(db, { errorId, noteId: saved.id })).toThrow(/not found/);
   });
 
   it('rechaza extremos y apartados inexistentes o ambiguos', () => {
     const errorId = error();
     const saved = note('## Must have\n\n```md\n# False heading\n```\n\n## must have');
     expect(() => setErrorNoteLink(db, { errorId: 9999, noteId: saved.id, headingSlug: null }, NOW))
-      .toThrow(/no encontrado/);
+      .toThrow(/not found/);
     expect(() => setErrorNoteLink(db, { errorId, noteId: 9999, headingSlug: null }, NOW))
-      .toThrow(/no encontrado/);
+      .toThrow(/not found/);
     expect(() => setErrorNoteLink(db, { errorId, noteId: saved.id, headingSlug: 'nb-false-heading' }, NOW))
-      .toThrow(/ya no existe/);
+      .toThrow(/no longer exists/);
     expect(() => setErrorNoteLink(db, { errorId, noteId: saved.id, headingSlug: 'nb-must-have' }, NOW))
-      .toThrow(/inequívoco/);
+      .toThrow(/ambiguous/);
     expect(getErrorNoteLinks(db, errorId)).toEqual([]);
   });
 
@@ -90,7 +90,7 @@ describe('vínculos entre errores y apuntes', () => {
     }, NOW);
     expect(listNoteErrorLinks(db, saved.id, 1).items[0]).toMatchObject({ link, headingStatus: 'changed' });
     expect(() => setErrorNoteLink(db, { errorId, noteId: saved.id, headingSlug: 'nb-must-have' }, NOW))
-      .toThrow(/inequívoco/);
+      .toThrow(/ambiguous/);
     expect(getErrorNoteLinks(db, errorId)).toHaveLength(1);
   });
 
@@ -102,7 +102,7 @@ describe('vínculos entre errores y apuntes', () => {
     expect(first.items.map((item) => item.error.id)).toEqual([errors[2], errors[1]]);
     expect(first.hasMore).toBe(true);
     expect(listNoteErrorLinks(db, saved.id, 2, 2).items.map((item) => item.error.id)).toEqual([errors[0]]);
-    expect(() => listNoteErrorLinks(db, saved.id, 0)).toThrow(/Página inválida/);
+    expect(() => listNoteErrorLinks(db, saved.id, 0)).toThrow(/Invalid page/);
     db.$client.prepare('DELETE FROM error_row WHERE id = ?').run(errors[1]);
     expect(listNoteErrorLinks(db, saved.id, 1).items.map((item) => item.error.id))
       .toEqual([errors[2], errors[0]]);
@@ -110,8 +110,8 @@ describe('vínculos entre errores y apuntes', () => {
     deleteNotebookNote(db, { id: saved.id, uid: saved.uid, expectedRevision: 1 });
     expect(db.$client.prepare('SELECT * FROM notebook_error_link').all()).toEqual([]);
     expect(db.$client.prepare('SELECT count(*) AS n FROM error_row').get()).toEqual({ n: 2 });
-    expect(() => listNoteErrorLinks(db, saved.id, 1)).toThrow(/no encontrado/);
+    expect(() => listNoteErrorLinks(db, saved.id, 1)).toThrow(/not found/);
     expect(() => setErrorNoteLink(db, { errorId: errors[0], noteId: saved.id, headingSlug: null }, NOW))
-      .toThrow(/no encontrado/);
+      .toThrow(/not found/);
   });
 });

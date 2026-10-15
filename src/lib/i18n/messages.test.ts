@@ -1,0 +1,253 @@
+import { describe, expect, it } from 'vitest';
+
+import type { AiPromptValues } from './en';
+import { getMessages, LOCALES, type Messages } from './index';
+
+const prompt: AiPromptValues = {
+  example: '{"regla":"Mi regla en español"}',
+  kinds: 'TIMED, PRACTICE',
+  papers: 'RUOE, WRITING',
+  sources: 'LIBRO',
+  categories: 'PHRASAL_VERB',
+  causes: 'CONFUSION',
+  confidences: 'SEGURO',
+  maxRows: 120,
+};
+
+// Zero, singular and plural also exercise absent/present metadata and optional clauses.
+// Calls are explicit and typechecked: a changed signature must update its fixture.
+function render(t: Messages, n: number) {
+  const enabled = n === 1;
+  const optionalNumber = n === 0 ? null : n;
+  const optionalText = n === 0 ? null : 'Mi apunte — café';
+  const fields = ['categoría', 'causa', 'confianza'].slice(0, n);
+  const scope = n === 0 ? 'fields' : 'header';
+  return {
+    'format.percent': t.format.percent("42.5"),
+    'format.part': t.format.part(optionalNumber),
+    'format.days': t.format.days(n),
+    'format.errors': t.format.errors(n),
+    'format.sessions': t.format.sessions(n),
+    'common.page': t.common.page(n),
+    'nav.search': t.nav.search("Ctrl+K"),
+    'palette.noResults': t.palette.noResults("café & té"),
+    'palette.goTo': t.palette.goTo("[section]"),
+    'labels.unknownCategory': t.labels.unknownCategory("42.5%"),
+    'validation.partRange': t.validation.partRange("RUOE", 120),
+    'validation.ruleMinLength': t.validation.ruleMinLength(n),
+    'validation.maxChars': t.validation.maxChars(n),
+    'validation.maxCharsNormalized': t.validation.maxCharsNormalized(n),
+    'validation.maxTags': t.validation.maxTags(n),
+    'validation.maxBytes': t.validation.maxBytes(n),
+    'import.unknownFields': t.import.unknownFields("unexpectedField"),
+    'import.tooManyRows': t.import.tooManyRows(n),
+    'import.invalidEnvelope': t.import.invalidEnvelope("[issues]"),
+    'import.rowColumns': t.import.rowColumns(3),
+    'import.rowCount': t.import.rowCount(120),
+    'import.unknownCauseOrConfidence': t.import.unknownCauseOrConfidence(n),
+    'import.notCreated': t.import.notCreated(scope, "[details]"),
+    'import.sessionCreated': t.import.sessionCreated(enabled, n, n),
+    'import.aiPrompt': t.import.aiPrompt(prompt),
+    'sessions.noMatchQuery': t.sessions.noMatchQuery("café & té"),
+    'sessions.scoreCorrect': t.sessions.scoreCorrect("9 / 12"),
+    'sessionActions.sessionOpened': t.sessionActions.sessionOpened(7),
+    'sessionActions.impossibleCard': t.sessionActions.impossibleCard("[cause]"),
+    'sessionActions.sessionDeleted': t.sessionActions.sessionDeleted(n, enabled),
+    'importActions.batchRange': t.importActions.batchRange(120),
+    'importActions.errorsSaved': t.importActions.errorsSaved(n, n),
+    'sessionView.deleteTitle': t.sessionView.deleteTitle("Mi apunte — café"),
+    'sessionView.deleteWillRemove': t.sessionView.deleteWillRemove(n, enabled, n),
+    'sessionView.noErrorsScore': t.sessionView.noErrorsScore(9, 12),
+    'sessionView.openCount': t.sessionView.openCount(n),
+    'sessionView.practiceFilter': t.sessionView.practiceFilter("[label]"),
+    'errorForm.proposedCategory': t.errorForm.proposedCategory("42.5%"),
+    'errorForm.rulePlaceholder': t.errorForm.rulePlaceholder(15),
+    'errorForm.characters': t.errorForm.characters(n),
+    'errorForm.charactersMissing': t.errorForm.charactersMissing(n, 15),
+    'errorForm.carriedFrom': t.errorForm.carriedFrom(fields),
+    'errorForm.moreDetailsHint': t.errorForm.moreDetailsHint(enabled),
+    'paste.detectedRows': t.paste.detectedRows(n),
+    'paste.detectedSession': t.paste.detectedSession(n),
+    'paste.headerIgnored': t.paste.headerIgnored("Mi apunte — café"),
+    'paste.pasteHint': t.paste.pasteHint("Ctrl+K"),
+    'paste.storedNew': t.paste.storedNew(optionalText),
+    'paste.storedText': t.paste.storedText(n, "[destination]"),
+    'review.removedToast': t.review.removedToast(n),
+    'review.completePending': t.review.completePending(n),
+    'review.destOpen': t.review.destOpen("Mi apunte — café"),
+    'review.saveCreate': t.review.saveCreate(n),
+    'review.saveInto': t.review.saveInto(n),
+    'review.destAddOption': t.review.destAddOption("Mi apunte — café", "15/10/2026"),
+    'review.summaryScore': t.review.summaryScore("9", "12", enabled),
+    'review.headerIgnored': t.review.headerIgnored("Mi apunte — café"),
+    'review.pendingCount': t.review.pendingCount(n),
+    'review.pickerOption': t.review.pickerOption(2, 12, enabled),
+    'review.pendingBar': t.review.pendingBar(n),
+    'review.readyBar': t.review.readyBar(n),
+    'review.discardBody': t.review.discardBody(n),
+    'review.editorTitle': t.review.editorTitle(2, 12),
+    'review.removeLabel': t.review.removeLabel(n),
+    'review.promptLabel': t.review.promptLabel(optionalText),
+    'review.moreDetailsHint': t.review.moreDetailsHint(enabled),
+    'errors.viewError': t.errors.viewError(optionalText, "had taken"),
+    'errors.errorRef': t.errors.errorRef(optionalText),
+    'errors.position': t.errors.position(2, 12),
+    'errors.deleteTitle': t.errors.deleteTitle(optionalText),
+    'errors.deleteBody': t.errors.deleteBody("had taken", "Sesión personal"),
+    'errors.confidenceChip': t.errors.confidenceChip("[label]"),
+    'errors.ankiChip': t.errors.ankiChip("[label]"),
+    'errors.lastDays': t.errors.lastDays(n),
+    'errors.removeFilter': t.errors.removeFilter("[label]"),
+    'errors.results': t.errors.results(n),
+    'certainties.introStrong': t.certainties.introStrong(30),
+    'certainties.count': t.certainties.count(n, 30),
+    'certainties.caption': t.certainties.caption(30),
+    'certainties.noMatch': t.certainties.noMatch("café & té"),
+    'certainties.noneSure': t.certainties.noneSure(30),
+    'noteLinks.sectionValue': t.noteLinks.sectionValue("[text]"),
+    'progress.noPracticeBody': t.progress.noPracticeBody(30),
+    'progress.period': t.progress.period("[range]"),
+    'progress.itemsCounted': t.progress.itemsCounted(n),
+    'progress.errorsCovered': t.progress.errorsCovered(n, n),
+    'progress.smallSampleBody': t.progress.smallSampleBody(n, 30),
+    'progress.otherCategories': t.progress.otherCategories(n),
+    'progress.weeksHelp': t.progress.weeksHelp(n, "[first]", "[last]"),
+    'progress.othersCount': t.progress.othersCount(n),
+    'progress.rulesNote': t.progress.rulesNote("[needsN]", 15, "[noData]"),
+    'progress.evidenceAnki': t.progress.evidenceAnki(n, 5, 30, n),
+    'progress.evidenceSure': t.progress.evidenceSure(n),
+    'progress.evidenceCategory': t.progress.evidenceCategory(optionalText, "42.5%", 20),
+    'progress.evidenceLate': t.progress.evidenceLate("42.5%", 20),
+    'progress.evidenceRewrite': t.progress.evidenceRewrite("42.5%", 20),
+    'progress.evidenceDefault': t.progress.evidenceDefault("[signal]", "42.5%", 20),
+    'progress.eligibleErrors': t.progress.eligibleErrors(n),
+    'progress.why': t.progress.why(7, "[signal]", "42.5%", "[threshold]", "[sample]"),
+    'progress.evidenceShort': t.progress.evidenceShort(n, 15),
+    'progress.watchSignals': t.progress.watchSignals("[list]"),
+    'ruoe.empty': t.ruoe.empty(30),
+    'ruoe.cellLabel': t.ruoe.cellLabel(4, "[range]", "[label]", 9, 12),
+    'ruoe.cellSummary': t.ruoe.cellSummary(9, 12, n),
+    'ankiErrors.connected': t.ankiErrors.connected("Mi perfil"),
+    'ankiErrors.http': t.ankiErrors.http(503),
+    'ankiErrors.says': t.ankiErrors.says("[reply]"),
+    'ankiErrors.noteOlderThanError': t.ankiErrors.noteOlderThanError("15/10/2026"),
+    'ankiErrors.configInt': t.ankiErrors.configInt("Mi carpeta", 120),
+    'ankiErrors.configText': t.ankiErrors.configText("Mi carpeta", 120),
+    'ankiErrors.fakePort': t.ankiErrors.fakePort("8765"),
+    'ankiErrors.recordingProfile': t.ankiErrors.recordingProfile("[required]", "[open]"),
+    'ankiErrors.boundProfile': t.ankiErrors.boundProfile("Mi perfil", "C1::Errores"),
+    'ankiErrors.noteWithoutId': t.ankiErrors.noteWithoutId(1234, 7),
+    'ankiErrors.noLinkedNotes': t.ankiErrors.noLinkedNotes(n),
+    'ankiErrors.syncBudget': t.ankiErrors.syncBudget(30),
+    'ankiErrors.deckNotFound': t.ankiErrors.deckNotFound("C1::Errores"),
+    'anki.minutesAgo': t.anki.minutesAgo(n),
+    'anki.hoursAgo': t.anki.hoursAgo(n),
+    'anki.onDate': t.anki.onDate("15/10/2026"),
+    'anki.syncedAgo': t.anki.syncedAgo("[when]"),
+    'anki.deck': t.anki.deck("Mi carpeta"),
+    'anki.rollover': t.anki.rollover(4, enabled),
+    'anki.pendingTab': t.anki.pendingTab(n),
+    'anki.pendingLeadStrong': t.anki.pendingLeadStrong(n),
+    'anki.noneGenerates': t.anki.noneGenerates(30),
+    'anki.conversionSummary': t.anki.conversionSummary(30, n, 5, "42.5%"),
+    'anki.convertedLead': t.anki.convertedLead(n),
+    'anki.updatedAt': t.anki.updatedAt("15/10/2026"),
+    'anki.noReviews': t.anki.noReviews(30),
+    'anki.groupStats': t.anki.groupStats(n, n, 12),
+    'anki.failures': t.anki.failures(n),
+    'anki.accuracyLine': t.anki.accuracyLine("75%", n),
+    'anki.cardCreated': t.anki.cardCreated("had taken"),
+    'anki.itemSuffix': t.anki.itemSuffix("Q7"),
+    'anki.synced': t.anki.synced(n, 12, n, n),
+    'writing.rewritesOf': t.writing.rewritesOf("Mi apunte — café", "15/10/2026"),
+    'writing.words': t.writing.words(n),
+    'writing.noPairs': t.writing.noPairs(30),
+    'writing.repeatSummary': t.writing.repeatSummary(n, 12, "42.5%", "[threshold]"),
+    'writing.pairLabel': t.writing.pairLabel("Mi apunte — café"),
+    'writing.pairTitle': t.writing.pairTitle("Mi apunte — café"),
+    'writing.originalCol': t.writing.originalCol("15/10/2026"),
+    'writing.newCol': t.writing.newCol("15/10/2026"),
+    'writing.pairRepeat': t.writing.pairRepeat(n, 12, "42.5%"),
+    'writing.sessionNumber': t.writing.sessionNumber(7),
+    'export.downloadLabel': t.export.downloadLabel("[label]"),
+    'notebookImport.kept': t.notebookImport.kept("[reason]"),
+    'notebookImport.frontmatterTooBig': t.notebookImport.frontmatterTooBig(512),
+    'notebookImport.frontmatterInvalid': t.notebookImport.frontmatterInvalid(optionalNumber),
+    'notebookImport.titleTruncated': t.notebookImport.titleTruncated(120),
+    'notebookImport.tagsInvalid': t.notebookImport.tagsInvalid(n, 120, "[list]"),
+    'notebookImport.tagsTruncated': t.notebookImport.tagsTruncated(120),
+    'notebookImport.html': t.notebookImport.html(n),
+    'notebookImport.images': t.notebookImport.images(n),
+    'notebookImport.invalidLinks': t.notebookImport.invalidLinks(n),
+    'notebookImport.externalTargets': t.notebookImport.externalTargets(n),
+    'notebookImport.missingAnchors': t.notebookImport.missingAnchors(n),
+    'notebookImport.contentTooBig': t.notebookImport.contentTooBig(512),
+    'notebookImport.fileTooBig': t.notebookImport.fileTooBig(512),
+    'notebook.seeAll': t.notebook.seeAll(n),
+    'notebook.collapse': t.notebook.collapse("Mi carpeta"),
+    'notebook.expand': t.notebook.expand("Mi carpeta"),
+    'notebook.withSubfolders': t.notebook.withSubfolders("Mi carpeta"),
+    'notebook.favoriteLabel': t.notebook.favoriteLabel("Mi apunte — café"),
+    'notebook.favoriteFailed': t.notebook.favoriteFailed("[reason]"),
+    'notebook.deleteTitle': t.notebook.deleteTitle("Mi apunte — café"),
+    'notebook.editFolder': t.notebook.editFolder("Mi carpeta"),
+    'notebook.deleteFolderTitle': t.notebook.deleteFolderTitle(optionalText),
+    'notebook.draftsTitle': t.notebook.draftsTitle(n),
+    'notebook.noteNumber': t.notebook.noteNumber(7),
+    'notebook.discardDraftBody': t.notebook.discardDraftBody("Mi apunte — café"),
+    'notebook.itemSuffix': t.notebook.itemSuffix("Q7"),
+    'notebook.orphanedMarks': t.notebook.orphanedMarks(n),
+    'notebook.inThisNoteCount': t.notebook.inThisNoteCount(n),
+    'notebook.savedAt': t.notebook.savedAt("15/10/2026"),
+    'notebook.unknownFields': t.notebook.unknownFields("[list]"),
+    'notebook.ignoredFields': t.notebook.ignoredFields("[list]"),
+    'notebook.fileHint': t.notebook.fileHint(512),
+    'notebook.importFile': t.notebook.importFile("Mi carpeta"),
+  };
+}
+
+describe.each(LOCALES)('dynamic interface messages (%s)', (locale) => {
+  it.each([0, 1, 2])('renders counts and optional details for n=%i', (n) => {
+    // Reviewed text fixtures lock down interpolation, punctuation and agreement.
+    expect(render(getMessages(locale), n)).toMatchSnapshot();
+  });
+
+  it('agrees with each independent count, rather than the first number in a message', () => {
+    const t = getMessages(locale);
+    const actual = {
+      saved: t.importActions.errorsSaved(2, 1),
+      evidence: t.progress.evidenceAnki(0, 1, 30, 2),
+      conversion: t.anki.conversionSummary(30, 0, 1, '0%'),
+      rewrite: t.progress.evidenceRewrite('100%', 1),
+      reviews: t.anki.groupStats(2, 0, 1),
+    };
+    expect(actual).toEqual(locale === 'en' ? {
+      saved: '2 errors saved. 1 duplicate skipped; the existing ones are kept.',
+      evidence: '0 of 1 eligible error from the last 30 days have a card. In total, 2 are pending in the queue.',
+      conversion: 'In the last 30 days: 0 of 1 eligible error converted (0%). Only causes that create cards count.',
+      rewrite: '100% of 1 error in the original texts reappears in their rewrites.',
+      reviews: '2 lapses · 0 learning / 1 review',
+    } : {
+      saved: '2 errores guardados. 1 repetido omitido; los existentes se conservan.',
+      evidence: '0 de 1 error elegible de los últimos 30 días tienen tarjeta. En total hay 2 pendientes en la cola.',
+      conversion: 'En los últimos 30 días: 0 de 1 error elegible convertidos (0%). Solo cuentan las causas que generan tarjeta.',
+      rewrite: 'El 100% de 1 error de los textos originales reaparece en sus reescrituras.',
+      reviews: '2 lapsos · 0 aprendiendo / 1 repaso',
+    });
+  });
+
+  it('has a fixture for every dynamic message, including future additions', () => {
+    function functionKeys(value: object, prefix = ''): string[] {
+      return Object.entries(value).flatMap(([key, child]: [string, unknown]) => {
+        const path = prefix === '' ? key : `${prefix}.${key}`;
+        if (typeof child === 'function') return [path];
+        if (typeof child === 'object' && child !== null && !Array.isArray(child)) {
+          return functionKeys(child, path);
+        }
+        return [];
+      });
+    }
+    const t = getMessages(locale);
+    expect(Object.keys(render(t, 1)).sort()).toEqual(functionKeys(t).sort());
+  });
+});

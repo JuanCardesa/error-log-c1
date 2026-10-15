@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { useT } from '../_shared/i18nClient';
 import { Menu } from '../_shared/Menu';
 import overlay from '../_shared/overlay.module.css';
 import ui from '../_shared/ui.module.css';
@@ -16,18 +17,13 @@ import styles from './sessions.module.css';
  * recupera la misma búsqueda y página. La búsqueda filtra al escribir, en el servidor.
  */
 
-const PRACTICES: readonly { readonly value: string; readonly label: string }[] = [
-  { value: '', label: 'todas' },
-  { value: 'RUOE', label: 'Reading & Use of English' },
-  { value: 'WRITING', label: 'Writing' },
-  { value: 'LISTENING', label: 'Listening' },
-  { value: 'SPEAKING', label: 'Speaking' },
-  { value: 'libre', label: 'Sin formato de examen' },
-];
+/** `''` son todas; `libre`, sin formato de examen; el resto, un paper. */
+const PRACTICES = ['', 'RUOE', 'WRITING', 'LISTENING', 'SPEAKING', 'libre'] as const;
 
 const DEBOUNCE_MS = 250;
 
 export function SessionsToolbar({ params, openCount }: { readonly params: ListParams; readonly openCount: number }) {
+  const t = useT();
   const router = useRouter();
   const [q, setQ] = useState(params.q);
 
@@ -41,7 +37,9 @@ export function SessionsToolbar({ params, openCount }: { readonly params: ListPa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  const practice = PRACTICES.find((item) => item.value === params.practica) ?? PRACTICES[0];
+  const practiceLabel = (value: (typeof PRACTICES)[number]): string => value === '' ? t.sessionView.practiceAll
+    : value === 'libre' ? t.format.noExamFormat : t.labels.paperLong[value];
+  const practice = PRACTICES.find((value) => value === params.practica) ?? '';
 
   return (
     <div className={styles.toolbar}>
@@ -50,38 +48,38 @@ export function SessionsToolbar({ params, openCount }: { readonly params: ListPa
         className={`${ui.input} ${styles.search}`}
         value={q}
         onChange={(event) => { setQ(event.target.value); }}
-        placeholder="Buscar por referencia, fuente o fecha…"
-        aria-label="Buscar sesión"
+        placeholder={t.sessionView.searchPlaceholder}
+        aria-label={t.sessionView.searchLabel}
       />
-      <nav className={ui.pills} aria-label="Estado">
+      <nav className={ui.pills} aria-label={t.sessionView.status}>
         <Link href={listHref(params, { estado: '' })} className={ui.pill} aria-current={params.estado === '' ? 'true' : undefined} scroll={false}>
-          Todas
+          {t.common.all}
         </Link>
         <Link href={listHref(params, { estado: 'abiertas' })} className={ui.pill} aria-current={params.estado === 'abiertas' ? 'true' : undefined} scroll={false}>
-          Abiertas ({openCount})
+          {t.sessionView.openCount(openCount)}
         </Link>
       </nav>
       <span className={ui.spacer} />
       <Menu
-        label="Práctica"
+        label={t.sessionForm.practice}
         trigger={(props) => (
           <button type="button" {...props} className={`${ui.ghost} ${ui.compact} ${styles.filterButton}`}>
-            Práctica: {practice?.label ?? 'todas'}
+            {t.sessionView.practiceFilter(practiceLabel(practice))}
             <ChevronDown size={14} aria-hidden="true" />
           </button>
         )}
       >
-        {(close) => PRACTICES.map((item) => (
+        {(close) => PRACTICES.map((value) => (
           <Link
-            key={item.value}
+            key={value}
             role="menuitem"
-            href={listHref(params, { practica: item.value })}
+            href={listHref(params, { practica: value })}
             className={overlay.menuItem}
-            aria-current={item.value === params.practica ? 'page' : undefined}
+            aria-current={value === params.practica ? 'page' : undefined}
             onClick={close}
             scroll={false}
           >
-            {item.label === 'todas' ? 'Todas las prácticas' : item.label}
+            {value === '' ? t.sessionView.allPractices : practiceLabel(value)}
           </Link>
         ))}
       </Menu>
@@ -89,10 +87,10 @@ export function SessionsToolbar({ params, openCount }: { readonly params: ListPa
         href={listHref(params, { orden: params.orden === 'asc' ? '' : 'asc' })}
         className={`${ui.ghost} ${ui.compact} ${styles.filterButton}`}
         scroll={false}
-        aria-label={params.orden === 'asc' ? 'Fecha: más antiguas primero. Cambiar a más recientes' : 'Fecha: más recientes primero. Cambiar a más antiguas'}
+        aria-label={params.orden === 'asc' ? t.sessionView.sortAsc : t.sessionView.sortDesc}
       >
         <ArrowUpDown size={16} aria-hidden="true" />
-        Fecha {params.orden === 'asc' ? '↑' : '↓'}
+        {t.sessionForm.date} {params.orden === 'asc' ? '↑' : '↓'}
       </Link>
     </div>
   );

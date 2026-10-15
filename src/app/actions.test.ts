@@ -15,6 +15,10 @@ import { MAX_IMPORT_ROWS, MAX_SESSION_IMPORT_ROWS } from '@/lib/import/errors';
 import { saveWritingPieceAction } from './writing/actions';
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+// Las acciones leen el idioma de la cookie de Ajustes; estas comprobaciones están en español.
+vi.mock('next/headers', () => ({
+  cookies: () => Promise.resolve({ get: (name: string) => (name === 'errorlog-locale' ? { value: 'es' } : undefined) }),
+}));
 vi.mock('@/lib/db/client', async (importOriginal) => {
   const original = await importOriginal<typeof DbClient>();
   return { ...original, getDb: vi.fn() };

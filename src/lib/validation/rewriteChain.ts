@@ -3,7 +3,7 @@
  *
  * Es una validacion de grafo, no de campo: hace falta el resto de textos para saber si
  * un enlace cierra un ciclo, asi que no cabe en un esquema de Zod. Se comprueba aqui,
- * antes de escribir.
+ * antes de escribir. Devuelve el motivo; el aviso lo redacta quien lo enseña.
  */
 
 export interface RewriteLink {
@@ -13,7 +13,7 @@ export interface RewriteLink {
 
 export type RewriteCheck =
   | { readonly ok: true }
-  | { readonly ok: false; readonly reason: 'self' | 'cycle' | 'missing'; readonly message: string };
+  | { readonly ok: false; readonly reason: 'self' | 'cycle' | 'missing' };
 
 const OK: RewriteCheck = { ok: true };
 
@@ -25,13 +25,13 @@ export function checkRewriteLink(
   if (rewriteOf === null) return OK;
 
   if (rewriteOf === pieceId) {
-    return { ok: false, reason: 'self', message: 'Un texto no puede reescribirse a si mismo' };
+    return { ok: false, reason: 'self' };
   }
 
   const byId = new Map(pieces.map((piece) => [piece.id, piece]));
 
   if (!byId.has(rewriteOf)) {
-    return { ok: false, reason: 'missing', message: 'El texto original no existe' };
+    return { ok: false, reason: 'missing' };
   }
 
   // Se sube por la cadena desde el original propuesto. Si se llega al texto que estamos
@@ -41,11 +41,7 @@ export function checkRewriteLink(
 
   while (cursor !== null) {
     if (seen.has(cursor)) {
-      return {
-        ok: false,
-        reason: 'cycle',
-        message: 'Ese enlace crearia un ciclo de reescrituras',
-      };
+      return { ok: false, reason: 'cycle' };
     }
     seen.add(cursor);
     cursor = byId.get(cursor)?.rewriteOf ?? null;

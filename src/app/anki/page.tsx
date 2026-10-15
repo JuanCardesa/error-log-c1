@@ -7,8 +7,10 @@ import { ankiContentStale } from '@/lib/anki/create';
 import { ankiStatus } from '@/lib/anki/sync';
 import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { q7AnkiReviews } from '@/lib/queries/q7AnkiReviews';
+import type { Messages } from '@/lib/i18n';
 import { dateTime, percent, sessionTitle, shortDate } from '../_shared/format';
-import { CAUSE_LABELS, CONFIDENCE_LABELS, categoryLabel } from '../_shared/labels';
+import { getT } from '../_shared/i18nServer';
+import { categoryLabel } from '../_shared/labels';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -35,17 +37,19 @@ function safeAnkiConfig(): AnkiConfig | null {
   try { return ankiConfig(); } catch { return null; }
 }
 
-function ago(timestamp: string, now: Date): string {
+function ago(timestamp: string, now: Date, t: Messages): string {
   const minutes = Math.max(0, Math.round((now.getTime() - new Date(timestamp).getTime()) / 60_000));
-  if (minutes < 1) return 'hace un momento';
-  if (minutes < 60) return `hace ${String(minutes)} min`;
+  if (minutes < 1) return t.anki.justNow;
+  if (minutes < 60) return t.anki.minutesAgo(minutes);
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `hace ${String(hours)} h`;
-  return `el ${dateTime(timestamp)}`;
+  if (hours < 24) return t.anki.hoursAgo(hours);
+  return t.anki.onDate(dateTime(timestamp, t));
 }
 
 export default async function AnkiPage({ searchParams }: { readonly searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  const t = await getT();
+  const a = t.anki;
   const windowDays = parseWindow(params['w']);
   const tab: Tab = params['tab'] === 'convertidas' || params['tab'] === 'repasos' ? params['tab'] : 'pendientes';
   const now = new Date();
@@ -72,63 +76,58 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
           <div className={styles.connection}>
             <span className={status.available ? styles.connOn : styles.connOff}>
               <span className={styles.dot} aria-hidden="true" />
-              {status.available ? 'Disponible' : 'No disponible'}
+              {status.available ? a.available : a.unavailable}
             </span>
             <span className={ui.help}>
-              {lastSynced === null ? 'Sin sincronizar todavía' : `Sincronizado ${ago(lastSynced, now)}`}
+              {lastSynced === null ? a.notSyncedYet : a.syncedAgo(ago(lastSynced, now, t))}
             </span>
             <SyncButton />
           </div>
         </div>
         {!status.available && (
           <div className={ui.notice} role="status" id="anki-status">
-            <span className={ui.noticeTitleWarn}>No conectado.</span>
+            <span className={ui.noticeTitleWarn}>{a.notConnected}</span>
             <span className={styles.noticeText}>
-              {status.message} Puedes seguir leyendo y editando la cola.
+              {status.text(t)} {a.keepWorking}
             </span>
           </div>
         )}
         <details className={ui.disclosure}>
           <summary>
             <ChevronRight size={14} className="chevron" aria-hidden="true" />
-            Conexión y cómo conectar Anki
+            {a.connectionHelp}
           </summary>
           <div className={`${ui.disclosureBody} ${styles.connectionBody}`}>
-            <p>{status.message}</p>
-            <p>Mazo: {config?.sourceDeck ?? anki.sync?.sourceDeck ?? '—'} y sus submazos.</p>
+            <p>{status.text(t)}</p>
+            <p>{a.deck(config?.sourceDeck ?? anki.sync?.sourceDeck ?? '—')}</p>
             {anki.sync?.rolloverHour != null && (
-              <p>
-                Día de Anki: {anki.sync.rolloverSource === 'config' ? 'empieza' : 'se supone que empieza'} a las {anki.sync.rolloverHour}:00
-                {anki.sync.rolloverSource === 'config' ? ', según ANKI_ROLLOVER_HOUR.' : ', el valor por defecto de Anki. Si tu colección usa otra hora, ponla en ANKI_ROLLOVER_HOUR y vuelve a sincronizar.'}
-              </p>
+              <p>{a.rollover(anki.sync.rolloverHour, anki.sync.rolloverSource === 'config')}</p>
             )}
             <p>
-              En Anki: Herramientas → Complementos → Descargar complementos. Instala{' '}
-              <a href="https://ankiweb.net/shared/info/2055492159" target="_blank" rel="noreferrer">AnkiConnect (2055492159)</a>,
-              reinicia Anki y deja abierto el perfil de tu colección. Después pulsa Sincronizar.
+              {a.installBefore}
+              <a href="https://ankiweb.net/shared/info/2055492159" target="_blank" rel="noreferrer">AnkiConnect (2055492159)</a>
+              {a.installAfter}
             </p>
           </div>
         </details>
         <RouteTabs
-          label="Vistas de Anki"
+          label={a.views}
           items={[
-            { href: `/anki${w === '' ? '' : `?${w.slice(1)}`}`, label: `Pendientes (${String(q5.queue.length)})`, current: tab === 'pendientes' },
-            { href: `/anki?tab=convertidas${w}`, label: 'Convertidas', current: tab === 'convertidas' },
-            { href: `/anki?tab=repasos${w}`, label: 'Repasos', current: tab === 'repasos' },
+            { href: `/anki${w === '' ? '' : `?${w.slice(1)}`}`, label: a.pendingTab(q5.queue.length), current: tab === 'pendientes' },
+            { href: `/anki?tab=convertidas${w}`, label: a.convertedTab, current: tab === 'convertidas' },
+            { href: `/anki?tab=repasos${w}`, label: a.reviewsTab, current: tab === 'repasos' },
           ]}
         />
       </div>
 
       {tab === 'pendientes' && (
-        <section className={styles.section} aria-label="Pendientes de crear en Anki">
+        <section className={styles.section} aria-label={a.pendingSection}>
           <p className={styles.lead}>
-            <strong>{q5.queue.length} pendientes</strong> en todo el historial · más antiguos primero
+            <strong>{a.pendingLeadStrong(q5.queue.length)}</strong>{a.pendingLeadRest}
           </p>
           {q5.queue.length === 0 ? (
             <p className={styles.empty}>
-              {q5.eligible === 0 && data.errors.length === 0
-                ? 'Todavía no hay errores que conviertan en tarjeta.'
-                : 'No quedan errores pendientes de convertir.'}
+              {q5.eligible === 0 && data.errors.length === 0 ? a.noEligibleYet : a.nonePending}
             </p>
           ) : (
             <PendingQueue
@@ -138,24 +137,24 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
                 return {
                   id: error.id,
                   sessionId: error.sessionId,
-                  date: session === undefined ? '' : shortDate(session.date),
-                  sessionTitle: session === undefined ? '' : sessionTitle(session),
+                  date: session === undefined ? '' : shortDate(session.date, t),
+                  sessionTitle: session === undefined ? '' : sessionTitle(session, t),
                   itemRef: error.itemRef,
                   prompt: error.prompt,
                   mine: error.myAnswer,
                   correct: error.correctAnswer,
                   rule: error.ruleNote,
-                  category: categoryLabel(error.category),
-                  cause: CAUSE_LABELS[error.cause],
-                  confidence: CONFIDENCE_LABELS[error.confidence],
+                  category: categoryLabel(error.category, t),
+                  cause: t.labels.cause[error.cause],
+                  confidence: t.labels.confidence[error.confidence],
                 };
               })}
             />
           )}
           <p className={ui.help}>
             {q5.pctConverted === null
-              ? `Ningún error de los últimos ${String(windowDays)} días genera tarjeta.`
-              : `En los últimos ${String(windowDays)} días: ${String(q5.added)} de ${String(q5.eligible)} errores elegibles convertidos (${percent(q5.pctConverted)}). Solo cuentan las causas que generan tarjeta.`}
+              ? a.noneGenerates(windowDays)
+              : a.conversionSummary(windowDays, q5.added, q5.eligible, percent(q5.pctConverted, t))}
           </p>
         </section>
       )}
@@ -167,21 +166,18 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
           .filter((error, index) => index < RECENT_CONVERSIONS || stale.has(error.id));
         const entries: ConvertedEntry[] = converted.map((error) => ({
           id: error.id,
-          date: shortDate((error.ankiAddedAt ?? '').slice(0, 10)),
+          date: shortDate((error.ankiAddedAt ?? '').slice(0, 10), t),
           correct: error.correctAnswer,
-          category: categoryLabel(error.category),
+          category: categoryLabel(error.category, t),
           state: error.ankiNoteId === null ? 'legacy' : stale.has(error.id) ? 'stale' : 'verified',
         }));
         return (
-          <section className={`${styles.section} ${styles.narrow}`} aria-label="Convertidas">
-            <p className={styles.lead}>Últimas {RECENT_CONVERSIONS} convertidas y todas las desactualizadas.</p>
+          <section className={`${styles.section} ${styles.narrow}`} aria-label={a.convertedTab}>
+            <p className={styles.lead}>{a.convertedLead(RECENT_CONVERSIONS)}</p>
             {entries.length === 0
-              ? <p className={styles.empty}>Todavía no hay errores convertidos en tarjeta.</p>
+              ? <p className={styles.empty}>{a.noneConverted}</p>
               : <ConvertedList entries={entries} available={status.available} />}
-            <p className={ui.help}>
-              «Desactualizada»: el error ha cambiado desde que se creó la tarjeta; actualizar solo reescribe sus campos.
-              Devolver a pendientes desvincula el error: la nota y su historial se conservan en Anki.
-            </p>
+            <p className={ui.help}>{a.convertedHelp}</p>
           </section>
         );
       })()}
@@ -191,33 +187,33 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
         const synced = lastSynced !== null;
         const failing = reviews.groups.filter((group) => group.failures > 0);
         return (
-          <section className={`${styles.section} ${styles.narrow}`} aria-label="Repasos en Anki">
+          <section className={`${styles.section} ${styles.narrow}`} aria-label={a.reviewsSection}>
             <div className={styles.repHead}>
-              <span className={ui.help}>{synced ? `Actualizado: ${dateTime(lastSynced)}` : 'Sin sincronizar'}</span>
-              <WindowSwitch current={windowDays} basePath="/anki" keep={{ tab: 'repasos' }} label="Periodo de los repasos" />
+              <span className={ui.help}>{synced ? a.updatedAt(dateTime(lastSynced, t)) : a.notSynced}</span>
+              <WindowSwitch current={windowDays} basePath="/anki" keep={{ tab: 'repasos' }} label={a.reviewsPeriod} />
             </div>
             {!synced ? (
-              <p className={styles.empty}>Sincroniza Anki para consultar tus repasos. Todavía no hay datos importados: no son cero fallos.</p>
+              <p className={styles.empty}>{a.syncToSee}</p>
             ) : (
               <>
                 <dl className={styles.metrics}>
                   <div className={styles.metric}>
-                    <dt className={ui.help}>repasos</dt>
+                    <dt className={ui.help}>{a.metricReviews}</dt>
                     <dd className={styles.metricMain}>{reviews.reviews}</dd>
                   </div>
                   <div className={styles.metric}>
-                    <dt className={ui.help}>lapsos · tarjetas maduras olvidadas</dt>
+                    <dt className={ui.help}>{a.metricLapses}</dt>
                     <dd className={styles.metricSub}>{reviews.lapses}</dd>
                   </div>
                   <div className={styles.metric}>
-                    <dt className={ui.help}>fallos aprendiendo</dt>
+                    <dt className={ui.help}>{a.metricLearning}</dt>
                     <dd className={styles.metricSub}>{reviews.learningFailures}</dd>
                   </div>
                 </dl>
                 {reviews.reviews === 0 ? (
-                  <p className={styles.empty}>Sin repasos en los últimos {windowDays} días. El historial antiguo no cuenta como estudio reciente.</p>
+                  <p className={styles.empty}>{a.noReviews(windowDays)}</p>
                 ) : failing.length === 0 ? (
-                  <p className={styles.empty}>Sin fallos en los repasos de este periodo.</p>
+                  <p className={styles.empty}>{a.noFailures}</p>
                 ) : (
                   <div className={styles.groups}>
                     {failing.map((group) => (
@@ -225,17 +221,17 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
                         <summary className={styles.groupSummary}>
                           <h3 className={styles.groupName}>
                             <ChevronRight size={14} className="chevron" aria-hidden="true" />
-                            {group.category === null ? 'Sin categoría asignada' : categoryLabel(group.category)}
+                            {group.category === null ? a.noCategory : categoryLabel(group.category, t)}
                           </h3>
                           <span className={styles.muted}>
-                            {group.lapses} lapsos · {group.learningFailures} aprendiendo / {group.reviews} repasos
+                            {a.groupStats(group.lapses, group.learningFailures, group.reviews)}
                           </span>
                         </summary>
                         <ul className={styles.notes}>
                           {group.notes.map((note) => (
                             <li key={note.noteId}>
                               <span className={styles.noteLabel}>{note.label}</span>
-                              <span className={styles.muted}>{note.failures} {note.failures === 1 ? 'fallo' : 'fallos'}</span>
+                              <span className={styles.muted}>{a.failures(note.failures)}</span>
                             </li>
                           ))}
                         </ul>
@@ -246,17 +242,11 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
                 <details className={ui.disclosure}>
                   <summary>
                     <ChevronRight size={14} className="chevron" aria-hidden="true" />
-                    Qué es un fallo y un lapso, y otras cifras
+                    {a.whatIsFailure}
                   </summary>
                   <div className={ui.disclosureBody}>
-                    <p>
-                      «Again» cuenta como fallo; Hard, Good y Easy como acierto. Un lapso es un «Again» en una tarjeta ya
-                      aprendida. Un «Again» en los pasos de aprendizaje es estar montándola, lo normal en una tarjeta nueva.
-                      Estas cifras vienen de Anki y no se comparan con la precisión de tus prácticas: tienen denominadores distintos.
-                    </p>
-                    <p>
-                      Aciertos: {reviews.accuracy === null ? '—' : percent(reviews.accuracy)} · cartas distintas repasadas: {reviews.distinctCards}.
-                    </p>
+                    <p>{a.failureExplained}</p>
+                    <p>{a.accuracyLine(reviews.accuracy === null ? '—' : percent(reviews.accuracy, t), reviews.distinctCards)}</p>
                   </div>
                 </details>
               </>
