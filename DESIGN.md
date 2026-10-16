@@ -207,8 +207,12 @@ la tanda, menús, la paleta ⌘K y avisos). Nunca en tablas ni datos.
 
 ### Estados
 - **Éxito** (`success`): guardado, verificado, «Listo», «Disponible».
-- **Aviso** (`warning`): pendiente, incompleto, sesión abierta (rombo), muestra pequeña,
-  «Siempre 30 días». Un campo pendiente de completar lleva el borde en este color.
+- **Aviso** (`warning`): lo que pide atención ahora: incompleto, sesión abierta (rombo),
+  muestra pequeña, Anki no disponible. Un campo pendiente de completar lleva el borde en
+  este color. No es para hechos neutros: el alcance de una descarga («Siempre 30 días») va
+  en `ink-2`, y «Pendiente» en una lista va en tinta con su forma (`AnkiStateText`).
+- **Deltas** en tinta con su signo (`signedDecimal`: «+0,5», «−0,5», «=»): el signo ya dice
+  la dirección y el rojo queda para el daño.
 - **Error / destructivo** (`danger`): validación, confirmación de borrado, tarjeta
   desactualizada, respuesta propia tachada.
 - **Información** (`info`): ayuda contextual (qué genera una causa, cabecera que no suma).
@@ -264,8 +268,15 @@ sigue siendo el valor interno.
 
 - Página de 1200 px de contenido (1264 con márgenes), padding 32/32/96; 24 en tableta y 16
   en móvil. Cabecera fija de 56 px en cristal (dos filas en móvil).
-- Navegación: **Sesiones · Errores · Progreso · Anki · Más ▾** (Writing, Exportar datos) y
-  el botón Buscar con su atajo.
+- Navegación en dos grupos, **Ritual | Biblioteca**: Sesiones · Errores · Progreso · Anki,
+  un filete vertical, Notebook · Writing. **Más ▾** solo guarda Exportar datos y Ajustes.
+  Al final, el botón Buscar con su atajo.
+- **Cabecera de página** (`PageHeader`), la misma en todas las vistas y con los huecos fijos:
+  «← Sección» arriba a la izquierda (`BackLink`, que hace de antetítulo: no hay otro), título
+  serif con lo que vaya a su lado (el estado de una sesión), entradilla en `ink-2`, acciones
+  a la derecha alineadas con el título (un primario como mucho, o el selector de periodo) y
+  pestañas debajo. Las hojas de lectura (una redacción, un apunte) llevan su título en la
+  hoja, pero el «volver» va en el mismo sitio.
 - Listado + detalle: rejilla `minmax(0,1fr) 360px` con el panel pegado arriba. Con el
   panel abierto, la tabla retira columnas (Causa y Anki, o Contexto).
 - **Puntos de ruptura:** < 640 móvil (dos filas de cabecera, controles de 44 px, detalle y
@@ -291,7 +302,7 @@ sigue siendo el valor interno.
 ## Shapes
 
 Radios de 2 px (la hoja de una redacción o un apunte), 4 px (controles), 6 px (paneles), 8 px
-(menús y dialogs) y 10 px (⌘K). Píldora solo en el chip de filtro activo.
+(menús y dialogs) y 10 px (⌘K). Sin píldoras: un filtro activo tiene la forma de un control.
 
 Espaciado en pasos de 4 (`--space-1` a `--space-7`) más dos intermedios, `--space-1-5` (6) y
 `--space-2-5` (10), solo para el relleno interior de controles: menú, opción, aviso.
@@ -309,14 +320,38 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   (⌘ en Mac, Ctrl en el resto) y el gestor acepta ambos modificadores.
 
 ### Navegación y filtros
+- **BackLink**: «← Sección» en tinta secundaria; su nombre accesible es «Volver a Sección»,
+  distinto del enlace de la navegación. Una pista detrás («· filtro conservado») si la hay.
 - **Tabs** (`ui.tabs`/`ui.tab`): enlaces con `aria-current`, subrayado de marca.
 - **Segmentado** (`ui.segmented`): conmutador 30/60 días; conserva los demás parámetros.
-- **Pills** (`ui.pills`) para Todas/Abiertas y **chip** (`ui.chip`) para un filtro activo.
+- **FilterBar**: búsqueda (`LiveSearch`), píldoras, menús y el recuento al final. **Todo se
+  aplica al momento** y vive en la URL: no hay botón «Aplicar». Las búsquedas filtran al
+  escribir (250 ms).
+- **FilterMenu**: un filtro como menú de enlaces; el botón dice el filtro y su valor
+  («Causa: Todas»). Activo, el botón va en `brand-tint` con su × para quitarlo sin abrir el
+  menú.
+- **Pills** (`ui.pills`) para Todas/Abiertas y **chip** (`ui.chip`) para un filtro que no
+  tiene menú (p. ej. «Solo sesiones con ítems», que llega desde Progreso).
 
 ### Datos
-- **Tablas** reales (`<table>` con `caption`) y columnas fijas; fila clicable con un
-  botón o enlace dentro para el teclado. Seleccionada: `selected` + barra de marca.
+- **Tabla** (`ui.dataTable`, con `ui.dataTableFixed` si la vista fija anchos): `<table>` real
+  con `caption`, filete de tinta arriba, filas de 44 px y dentro de `ui.scrollX`. Cada
+  columna declara su tipo: `colNum` (cifras a la derecha, tabulares), `colDate`, `colStatus`
+  (forma y texto, sin partir), texto (parte entre palabras; el ancho debe dejar caber la más
+  larga) y `colLong`. La cabecera de fila es un `<th scope="row">`. Fila clicable con
+  `data-clickable` y un botón o enlace dentro para el teclado; seleccionada con
+  `data-selected`: `selected` + barra de marca.
+- **EmptyState** (`ui.empty`): ocupa el sitio de lo que falta y arranca con su mismo filete.
+  Causa en tinta, detalle en `ink-2` y el siguiente paso (un enlace). Título solo en un
+  primer uso; `inset` lo deja sin filete dentro de un bloque que ya lo tiene. Nunca un «0»
+  ni una caja punteada.
+- **FileDrop**: elegir o soltar un archivo con los textos de la app, nunca el «Choose File»
+  del navegador. `zone` cuando es la entrada principal (título, pista y el elegido en mono);
+  `button` cuando es la alternativa a pegar el texto.
 - **StatusText**: rombo «Abierta» en aviso, cuadrado «Cerrada» en tinta secundaria.
+- **AnkiStateText**: el estado Anki en una fila. «Pendiente» en tinta con anillo hueco,
+  «Convertida» en `success` con punto, «Marca manual» y «No aplica» en `ink-2`. En el panel
+  de detalle, donde es la llamada a la acción, «Pendiente» sí va en aviso.
 - **CorrectionPair**: en línea (mono) para listas; en detalle (serif, dos filas). Sin
   respuesta propia: «Mi respuesta no registrada», en cursiva y sin tachar.
 
@@ -380,7 +415,7 @@ ha guardado nada».
 
 ## Notebook
 
-- Entrada principal en la cabecera y en la paleta, junto a los otros cuatro destinos. La
+- Entrada en la cabecera, en el grupo de la biblioteca junto a Writing, y en la paleta. La
   portada abre con búsqueda, carpetas, modificados recientes, la acción «Nuevo apunte» y
   la secundaria «Importar .md». El estado vacío explica cómo crear el primero.
 - Portada en `/notebook`, alta en `/notebook/nuevo`, importación en `/notebook/importar`,
