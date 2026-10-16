@@ -138,8 +138,9 @@ test('el volcado JSON añade formatVersion y el cuaderno sin recortar los cuerpo
         errorLinks: Array<{ noteId: number }>;
       };
     };
-    expect(Object.keys(dump)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki', 'notebook']);
-    expect(dump.formatVersion).toBe(3);
+    // v4: el volcado incluye las anotaciones de Writing.
+    expect(Object.keys(dump)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki', 'writingAnnotations', 'notebook']);
+    expect(dump.formatVersion).toBe(4);
     expect(dump.rows.errors.length).toBeGreaterThan(0);
 
     const source = dump.notebook.notes.find((note) => note.id === fixture.sourceId);
