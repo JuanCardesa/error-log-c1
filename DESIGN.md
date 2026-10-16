@@ -87,14 +87,44 @@ typography:
     fontSize: "11px"
     fontWeight: 500
     lineHeight: "16px"
+  meta:
+    fontFamily: "IBM Plex Sans"
+    fontSize: "12px"
+    fontWeight: 400
+    lineHeight: "16px"
+  entry-title:
+    fontFamily: "Source Serif 4"
+    fontSize: "19px"
+    fontWeight: 600
+    lineHeight: "26px"
+  quote:
+    fontFamily: "Source Serif 4"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: "24px"
+  metric:
+    fontFamily: "IBM Plex Sans"
+    fontSize: "28px"
+    fontWeight: 600
+    lineHeight: "32px"
+    fontFeature: "tnum"
+  figure:
+    fontFamily: "IBM Plex Sans"
+    fontSize: "20px"
+    fontWeight: 600
+    lineHeight: "28px"
+    fontFeature: "tnum"
 rounded:
   control: "4px"
   panel: "6px"
   overlay: "8px"
   float: "10px"
+  paper: "2px"
 spacing:
   space-1: "4px"
+  space-1-5: "6px"
   space-2: "8px"
+  space-2-5: "10px"
   space-3: "12px"
   space-4: "16px"
   space-5: "24px"
@@ -183,6 +213,11 @@ la tanda, menús, la paleta ⌘K y avisos). Nunca en tablas ni datos.
   desactualizada, respuesta propia tachada.
 - **Información** (`info`): ayuda contextual (qué genera una causa, cabecera que no suma).
 
+### Marcador del Notebook
+- `--mark-green`, `--mark-red` y `--mark-blue` son `success`, `danger` e `info`: una marca roja
+  es el mismo rojo que un error. Solo `--mark-orange` y `--mark-highlight` (el amarillo de
+  resaltar) son propios del marcador.
+
 ### Visualización
 - **Causas**: `viz-study` las que se estudian, `viz-exec` las de protocolo de examen.
 - **RUOE**: `viz-acc-*` como fondo de celda por tramo; el número y la ratio mandan.
@@ -205,7 +240,17 @@ algo que haya que leer.
   tachada en `danger` (1,5 px).
 - **Section** (Sans 600, 18/24) y **Subtitle** (Sans 600, 16/22).
 - **Body** (Sans 400, 14/20). **Field** (15/22; 16 en móvil). **Label** (500, 13/18).
-- **Data** (Mono 13, tabular): fechas, ratios, respuestas en listas. **Kbd** (Mono 500 11/16).
+- **Data** (Mono 13, tabular): fechas, respuestas en listas, nombres de fichero. **Kbd**
+  (Mono 500 11/16). **Meta** (Sans 12/16): atajos al pie, grupos de la paleta, la ratio bajo una cifra.
+- **Entry title** (Serif 600, 19/26): título de una entrada en una lista. **Quote** (Serif 400,
+  16/24): el tramo citado en una fila o una nota y la respuesta en la paleta. **Answer** (Serif
+  400, 18/26): la respuesta propia junto a la corrección.
+- **Cifras** en Plex Sans tabular, nunca en mono: **Metric** (600, 28/32) para la principal y
+  **Figure** (600, 20/28) para las secundarias. Así «12,5/20» no abre huecos.
+
+La escala vive en `globals.css`: estilos completos `--text-*` y, cuando solo cambia el tamaño,
+los pasos `--fs-*` (11 · 12 · 13 · 14 · 15 · 16 · 18 · 19 · 20 · 22 · 25 · 28 · 30). Ningún
+módulo escribe un tamaño en px; el Markdown del Notebook escala sus encabezados en `em`.
 
 Las fuentes se sirven desde el propio origen (`next/font/local`, ficheros en
 `src/app/fonts/`, licencia OFL): ni el build ni el navegador piden nada a la red.
@@ -236,11 +281,20 @@ sigue siendo el valor interno.
 - Cristal: cabecera y barra inferior `rgba(246,245,241,.74–.76)` con `blur(16px)`; menús y
   combobox en blanco al 84–92 %; paleta al 90 % con `blur(20px)`; avisos en tinta al 84 %.
   Fallback sólido con `@supports not (backdrop-filter)`.
+- **Una sola escala de capas** (`--z-*`): `raised` 1 dentro de un componente · `bar` 5 barras
+  pegajosas de la página · `float` 10 nota del lector y listas · `sticky` 20 cabecera y menús ·
+  `scrim` 25 velo · `drawer` 30 drawer, detalle a pantalla completa y panel de Writing ·
+  `toast` 40 · `dialog` 50 · `palette` 60. El aviso va por encima de cualquier panel.
+  Ningún módulo escribe un `z-index` numérico.
+- Un solo velo, `--scrim` (con `--scrim-blur` en dialog y paleta).
 
 ## Shapes
 
-Radios de 4 px (controles), 6 px (paneles), 8 px (menús y dialogs) y 10 px (⌘K). Píldora solo
-en el chip de filtro activo.
+Radios de 2 px (la hoja de una redacción o un apunte), 4 px (controles), 6 px (paneles), 8 px
+(menús y dialogs) y 10 px (⌘K). Píldora solo en el chip de filtro activo.
+
+Espaciado en pasos de 4 (`--space-1` a `--space-7`) más dos intermedios, `--space-1-5` (6) y
+`--space-2-5` (10), solo para el relleno interior de controles: menú, opción, aviso.
 
 ## Components
 
@@ -267,14 +321,21 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   respuesta propia: «Mi respuesta no registrada», en cursiva y sin tachar.
 
 ### Capas
-- **Toast** (`useToast`): abajo al centro, 5 s, «Deshacer» opcional; fuera de las filas que
-  se desmontan. `role=status`.
+- **Toast** (`useToast`): abajo al centro, por encima de cualquier panel; fuera de las filas
+  que se desmontan. 5 s, o 10 s si lleva «Deshacer», y se detiene mientras el ratón o el foco
+  están en él. Ctrl/⌘+Z deshace fuera de un campo de texto, y el atajo se ve junto a la acción.
+  La región `role=status` está siempre montada, para que el lector de pantalla lo anuncie.
 - **ConfirmDialog**: `<dialog>` modal, foco en Cancelar, nombra el objeto y todas sus
   consecuencias.
-- **Drawer**: derecha, 520 px, blanco sólido, no modal; Escape cierra y devuelve el foco.
+- **Drawer**: derecha, 520 px, bajo la cabecera, blanco sólido, no modal; Escape cierra y
+  devuelve el foco.
+- **Capas a pantalla completa** (el drawer en móvil, el detalle de Errores y el panel de
+  Writing bajo 1024 px): `useInertBehind` (`_shared/layer.ts`) deja inerte lo que hay detrás
+  en `<main>`, así que Tab no se escapa. La cabecera y el aviso siguen vivos.
 - **Menu**: flechas, Escape y clic fuera.
 - **CommandPalette** (Ctrl/⌘+K): errores (máx. 5) y sesiones (máx. 3) buscados en el
-  servidor, y acciones con sus atajos.
+  servidor, y acciones con sus atajos. La opción activa se ve como una fila seleccionada
+  (`selected` y barra de marca) y el campo con foco se subraya en la marca.
 
 ### Revisión de tanda
 Índice de 300 px (nº · corrección · Listo/Falta) + un solo editor para la fila elegida,
@@ -307,8 +368,9 @@ ha guardado nada».
   Al pasar por un párrafo (o con foco o un toque) aparecen sus fondos y sus notas de
   párrafo, como marcas al margen. Pasar por un error abre una nota con «tu texto →
   corrección», el comentario y el tipo; con un clic se queda y trae sus acciones.
+  La nota se puede recorrer con el ratón sin que desaparezca y Escape la cierra (WCAG 1.4.13).
 - El panel de anotaciones está cerrado por defecto y se abre como columna al margen
-  (Drawer bajo 1024 px). Anotar, corregir la transcripción en la propia hoja, editar
+  (bajo 1024 px, cajón bajo la cabecera, con velo y el fondo inerte). Anotar, corregir la transcripción en la propia hoja, editar
   los datos y exportar viven en «Más acciones». La pestaña Progreso muestra medidas, filtros, evolución
   ordinal y estadísticas por criterio; cada vacío conserva su significado y las fechas
   aproximadas se distinguen visualmente.
