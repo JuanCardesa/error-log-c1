@@ -410,7 +410,7 @@
   padding: var(--space-7);
   background: var(--color-surface);
   border: 1px solid var(--color-rule);
-  border-radius: var(--study-paper-radius);
+  border-radius: var(--radius-paper);
   box-shadow: var(--shadow-1);
 }
 

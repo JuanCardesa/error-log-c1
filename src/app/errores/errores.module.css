@@ -34,7 +34,7 @@
 
 .count {
   color: var(--color-ink-2);
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-variant-numeric: tabular-nums;
 }
 
@@ -73,7 +73,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-4);
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--color-ink-2);
 }
 

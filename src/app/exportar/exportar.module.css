@@ -34,7 +34,7 @@
   min-height: 56px;
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-rule);
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 
 .name {
@@ -60,7 +60,7 @@
 }
 
 .file {
-  font: 400 12px/16px var(--font-mono);
+  font: var(--text-data-sm);
   color: var(--color-ink-2);
   overflow-wrap: anywhere;
 }
@@ -83,7 +83,7 @@
 }
 
 .code {
-  padding: 1px 6px;
+  padding: 1px var(--space-1-5);
   border-radius: var(--radius-control);
   background: var(--color-surface-2);
   color: var(--color-ink);
@@ -98,7 +98,7 @@
   .scopeFixed {
     grid-column: 1;
     grid-row: 2;
-    font-size: 13px;
+    font-size: var(--fs-label);
   }
 
   .download {

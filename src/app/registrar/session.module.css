@@ -14,20 +14,21 @@
 
 .groupLabel {
   padding-top: 28px;
-  font: 600 13px/18px var(--font-sans);
+  font: var(--text-label);
+  font-weight: 600;
   color: var(--color-ink-2);
 }
 
 .groupNote {
   padding-top: 28px;
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--color-ink-2);
 }
 
 .groupStack {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1-5);
 }
 
 .grid2 {
@@ -71,7 +72,7 @@
 }
 
 .editNote {
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--color-ink-2);
 }
 

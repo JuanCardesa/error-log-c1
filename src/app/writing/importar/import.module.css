@@ -194,7 +194,7 @@
   max-width: calc(var(--reading-max) + 2 * var(--space-7));
   padding: var(--space-7);
   border: 1px solid var(--color-rule);
-  border-radius: var(--study-paper-radius);
+  border-radius: var(--radius-paper);
   background: var(--color-surface);
   box-shadow: var(--shadow-1);
 }

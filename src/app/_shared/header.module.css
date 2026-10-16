@@ -24,7 +24,7 @@
   gap: var(--space-2);
   flex-shrink: 0;
   color: var(--color-ink);
-  font-size: 16px;
+  font-size: var(--fs-subtitle);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -58,7 +58,7 @@
 .navLink {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   height: 100%;
   padding: 0 var(--space-3);
   border: 0;
@@ -99,13 +99,13 @@
   flex: 0 1 300px;
   min-width: 44px;
   height: 34px;
-  padding: 0 var(--space-2) 0 10px;
+  padding: 0 var(--space-2) 0 var(--space-2-5);
   overflow: hidden;
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-control);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--glass-card-bg);
   color: var(--color-ink-2);
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 
 .search:hover {

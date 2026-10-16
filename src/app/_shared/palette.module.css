@@ -12,15 +12,15 @@
 }
 
 .palette::backdrop {
-  background: rgba(32, 35, 31, 0.28);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  background: var(--scrim);
+  -webkit-backdrop-filter: var(--scrim-blur);
+  backdrop-filter: var(--scrim-blur);
   animation: el-fade 120ms ease-out;
 }
 
 .box {
   overflow: hidden;
-  border: 1px solid rgba(124, 132, 122, 0.3);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-float);
   background: var(--glass-palette-bg);
   -webkit-backdrop-filter: var(--glass-blur-strong);
@@ -48,7 +48,7 @@
   outline: none;
   background: transparent;
   color: var(--color-ink);
-  font-size: 17px;
+  font-size: var(--fs-section);
 }
 
 /* La caja entera es el contexto del foco: el cursor ya dice dónde se escribe. */
@@ -65,8 +65,8 @@
 }
 
 .group {
-  padding: 10px 10px 4px;
-  font-size: 12px;
+  padding: var(--space-2-5) var(--space-2-5) var(--space-1);
+  font-size: var(--fs-meta);
   font-weight: 500;
   color: var(--color-ink-2);
 }
@@ -76,7 +76,7 @@
   align-items: center;
   gap: var(--space-3);
   min-height: 44px;
-  padding: 6px 10px;
+  padding: var(--space-1-5) var(--space-2-5);
   border-radius: var(--radius-panel);
   cursor: pointer;
 }
@@ -113,7 +113,7 @@
 
 .mine {
   flex-shrink: 0;
-  font: 400 15px/20px var(--font-serif);
+  font: var(--text-quote);
   color: var(--color-ink-2);
   text-decoration-color: var(--color-danger);
 }
@@ -124,7 +124,7 @@
 
 .sub {
   overflow: hidden;
-  font-size: 12px;
+  font-size: var(--fs-meta);
   line-height: 16px;
   color: var(--color-ink-2);
   text-overflow: ellipsis;
@@ -132,7 +132,7 @@
 }
 
 .empty {
-  padding: var(--space-4) 10px;
+  padding: var(--space-4) var(--space-2-5);
   color: var(--color-ink-2);
 }
 
@@ -143,8 +143,8 @@
   height: 40px;
   padding: 0 var(--space-4);
   border-top: 1px solid var(--color-rule);
-  background: rgba(246, 245, 241, 0.8);
-  font-size: 12px;
+  background: var(--glass-foot-bg);
+  font-size: var(--fs-meta);
   color: var(--color-ink-2);
   white-space: nowrap;
 }
