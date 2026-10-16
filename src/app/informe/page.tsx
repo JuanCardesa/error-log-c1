@@ -78,7 +78,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
       <div className={styles.page}>
         {head}
         <section className={styles.emptyState}>
-          <h2 className={styles.recoTitle}>{p.emptyTitle}</h2>
+          <h2 className={ui.decisionTitle}>{p.emptyTitle}</h2>
           <p>{p.emptyBody}</p>
           <Link href="/registrar" className={ui.primary}>{t.common.goToSessions}</Link>
         </section>
@@ -126,16 +126,16 @@ export default async function InformePage({ searchParams }: { readonly searchPar
     <div className={styles.page}>
       {head}
 
-      <section className={styles.reco} aria-labelledby="reco-title">
-        <span className={styles.kicker}>{rec.kicker}</span>
-        <h2 id="reco-title" className={styles.recoTitle}>
+      <section className={ui.decision} aria-labelledby="reco-title">
+        <span className={ui.decisionKicker}>{rec.kicker}</span>
+        <h2 id="reco-title" className={ui.decisionTitle}>
           {slice.sessions.length === 0 ? p.noPracticeTitle : rec.title}
         </h2>
-        <p className={styles.evidence}>
+        <p className={ui.decisionEvidence}>
           {slice.sessions.length === 0 ? p.noPracticeBody(windowDays) : rec.evidence}
         </p>
         {(rec.action !== null || rec.why !== null) && slice.sessions.length > 0 && (
-          <div className={styles.recoActions}>
+          <div className={ui.decisionActions}>
             {rec.action !== null && <Link href={rec.action.href} className={ui.primary}>{rec.action.label}</Link>}
             {rec.why !== null && (
               <details className={ui.disclosure}>
@@ -148,7 +148,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
             )}
           </div>
         )}
-        <div className={styles.coverage}>
+        <div className={ui.decisionCoverage}>
           <span>{p.period(dateRange(windowStart(now, windowDays), toIsoDate(now), t))}</span>
           <span>{t.format.sessions(slice.sessions.length)}</span>
           <span>{p.itemsCounted(q2.itemsAttempted)}</span>
@@ -157,7 +157,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
       </section>
 
       {q1.total > 0 && q1.total < MIN_N && (
-        <p className={styles.smallSample}>
+        <p className={`${ui.smallSample} ${styles.smallSampleBand}`}>
           <strong>{p.smallSample}</strong>
           <span>{p.smallSampleBody(q1.total, windowDays)}</span>
         </p>

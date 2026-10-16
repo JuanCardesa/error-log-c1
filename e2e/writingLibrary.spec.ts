@@ -134,7 +134,8 @@ test('la biblioteca busca en título y texto, filtra por estado y tipo y ordena'
     await expect(entries(page).getByRole('link')).toHaveText([`Sports centre ${tag}`]);
     await page.getByRole('button', { name: 'Tipo: Report' }).click();
     await page.getByRole('menuitem', { name: 'Review' }).click();
-    await expect(page.getByText('Ninguna redacción coincide con la búsqueda.')).toBeVisible();
+    // Con una búsqueda escrita, el vacío la nombra.
+    await expect(page.getByText(`Ninguna redacción coincide con «${tag}».`)).toBeVisible();
     await page.getByRole('link', { name: 'Limpiar filtros' }).click();
     await expect(page).toHaveURL('/writing');
 
@@ -187,7 +188,9 @@ test('el lector enseña la nota de un error, filtra el panel, lo recorre con tec
   try {
     const { essay } = shelf(tag);
     await page.goto(`/writing/${String(essay)}-cities-${tag}`);
-    await expect(page.getByText(/\d+ palabras? \(220–260\)/u)).toBeVisible();
+    // El texto de prueba se queda corto: el lector lo dice en vez de solo enseñar el rango.
+    await expect(page.getByText(/^\d+ palabras$/u)).toBeVisible();
+    await expect(page.getByText('por debajo de 220–260', { exact: true })).toBeVisible();
     // El panel empieza cerrado: en reposo solo está el texto.
     const panel = page.getByRole('complementary', { name: 'Anotaciones' });
     await expect(panel).toHaveCount(0);
@@ -199,9 +202,10 @@ test('el lector enseña la nota de un error, filtra el panel, lo recorre con tec
     await expect(note).toContainText('Possessive.');
     await note.getByRole('button', { name: 'Ver en la lista' }).click();
     await expect(panel).toBeVisible();
-    const annotations = panel.getByRole('listbox').getByRole('option');
+    // Una lista de botones (no un listbox): la elegida lleva aria-current.
+    const annotations = panel.getByRole('list', { name: 'Anotaciones' }).locator('button[data-option]');
     await expect(annotations).toHaveCount(8);
-    await expect(annotations.filter({ hasText: 'Possessive.' })).toHaveAttribute('aria-selected', 'true');
+    await expect(annotations.filter({ hasText: 'Possessive.' })).toHaveAttribute('aria-current', 'true');
 
     await panel.getByRole('button', { name: /^Fortalezas/ }).click();
     await expect(annotations).toHaveCount(2);
@@ -210,7 +214,7 @@ test('el lector enseña la nota de un error, filtra el panel, lo recorre con tec
     await expect(annotations).toHaveCount(8);
     await annotations.filter({ hasText: 'Possessive.' }).focus();
     await page.keyboard.press('ArrowUp');
-    await expect(annotations.filter({ hasText: 'Needs work.' })).toHaveAttribute('aria-selected', 'true');
+    await expect(annotations.filter({ hasText: 'Needs work.' })).toHaveAttribute('aria-current', 'true');
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCount(0);
 
@@ -237,22 +241,23 @@ test('crear, editar, revisar, borrar y deshacer anotaciones; colocar una cita si
     await expect(page.getByRole('status').filter({ hasText: 'Anotación guardada.' })).toBeVisible();
 
     const panel = page.getByRole('complementary', { name: 'Anotaciones' });
-    const note = panel.getByRole('listbox').locator('li').filter({ hasText: `Created ${tag}` });
+    const items = panel.getByRole('list', { name: 'Anotaciones' }).getByRole('listitem');
+    const note = items.filter({ hasText: `Created ${tag}` });
     await expect(note).toBeVisible();
     // Las acciones de una anotación aparecen al elegirla.
-    await note.getByRole('option').click();
+    await note.locator('button[data-option]').click();
     await note.getByRole('button', { name: 'Editar anotación' }).click();
     const edit = page.getByRole('form', { name: 'Editar anotación' });
     await edit.getByLabel('Comentario').fill(`Edited ${tag}`);
     await edit.getByRole('button', { name: 'Guardar anotación' }).click();
-    await expect(panel.getByRole('listbox').locator('li').filter({ hasText: `Edited ${tag}` })).toBeVisible();
+    await expect(items.filter({ hasText: `Edited ${tag}` })).toBeVisible();
 
-    const edited = panel.getByRole('listbox').locator('li').filter({ hasText: `Edited ${tag}` });
+    const edited = items.filter({ hasText: `Edited ${tag}` });
     await edited.getByRole('button', { name: 'Marcar como estudiada' }).click();
     await expect(edited).toContainText('Estudiada');
     await edited.getByRole('button', { name: 'Borrar anotación' }).click();
     await page.getByRole('button', { name: 'Deshacer' }).click();
-    await expect(panel.getByRole('listbox').locator('li').filter({ hasText: `Edited ${tag}` })).toBeVisible();
+    await expect(items.filter({ hasText: `Edited ${tag}` })).toBeVisible();
 
     const pending = essayImport();
     Object.assign(pending.writing, { title: `Unplaced ${tag}`, text: 'The word is unclear.' });
@@ -261,10 +266,10 @@ test('crear, editar, revisar, borrar y deshacer anotaciones; colocar una cita si
     await page.goto(`/writing/${String(unplacedId)}-unplaced-${tag}`);
     await annotateMode(page);
     const placePanel = page.getByRole('complementary', { name: 'Anotaciones' });
-    await placePanel.getByRole('option').filter({ hasText: 'Place this.' }).click();
+    await placePanel.locator('button[data-option]').filter({ hasText: 'Place this.' }).click();
     await selectText(page, 'unclear');
     await page.getByRole('button', { name: 'Colocar aquí', exact: true }).click();
-    await expect(placePanel.getByRole('option').filter({ hasText: 'unclear' })).toBeVisible();
+    await expect(placePanel.locator('button[data-option]').filter({ hasText: 'unclear' })).toBeVisible();
   } finally { cleanUp(tag); }
 });
 
@@ -290,7 +295,7 @@ test('corregir la transcripción guarda historial, actualiza palabras y reancla 
     await page.getByRole('button', { name: 'Guardar texto' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Transcripción corregida.' })).toBeVisible();
     await expect(page.getByText('their effect is more limited.')).toBeVisible();
-    await expect(page.getByText(/\d+ palabras? \(220–260\)/u)).toBeVisible();
+    await expect(page.getByText('por debajo de 220–260', { exact: true })).toBeVisible();
 
     const after = withDb((db) => ({
       piece: db.select().from(writingPiece).where(eq(writingPiece.id, essay)).get(),
@@ -304,7 +309,8 @@ test('corregir la transcripción guarda historial, actualiza palabras y reancla 
     expect(after.history).toHaveLength(1);
     expect(after.history[0]).toMatchObject({ text: old.piece.originalText, textRevision: 1 });
     await page.getByRole('button', { name: /^Anotaciones \(/ }).click();
-    await expect(page.getByRole('complementary', { name: 'Anotaciones' }).getByRole('listbox').getByRole('option').filter({ hasText: 'Possessive.' })).toBeVisible();
+    await expect(page.getByRole('complementary', { name: 'Anotaciones' }).getByRole('list', { name: 'Anotaciones' })
+      .getByRole('listitem').filter({ hasText: 'Possessive.' })).toBeVisible();
   } finally { cleanUp(tag); }
 });
 
@@ -340,7 +346,7 @@ test('G W lleva a Writing desde otra sección', async ({ page }) => {
   await expect(writing).toHaveAttribute('aria-current', 'page');
 });
 
-test('el progreso filtra fechas y medidas, distingue fechas aproximadas y expone una tabla', async ({ page }) => {
+test('el progreso abre con el criterio más bajo, cambia medida y tipo al momento y expone una tabla', async ({ page }) => {
   const tag = randomUUID().slice(0, 8);
   try {
     const { essay } = shelf(tag);
@@ -348,15 +354,23 @@ test('el progreso filtra fechas y medidas, distingue fechas aproximadas y expone
     await page.goto('/writing');
     await page.getByRole('navigation', { name: 'Vistas de Writing' }).getByRole('link', { name: 'Progreso' }).click();
     await expect(page).toHaveURL('/writing?tab=progreso');
-    await expect(page.getByRole('heading', { name: 'Evolución de Total' })).toBeVisible();
 
-    await page.getByLabel('Medida').selectOption('LANGUAGE');
-    await page.getByLabel('Tipo').selectOption('ESSAY');
-    await page.getByLabel('Desde').fill('2026-10-02');
-    await page.getByLabel('Hasta').fill('2026-10-02');
-    await page.getByRole('button', { name: 'Aplicar filtros' }).click();
-    await expect(page).toHaveURL(/tab=progreso&measure=LANGUAGE&type=ESSAY&from=2026-10-02&to=2026-10-02/u);
-    await expect(page.getByRole('img', { name: 'Evolución de Idioma' })).toBeVisible();
+    // Abre con una decisión y deja las cifras debajo; sin formulario ni «Aplicar filtros».
+    await expect(page.getByRole('heading', { level: 2, name: /criterios? más bajos?|van parejos/u })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Aplicar filtros' })).toHaveCount(0);
+    await expect(page.getByLabel('Desde')).toHaveCount(0);
+    const criteria = page.getByRole('table', { name: 'Media, última nota y número de notas de cada criterio' });
+    await expect(criteria.getByRole('rowheader')).toContainText(['Content', 'Communicative Achievement', 'Organisation', 'Language']);
+    await expect(page.getByRole('img', { name: 'Evolución de Total' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Medida: Total' }).click();
+    await page.getByRole('menuitem', { name: 'Language' }).click();
+    await expect(page).toHaveURL(/tab=progreso&measure=LANGUAGE$/u);
+    await page.getByRole('button', { name: 'Tipo', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Essay' }).click();
+    await expect(page).toHaveURL(/tab=progreso&measure=LANGUAGE&type=ESSAY/u);
+    await expect(page.getByRole('button', { name: 'Tipo: Essay' })).toBeVisible();
+    await expect(page.getByRole('img', { name: 'Evolución de Language' })).toBeVisible();
     await page.getByText('Mostrar datos', { exact: true }).click();
     const data = page.getByRole('table', { name: 'Puntuaciones incluidas en el gráfico' });
     await expect(data).toBeVisible();

@@ -1,5 +1,4 @@
 import { GENRES, WRITING_CRITERIA, type Genre, type WritingCriterion, type WritingStatus } from '../domain/enums';
-import { isIsoDate } from '../time/dates';
 
 export const PROGRESS_METRICS = ['TOTAL', ...WRITING_CRITERIA] as const;
 export type ProgressMetric = (typeof PROGRESS_METRICS)[number];
@@ -16,11 +15,10 @@ export interface ProgressPiece {
   readonly bandLanguage: number | null;
 }
 
+/** Medida de la gráfica y tipo de texto: se aplican al elegirlos y viven en la URL. */
 export interface ProgressFilters {
   readonly metric: ProgressMetric;
   readonly genre: Genre | null;
-  readonly from: string | null;
-  readonly to: string | null;
 }
 
 export interface ProgressPoint {
@@ -38,26 +36,37 @@ export interface CriterionProgress {
   readonly last: number | null;
 }
 
+/**
+ * Lo que abre la vista. `weakest`: el criterio (o los empatados) con la media más baja;
+ * `even`: los cuatro están a menos de `EVEN_SPREAD` y no hay uno que destaque; `none`: aún no
+ * hay ninguna nota.
+ */
+export type ProgressFocus =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'even'; readonly low: number; readonly high: number }
+  | { readonly kind: 'weakest'; readonly criteria: readonly WritingCriterion[]; readonly mean: number };
+
 export interface WritingProgress {
   readonly pieces: readonly ProgressPiece[];
   readonly points: readonly ProgressPoint[];
-  readonly count: number;
-  readonly corrected: number;
+  /** Redacciones con al menos un criterio evaluado. */
+  readonly assessed: number;
   readonly awaiting: number;
   readonly criteria: readonly CriterionProgress[];
-  readonly strongest: WritingCriterion | null;
-  readonly mostRoomToImprove: WritingCriterion | null;
+  readonly focus: ProgressFocus;
+  /** Algún criterio tiene menos de `MIN_CRITERION_N` notas: el titular es una orientación. */
+  readonly smallSample: boolean;
 }
 
-export const DEFAULT_PROGRESS_FILTERS: ProgressFilters = {
-  metric: 'TOTAL', genre: null, from: null, to: null,
-};
+/** Con menos notas por criterio, una media es una orientación y no un patrón. */
+export const MIN_CRITERION_N = 3;
+/** Por debajo de esta distancia entre la media más alta y la más baja, van parejos. */
+export const EVEN_SPREAD = 0.5;
+
+export const DEFAULT_PROGRESS_FILTERS: ProgressFilters = { metric: 'TOTAL', genre: null };
 
 const validGenre = (value: string | undefined): Genre | null =>
   value !== undefined && (GENRES as readonly string[]).includes(value) ? value as Genre : null;
-
-const validDate = (value: string | undefined): string | null =>
-  value !== undefined && value !== '' && isIsoDate(value) ? value : null;
 
 export function parseProgressFilters(params: Record<string, string | string[] | undefined>): ProgressFilters {
   const metric = params['measure'];
@@ -65,8 +74,6 @@ export function parseProgressFilters(params: Record<string, string | string[] | 
     metric: typeof metric === 'string' && (PROGRESS_METRICS as readonly string[]).includes(metric)
       ? metric as ProgressMetric : 'TOTAL',
     genre: validGenre(typeof params['type'] === 'string' ? params['type'] : undefined),
-    from: validDate(typeof params['from'] === 'string' ? params['from'] : undefined),
-    to: validDate(typeof params['to'] === 'string' ? params['to'] : undefined),
   };
 }
 
@@ -106,18 +113,23 @@ function criterionProgress(pieces: readonly ProgressPiece[]): CriterionProgress[
   });
 }
 
+function focusOf(criteria: readonly CriterionProgress[]): ProgressFocus {
+  const means = criteria.flatMap((item) => item.mean === null ? [] : [item.mean]);
+  if (means.length === 0) return { kind: 'none' };
+  const low = Math.min(...means);
+  const high = Math.max(...means);
+  // Con los cuatro evaluados y a menos de medio punto, ninguno va por detrás.
+  if (means.length === criteria.length && high - low < EVEN_SPREAD) return { kind: 'even', low, high };
+  return {
+    kind: 'weakest',
+    criteria: criteria.filter((item) => item.mean !== null && Math.abs(item.mean - low) < 1e-9).map((item) => item.criterion),
+    mean: low,
+  };
+}
+
 export function writingProgress(pieces: readonly ProgressPiece[], filters: ProgressFilters): WritingProgress {
-  const selected = uniqueChronological(pieces).filter((piece) =>
-    (filters.genre === null || piece.genre === filters.genre)
-      && (filters.from === null || piece.date >= filters.from)
-      && (filters.to === null || piece.date <= filters.to),
-  );
+  const selected = uniqueChronological(pieces).filter((piece) => filters.genre === null || piece.genre === filters.genre);
   const criteria = criterionProgress(selected);
-  const ranked = criteria.filter((item): item is CriterionProgress & { readonly mean: number } => item.mean !== null);
-  const minimum = Math.min(...ranked.map((item) => item.mean));
-  const maximum = Math.max(...ranked.map((item) => item.mean));
-  const comparable = criteria.every((item) => item.count >= 3);
-  const difference = comparable ? maximum - minimum : 0;
   const points = selected.flatMap((piece) => {
     const value = valueFor(piece, filters.metric);
     return value === null ? [] : [{ id: piece.id, date: piece.date, dateBasis: piece.dateBasis, genre: piece.genre, value }];
@@ -126,11 +138,11 @@ export function writingProgress(pieces: readonly ProgressPiece[], filters: Progr
   return {
     pieces: selected,
     points,
-    count: selected.length,
-    corrected: selected.filter((piece) => piece.status === 'CORRECTED').length,
+    assessed: selected.filter((piece) => piece.status !== 'AWAITING'
+      && WRITING_CRITERIA.some((criterion) => valueFor(piece, criterion) !== null)).length,
     awaiting: selected.filter((piece) => piece.status === 'AWAITING').length,
     criteria,
-    strongest: comparable && difference >= 0.5 ? ranked.find((item) => item.mean === maximum)?.criterion ?? null : null,
-    mostRoomToImprove: comparable && difference >= 0.5 ? ranked.find((item) => item.mean === minimum)?.criterion ?? null : null,
+    focus: focusOf(criteria),
+    smallSample: criteria.some((item) => item.mean !== null && item.count < MIN_CRITERION_N),
   };
 }

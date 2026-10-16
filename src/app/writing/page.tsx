@@ -65,10 +65,16 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
       <PageHeader
         title={t.nav.writing}
         actions={(
-          <Link href="/writing/importar" className={ui.primary}>
-            <Upload size={16} aria-hidden="true" />
-            {t.writingImport.title}
-          </Link>
+          <>
+            {/* El periodo solo mueve Reescrituras: va arriba, como en Progreso, y solo en esa pestaña. */}
+            {tab === 'reescrituras' && (
+              <WindowSwitch current={windowDays} basePath="/writing" keep={{ tab: 'reescrituras' }} label={w.rewritesPeriod} />
+            )}
+            <Link href="/writing/importar" className={ui.primary}>
+              <Upload size={16} aria-hidden="true" />
+              {t.writingImport.title}
+            </Link>
+          </>
         )}
         tabs={(
           <RouteTabs
@@ -112,7 +118,8 @@ function Library({ items, query, t }: {
       <LibraryToolbar query={query} counts={countByStatus(searchLibrary(items, query))} />
       {shown.length === 0 ? (
         <EmptyState
-          cause={w.noMatch}
+          cause={query.q.trim() !== '' ? w.noMatchQuery(query.q.trim())
+            : query.status === 'AWAITING' && query.genre === null ? w.noAwaiting : w.noMatchFilters}
           action={isFiltered(query) ? <Link href="/writing" className={ui.textLink}>{t.common.clearFilters}</Link> : undefined}
         />
       ) : (
@@ -168,16 +175,13 @@ function Rewrites({ windowDays, items, t }: {
   const byId = new Map(items.map((item) => [item.id, item]));
   return (
     <div className={styles.rewrites}>
-      <div className={styles.rewritesHead}>
-        <p className={ui.help}>
-          {q6.pairs.length === 0
-            ? t.writing.noPairs(windowDays)
-            : q6.pctRepeated === null
-              ? t.writing.noOriginalErrors
-              : t.writing.repeatSummary(q6.totalRepeated, q6.totalOriginalErrors, percent(q6.pctRepeated, t), percent(REWRITE_REPEAT_PCT, t))}
-        </p>
-        <WindowSwitch current={windowDays} basePath="/writing" keep={{ tab: 'reescrituras' }} label={t.writing.rewritesPeriod} />
-      </div>
+      <p className={ui.help}>
+        {q6.pairs.length === 0
+          ? t.writing.noPairs(windowDays)
+          : q6.pctRepeated === null
+            ? t.writing.noOriginalErrors
+            : t.writing.repeatSummary(q6.totalRepeated, q6.totalOriginalErrors, percent(q6.pctRepeated, t), percent(REWRITE_REPEAT_PCT, t))}
+      </p>
       {q6.pairs.map((pair) => {
         const original = byId.get(pair.originalId);
         const rewrite = byId.get(pair.rewriteId);

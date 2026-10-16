@@ -611,7 +611,8 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
             )}
             {annotations.length === 0 ? <p className={ui.help}>{labels.noAnnotationsYet}</p>
               : visible.length === 0 ? <p className={ui.help}>{labels.noAnnotations}</p>
-                : <ul className={styles.annotationList} role="listbox" aria-label={labels.annotationPanel}>
+                // Una lista de botones, no un listbox: cada fila lleva debajo sus acciones.
+                : <ul className={styles.annotationList} aria-label={labels.annotationPanel}>
                   {visible.map((entry, index) => {
                     const { item, anchor } = entry;
                     const active = selected === item.id;
@@ -619,8 +620,7 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
                     return (
                       <li key={item.id} className={styles.annotationItem} data-selected={active ? 'true' : undefined}>
                         {lost && unplaced[0]?.item.id === item.id && <h3 className={styles.unplacedHeading}>{labels.needsPlacing} ({String(unplaced.length)})</h3>}
-                        <button type="button" role="option" aria-selected={active} data-option={item.id}
-                          tabIndex={active || (selected === null && index === 0) ? 0 : -1}
+                        <button type="button" aria-current={active ? 'true' : undefined} data-option={item.id}
                           className={styles.annotationRow} onClick={() => choose(item, !lost)}>
                           {noteBody(entry, true)}
                           <span className="sr-only">{String(index + 1)} / {String(visible.length)} · {item.reviewedAt === null ? labels.unreviewed : labels.reviewed}</span>
