@@ -373,11 +373,31 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   (`selected` y barra de marca) y el campo con foco se subraya en la marca.
 
 ### Revisión de tanda
-Índice de 300 px (nº · corrección · Listo/Falta) + un solo editor para la fila elegida,
-progreso segmentado y barra inferior en cristal. El borrador vive en el estado por fila y
-en el navegador hasta que el servidor confirma; el envío mantiene el contrato de siempre.
-Un fallo de transporte se dice como «No pudimos confirmar el guardado», nunca como «no se
-ha guardado nada».
+Índice de 300 px (264 bajo 1024; nº · corrección · Listo/Falta) + un solo editor para la
+fila elegida, progreso segmentado y barra inferior en cristal. El borrador vive en el estado
+por fila y en el navegador hasta que el servidor confirma; el envío mantiene el contrato de
+siempre. Un fallo de transporte se dice como «No pudimos confirmar el guardado», nunca como
+«no se ha guardado nada».
+
+- **Entrada:** Ctrl/⌘+V en cualquier parte de Sesiones es la entrada principal; el aviso va
+  junto a la etiqueta, en tinta y con su `Kbd`. El campo es la alternativa (y la única en
+  táctil).
+- **Datos que no valen:** un resumen y una línea por dato con su línea del JSON (un botón
+  que la selecciona en el campo), la etiqueta de la interfaz («Tipo», «Fuente») y los valores
+  admitidos; nunca la ruta interna ni el mensaje crudo de Zod. La detección no lo repite.
+- **Tu respuesta** es un campo en su sitio, tachada en `danger` mientras no se edita.
+- **Progreso segmentado:** solo dibujo (`aria-hidden`, sin clic); lo hecho en `success`, lo
+  que falta en `rule`, no en aviso. La barra lo dice en positivo: «3 de 5 listos · la tanda
+  se guarda entera».
+- **Barra inferior:** a sangre como la cabecera (el cristal de fuera de la columna es
+  `border-image` desbordado, que no crea scroll) y con el contenido alineado a la columna.
+- **Cierre:** al guardar, la sesión abre con un bloque en su región viva siempre montada:
+  lo guardado, las tarjetas que deja pendientes en Anki y lo siguiente («Ir a Anki»,
+  «Pegar otra tanda» si venía de la lista). Entra una vez (240 ms, el check se asienta) y
+  queda quieto; sin animación con `prefers-reduced-motion`.
+- **Historial:** sin columna Estado; una sesión abierta lo dice junto a su título.
+- **Campos de sesión:** con menos de 560 px de contenedor (el drawer), la etiqueta de grupo
+  sube encima de sus campos.
 
 ## Do's and Don'ts
 
