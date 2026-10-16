@@ -42,12 +42,23 @@
 }
 
 .toastUndo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1-5);
   padding: 0;
   border: 0;
   background: none;
   color: var(--color-on-ink);
   font-weight: 500;
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* El atajo, en el gris del aviso: se ve sin competir con la acción. */
+.toastKbd {
+  color: var(--color-toast-muted);
+  font: var(--text-kbd);
+  text-decoration: none;
 }
 
 .toastClose {

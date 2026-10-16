@@ -77,7 +77,7 @@ test('una tanda sin ítems ni aciertos abre la revisión y los pide antes de cre
   await expect(headerEditor(page).getByLabel('Ítems intentados')).toHaveValue('');
 
   await workspace(page).getByRole('button', { name: /^Crear sesión y guardar 1 error/ }).click();
-  await expect(page.getByText('Completa los ítems y aciertos de la sesión antes de guardar.')).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Completa los ítems y aciertos de la sesión antes de guardar.' })).toBeVisible();
   expect(withDb(countSessions)).toBe(before);
 
   await headerEditor(page).getByLabel('Ítems intentados').fill('12');

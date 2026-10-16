@@ -20,6 +20,7 @@ import { WritingTranscriptionEditor } from './WritingTranscriptionEditor';
 
 import styles from './writing.module.css';
 import ui from '../_shared/ui.module.css';
+import { useInertBehind, useMediaQuery } from '../_shared/layer';
 import { useToast } from '../_shared/Toast';
 
 interface Annotation {
@@ -125,6 +126,9 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
   const router = useRouter();
   const toast = useToast();
   const annotating = mode === 'annotate';
+  // Bajo 1024 px el panel es un cajón sobre el texto: lo de detrás no se alcanza mientras está abierto.
+  const narrow = useMediaQuery('(max-width: 1023px)');
+  useInertBehind(panelRef, panelOpen && narrow);
   const paragraphs = useMemo(() => paragraphsOf(text), [text]);
   const paragraphLabel = (number: number) => `${labels.paragraphPrefix}${String(number)}`;
 
@@ -151,21 +155,33 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
   const markFor = useCallback((item: Annotation) => textRef.current?.querySelector<HTMLElement>(item.scope === 'PARAGRAPH'
     ? `[data-paragraph="${String(item.paragraph ?? 0)}"]` : `[data-annotation-ids~="${CSS.escape(item.id)}"]`) ?? null, []);
 
-  // Escape cierra primero lo que esté más arriba: la nota fijada y, después, el panel.
+  // Escape cierra primero lo que esté más arriba: la nota fijada, la nota de paso y, después, el panel.
   useEffect(() => {
-    if (!panelOpen && pinned === null) return;
+    if (!panelOpen && pinned === null && hovered === null) return;
     const close = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
-      if (pinned !== null) { event.preventDefault(); unpin(); } else setPanelOpen(false);
+      if (pinned !== null) { event.preventDefault(); unpin(); }
+      else if (hovered !== null) { event.preventDefault(); window.clearTimeout(hoverTimer.current); setHovered(null); }
+      else setPanelOpen(false);
     };
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
   });
 
-  // Al abrir el panel como cajón (pantallas estrechas) el foco entra en él.
+  // Como cajón (pantallas estrechas), el foco entra al abrirlo y, si se cierra con el foco
+  // dentro, vuelve al botón que lo abre: el panel cerrado es inerte y el foco se perdería.
+  const wasOpen = useRef(panelOpen);
   useEffect(() => {
-    if (panelOpen && window.matchMedia('(max-width: 1023px)').matches) panelRef.current?.focus();
-  }, [panelOpen]);
+    const closing = wasOpen.current && !panelOpen;
+    wasOpen.current = panelOpen;
+    if (!narrow) return;
+    if (panelOpen) { panelRef.current?.focus(); return; }
+    if (!closing) return;
+    const active = document.activeElement;
+    if (active === document.body || (active !== null && panelRef.current?.contains(active) === true)) {
+      document.querySelector<HTMLElement>('[aria-controls="writing-annotations"]')?.focus();
+    }
+  }, [panelOpen, narrow]);
 
   // Un clic fuera de la nota fijada la suelta.
   useEffect(() => {
@@ -208,7 +224,11 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
     if (!scroll) return;
     const target = markFor(item);
     target?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
-    if (window.matchMedia('(max-width: 1023px)').matches) setPanelOpen(false);
+    if (narrow) {
+      setPanelOpen(false);
+      // El foco va al tramo elegido, que es lo que se quería ver.
+      window.requestAnimationFrame(() => target?.focus({ preventScroll: true }));
+    }
   }
 
   function move(delta: number) {
@@ -495,6 +515,9 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
           })}
           {note !== null && noteEntry !== undefined && (
             <div ref={popRef} id="writing-note" className={styles.note} data-kind={noteEntry.item.kind} data-pinned={pinned === null ? undefined : 'true'}
+              // Se puede llevar el ratón a la nota sin que desaparezca (WCAG 1.4.13).
+              onPointerEnter={(event) => { if (event.pointerType === 'mouse' && pinned === null) window.clearTimeout(hoverTimer.current); }}
+              onPointerLeave={(event) => { if (event.pointerType === 'mouse' && pinned === null) hover(null); }}
               role={pinned === null ? 'tooltip' : 'dialog'} aria-label={pinned === null ? undefined : labels.kind[noteEntry.item.kind]}
               tabIndex={pinned === null ? undefined : -1}
               onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); unpin(); } }}>
@@ -626,7 +649,7 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
           </>
         )}
       </aside>
-      {panelOpen && <button type="button" className={styles.annotationScrim} aria-label={labels.closeAnnotations} tabIndex={-1}
+      {panelOpen && <button type="button" className={styles.annotationScrim} aria-label={labels.closeAnnotations} tabIndex={-1} data-layer-part
         onClick={() => setPanelOpen(false)} />}
     </div>
   );
