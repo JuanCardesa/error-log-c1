@@ -1,4 +1,3 @@
-import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -10,6 +9,7 @@ import { toIsoDate } from '@/lib/time/dates';
 import { assessedCriteria, writingTotal } from '@/lib/writing/library';
 import { countWords } from '@/lib/writing/text';
 import { parseWritingKey, writingHref } from '@/lib/writing/urls';
+import { BackLink } from '../../_shared/BackLink';
 import { decimal, mediumDate } from '../../_shared/format';
 import { getT } from '../../_shared/i18nServer';
 import ui from '../../_shared/ui.module.css';
@@ -68,10 +68,7 @@ export default async function WritingReaderPage({ params, searchParams }: {
     <ReaderProvider>
     <div className={styles.readerPage}>
       <div className={styles.readerBar}>
-        <Link href="/writing" className={ui.backLink}>
-          <ArrowLeft size={16} aria-hidden="true" />
-          {t.writingImport.backToWriting}
-        </Link>
+        <BackLink href="/writing" label={t.nav.writing} />
         <ReaderActions
           count={annotations.length}
           exportHref={text === null ? null : `/exportar/writing-${String(piece.id)}.json`}

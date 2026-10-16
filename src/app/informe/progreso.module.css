@@ -1,14 +1,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 40px;
-}
-
-.head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  margin-bottom: calc(-1 * var(--space-2));
+  gap: var(--space-6);
 }
 
 /* ── Recomendación ────────────────────────────────────────────────────────── */
@@ -17,7 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: 28px var(--space-6);
+  padding: var(--space-6);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-overlay);
   background: var(--glass-card-bg);
@@ -116,12 +109,6 @@
   gap: var(--space-3);
 }
 
-.blockEmpty {
-  padding: var(--space-4) 0;
-  border-top: 1px solid var(--color-ink);
-  color: var(--color-ink-2);
-}
-
 .moreLink {
   display: inline-flex;
   align-items: center;
@@ -139,31 +126,6 @@
 }
 
 /* Categorías */
-.catTable {
-  width: 100%;
-  border-collapse: collapse;
-  border-top: 1px solid var(--color-ink);
-  font-size: var(--fs-body);
-}
-
-.catTable th {
-  padding: var(--space-2-5) var(--space-2);
-  border-bottom: 1px solid var(--color-rule);
-  color: var(--color-ink-2);
-  font: var(--text-label);
-  text-align: left;
-}
-
-.catTable td {
-  height: 48px;
-  padding: 0 var(--space-2);
-  border-bottom: 1px solid var(--color-rule);
-}
-
-.catTable tbody tr:hover {
-  background: var(--color-surface-2);
-}
-
 .catLink {
   color: var(--color-ink);
   font-weight: 500;
@@ -386,7 +348,7 @@
   flex-direction: column;
   gap: var(--space-2);
   margin: var(--space-3) 0 0;
-  padding-left: 20px;
+  padding-left: var(--space-5);
   font-size: var(--fs-body);
   color: var(--color-ink-2);
 }
@@ -403,37 +365,10 @@
 
 .rulesWrap {
   margin-top: var(--space-3);
-  overflow-x: auto;
-  /* Bloque contenedor: el caption .sr-only, absoluto, no escapa del scroll. */
-  position: relative;
 }
 
 .rulesTable {
-  width: 100%;
   min-width: 640px;
-  border-collapse: collapse;
-  border-top: 1px solid var(--color-ink);
-  font-size: var(--fs-label);
-}
-
-.rulesTable th {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-rule);
-  color: var(--color-ink-2);
-  font: var(--text-label);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.rulesTable td {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-rule);
-  vertical-align: top;
-}
-
-.ruleWinner {
-  background: var(--color-selected);
-  box-shadow: inset 3px 0 0 var(--color-brand);
 }
 
 .ruleNow {
@@ -449,7 +384,7 @@
 @media (max-width: 1023px) {
   .columns {
     grid-template-columns: minmax(0, 1fr);
-    gap: 40px;
+    gap: var(--space-6);
   }
 
   .multiples {

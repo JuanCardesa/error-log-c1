@@ -6,6 +6,7 @@ import { getNotebookNote, listFavoriteNotebookNotes, listNotebookAnnotations, li
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import { notebookStudyText } from '@/lib/notebook/studyMarkdown';
 import { notebookNoteHref, parseNotebookNoteId } from '@/lib/notebook/urls';
+import { EmptyState } from '../../_shared/EmptyState';
 import { getT } from '../../_shared/i18nServer';
 import { NotebookStudy } from '../NotebookStudy';
 import { MarkdownRenderer } from '../MarkdownRenderer';
@@ -71,7 +72,7 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
               </ul>}
             </div>
             {note.contentMarkdown === '' ? (
-              <div className={styles.empty}><p>{t.notebook.noContent}</p></div>
+              <EmptyState inset cause={t.notebook.noContent} />
             ) : (
               <NotebookStudy key={`${String(note.id)}-${String(note.revision)}`} noteId={note.id} uid={note.uid} revision={note.revision}
                 text={notebookStudyText(note.contentMarkdown)} initialAnnotations={listNotebookAnnotations(db, note.id)}>

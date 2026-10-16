@@ -9,8 +9,10 @@ import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { q7AnkiReviews } from '@/lib/queries/q7AnkiReviews';
 import type { Messages } from '@/lib/i18n';
 import { dateTime, percent, sessionTitle, shortDate } from '../_shared/format';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
 import { categoryLabel } from '../_shared/labels';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -71,19 +73,21 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
   return (
     <div className={styles.page}>
       <div className={styles.head}>
-        <div className={ui.pageHead}>
-          <h1 className={ui.pageTitle}>Anki</h1>
-          <div className={styles.connection}>
-            <span className={status.available ? styles.connOn : styles.connOff}>
-              <span className={styles.dot} aria-hidden="true" />
-              {status.available ? a.available : a.unavailable}
-            </span>
-            <span className={ui.help}>
-              {lastSynced === null ? a.notSyncedYet : a.syncedAgo(ago(lastSynced, now, t))}
-            </span>
-            <SyncButton />
-          </div>
-        </div>
+        <PageHeader
+          title="Anki"
+          actions={(
+            <div className={styles.connection}>
+              <span className={status.available ? styles.connOn : styles.connOff}>
+                <span className={styles.dot} aria-hidden="true" />
+                {status.available ? a.available : a.unavailable}
+              </span>
+              <span className={ui.help}>
+                {lastSynced === null ? a.notSyncedYet : a.syncedAgo(ago(lastSynced, now, t))}
+              </span>
+              <SyncButton />
+            </div>
+          )}
+        />
         {!status.available && (
           <div className={ui.notice} role="status" id="anki-status">
             <span className={ui.noticeTitleWarn}>{a.notConnected}</span>
@@ -126,9 +130,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
             <strong>{a.pendingLeadStrong(q5.queue.length)}</strong>{a.pendingLeadRest}
           </p>
           {q5.queue.length === 0 ? (
-            <p className={styles.empty}>
-              {q5.eligible === 0 && data.errors.length === 0 ? a.noEligibleYet : a.nonePending}
-            </p>
+            <EmptyState cause={q5.eligible === 0 && data.errors.length === 0 ? a.noEligibleYet : a.nonePending} />
           ) : (
             <PendingQueue
               available={status.available}
@@ -175,7 +177,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
           <section className={`${styles.section} ${styles.narrow}`} aria-label={a.convertedTab}>
             <p className={styles.lead}>{a.convertedLead(RECENT_CONVERSIONS)}</p>
             {entries.length === 0
-              ? <p className={styles.empty}>{a.noneConverted}</p>
+              ? <EmptyState cause={a.noneConverted} />
               : <ConvertedList entries={entries} available={status.available} />}
             <p className={ui.help}>{a.convertedHelp}</p>
           </section>
@@ -193,7 +195,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
               <WindowSwitch current={windowDays} basePath="/anki" keep={{ tab: 'repasos' }} label={a.reviewsPeriod} />
             </div>
             {!synced ? (
-              <p className={styles.empty}>{a.syncToSee}</p>
+              <EmptyState cause={a.syncToSee} />
             ) : (
               <>
                 <dl className={styles.metrics}>
@@ -211,9 +213,9 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
                   </div>
                 </dl>
                 {reviews.reviews === 0 ? (
-                  <p className={styles.empty}>{a.noReviews(windowDays)}</p>
+                  <EmptyState cause={a.noReviews(windowDays)} />
                 ) : failing.length === 0 ? (
-                  <p className={styles.empty}>{a.noFailures}</p>
+                  <EmptyState cause={a.noFailures} />
                 ) : (
                   <div className={styles.groups}>
                     {failing.map((group) => (

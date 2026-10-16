@@ -4,12 +4,6 @@
   gap: var(--space-5);
 }
 
-.head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .connection {
   display: flex;
   align-items: center;
@@ -72,12 +66,6 @@
   font-weight: 600;
 }
 
-.empty {
-  padding: var(--space-5) var(--space-3);
-  border-top: 1px solid var(--color-ink);
-  color: var(--color-ink-2);
-}
-
 .muted {
   color: var(--color-ink-2);
   font-variant-numeric: tabular-nums;
@@ -94,43 +82,11 @@
 
 .queueTable {
   min-width: 0;
-  /* Bloque contenedor: el caption .sr-only, absoluto, no escapa del scroll. */
-  position: relative;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
+/* Esqueleto de la cola mientras responde AnkiConnect. */
+.skeletonTable {
   border-top: 1px solid var(--color-ink);
-  font-size: var(--fs-body);
-  table-layout: fixed;
-}
-
-.table th {
-  padding: var(--space-2-5) var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  color: var(--color-ink-2);
-  font: var(--text-label);
-  text-align: left;
-}
-
-.table td {
-  height: 48px;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-}
-
-.table tbody tr {
-  cursor: pointer;
-}
-
-.table tbody tr:hover {
-  background: var(--color-surface-2);
-}
-
-.table tbody tr.selected {
-  background: var(--color-selected);
-  box-shadow: inset 3px 0 0 var(--color-brand);
 }
 
 .colDate { width: 72px; }
@@ -330,7 +286,7 @@
   grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-4);
   align-items: center;
-  height: 48px;
+  height: var(--row-h);
   padding: 0 var(--space-3);
   border-bottom: 1px solid var(--color-rule);
 }
@@ -338,7 +294,7 @@
 .skeletonPanel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-3);
   padding: var(--space-5);
   background: var(--color-surface);
   border: 1px solid var(--color-rule);

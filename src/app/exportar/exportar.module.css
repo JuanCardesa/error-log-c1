@@ -65,12 +65,9 @@
   overflow-wrap: anywhere;
 }
 
+/* El alcance es un hecho de la descarga, no un aviso: tinta secundaria siempre. */
 .scope {
   color: var(--color-ink-2);
-}
-
-.scopeFixed {
-  color: var(--color-warning);
 }
 
 .download {
@@ -94,8 +91,7 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .scope,
-  .scopeFixed {
+  .scope {
     grid-column: 1;
     grid-row: 2;
     font-size: var(--fs-label);

@@ -67,18 +67,18 @@ export function ProgressView({ items, filters, t }: {
             <ProgressChart points={progress.points} metric={filters.metric} t={t} />
             <details className={styles.progressData}>
               <summary>{w.showData}</summary>
-              <div className={styles.progressTableScroll}>
-                <table className={styles.progressTable}>
-                  <caption>{w.tableCaption}</caption>
-                  <thead><tr><th scope="col">{w.date}</th><th scope="col">{w.type}</th><th scope="col">{w.score}</th><th scope="col">{w.approximate}</th></tr></thead>
+              <div className={ui.scrollX}>
+                <table className={ui.dataTable}>
+                  <caption className="sr-only">{w.tableCaption}</caption>
+                  <thead><tr><th scope="col" className={ui.colDate}>{w.date}</th><th scope="col">{w.type}</th><th scope="col" className={ui.colNum}>{w.score}</th><th scope="col">{w.approximate}</th></tr></thead>
                   <tbody>
                     {progress.points.map((point) => {
                       const item = items.find(({ id }) => id === point.id);
                       return (
                         <tr key={point.id}>
-                          <td>{item === undefined ? mediumDate(point.date, t) : <Link href={writingHref(item.row.piece)}>{mediumDate(point.date, t)}</Link>}</td>
+                          <td className={ui.colDate}>{item === undefined ? mediumDate(point.date, t) : <Link href={writingHref(item.row.piece)}>{mediumDate(point.date, t)}</Link>}</td>
                           <td>{t.labels.genre[point.genre]}</td>
-                          <td className="num">{decimal(point.value, t)}</td>
+                          <td className={ui.colNum}>{decimal(point.value, t)}</td>
                           <td>{point.dateBasis === 'WRITTEN' ? w.written : w.approximate}</td>
                         </tr>
                       );
@@ -93,16 +93,16 @@ export function ProgressView({ items, filters, t }: {
 
       <section className={styles.progressPanel} aria-labelledby="writing-criteria-title">
         <h3 id="writing-criteria-title">{w.criteriaTitle}</h3>
-        <div className={styles.progressTableScroll}>
-          <table className={styles.progressTable}>
-            <thead><tr><th scope="col">{w.criterion}</th><th scope="col">{w.mean}</th><th scope="col">{w.n}</th><th scope="col">{w.last}</th></tr></thead>
+        <div className={ui.scrollX}>
+          <table className={ui.dataTable}>
+            <thead><tr><th scope="col">{w.criterion}</th><th scope="col" className={ui.colNum}>{w.mean}</th><th scope="col" className={ui.colNum}>{w.n}</th><th scope="col" className={ui.colNum}>{w.last}</th></tr></thead>
             <tbody>
               {progress.criteria.map((criterion) => (
                 <tr key={criterion.criterion}>
                   <th scope="row">{w.metrics[criterion.criterion]}</th>
-                  <td className="num">{criterion.mean === null ? '—' : decimal(criterion.mean, t, 2)}</td>
-                  <td className="num">{criterion.count}</td>
-                  <td className="num">{criterion.last === null ? '—' : decimal(criterion.last, t)}</td>
+                  <td className={ui.colNum}>{criterion.mean === null ? '—' : decimal(criterion.mean, t, 2)}</td>
+                  <td className={ui.colNum}>{criterion.count}</td>
+                  <td className={ui.colNum}>{criterion.last === null ? '—' : decimal(criterion.last, t)}</td>
                 </tr>
               ))}
             </tbody>

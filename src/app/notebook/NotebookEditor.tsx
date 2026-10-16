@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -12,6 +11,8 @@ import { formErrors } from '@/lib/i18n/zod';
 import ui from '../_shared/ui.module.css';
 import { ConfirmDialog } from '../_shared/ConfirmDialog';
 import { useT } from '../_shared/i18nClient';
+import { BackLink } from '../_shared/BackLink';
+import { PageHeader } from '../_shared/PageHeader';
 import { createNoteAction, finishEditingAction, getNoteAction, getNoteByUidAction, saveNoteAction } from './actions';
 import { formatNotebookSelection, type Formatting } from './editorFormatting';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -408,12 +409,10 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
 
   return (
     <div className={styles.editor} onKeyDownCapture={onEditorKeyDown}>
-      <div className={styles.heading}>
-        <div>
-          <p className={styles.eyebrow}>{t.nav.notebook}</p>
-          <h1>{savedNote === undefined ? n.newNote : n.editNote}</h1>
-        </div>
-        <Link href={readerHref} className={ui.backLink} onClick={(event) => {
+      <PageHeader
+        title={savedNote === undefined ? n.newNote : n.editNote}
+        back={{ node: (
+        <BackLink href={readerHref} label={savedNote === undefined ? t.nav.notebook : n.reading} onClick={(event) => {
           if (finishingRef.current) { event.preventDefault(); return; }
           if (pendingChanges || issueRef.current !== null) {
             if (!window.confirm(n.leaveConfirm)) event.preventDefault();
@@ -422,10 +421,9 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
             event.preventDefault();
             void finishEditing();
           }
-        }}>
-          {savedNote === undefined ? n.backToNotebook : n.backToReading}
-        </Link>
-      </div>
+        }} />
+        ) }}
+      />
 
       {draft.candidate !== null && (
         <section className={styles.draftNotice} aria-label={n.recoverableDraft}>

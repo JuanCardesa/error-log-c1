@@ -39,6 +39,8 @@ function render(t: Messages, n: number) {
     'format.errors': t.format.errors(n),
     'format.sessions': t.format.sessions(n),
     'common.page': t.common.page(n),
+    'common.backTo': t.common.backTo('Writing'),
+    'common.filterValue': t.common.filterValue('Causa', 'Todas'),
     'nav.search': t.nav.search("Ctrl+K"),
     'palette.noResults': t.palette.noResults("café & té"),
     'palette.goTo': t.palette.goTo("[section]"),

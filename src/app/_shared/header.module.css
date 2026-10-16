@@ -73,6 +73,16 @@
   color: var(--color-ink);
 }
 
+/* Separa el ritual (registrar, revisar, estudiar) de la biblioteca (consultar). */
+.navSep {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  margin: 0 var(--space-2);
+  background: var(--color-rule);
+}
+
 .navLink[aria-current='page'],
 .moreButton[data-active='true'] {
   color: var(--color-ink);
@@ -185,7 +195,7 @@
     grid-column: 1 / -1;
     display: flex;
     gap: 0;
-    margin: 0 calc(-1 * var(--space-2)) 0 calc(-1 * var(--space-4));
+    margin: 0 calc(-1 * var(--space-2));
     height: 44px;
   }
 
@@ -195,6 +205,10 @@
     min-width: 0;
     padding: 0 2px;
     font: var(--text-label);
+  }
+
+  .navSep {
+    margin: 0 2px;
   }
 
   .moreButton {

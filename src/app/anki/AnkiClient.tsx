@@ -90,12 +90,12 @@ export function PendingQueue({ entries, available }: { readonly entries: readonl
 
   return (
     <div className={styles.queueLayout}>
-      <div className={styles.queueTable}>
-        <table className={styles.table}>
+      <div className={`${ui.scrollX} ${styles.queueTable}`}>
+        <table className={`${ui.dataTable} ${ui.dataTableFixed}`}>
           <caption className="sr-only">{t.anki.queueCaption}</caption>
           <thead>
             <tr>
-              <th scope="col" className={styles.colDate}>{t.sessionForm.date}</th>
+              <th scope="col" className={`${ui.colDate} ${styles.colDate}`}>{t.sessionForm.date}</th>
               <th scope="col">{t.correction.correction}</th>
               <th scope="col" className={styles.colCategory}>{t.errorForm.category}</th>
             </tr>
@@ -104,8 +104,8 @@ export function PendingQueue({ entries, available }: { readonly entries: readonl
             {entries.map((entry) => {
               const selected = entry.id === current?.id;
               return (
-                <tr key={entry.id} className={selected ? styles.selected : undefined} onClick={() => { setSelectedId(entry.id); }}>
-                  <td className={`${styles.colDate} ${styles.muted}`}>{entry.date}</td>
+                <tr key={entry.id} data-clickable data-selected={selected || undefined} onClick={() => { setSelectedId(entry.id); }}>
+                  <td className={`${ui.colDate} ${styles.colDate} ${styles.muted}`}>{entry.date}</td>
                   <td>
                     <button
                       type="button"

@@ -1,7 +1,5 @@
 .editor { display: grid; gap: var(--space-5); min-width: 0; }
-.heading { display: flex; justify-content: space-between; align-items: start; gap: var(--space-4); }
-.heading h1, .previewTitle { font: var(--text-page-title); }
-.eyebrow { margin: 0 0 var(--space-2); color: var(--color-brand); font: var(--text-label); }
+.previewTitle { font: var(--text-page-title); }
 .metaFields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr) minmax(180px, 1fr); gap: var(--space-4); }
 .editorHeader { display: flex; justify-content: space-between; align-items: end; gap: var(--space-4); border-bottom: 1px solid var(--color-rule); }
 .editorHeader > div { border: 0; }
@@ -19,4 +17,4 @@
 .draftActions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
 .storageWarning { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-warning); border-radius: var(--radius-panel); color: var(--color-warning); background: var(--color-surface); }
 @media (max-width: 900px) { .metaFields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .metaFields > :first-child { grid-column: 1 / -1; } }
-@media (max-width: 639px) { .heading { flex-wrap: wrap; } .metaFields { grid-template-columns: minmax(0, 1fr); } .metaFields > :first-child { grid-column: auto; } .preview { padding: var(--space-4); } }
+@media (max-width: 639px) { .metaFields { grid-template-columns: minmax(0, 1fr); } .metaFields > :first-child { grid-column: auto; } .preview { padding: var(--space-4); } }

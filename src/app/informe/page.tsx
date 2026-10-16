@@ -13,7 +13,9 @@ import { sliceWindow } from '@/lib/queries/window';
 import { runRules } from '@/lib/rules';
 import { toIsoDate, windowStart } from '@/lib/time/dates';
 import { dateRange, decimal, percent, score, sessionTitle, shortDate } from '../_shared/format';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -55,19 +57,19 @@ export default async function InformePage({ searchParams }: { readonly searchPar
   const w = windowDays === 30 ? '' : `?w=${String(windowDays)}`;
 
   const head = (
-    <div className={styles.head}>
-      <div className={ui.pageHead}>
-        <h1 className={ui.pageTitle}>{t.nav.progress}</h1>
-        <WindowSwitch current={windowDays} basePath="/informe" />
-      </div>
-      <RouteTabs
-        label={p.views}
-        items={[
-          { href: `/informe${w}`, label: p.summary, current: true },
-          { href: `/ruoe${w}`, label: t.labels.paperLong.RUOE, current: false },
-        ]}
-      />
-    </div>
+    <PageHeader
+      title={t.nav.progress}
+      actions={<WindowSwitch current={windowDays} basePath="/informe" />}
+      tabs={(
+        <RouteTabs
+          label={p.views}
+          items={[
+            { href: `/informe${w}`, label: p.summary, current: true },
+            { href: `/ruoe${w}`, label: t.labels.paperLong.RUOE, current: false },
+          ]}
+        />
+      )}
+    />
   );
 
   if (data.sessions.length === 0) {
@@ -138,27 +140,27 @@ export default async function InformePage({ searchParams }: { readonly searchPar
         <section className={styles.block} aria-labelledby="cat-heading">
           <h2 id="cat-heading" className={ui.sectionTitle}>{p.whereTitle}</h2>
           {q2.rows.length === 0 ? (
-            <p className={styles.blockEmpty}>{p.whereEmpty}</p>
+            <EmptyState cause={p.whereEmpty} />
           ) : (
             <>
-              <table className={styles.catTable}>
+              <table className={ui.dataTable}>
                 <caption className="sr-only">{p.catCaption}</caption>
                 <thead>
                   <tr>
                     <th scope="col">{t.errorForm.category}</th>
-                    <th scope="col" className={styles.num}>{t.nav.errors}</th>
-                    <th scope="col" className={styles.num}>{p.per100}</th>
+                    <th scope="col" className={ui.colNum}>{t.nav.errors}</th>
+                    <th scope="col" className={ui.colNum}>{p.per100}</th>
                     <th scope="col"><span className="sr-only">{p.seeErrors}</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {topCategories.map((row) => (
                     <tr key={row.category}>
-                      <td>
+                      <th scope="row">
                         <Link href={categoryHref(row.category)} className={styles.catLink}>{t.labels.category[row.category]}</Link>
-                      </td>
-                      <td className={styles.num}>{row.errors}</td>
-                      <td className={styles.num}>{decimal(row.ratePer100, t, 2)}</td>
+                      </th>
+                      <td className={ui.colNum}>{row.errors}</td>
+                      <td className={ui.colNum}>{decimal(row.ratePer100, t, 2)}</td>
                       <td className={styles.arrowCell} aria-hidden="true"><ArrowRight size={14} /></td>
                     </tr>
                   ))}
@@ -188,7 +190,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
         <section className={styles.block} aria-labelledby="cause-heading">
           <h2 id="cause-heading" className={ui.sectionTitle}>{p.whyTitle}</h2>
           {q1.total === 0 ? (
-            <p className={styles.blockEmpty}>{p.whyEmpty}</p>
+            <EmptyState cause={p.whyEmpty} />
           ) : (
             <>
               <div className={styles.causes}>
@@ -225,7 +227,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
           </Link>
         </div>
         {q3.rows.length === 0 ? (
-          <p className={styles.blockEmpty}>{p.evolutionEmpty}</p>
+          <EmptyState cause={p.evolutionEmpty} />
         ) : (
           <>
             <div className={styles.multiples}>

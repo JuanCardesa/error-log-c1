@@ -2,6 +2,7 @@ import { ChevronRight, Download, FileArchive, FileBraces, FileSpreadsheet } from
 
 import { CSV_EXPORTS, type CsvExport } from '@/lib/export/dump';
 import { getT } from '../_shared/i18nServer';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
 import { WindowSwitch } from '../_shared/WindowSwitch';
@@ -28,7 +29,7 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
 
   return (
     <div className={styles.page}>
-      <h1 className={ui.pageTitle}>{t.nav.exportData}</h1>
+      <PageHeader title={t.nav.exportData} />
 
       <section className={styles.section} aria-labelledby="csv-heading">
         <div className={styles.sectionHead}>
@@ -45,7 +46,7 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
                   <span className={styles.file}>errorlog-{key}.csv</span>
                 </span>
               </span>
-              <span className={FIXED.has(key) ? styles.scopeFixed : styles.scope}>
+              <span className={styles.scope}>
                 {FIXED.has(key) ? x.always30 : t.format.days(windowDays)}
               </span>
               <a className={`${ui.secondary} ${ui.compact} ${styles.download}`} href={`/exportar/${key}.csv${FIXED.has(key) ? '' : query}`} download aria-label={x.downloadLabel(x.csv[key])}>
@@ -68,7 +69,7 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
                 <span className={styles.file}>errorlog-dump.json</span>
               </span>
             </span>
-            <span className={styles.scopeFixed}>{t.errors.wholeHistory}</span>
+            <span className={styles.scope}>{t.errors.wholeHistory}</span>
             <a className={`${ui.secondary} ${ui.compact} ${styles.download}`} href="/exportar/dump.json" download aria-label={x.downloadJson}>
               <Download size={16} aria-hidden="true" />
               {t.common.download}
@@ -89,7 +90,7 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
                 <span className={styles.file}>errorlog-notebook.zip</span>
               </span>
             </span>
-            <span className={styles.scopeFixed}>{x.allNotes}</span>
+            <span className={styles.scope}>{x.allNotes}</span>
             <a className={`${ui.secondary} ${ui.compact} ${styles.download}`} href="/exportar/notebook.zip" download aria-label={x.downloadZip}>
               <Download size={16} aria-hidden="true" />
               {t.common.download}

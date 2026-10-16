@@ -7,7 +7,7 @@ import { CorrectionPair } from '../CorrectionPair';
 import { sessionTitle, shortDate } from '../format';
 import { useT } from '../i18nClient';
 import { ankiState } from '../labels';
-import { ankiClass } from './ankiClass';
+import { AnkiStateText } from './AnkiStateText';
 import { ErrorDetailPanel } from './ErrorDetailPanel';
 import styles from './explorer.module.css';
 import ui from '../ui.module.css';
@@ -80,7 +80,7 @@ export function ErrorExplorer({
   return (
     <div className={`${styles.explorer} ${open ? styles.withPanel : ''}`}>
       <div className={ui.scrollX}>
-        <table className={`${styles.table} ${mode === 'session' ? styles.sessionMode : styles.globalMode} ${open ? styles.narrow : ''}`}>
+        <table className={`${ui.dataTable} ${ui.dataTableFixed} ${mode === 'session' ? styles.sessionMode : styles.globalMode} ${open ? styles.narrow : ''}`}>
           <caption className="sr-only">{caption}</caption>
           <thead>
             {mode === 'session' ? (
@@ -89,14 +89,14 @@ export function ErrorExplorer({
                 <th scope="col">{t.errors.answerToCorrection}</th>
                 <th scope="col" className={styles.colCategory}>{t.errorForm.category}</th>
                 <th scope="col" className={`${styles.colCause} ${styles.wide}`}>{t.errorForm.cause}</th>
-                <th scope="col" className={`${styles.colAnki} ${styles.wide}`}>Anki</th>
+                <th scope="col" className={`${ui.colStatus} ${styles.colAnki} ${styles.wide}`}>Anki</th>
               </tr>
             ) : (
               <tr>
                 <th scope="col" className={styles.colCorrection}>{t.correction.correction}</th>
                 <th scope="col" className={styles.wide}>{t.errors.context}</th>
                 <th scope="col" className={styles.colSession}>{t.errors.session}</th>
-                <th scope="col" className={styles.colAnki}>Anki</th>
+                <th scope="col" className={`${ui.colStatus} ${styles.colAnki}`}>Anki</th>
               </tr>
             )}
           </thead>
@@ -110,7 +110,8 @@ export function ErrorExplorer({
               return (
                 <tr
                   key={error.id}
-                  className={isSelected ? styles.selected : undefined}
+                  data-clickable
+                  data-selected={isSelected || undefined}
                   onClick={select}
                 >
                   {mode === 'session' ? (
@@ -123,7 +124,7 @@ export function ErrorExplorer({
                       </td>
                       <td className={styles.colCategory}>{t.labels.category[error.category]}</td>
                       <td className={`${styles.colCause} ${styles.wide}`}>{t.labels.cause[error.cause]}</td>
-                      <td className={`${styles.colAnki} ${styles.wide} ${ankiClass(state)}`}>{t.labels.ankiState[state]}</td>
+                      <td className={`${ui.colStatus} ${styles.colAnki} ${styles.wide}`}><AnkiStateText state={state} /></td>
                     </>
                   ) : (
                     <>
@@ -142,7 +143,7 @@ export function ErrorExplorer({
                           <span className={ui.cellSub}>{shortDate(session.date, t)}</span>
                         </span>
                       </td>
-                      <td className={`${styles.colAnki} ${ankiClass(state)}`}>{t.labels.ankiState[state]}</td>
+                      <td className={`${ui.colStatus} ${styles.colAnki}`}><AnkiStateText state={state} /></td>
                     </>
                   )}
                 </tr>

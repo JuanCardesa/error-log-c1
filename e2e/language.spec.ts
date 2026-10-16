@@ -119,7 +119,7 @@ test('recorre las secciones y sus vistas secundarias en inglés', async ({ page 
 
   await navigation.getByRole('link', { name: 'Errors', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Errors' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Filters', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Category', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'False certainties', exact: true }).click();
   await expect(page.getByRole('searchbox', { name: 'Search false certainties' })).toBeVisible();
 
@@ -172,7 +172,7 @@ test('Atrás y Adelante actualizan las vistas visitadas al cambiar de idioma sin
     await page.goBack();
     await expectLanguage(page, locale, locale === 'es' ? 'Errores' : 'Errors');
     // El título viene del servidor; el botón usa el contexto de cliente.
-    await expect(page.getByRole('button', { name: locale === 'es' ? 'Filtros' : 'Filters', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: locale === 'es' ? 'Categoría' : 'Category', exact: true })).toBeVisible();
     await page.goBack();
     await expectLanguage(page, locale, locale === 'es' ? 'Sesiones' : 'Sessions');
     await expect(page.getByRole('button', { name: locale === 'es' ? /Nueva sesión manual/ : /New manual session/ })).toBeVisible();

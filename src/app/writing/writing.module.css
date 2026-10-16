@@ -4,19 +4,6 @@
   gap: var(--space-5);
 }
 
-.head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.headActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-}
-
 .empty {
   display: flex;
   flex-direction: column;
@@ -39,30 +26,11 @@
   gap: var(--space-4);
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.search {
-  flex: 1 1 280px;
-  max-width: 380px;
-}
-
-/* Tipo y orden van juntos: si no caben, bajan los dos a la línea siguiente. */
 .toolbarMenus {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   margin-left: auto;
-}
-
-.filterButton {
-  border: 1px solid var(--color-rule);
-  font-weight: 400;
-  font-size: var(--fs-body);
 }
 
 .entries {
@@ -406,7 +374,7 @@
   width: max-content;
   min-width: 200px;
   max-width: min(340px, 100%);
-  padding: var(--space-3) 14px;
+  padding: var(--space-3);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-overlay);
   background: var(--color-surface);
@@ -516,7 +484,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1) 14px;
+  gap: var(--space-1) var(--space-3);
   margin-top: var(--space-1);
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-rule);
@@ -692,7 +660,7 @@
 .candidateList {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1) 14px;
+  gap: var(--space-1) var(--space-3);
   padding: 0 var(--space-2-5) var(--space-3) 13px;
   font-size: var(--fs-label);
 }
@@ -717,7 +685,7 @@
 .annotationEditor {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-3);
 }
 
 .annotationEditor h3 {
@@ -1122,8 +1090,7 @@
   background: var(--color-surface);
 }
 
-.progressChartScroll,
-.progressTableScroll {
+.progressChartScroll {
   width: 100%;
   overflow-x: auto;
 }
@@ -1168,31 +1135,6 @@
   text-underline-offset: 3px;
 }
 
-.progressTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-body);
-}
-
-.progressTable caption {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-}
-
-.progressTable th,
-.progressTable td {
-  padding: var(--space-2-5) var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.progressTable thead th { color: var(--color-ink-2); font: var(--text-label); }
-.progressTable tbody th { font-weight: 500; }
 
 .progressHighlights {
   display: flex;
@@ -1208,7 +1150,7 @@
 
 .unrated {
   font-size: var(--fs-meta);
-  color: var(--color-ink-disabled);
+  color: var(--color-ink-2);
   white-space: nowrap;
 }
 
@@ -1240,41 +1182,6 @@
 .pairTitle {
   font: var(--text-prompt-lg);
   font-weight: 600;
-}
-
-.compare {
-  width: 100%;
-  border-collapse: collapse;
-  border-top: 1px solid var(--color-ink);
-  font-size: var(--fs-body);
-}
-
-.compare th,
-.compare td {
-  height: 48px;
-  padding: 0 var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  text-align: left;
-}
-
-.compare thead th {
-  height: auto;
-  padding: var(--space-2-5) var(--space-3);
-  color: var(--color-ink-2);
-  font: var(--text-label);
-}
-
-.compare tbody th {
-  font-weight: 500;
-}
-
-.center {
-  text-align: center !important;
-}
-
-.rightCell {
-  text-align: right !important;
-  font-weight: 500;
 }
 
 .strong {

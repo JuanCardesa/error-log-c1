@@ -6,8 +6,11 @@ import { distinctSubcategories } from '@/lib/db/repo';
 import { FIXED_WINDOW_DAYS } from '@/lib/domain/thresholds';
 import { q4FalseCertainties } from '@/lib/queries/q4FalseCertainties';
 import { ErrorExplorer, type ExplorerRow } from '../_shared/errors/ErrorExplorer';
+import { EmptyState } from '../_shared/EmptyState';
+import { FilterBar } from '../_shared/FilterBar';
 import { getT } from '../_shared/i18nServer';
 import { LiveSearch } from '../_shared/LiveSearch';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import type { SearchParams } from '../_shared/window';
@@ -41,27 +44,26 @@ export default async function CertezasPage({ searchParams }: { readonly searchPa
 
   return (
     <div className={styles.page}>
-      <div className={styles.head}>
-        <h1 className={ui.pageTitle}>{t.nav.errors}</h1>
-        <RouteTabs
-          label={t.errors.views}
-          items={[
-            { href: '/errores', label: t.errors.all, current: false },
-            { href: '/certezas', label: t.errors.falseCertainties, current: true },
-          ]}
-        />
-      </div>
+      <PageHeader
+        title={t.nav.errors}
+        tabs={(
+          <RouteTabs
+            label={t.errors.views}
+            items={[
+              { href: '/errores', label: t.errors.all, current: false },
+              { href: '/certezas', label: t.errors.falseCertainties, current: true },
+            ]}
+          />
+        )}
+      />
       <p className={styles.intro}>
         {t.certainties.introBefore}<strong>{t.certainties.introStrong(FIXED_WINDOW_DAYS)}</strong>{t.certainties.introAfter}
       </p>
 
-      <div className={styles.toolbar}>
-        <LiveSearch placeholder={t.errors.searchPlaceholder} label={t.certainties.searchLabel} className={styles.search} />
-        <span className={ui.spacer} />
-        <span className={styles.count}>
-          {t.certainties.count(rows.length, FIXED_WINDOW_DAYS)}
-        </span>
-      </div>
+      <FilterBar
+        search={<LiveSearch placeholder={t.errors.searchPlaceholder} label={t.certainties.searchLabel} className={ui.filterSearch} />}
+        aside={t.certainties.count(rows.length, FIXED_WINDOW_DAYS)}
+      />
 
       <ErrorExplorer
         key={q}
@@ -71,21 +73,13 @@ export default async function CertezasPage({ searchParams }: { readonly searchPa
         subcategorySuggestions={distinctSubcategories(db)}
         caption={t.certainties.caption(FIXED_WINDOW_DAYS)}
         empty={(
-          <div className={`${ui.tableEmpty} ${styles.emptyTable}`}>
-            {q !== '' ? (
-              <>
-                <span>{t.certainties.noMatch(q)}</span>
-                <Link href="/certezas" className={ui.textLink}>{t.common.clearSearch}</Link>
-              </>
-            ) : data.errors.length === 0 ? (
-              <>
-                <span>{t.certainties.noErrors}</span>
-                <Link href="/registrar" className={ui.textLink}>{t.common.goToSessions}</Link>
-              </>
-            ) : (
-              <span>{t.certainties.noneSure(FIXED_WINDOW_DAYS)}</span>
-            )}
-          </div>
+          q !== '' ? (
+            <EmptyState cause={t.certainties.noMatch(q)} action={<Link href="/certezas" className={ui.textLink}>{t.common.clearSearch}</Link>} />
+          ) : data.errors.length === 0 ? (
+            <EmptyState cause={t.certainties.noErrors} action={<Link href="/registrar" className={ui.textLink}>{t.common.goToSessions}</Link>} />
+          ) : (
+            <EmptyState cause={t.certainties.noneSure(FIXED_WINDOW_DAYS)} />
+          )
         )}
       />
     </div>

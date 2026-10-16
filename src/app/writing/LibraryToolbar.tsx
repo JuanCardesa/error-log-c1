@@ -1,14 +1,14 @@
 'use client';
 
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import Link from 'next/link';
 
 import { GENRES, type Genre } from '@/lib/domain/enums';
 import { LIBRARY_SORTS, type LibraryQuery, type LibraryStatus } from '@/lib/writing/library';
+import { FilterBar } from '../_shared/FilterBar';
+import { FilterMenu } from '../_shared/FilterMenu';
 import { useT } from '../_shared/i18nClient';
 import { LiveSearch } from '../_shared/LiveSearch';
-import { Menu } from '../_shared/Menu';
-import overlay from '../_shared/overlay.module.css';
 import ui from '../_shared/ui.module.css';
 import { libraryHref } from './libraryParams';
 import styles from './writing.module.css';
@@ -32,8 +32,7 @@ export function LibraryToolbar({ query, counts }: {
   const genreLabel = (genre: Genre | null) => (genre === null ? w.allTypes : t.labels.genre[genre]);
 
   return (
-    <div className={styles.toolbar}>
-      <LiveSearch placeholder={w.searchPlaceholder} label={w.searchLabel} className={styles.search} maxLength={200} />
+    <FilterBar search={<LiveSearch placeholder={w.searchPlaceholder} label={w.searchLabel} className={ui.filterSearch} maxLength={200} />}>
       <nav className={ui.pills} aria-label={w.statusFilter}>
         {statuses.map((status) => (
           <Link key={status.value ?? 'all'} href={libraryHref(query, { status: status.value })} className={ui.pill}
@@ -42,40 +41,29 @@ export function LibraryToolbar({ query, counts }: {
           </Link>
         ))}
       </nav>
+      {/* Tipo y orden van juntos: si no caben, bajan los dos a la línea siguiente. */}
       <div className={styles.toolbarMenus}>
-        <Menu
+        <FilterMenu
+          align="end"
           label={w.typeFilterLabel}
-          trigger={(props) => (
-            <button type="button" {...props} className={`${ui.ghost} ${ui.compact} ${styles.filterButton}`}>
-              {w.typeFilter(genreLabel(query.genre))}
-              <ChevronDown size={14} aria-hidden="true" />
-            </button>
-          )}
-        >
-          {(close) => [null, ...GENRES].map((genre) => (
-            <Link key={genre ?? 'all'} role="menuitem" href={libraryHref(query, { genre })} className={overlay.menuItem}
-              aria-current={query.genre === genre ? 'page' : undefined} onClick={close} scroll={false}>
-              {genreLabel(genre)}
-            </Link>
-          ))}
-        </Menu>
-        <Menu
+          text={query.genre === null ? w.typeFilterLabel : w.typeFilter(genreLabel(query.genre))}
+          options={[null, ...GENRES].map((genre) => ({
+            key: genre ?? 'all', href: libraryHref(query, { genre }), current: query.genre === genre, label: genreLabel(genre),
+          }))}
+          clear={query.genre === null ? undefined : {
+            href: libraryHref(query, { genre: null }), label: t.errors.removeFilter(genreLabel(query.genre)),
+          }}
+        />
+        <FilterMenu
+          align="end"
           label={w.sortLabel}
-          trigger={(props) => (
-            <button type="button" {...props} className={`${ui.ghost} ${ui.compact} ${styles.filterButton}`}>
-              <ArrowUpDown size={16} aria-hidden="true" />
-              {w.sort[query.sort]}
-            </button>
-          )}
-        >
-          {(close) => LIBRARY_SORTS.map((sort) => (
-            <Link key={sort} role="menuitem" href={libraryHref(query, { sort })} className={overlay.menuItem}
-              aria-current={query.sort === sort ? 'page' : undefined} onClick={close} scroll={false}>
-              {w.sort[sort]}
-            </Link>
-          ))}
-        </Menu>
+          text={w.sort[query.sort]}
+          icon={<ArrowUpDown size={16} aria-hidden="true" />}
+          options={LIBRARY_SORTS.map((sort) => ({
+            key: sort, href: libraryHref(query, { sort }), current: query.sort === sort, label: w.sort[sort],
+          }))}
+        />
       </div>
-    </div>
+    </FilterBar>
   );
 }

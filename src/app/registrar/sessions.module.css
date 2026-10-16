@@ -12,77 +12,12 @@
   gap: var(--space-3);
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.search {
-  flex: 1 1 280px;
-  max-width: 380px;
-}
-
-.filterButton {
-  border: 1px solid var(--color-rule);
-  font-weight: 400;
-  font-size: var(--fs-body);
-}
-
-.tableWrap {
-  overflow-x: auto;
-  /* Bloque contenedor: el caption .sr-only, absoluto, no escapa del scroll. */
-  position: relative;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  border-top: 1px solid var(--color-ink);
-  font-size: var(--fs-body);
-  table-layout: fixed;
-}
-
-.table th {
-  padding: var(--space-2-5) var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  color: var(--color-ink-2);
-  font: var(--text-label);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.table td {
-  height: var(--row-h);
-  padding: var(--space-1-5) var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  vertical-align: middle;
-}
-
-.table tbody tr {
-  cursor: pointer;
-}
-
-.table tbody tr:hover {
-  background: var(--color-surface-2);
-}
-
-.table tbody tr.selected {
-  background: var(--color-selected);
-  box-shadow: inset 3px 0 0 var(--color-brand);
-}
-
+/* Anchos del historial; el resto lo pone `ui.dataTable`. */
 .colDate { width: 88px; }
 .colPractice { width: 180px; }
 .colScore { width: 100px; }
 .colErrors { width: 72px; }
 .colStatus { width: 110px; }
-
-.right {
-  text-align: right !important;
-  font-variant-numeric: tabular-nums;
-}
 
 .muted {
   color: var(--color-ink-2);
@@ -140,7 +75,7 @@
 
 .shortcuts {
   display: flex;
-  gap: 20px;
+  gap: var(--space-5);
   flex-wrap: wrap;
   padding-top: var(--space-1);
   font-size: var(--fs-meta);
@@ -153,57 +88,12 @@
   gap: var(--space-1-5);
 }
 
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  max-width: 560px;
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--color-rule);
-}
-
-.empty p {
-  color: var(--color-ink-2);
-}
-
-.emptyAction {
-  padding-top: var(--space-2);
-}
-
 /* ── Detalle de sesión ────────────────────────────────────────────────────── */
 
 .detail {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-}
-
-.detailHead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.titleBlock {
-  display: flex;
-  flex: 1 1 320px;
-  flex-direction: column;
-  gap: var(--space-1-5);
-  min-width: 0;
-}
-
-.titleRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.titleRow h1 {
-  overflow-wrap: anywhere;
 }
 
 .facts {

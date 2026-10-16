@@ -99,7 +99,7 @@ const entries = (page: Page) => page.getByRole('list', { name: /^\d+ redacci/ })
 
 /** Abrir y cerrar un menú exige que los manejadores de cliente ya estén hidratados. */
 async function waitForClient(page: Page) {
-  await page.getByRole('button', { name: /^Tipo: / }).click();
+  await page.getByRole('button', { name: /^Tipo(: |$)/ }).click();
   await expect(page.getByRole('menu')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menu')).toHaveCount(0);
@@ -128,7 +128,7 @@ test('la biblioteca busca en título y texto, filtra por estado y tipo y ordena'
     await status.getByRole('link', { name: 'Corregidas (2)' }).click();
     await expect(entries(page).getByRole('link')).toHaveText([`Cities ${tag}`, `Sports centre ${tag}`]);
 
-    await page.getByRole('button', { name: 'Tipo: Todos los tipos' }).click();
+    await page.getByRole('button', { name: 'Tipo', exact: true }).click();
     await page.getByRole('menuitem', { name: 'Report' }).click();
     await expect(page).toHaveURL(new RegExp(`tipo=REPORT`, 'u'));
     await expect(entries(page).getByRole('link')).toHaveText([`Sports centre ${tag}`]);

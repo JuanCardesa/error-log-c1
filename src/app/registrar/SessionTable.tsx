@@ -8,6 +8,7 @@ import type { SessionStatus } from '@/lib/domain/enums';
 import { useT } from '../_shared/i18nClient';
 import { StatusText } from '../_shared/StatusText';
 import { isPlainKey } from '../_shared/shortcuts';
+import ui from '../_shared/ui.module.css';
 import styles from './sessions.module.css';
 
 export interface SessionTableRow {
@@ -62,30 +63,31 @@ export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow
   }, [router]);
 
   return (
-    <div className={styles.tableWrap}>
-      <table ref={table} className={styles.table}>
+    <div className={ui.scrollX}>
+      <table ref={table} className={`${ui.dataTable} ${ui.dataTableFixed}`}>
         <caption className="sr-only">{t.nav.sessions}</caption>
         <thead>
           <tr>
-            <th scope="col" className={styles.colDate}>{t.sessionForm.date}</th>
+            <th scope="col" className={`${ui.colDate} ${styles.colDate}`}>{t.sessionForm.date}</th>
             <th scope="col">{t.sessionForm.reference}</th>
             <th scope="col" className={styles.colPractice}>{t.sessionForm.practice}</th>
-            <th scope="col" className={`${styles.colScore} ${styles.right}`}>{t.sessionForm.correct}</th>
-            <th scope="col" className={`${styles.colErrors} ${styles.right}`}>{t.nav.errors}</th>
-            <th scope="col" className={styles.colStatus}>{t.sessionView.status}</th>
+            <th scope="col" className={`${ui.colNum} ${styles.colScore}`}>{t.sessionForm.correct}</th>
+            <th scope="col" className={`${ui.colNum} ${styles.colErrors}`}>{t.nav.errors}</th>
+            <th scope="col" className={`${ui.colStatus} ${styles.colStatus}`}>{t.sessionView.status}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, index) => (
             <tr
               key={row.id}
-              className={index === selected ? styles.selected : undefined}
+              data-clickable
+              data-selected={index === selected || undefined}
               onClick={(event) => {
                 if (event.target instanceof HTMLElement && event.target.closest('a') !== null) return;
                 router.push(row.href);
               }}
             >
-              <td className={`${styles.colDate} ${styles.muted}`}>{row.date}</td>
+              <td className={`${ui.colDate} ${styles.colDate} ${styles.muted}`}>{row.date}</td>
               <td>
                 <span className={styles.refCell}>
                   <Link href={row.href} className={styles.ref} aria-current={index === selected || undefined}>
@@ -98,9 +100,9 @@ export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow
                 </span>
               </td>
               <td className={styles.colPractice}>{row.practice}</td>
-              <td className={`${styles.colScore} ${styles.right}`}>{row.score}</td>
-              <td className={`${styles.colErrors} ${styles.right}`}>{row.errors}</td>
-              <td className={styles.colStatus}><StatusText status={row.status} /></td>
+              <td className={`${ui.colNum} ${styles.colScore}`}>{row.score}</td>
+              <td className={`${ui.colNum} ${styles.colErrors}`}>{row.errors}</td>
+              <td className={`${ui.colStatus} ${styles.colStatus}`}><StatusText status={row.status} /></td>
             </tr>
           ))}
         </tbody>

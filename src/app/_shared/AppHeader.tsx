@@ -3,7 +3,7 @@
 import { ChevronDown, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 
 import { CommandPalette } from './CommandPalette';
 import { useT } from './i18nClient';
@@ -14,8 +14,9 @@ import styles from './header.module.css';
 import overlay from './overlay.module.css';
 
 /**
- * Cabecera fija en cristal: marca, seis destinos, «Más» (Exportar, Ajustes) y la búsqueda
- * global.
+ * Cabecera fija en cristal: marca, seis destinos en dos grupos —el ritual (Sesiones,
+ * Errores, Progreso, Anki) y la biblioteca (Notebook, Writing)—, «Más» (Exportar, Ajustes) y
+ * la búsqueda global.
  *
  * Atajos globales: Ctrl/⌘+K abre la búsqueda; G seguida de S, E, P, A, N o W (en menos de un
  * segundo) va a Sesiones, Errores, Progreso, Anki, Notebook o Writing. Las teclas sueltas no se
@@ -27,7 +28,8 @@ const NAV = [
   { href: '/errores', label: 'errors', key: 'e', match: ['/errores', '/certezas'] },
   { href: '/informe', label: 'progress', key: 'p', match: ['/informe', '/ruoe'] },
   { href: '/anki', label: 'anki', key: 'a', match: ['/anki'] },
-  { href: '/notebook', label: 'notebook', key: 'n', match: ['/notebook'] },
+  // Desde aquí, la biblioteca: se consulta, no forma parte del registro diario.
+  { href: '/notebook', label: 'notebook', key: 'n', match: ['/notebook'], library: true },
   { href: '/writing', label: 'writing', key: 'w', match: ['/writing'] },
 ] as const;
 
@@ -87,14 +89,16 @@ export function AppHeader() {
             {NAV.map((item) => {
               const current = item.match.some((base) => within(pathname, base));
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={styles.navLink}
-                  aria-current={current ? 'page' : undefined}
-                >
-                  {t.nav[item.label]}
-                </Link>
+                <Fragment key={item.href}>
+                  {'library' in item && <span className={styles.navSep} aria-hidden="true" />}
+                  <Link
+                    href={item.href}
+                    className={styles.navLink}
+                    aria-current={current ? 'page' : undefined}
+                  >
+                    {t.nav[item.label]}
+                  </Link>
+                </Fragment>
               );
             })}
           </nav>

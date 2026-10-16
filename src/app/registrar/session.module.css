@@ -13,14 +13,14 @@
 }
 
 .groupLabel {
-  padding-top: 28px;
+  padding-top: var(--space-6);
   font: var(--text-label);
   font-weight: 600;
   color: var(--color-ink-2);
 }
 
 .groupNote {
-  padding-top: 28px;
+  padding-top: var(--space-6);
   font-size: var(--fs-body);
   color: var(--color-ink-2);
 }

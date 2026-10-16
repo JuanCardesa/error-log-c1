@@ -151,12 +151,18 @@
 }
 
 /* Enlace de regreso: «← Sesiones». */
+/* Enlace o botón «← Adónde vuelve». */
 .backLink {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1-5);
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--color-ink-2);
+  font: inherit;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .backLink:hover {
@@ -164,7 +170,7 @@
 }
 
 .backHint {
-  color: var(--color-ink-disabled);
+  color: var(--color-ink-2);
 }
 
 /* Acción destructiva escrita, p. ej. «Borrar error…». */
@@ -288,6 +294,91 @@
   accent-color: var(--color-brand);
 }
 
+/* ── Archivo (`FileDrop`) ─────────────────────────────────────────────────── */
+
+/* El input va oculto dentro de su label; el foco se ve en la zona o en el botón. */
+.fileZone:has(.fileInput:focus-visible),
+.fileButton:has(.fileInput:focus-visible) {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.fileZone {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  max-width: var(--reading-max);
+  padding: var(--space-4) var(--space-5);
+  border: 1px dashed var(--color-control);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+  font-size: var(--fs-body);
+  cursor: pointer;
+}
+
+.fileZone:hover,
+.fileZone[data-over] {
+  border-color: var(--color-brand);
+  background: var(--color-brand-tint);
+}
+
+.fileZone[data-invalid] {
+  border-color: var(--color-danger);
+}
+
+.fileZone[data-disabled],
+.fileButton[data-disabled] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.fileIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-brand);
+}
+
+.fileText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.fileLabel {
+  color: var(--color-ink);
+  font: var(--text-label);
+}
+
+.fileBrowse {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-control);
+  text-underline-offset: 3px;
+}
+
+.fileName {
+  color: var(--color-ink);
+  font: var(--text-data);
+  overflow-wrap: anywhere;
+}
+
+.fileHint {
+  font: var(--text-aux);
+}
+
+.fileButton {
+  position: relative;
+  cursor: pointer;
+}
+
+.fileButton[data-over] {
+  border-color: var(--color-brand);
+  background: var(--color-brand-tint);
+}
+
 /* ── Texto y avisos ───────────────────────────────────────────────────────── */
 
 .note {
@@ -362,19 +453,71 @@
   padding: var(--space-5);
 }
 
-/* ── Cabecera de página ───────────────────────────────────────────────────── */
+/* ── Cabecera de página (`PageHeader`) ────────────────────────────────────── */
 
-.pageHead {
+.pageHeader {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-4);
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* «← Sección» encima del título; ocupa su propia línea y no empuja las acciones. */
+.pageBack {
+  display: flex;
+  margin-bottom: var(--space-1);
+}
+
+/* Las acciones se alinean con el título, no con el pie de la entradilla. */
+.pageHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3) var(--space-4);
+}
+
+.pageHeadText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 72ch;
+}
+
+.pageTitleRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+.pageActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  /* La altura de la línea del título: los controles quedan centrados en ella. */
+  min-height: 36px;
+}
+
+@media (max-width: 639px) {
+  .pageHead {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pageActions {
+    justify-content: flex-start;
+    min-height: 0;
+  }
 }
 
 .pageTitle {
   font: var(--text-page-title);
   letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.pageTitle:focus {
+  outline: none;
 }
 
 .sectionTitle {
@@ -413,58 +556,88 @@
   flex: 1;
 }
 
-/* ── Tablas en rejilla ────────────────────────────────────────────────────── */
+/* ── Tabla de datos (`<table className={ui.dataTable}>`) ──────────────────── */
 
 /*
- * Tabla sin tarjeta exterior: filete fuerte arriba, cabecera en tinta secundaria y filas
- * con separador. Las columnas las fija cada vista con `grid-template-columns`.
+ * Tabla sin tarjeta exterior: filete de tinta arriba, cabecera en tinta secundaria y filas
+ * de 44 px con separador. Siempre un `<table>` real con su `caption` (`sr-only`).
+ *
+ * Cada columna declara su tipo en `<th>` y `<td>`:
+ * - `colNum`: cifras a la derecha, tabulares, sin partir.
+ * - `colDate`: fecha corta, tabular, sin partir.
+ * - `colStatus`: estado con forma y texto, sin partir.
+ * - texto (por defecto): parte entre palabras; solo corta una si no cabe en la columna,
+ *   así que dale un ancho en el que quepa la palabra más larga.
+ * - `colLong`: respuestas o enunciados largos que pueden partirse donde haga falta.
+ * Los anchos los fija cada vista (`table-layout: fixed` con `dataTableFixed`).
  */
-.table {
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
   border-top: 1px solid var(--color-ink);
-}
-
-.thead,
-.tr {
-  display: grid;
-  gap: var(--space-4);
-  padding: 0 var(--space-3);
-  align-items: center;
-  border-bottom: 1px solid var(--color-rule);
-}
-
-.thead {
-  padding-top: var(--space-2-5);
-  padding-bottom: var(--space-2-5);
-  font: var(--text-label);
-  color: var(--color-ink-2);
-}
-
-.tr {
-  min-height: var(--row-h);
   font-size: var(--fs-body);
 }
 
-/* Fila que se abre o se selecciona. */
-.trClickable {
-  cursor: pointer;
+.dataTableFixed {
+  table-layout: fixed;
 }
 
-.trClickable:hover {
-  background: var(--color-surface-2);
+.dataTable thead th {
+  padding: var(--space-2-5) var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  color: var(--color-ink-2);
+  font: var(--text-label);
+  text-align: left;
+  white-space: nowrap;
 }
 
-.trSelected,
-.trSelected:hover {
-  background: var(--color-selected);
-  box-shadow: inset 3px 0 0 var(--color-brand);
+.dataTable tbody td,
+.dataTable tbody th {
+  height: var(--row-h);
+  padding: var(--space-1-5) var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: break-word;
 }
 
-.right {
+/* La cabecera de fila (la categoría, el criterio) pesa un poco más que el dato. */
+.dataTable tbody th {
+  font-weight: 500;
+}
+
+.dataTable .colNum,
+.dataTable .colDate {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dataTable .colNum {
   text-align: right;
 }
 
-.center {
-  text-align: center;
+.dataTable .colStatus {
+  white-space: nowrap;
+}
+
+.dataTable .colLong {
+  overflow-wrap: anywhere;
+}
+
+/* Fila que se abre o se selecciona: un botón o enlace dentro lleva el teclado. */
+.dataTable tbody tr[data-clickable] {
+  cursor: pointer;
+}
+
+.dataTable tbody tr[data-clickable]:hover {
+  background: var(--color-surface-2);
+}
+
+.dataTable tbody tr[aria-selected='true'],
+.dataTable tbody tr[data-selected],
+.dataTable tbody tr[data-selected]:hover {
+  background: var(--color-selected);
+  box-shadow: inset 3px 0 0 var(--color-brand);
 }
 
 .cellStack {
@@ -484,13 +657,44 @@
   white-space: nowrap;
 }
 
-.tableEmpty {
+/* ── Estado vacío (`EmptyState`) ──────────────────────────────────────────── */
+
+/*
+ * Ocupa el sitio de lo que falta (la tabla, la lista) y arranca con su mismo filete de
+ * tinta. Dice la causa en tinta y el siguiente paso debajo; nunca un «0» ni una caja
+ * punteada. `emptyInset` lo deja sin filete dentro de un bloque que ya tiene el suyo.
+ */
+.empty {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: var(--space-6) var(--space-3);
+  max-width: 100%;
+  padding: var(--space-5) var(--space-3);
+  border-top: 1px solid var(--color-ink);
+}
+
+.emptyInset {
+  padding: var(--space-3) 0;
+  border-top: 0;
+}
+
+.emptyCause {
+  max-width: 72ch;
   color: var(--color-ink);
+}
+
+.emptyDetail {
+  max-width: 72ch;
+  color: var(--color-ink-2);
+}
+
+.emptyAction {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding-top: var(--space-1);
 }
 
 /* Tabla que se desplaza dentro de su contenedor, nunca la página. */
@@ -540,7 +744,7 @@
   display: inline-flex;
   align-items: center;
   height: calc(var(--control-h-compact) - 2px);
-  padding: 0 14px;
+  padding: 0 var(--space-3);
   background: var(--color-surface);
   color: var(--color-ink);
   font-size: var(--fs-body);
@@ -576,6 +780,71 @@
   z-index: var(--z-raised);
 }
 
+/* ── Barra de filtros (`FilterBar`, `FilterMenu`) ──────────────────────────── */
+
+/*
+ * Búsqueda, píldoras y menús en una fila que se parte si no cabe. Todo se aplica al
+ * momento y vive en la URL: no hay «Aplicar». El recuento o lo que acompañe va al final.
+ */
+.filterBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.filterSearch {
+  flex: 1 1 280px;
+  max-width: 380px;
+}
+
+.filterAside {
+  margin-left: auto;
+  color: var(--color-ink-2);
+  font-size: var(--fs-body);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Botón de un menú de filtro: dice el filtro y su valor («Causa: Todas»). */
+.filterButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  height: var(--control-h-compact);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--fs-body);
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.filterButton:hover {
+  border-color: var(--color-control);
+  color: var(--color-ink);
+}
+
+/* Filtro activo: el mismo botón en tinte de marca, con su × al lado. */
+.filterActive {
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h-compact);
+  padding-right: var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+}
+
+.filterActive .filterButton {
+  border-color: transparent;
+  color: var(--color-brand);
+  font-weight: 500;
+}
+
 /* Filtros sin marco: «Todas · Abiertas (2)». */
 .pills {
   display: flex;
@@ -606,14 +875,14 @@
   color: var(--color-brand);
 }
 
-/* Chip de filtro activo, con su ×. */
+/* Filtro activo sin menú, con su ×: la misma forma que `filterActive`. */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1-5);
-  height: 32px;
-  padding: 0 var(--space-1-5) 0 var(--space-3);
-  border-radius: 16px;
+  height: var(--control-h-compact);
+  padding: 0 var(--space-1) 0 var(--space-3);
+  border-radius: var(--radius-control);
   background: var(--color-brand-tint);
   color: var(--color-brand);
   font-size: var(--fs-body);
@@ -686,6 +955,57 @@
 .ankiNone {
   color: var(--color-ink-2);
   font-weight: 500;
+}
+
+/*
+ * En una lista, el estado es un hecho de cada fila, no un aviso: forma y texto, con el
+ * color solo donde hay algo resuelto (verde) o roto (rojo). «Pendiente» va en tinta con un
+ * anillo hueco; nueve filas en ámbar dejarían sin color a lo urgente.
+ */
+.ankiTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.ankiTagShape {
+  display: block;
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ankiTagPending {
+  color: var(--color-ink);
+}
+
+.ankiTagPending .ankiTagShape {
+  border: 1.5px solid currentColor;
+  background: transparent;
+}
+
+.ankiTagConverted {
+  color: var(--color-success);
+}
+
+.ankiTagStale {
+  color: var(--color-danger);
+}
+
+.ankiTagStale .ankiTagShape {
+  border-radius: 0;
+}
+
+.ankiTagNone {
+  color: var(--color-ink-2);
+}
+
+/* Sin forma, pero con su hueco: el texto de la columna sigue alineado. */
+.ankiTagNone .ankiTagShape {
+  visibility: hidden;
 }
 
 /* ── Kbd sobre primario ───────────────────────────────────────────────────── */

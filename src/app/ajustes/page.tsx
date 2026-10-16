@@ -1,4 +1,4 @@
-import ui from '../_shared/ui.module.css';
+import { PageHeader } from '../_shared/PageHeader';
 import { getT } from '../_shared/i18nServer';
 import { LanguageSetting } from './LanguageSetting';
 import styles from './ajustes.module.css';
@@ -11,10 +11,7 @@ export default async function AjustesPage() {
   const t = await getT();
   return (
     <div className={styles.page}>
-      <header>
-        <h1 className={ui.pageTitle}>{t.settings.title}</h1>
-        <p className={ui.lede}>{t.settings.lede}</p>
-      </header>
+      <PageHeader title={t.settings.title} lede={t.settings.lede} />
       <LanguageSetting />
     </div>
   );

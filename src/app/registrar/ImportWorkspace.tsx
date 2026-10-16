@@ -21,6 +21,7 @@ import { buildImportPayload, type DraftRow, type MissingField, missingFields, ne
 import { SessionFields } from './SessionFields';
 import { type HeaderDraft, type TandaDraft, clearDraft, readHeaderForm, toImportedSession, writeDraft } from './tandaDraft';
 import styles from './workspace.module.css';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 
 /**
@@ -263,23 +264,27 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
 
   return (
     <section className={styles.workspace} aria-labelledby={`${scope}-title`}>
-      <div className={styles.top}>
-        <div>
-          <button type="button" className={`${ui.backLink} ${styles.back}`} onClick={back}>
+      <PageHeader
+        back={{ node: (
+          <button type="button" className={ui.backLink} onClick={back}>
             <ArrowLeft size={16} aria-hidden="true" />
             {t.review.back}
           </button>
-          <h1 id={`${scope}-title`} ref={headingRef} tabIndex={-1} className={ui.pageTitle}>{t.paste.review}</h1>
-        </div>
-        <div className={styles.dest}>
-          <span>{t.review.destination} <strong>{destLabel}</strong></span>
-          {canChangeTarget && (
-            <button type="button" className={ui.textLink} aria-expanded={changingTarget} onClick={() => { setChangingTarget(!changingTarget); }}>
-              {t.review.changeDest}
-            </button>
-          )}
-        </div>
-      </div>
+        ) }}
+        title={t.paste.review}
+        titleId={`${scope}-title`}
+        titleRef={headingRef}
+        actions={(
+          <div className={styles.dest}>
+            <span>{t.review.destination} <strong>{destLabel}</strong></span>
+            {canChangeTarget && (
+              <button type="button" className={ui.textLink} aria-expanded={changingTarget} onClick={() => { setChangingTarget(!changingTarget); }}>
+                {t.review.changeDest}
+              </button>
+            )}
+          </div>
+        )}
+      />
 
       {changingTarget && canChangeTarget && (
         <div className={`${ui.field} ${styles.destSelect}`}>

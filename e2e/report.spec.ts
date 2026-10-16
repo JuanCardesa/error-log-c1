@@ -148,4 +148,18 @@ test.describe('errores', () => {
     await page.getByRole('searchbox', { name: 'Buscar errores' }).fill('zzz sin coincidencias zzz');
     await expect(page.getByText('Ningún error coincide con la búsqueda y los filtros activos.')).toBeVisible();
   });
+
+  test('cada filtro se aplica al elegirlo, sin botón de aplicar, y se quita con su ×', async ({ page }) => {
+    await page.goto('/errores');
+    await expect(page.getByRole('button', { name: 'Aplicar filtros' })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Causa', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Confusión' }).click();
+    await expect(page).toHaveURL(/causa=CONFUSION/);
+    await expect(page.getByRole('button', { name: 'Causa: Confusión' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Quitar filtro Confusión' }).click();
+    await expect(page).not.toHaveURL(/causa=/);
+    await expect(page.getByRole('button', { name: 'Causa', exact: true })).toBeVisible();
+  });
 });

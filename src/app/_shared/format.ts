@@ -48,6 +48,15 @@ export function decimal(value: number, t: Messages, digits?: number): string {
   return text.replace('.', t.format.decimalSeparator);
 }
 
+/**
+ * Diferencia con su signo: `+0,5`, `−0,5` (signo menos tipográfico) o `=`. Va en tinta: el
+ * signo ya dice la dirección, y el rojo queda para el daño.
+ */
+export function signedDecimal(value: number, t: Messages): string {
+  if (value === 0) return '=';
+  return value > 0 ? `+${decimal(value, t)}` : `−${decimal(-value, t)}`;
+}
+
 /** Porcentaje: `87.5` → `87.5%` (`87,5 %` en español). */
 export function percent(value: number, t: Messages): string {
   return t.format.percent(decimal(value, t));

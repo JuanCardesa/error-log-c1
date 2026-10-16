@@ -8,7 +8,9 @@ import { searchNotebookSchema } from '@/lib/notebook/schemas';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import type { NotebookNoteSummary } from '@/lib/notebook/types';
 import type { Messages } from '@/lib/i18n';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import { FolderManager } from './FolderManager';
 import { FavoriteToggle } from './FavoriteToggle';
@@ -113,19 +115,18 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
 
   return (
     <div className={styles.page}>
-      <header className={styles.pageHead}>
-        <div>
-          <p className={styles.eyebrow}>{n.eyebrow}</p>
-          <h1 className={styles.pageTitle}>{t.nav.notebook}</h1>
-          <p className={styles.intro}>{n.intro}</p>
-        </div>
-        <div className={styles.headActions}>
-          <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/importar' : `/notebook/importar?carpeta=${String(selectedFolderId)}`}
-            className={ui.secondary}>{n.importMd}</Link>
-          <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/nuevo' : `/notebook/nuevo?carpeta=${String(selectedFolderId)}`}
-            className={styles.newNoteLink}>{n.newNote}</Link>
-        </div>
-      </header>
+      <PageHeader
+        title={t.nav.notebook}
+        lede={n.intro}
+        actions={(
+          <>
+            <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/importar' : `/notebook/importar?carpeta=${String(selectedFolderId)}`}
+              className={ui.secondary}>{n.importMd}</Link>
+            <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/nuevo' : `/notebook/nuevo?carpeta=${String(selectedFolderId)}`}
+              className={ui.primary}>{n.newNote}</Link>
+          </>
+        )}
+      />
       <NotebookDraftNotice />
       <NotebookSearchControls folders={folders} folderParam={folderParam} tag={tag} t={t} />
       <div className={styles.layout}>
@@ -139,25 +140,22 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
             {(selectedFolderId !== undefined || searching || favoritesView) && <Link href="/notebook" className={styles.backLink}>{n.seeRecent}</Link>}
           </div>
           {searching && searchInput?.success === false && (
-            <div role="alert" className={styles.empty}><p>{n.checkQuery}</p></div>
+            <EmptyState role="alert" cause={n.checkQuery} />
           )}
           {searchResults !== null && (searchResults.items.length > 0 ? (
             <NotebookSearchResults hits={searchResults.items} folders={folders} query={query} t={t} />
           ) : (
-            <div className={styles.empty}>
-              <p>{n.noMatch}</p>
-              <p>{n.tryAnother}</p>
-            </div>
+            <EmptyState cause={n.noMatch} detail={n.tryAnother} />
           ))}
           {listing !== null && (listing.items.length > 0 ? noteRows(listing.items, t) : (
-            <div className={styles.empty}>
-              <p>{favoritesView ? n.noFavorites : selectedFolderId === undefined && folders.length === 0
+            <EmptyState
+              cause={favoritesView ? n.noFavorites : selectedFolderId === undefined && folders.length === 0
                 ? n.emptyNotebook
                 : selectedFolderId === undefined
                   ? n.noNotesYet
-                  : n.noNotesHere}</p>
-              <p>{favoritesView ? n.favoritesHint : n.savedAppearHere}</p>
-            </div>
+                  : n.noNotesHere}
+              detail={favoritesView ? n.favoritesHint : n.savedAppearHere}
+            />
           ))}
           {(searchResults !== null || listing !== null && selectedFolderId !== undefined && !favoritesView)
             && (page > 1 || (searchResults?.hasMore ?? listing?.hasMore ?? false)) && (
