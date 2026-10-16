@@ -28,20 +28,38 @@
   position: relative;
 }
 
+/* Columnas fijas: todas las semanas miden lo mismo, tengan el texto que tengan. */
 .matrix {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 4px;
   margin: 0 calc(-1 * var(--space-1));
   border-top: 1px solid var(--color-ink);
 }
 
+/* Fija al desplazar: la matriz se abre por las semanas recientes y la part sigue a la vista. */
 .partHead {
+  position: sticky;
+  left: 0;
+  z-index: var(--z-raised);
+  background: var(--color-bg) var(--paper-grain);
   width: 64px;
   padding: var(--space-2-5) 0;
   font-size: var(--fs-body);
   font-weight: 500;
   text-align: left;
+}
+
+/* Tapa también el hueco de border-spacing, para que no asome una celda por él. */
+.partHead::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 4px;
+  background: inherit;
 }
 
 thead .partHead,
@@ -51,10 +69,12 @@ thead .partHead,
   border-bottom: 1px solid var(--color-rule);
 }
 
+/* «31 ago – 6 sep» parte en dos líneas antes que estirar la matriz fuera de la vista. */
 .weekHead {
   padding: var(--space-2-5) 0;
   text-align: center;
-  white-space: nowrap;
+  text-wrap: balance;
+  vertical-align: bottom;
 }
 
 .blankCell {
@@ -94,11 +114,17 @@ thead .partHead,
   font-variant-numeric: tabular-nums;
 }
 
+/* En tinta: sobre el fondo del tramo, ink-2 no llega a 4,5:1. El peso ya la separa de la cifra. */
 .ratio {
   font-size: var(--fs-meta);
   line-height: 16px;
-  color: var(--color-ink-2);
+  color: var(--color-ink);
   font-variant-numeric: tabular-nums;
+}
+
+.unpractised {
+  font-size: var(--fs-body);
+  color: var(--color-ink-2);
 }
 
 .note {
@@ -125,6 +151,7 @@ thead .partHead,
   width: 12px;
   height: 12px;
   border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgb(32 35 31 / 0.08);
 }
 
 .aside {
@@ -137,8 +164,8 @@ thead .partHead,
   box-shadow: var(--shadow-1);
 }
 
-.asideEmpty {
-  font-size: var(--fs-body);
+.asidePick {
+  font: var(--text-aux);
   color: var(--color-ink-2);
 }
 

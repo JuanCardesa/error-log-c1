@@ -2,9 +2,10 @@ import Link from 'next/link';
 
 import { getDb } from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
+import { partsFor } from '@/lib/domain/enums';
 import { q3RuoeAccuracy } from '@/lib/queries/q3RuoeAccuracy';
 import { sliceWindow } from '@/lib/queries/window';
-import { percent, sessionTitle, shortDate } from '../_shared/format';
+import { partList, percent, sessionTitle, shortDate } from '../_shared/format';
 import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
 import { PageHeader } from '../_shared/PageHeader';
@@ -54,6 +55,7 @@ export default async function RuoePage({ searchParams }: { readonly searchParams
       };
     }),
   }));
+  const unpractised = partsFor('RUOE').filter((part) => !rows.some((row) => row.part === part));
 
   return (
     <div className={styles.page}>
@@ -79,7 +81,11 @@ export default async function RuoePage({ searchParams }: { readonly searchParams
             : <Link href="/registrar" className={ui.textLink}>{t.common.goToSessions}</Link>}
         />
       ) : (
-        <RuoeMatrix weeks={weeks.map(({ iso, range, partial }) => ({ iso, range, partial }))} rows={rows} />
+        <RuoeMatrix
+          weeks={weeks.map(({ iso, range, partial }) => ({ iso, range, partial }))}
+          rows={rows}
+          unpractised={unpractised.length === 0 ? null : partList(unpractised, t)}
+        />
       )}
     </div>
   );

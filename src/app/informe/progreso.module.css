@@ -125,14 +125,37 @@
   font: var(--text-data);
 }
 
-/* Categorías */
+/* Categorías: la fila entera es el enlace (se estira con ::after) y la flecha lo anuncia. */
+.catRow {
+  position: relative;
+}
+
 .catLink {
   color: var(--color-ink);
   font-weight: 500;
   text-decoration: none;
 }
 
-.catLink:hover {
+.catLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.catLink:focus-visible {
+  outline: none;
+}
+
+.catLink:focus-visible::after {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+
+.catRow:hover {
+  background: var(--color-surface-2);
+}
+
+.catRow:hover .catLink {
   color: var(--color-brand);
   text-decoration: underline;
 }
@@ -140,6 +163,10 @@
 .arrowCell {
   width: 28px;
   color: var(--color-ink-2);
+}
+
+.catRow:hover .arrowCell {
+  color: var(--color-brand);
 }
 
 .restList {
@@ -155,7 +182,12 @@
 .restList li {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: var(--space-3);
+}
+
+.restList a {
+  padding: var(--space-1) 0;
 }
 
 /* Causas */
@@ -271,18 +303,47 @@
   font-weight: 500;
 }
 
-.bars {
+/* Una columna por semana: su ratio encima, la barra y la fecha de inicio debajo. */
+.chart {
+  display: grid;
+  gap: var(--space-1-5);
+}
+
+.week {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  text-align: center;
+}
+
+.ratio,
+.weekDate {
+  font: var(--text-aux);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ratio {
+  color: var(--color-ink);
+}
+
+.weekDate {
+  color: var(--color-ink-2);
+}
+
+.barSlot {
   display: flex;
   align-items: flex-end;
-  gap: var(--space-1-5);
   height: 56px;
+  border-bottom: 1px solid var(--color-rule);
 }
 
 .barPast,
 .barLast,
 .barNone {
   flex: 1;
-  border-radius: 1px;
+  border-radius: 1px 1px 0 0;
 }
 
 .barPast {
@@ -294,12 +355,11 @@
 }
 
 .barNone {
-  height: 2px;
-  background: var(--color-rule);
+  height: 0;
 }
 
-.ratios {
-  font: var(--text-data-sm);
+.unpractised {
+  font-size: var(--fs-body);
   color: var(--color-ink-2);
 }
 
@@ -403,5 +463,10 @@
 
   .causeSummary {
     grid-template-columns: 110px minmax(0, 1fr) 84px;
+  }
+
+  /* Cuatro semanas con su fecha no caben en media pantalla: una part por fila. */
+  .multiples {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

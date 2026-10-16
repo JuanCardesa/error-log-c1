@@ -771,8 +771,9 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     fullMatrix: 'Ver matriz completa',
     evolutionEmpty: 'Sin sesiones de Reading & Use of English con ítems en este periodo.',
     noPractice: 'sin práctica',
-    weeksHelp: (n, first, last) =>
-      `Últimas ${String(n)} semanas (${first} a ${last}); la última resaltada. — sin práctica esa semana; la altura es la precisión de la semana.`,
+    weeksHelp: (n) =>
+      `Últimas ${String(n)} semanas. La altura es la precisión de cada semana; la barra oscura y la cifra, la última semana con práctica. — sin práctica esa semana.`,
+    partsWithoutPractice: (list) => `Sin práctica en estas semanas: ${list}.`,
     recentTitle: 'Actividad reciente',
     othersTitle: 'Otras recomendaciones',
     othersNone: 'Ninguna otra regla se dispara ni está en vigilancia',
@@ -826,7 +827,8 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     legend55: '55–69 %',
     legendLow: 'menos del 55 %',
     cellDetail: 'Detalle de la celda',
-    selectCell: 'Selecciona una celda con datos para ver las sesiones que la componen.',
+    defaultPick: 'La part más floja de la última semana',
+    partsWithoutPractice: (list) => `Sin práctica en este periodo: ${list}.`,
     partialWeek: ' · semana parcial',
     cellSummary: (correct, total, n) => `${String(correct)} / ${String(total)} aciertos en ${sessions(n)}`,
   },

@@ -10,6 +10,9 @@
 :root {
   /* ── Superficies ─────────────────────────────── */
   --color-bg: #f6f5f1;
+  /* Grano de papel: ruido SVG al 7 % de alfa, 180 px en mosaico. Lo usa el body y lo que
+     tenga que tapar la página sin verse como una caja (la columna fija de RUOE). */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .13 0 0 0 0 .14 0 0 0 0 .12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --color-surface: #ffffff;
   --color-surface-2: #ecedea;
   --color-skeleton: #e4e5e0;
@@ -58,8 +61,8 @@
   --viz-bar-past: #9fbdb0;
   --viz-acc-85: #c9dcd3;
   --viz-acc-70: #dfe9e3;
-  --viz-acc-55: #ecedea;
-  --viz-acc-low: #f1e9da;
+  --viz-acc-55: #ebe6d8;
+  --viz-acc-low: #ecdcb9;
 
   /* ── Tipografía ──────────────────────────────── */
   --font-sans: var(--font-plex-sans), system-ui, sans-serif;
@@ -231,8 +234,7 @@ html {
 
 body {
   background-color: var(--color-bg);
-  /* Grano de papel: ruido SVG al 7 % de alfa, 180 px en mosaico. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .13 0 0 0 0 .14 0 0 0 0 .12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: var(--paper-grain);
   color: var(--color-ink);
   font: var(--text-body);
   -webkit-font-smoothing: antialiased;

@@ -76,6 +76,11 @@ export function practiceLongLabel(session: Format, t: Messages): string {
   return `${t.labels.paperLong[session.paper]} · ${t.format.part(session.part)}`;
 }
 
+/** `[5, 7, 8]` → `Part 5, Part 7 and Part 8` (`… y Part 8` en español). */
+export function partList(parts: readonly number[], t: Messages): string {
+  return new Intl.ListFormat(t.format.intl, { type: 'conjunction' }).format(parts.map((part) => t.format.part(part)));
+}
+
 /**
  * Nombre de una sesión: su referencia, o práctica y fecha si no la tiene. No se inventa
  * un título que el usuario no haya escrito.

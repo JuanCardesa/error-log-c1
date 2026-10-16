@@ -830,8 +830,9 @@ Session details and corrections (text or attached images):
     fullMatrix: 'See full matrix',
     evolutionEmpty: 'No Reading & Use of English sessions with items in this period.',
     noPractice: 'no practice',
-    weeksHelp: (n: number, first: string, last: string) =>
-      `Last ${String(n)} weeks (${first} to ${last}); the latest is highlighted. — means no practice that week; the height is the week’s accuracy.`,
+    weeksHelp: (n: number) =>
+      `Last ${String(n)} weeks. The height is each week’s accuracy; the dark bar and the figure are the latest week with practice. — means no practice that week.`,
+    partsWithoutPractice: (list: string) => `No practice in these weeks: ${list}.`,
     recentTitle: 'Recent activity',
     othersTitle: 'Other recommendations',
     othersNone: 'No other rule fires or is being watched',
@@ -885,7 +886,8 @@ Session details and corrections (text or attached images):
     legend55: '55–69%',
     legendLow: 'below 55%',
     cellDetail: 'Cell details',
-    selectCell: 'Select a cell with data to see the sessions behind it.',
+    defaultPick: 'The weakest part of the latest week',
+    partsWithoutPractice: (list: string) => `No practice in this period: ${list}.`,
     partialWeek: ' · partial week',
     cellSummary: (correct: number, total: number, n: number) => `${String(correct)} / ${String(total)} correct in ${sessions(n)}`,
   },

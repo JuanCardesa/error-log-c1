@@ -104,6 +104,32 @@ test.describe('progreso', () => {
     await expect(page.getByRole('complementary', { name: 'Detalle de la celda' })).toContainText('aciertos en');
   });
 
+  test('RUOE se abre con una celda elegida, con columnas iguales y las parts sin práctica nombradas', async ({ page }) => {
+    await page.goto('/ruoe?w=60');
+    // El panel nunca está vacío: arranca con la part más floja de la última semana.
+    await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(1);
+    const detail = page.getByRole('complementary', { name: 'Detalle de la celda' });
+    await expect(detail).toContainText('La part más floja de la última semana');
+    await expect(detail).toContainText('aciertos en');
+
+    const widths = await page.locator('thead th').evaluateAll((cells) =>
+      cells.slice(1).map((cell) => cell.getBoundingClientRect().width));
+    // Hasta 1 px por el reparto de subpíxeles; antes iban de 74 a 104 px.
+    expect(Math.max(...widths) - Math.min(...widths), `anchos de semana: ${widths.join('/')}`).toBeLessThanOrEqual(1);
+  });
+
+  test('la evolución por part da cuenta de las ocho parts', async ({ page }) => {
+    await page.goto('/informe?w=60');
+    const evolution = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Evolución por part' }) });
+    const charts = await evolution.getByRole('img').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label') ?? ''));
+    const missing = (await evolution.getByText(/^Sin práctica en estas semanas/).allInnerTexts()).join(' ');
+    for (let part = 1; part <= 8; part++) {
+      const drawn = charts.some((label) => label.startsWith(`Part ${String(part)}:`));
+      const named = new RegExp(`Part ${String(part)}\\b`).test(missing);
+      expect(drawn !== named, `Part ${String(part)}: dibujada ${String(drawn)}, nombrada ${String(named)}`).toBe(true);
+    }
+  });
+
   test('las falsas certezas se listan con periodo fijo y se leen en su detalle', async ({ page }) => {
     await page.goto('/certezas');
     await expect(page.getByText('últimos 30 días, periodo fijo')).toBeVisible();

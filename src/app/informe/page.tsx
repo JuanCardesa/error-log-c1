@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getDb } from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
 import { listSessions } from '@/lib/db/repo';
+import { partsFor } from '@/lib/domain/enums';
 import { MIN_N } from '@/lib/domain/thresholds';
 import { q1CauseSplit } from '@/lib/queries/q1CauseSplit';
 import { q2CategoryRate } from '@/lib/queries/q2CategoryRate';
@@ -12,7 +13,7 @@ import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { sliceWindow } from '@/lib/queries/window';
 import { runRules } from '@/lib/rules';
 import { toIsoDate, windowStart } from '@/lib/time/dates';
-import { dateRange, decimal, percent, score, sessionTitle, shortDate } from '../_shared/format';
+import { dateRange, decimal, partList, percent, score, sessionTitle, shortDate } from '../_shared/format';
 import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
 import { PageHeader } from '../_shared/PageHeader';
@@ -95,6 +96,32 @@ export default async function InformePage({ searchParams }: { readonly searchPar
   const categoryHref = (category: string) =>
     `/errores?cat=${category}&w=${String(windowDays)}&items=1`;
 
+  // Evolución: cada part con práctica en las últimas semanas, y su cifra es la de la última
+  // semana con práctica, que es la barra resaltada. Las parts sin práctica en esas semanas
+  // (también las que no se han hecho nunca) se nombran en una línea en vez de dibujarse vacías.
+  const evolution = q3.rows.map((row) => {
+    const cells = weeks.map((week) => {
+      const index = q3.weeks.indexOf(week.iso);
+      return index < 0 ? null : row.cells[index] ?? null;
+    });
+    const label = cells.map((cell, i) => {
+      const value = cell === null ? p.noPractice : `${percent(cell.pct, t)} (${String(cell.correct)}/${String(cell.total)})`;
+      return `${weeks[i]?.range ?? ''} ${value}`;
+    });
+    return {
+      part: row.part,
+      cells,
+      latest: cells.findLastIndex((cell) => cell !== null),
+      label: `${t.format.part(row.part)}: ${label.join(', ')}`,
+    };
+  });
+  const barClass = (cell: unknown, index: number, latest: number) => {
+    if (cell === null) return styles.barNone;
+    return index === latest ? styles.barLast : styles.barPast;
+  };
+  const practised = evolution.filter((row) => row.latest >= 0);
+  const unpractised = partsFor('RUOE').filter((part) => !practised.some((row) => row.part === part));
+
   return (
     <div className={styles.page}>
       {head}
@@ -154,8 +181,9 @@ export default async function InformePage({ searchParams }: { readonly searchPar
                   </tr>
                 </thead>
                 <tbody>
+                  {/* La fila entera abre sus errores: el enlace se estira sobre ella y la flecha lo anuncia. */}
                   {topCategories.map((row) => (
-                    <tr key={row.category}>
+                    <tr key={row.category} className={styles.catRow}>
                       <th scope="row">
                         <Link href={categoryHref(row.category)} className={styles.catLink}>{t.labels.category[row.category]}</Link>
                       </th>
@@ -230,38 +258,43 @@ export default async function InformePage({ searchParams }: { readonly searchPar
           <EmptyState cause={p.evolutionEmpty} />
         ) : (
           <>
-            <div className={styles.multiples}>
-              {q3.rows.map((row) => {
-                const cells = weeks.map((week) => {
-                  const index = q3.weeks.indexOf(week.iso);
-                  return index < 0 ? null : row.cells[index] ?? null;
-                });
-                const latest = [...cells].reverse().find((cell) => cell !== null) ?? null;
-                return (
-                  <div key={row.part} className={styles.multiple}>
+            {practised.length > 0 && (
+              <div className={styles.multiples}>
+                {practised.map(({ part, cells, latest, label }) => (
+                  <div key={part} className={styles.multiple}>
                     <span className={styles.multipleHead}>
-                      <span className={styles.multiplePart}>{t.format.part(row.part)}</span>
-                      <span className={styles.mono}>{latest === null ? '—' : percent(latest.pct, t)}</span>
+                      <span className={styles.multiplePart}>{t.format.part(part)}</span>
+                      <span className={styles.mono}>{percent(cells[latest]?.pct ?? 0, t)}</span>
                     </span>
-                    <div className={styles.bars} role="img" aria-label={`${t.format.part(row.part)}: ${cells.map((cell, i) => `${weeks[i]?.range ?? ''} ${cell === null ? p.noPractice : percent(cell.pct, t)}`).join(', ')}`}>
+                    <div
+                      className={styles.chart}
+                      style={{ gridTemplateColumns: `repeat(${String(weeks.length)}, minmax(0, 1fr))` }}
+                      role="img"
+                      aria-label={label}
+                    >
                       {cells.map((cell, index) => (
-                        <span
-                          key={weeks[index]?.iso ?? index}
-                          className={cell === null ? styles.barNone : index === cells.length - 1 ? styles.barLast : styles.barPast}
-                          style={cell === null ? undefined : { height: `${String(Math.max(2, Math.round((cell.pct / 100) * BAR_MAX_PX)))}px` }}
-                        />
+                        <span key={weeks[index]?.iso ?? index} className={styles.week}>
+                          <span className={styles.ratio}>
+                            {cell === null ? '—' : `${String(cell.correct)}/${String(cell.total)}`}
+                          </span>
+                          <span className={styles.barSlot}>
+                            <span
+                              className={barClass(cell, index, latest)}
+                              style={cell === null ? undefined : { height: `${String(Math.max(2, Math.round((cell.pct / 100) * BAR_MAX_PX)))}px` }}
+                            />
+                          </span>
+                          <span className={styles.weekDate}>{shortDate(weeks[index]?.start ?? '', t)}</span>
+                        </span>
                       ))}
                     </div>
-                    <span className={styles.ratios}>
-                      {cells.map((cell) => (cell === null ? '—' : `${String(cell.correct)}/${String(cell.total)}`)).join(' · ')}
-                    </span>
                   </div>
-                );
-              })}
-            </div>
-            <span className={ui.help}>
-              {p.weeksHelp(weeks.length, weeks[0]?.range ?? '', weeks.at(-1)?.range ?? '')}
-            </span>
+                ))}
+              </div>
+            )}
+            {unpractised.length > 0 && (
+              <p className={styles.unpractised}>{p.partsWithoutPractice(partList(unpractised, t))}</p>
+            )}
+            <span className={ui.help}>{p.weeksHelp(weeks.length)}</span>
           </>
         )}
       </section>
