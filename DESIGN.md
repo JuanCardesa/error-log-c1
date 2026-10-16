@@ -359,6 +359,11 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   Causa en tinta, detalle en `ink-2` y el siguiente paso (un enlace). Título solo en un
   primer uso; `inset` lo deja sin filete dentro de un bloque que ya lo tiene. Nunca un «0»
   ni una caja punteada.
+- **Decisión** (`ui.decision`): abre una vista de análisis (Progreso y Writing → Progreso).
+  Antetítulo en marca, titular en serif (Reco title), la evidencia en una línea de `ink-2`,
+  una acción y, al pie tras un filete, qué cubre la cifra. Una acción larga se parte en
+  vez de desbordar. Si la muestra no basta, `ui.smallSample` lo dice justo debajo:
+  «Muestra pequeña» en aviso y la explicación en `ink-2`.
 - **FileDrop**: elegir o soltar un archivo con los textos de la app, nunca el «Choose File»
   del navegador. `zone` cuando es la entrada principal (título, pista y el elegido en mono);
   `button` cuando es la alternativa a pegar el texto.
@@ -458,9 +463,27 @@ siempre. Un fallo de transporte se dice como «No pudimos confirmar el guardado�
   La nota se puede recorrer con el ratón sin que desaparezca y Escape la cierra (WCAG 1.4.13).
 - El panel de anotaciones está cerrado por defecto y se abre como columna al margen
   (bajo 1024 px, cajón bajo la cabecera, con velo y el fondo inerte). Anotar, corregir la transcripción en la propia hoja, editar
-  los datos y exportar viven en «Más acciones». La pestaña Progreso muestra medidas, filtros, evolución
-  ordinal y estadísticas por criterio; cada vacío conserva su significado y las fechas
-  aproximadas se distinguen visualmente.
+  los datos y exportar viven en «Más acciones». Las anotaciones del panel son una lista de
+  botones (la elegida con `aria-current`) que se recorre también con flechas o J/K.
+- La cabecera de la hoja lleva género, fecha, palabras y estado, y la nota total a la
+  derecha; la evaluación del pie no la repite (solo explica un total parcial). Fuera del
+  rango del enunciado, las palabras lo dicen («57 palabras · por debajo de 220–260»), en
+  aviso. Los datos de esa línea se separan con «·» y una línea partida nunca empieza por él.
+- Un error ya estudiado se subraya más suave, pero a 3:1 sobre la hoja.
+- **Criterios con su nombre oficial**, el mismo en los dos idiomas: Content, Communicative
+  Achievement, Organisation y Language (`CRITERION_LABEL`), como «Part 5».
+- **Progreso** abre con una decisión: el criterio de media más baja (o los empatados), el
+  resto en una línea y la acción de repasar las anotaciones pendientes de la redacción más
+  reciente que las tenga. Si los cuatro están a menos de medio punto, van parejos; con
+  menos de 3 notas por criterio, muestra pequeña. Debajo, la tabla por criterio (Última,
+  Media, n, con el más bajo marcado) y la evolución de una medida, con **Medida** y **Tipo**
+  (solo si hay más de uno) como menús que se aplican al momento. La gráfica es HTML en
+  porcentajes: el texto no escala con la anchura y las fechas de los extremos caben
+  enteras; las fechas aproximadas van en punto hueco.
+- **Reescrituras** lleva el periodo (30/60) en la cabecera, junto al primario, solo en esa
+  pestaña. Un texto sin transcripción ofrece «Añadir transcripción», sin caja.
+- Los vacíos de la biblioteca dicen lo que pasa: la búsqueda escrita, «No hay redacciones
+  pendientes de corregir» o «Ninguna redacción cumple estos filtros».
 - La acción de exportación del lector descarga JSON reimportable con evaluación,
   anotaciones y anclajes. Exportar datos incluye esas anotaciones en el volcado v4.
   [Contrato JSON](docs/WRITING-JSON.md) y [plan](docs/WRITING-PLAN.md).
