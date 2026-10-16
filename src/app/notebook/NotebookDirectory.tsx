@@ -35,7 +35,7 @@ export function NotebookDirectory({
       <h2 className={styles.directoryTitle}>{t.notebook.directory}</h2>
       <div className={styles.favoriteDirectory}>
         <Link href="/notebook?vista=favoritos" aria-current={favoritesView ? 'page' : undefined}>
-          {t.notebook.favorites} {favorites.length > 0 && <span>{favorites.length}</span>}
+          {t.notebook.favorites} {favorites.length > 0 && <span className={styles.favoriteCount}>{favorites.length}</span>}
         </Link>
         {favorites.length > 0 && <ul className={styles.favoriteLinks}>
           {favorites.slice(0, 8).map((note) => <li key={note.id}>

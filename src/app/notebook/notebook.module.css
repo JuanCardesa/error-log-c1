@@ -3,23 +3,6 @@
   gap: var(--space-6);
 }
 
-.newNoteLink {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: start;
-  min-height: var(--control-h);
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-control);
-  background: var(--color-ink);
-  color: var(--color-on-ink);
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.newNoteLink:hover { background: var(--color-primary-hover); color: var(--color-on-ink); }
-
 .readerActions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-3); margin-bottom: var(--space-4); }
 
 .draftNotice { padding: var(--space-4); border: 1px solid var(--color-warning-soft); border-radius: var(--radius-panel); background: var(--color-surface); }
@@ -29,21 +12,6 @@
 .draftList li { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--color-rule); }
 .draftList span { color: var(--color-ink-2); font: var(--text-aux); }
 .draftActions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
-
-.readerTitle {
-  font: var(--text-page-title);
-}
-
-.searchForm {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(170px, 240px) minmax(130px, 190px) auto;
-  align-items: end;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
-}
 
 .layout {
   display: grid;
@@ -76,25 +44,39 @@
   min-width: 0;
 }
 
-.directory {
-  padding: var(--space-4);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
-}
-
+/*
+ * El directorio es navegación, no una tarjeta: sin caja, con su cabecera sobre el mismo
+ * filete que la del listado. Sus enlaces van en tinta; el actual, en marca.
+ */
 .directoryTitle,
 .sectionTitle {
   font: var(--text-section);
 }
 
 .directoryTitle {
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.directory a {
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.directory a:hover {
+  color: var(--color-brand);
+  text-decoration: underline;
+}
+
+.directory a[aria-current='page'] {
+  color: var(--color-brand);
+  font-weight: 600;
 }
 
 .favoriteDirectory {
-  margin-bottom: var(--space-4);
-  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-rule);
 }
 
@@ -102,45 +84,58 @@
   display: flex;
   justify-content: space-between;
   gap: var(--space-2);
+  padding: var(--space-2) 0;
   font-weight: 600;
 }
 
-.favoriteDirectory a[aria-current='page'] {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.favoriteCount {
+  color: var(--color-ink-2);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 
 .favoriteLinks {
-  margin: var(--space-2) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.favoriteLinks a {
+.directory .favoriteLinks a {
   display: block;
+  padding: var(--space-1) 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--color-ink-2);
   font: var(--text-aux);
+}
+
+.directory .favoriteLinks a:hover {
+  color: var(--color-brand);
 }
 
 .favoriteAll {
   display: inline-block;
-  margin-top: var(--space-2);
+  padding: var(--space-1) 0;
   font: var(--text-aux);
 }
 
 .folderManager {
-  margin-top: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-rule);
 }
 
 .folderManager summary {
+  padding: var(--space-1) 0;
+  color: var(--color-ink-2);
   cursor: pointer;
   font-weight: 500;
+}
+
+.folderManager summary:hover,
+.folderManager details[open] summary {
+  color: var(--color-ink);
 }
 
 .folderForms {
@@ -183,16 +178,7 @@
   display: inline-block;
   min-height: var(--control-h-compact);
   padding: var(--space-2) 0;
-  color: var(--color-ink);
-  text-decoration: none;
   overflow-wrap: anywhere;
-}
-
-.folderList a:hover,
-.folderList a[aria-current='page'] {
-  color: var(--color-brand);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 .folderRow {
@@ -243,6 +229,10 @@
   white-space: nowrap;
 }
 
+.noteRow {
+  position: relative;
+}
+
 .noteList li {
   display: flex;
   justify-content: space-between;
@@ -254,8 +244,31 @@
 
 .noteLink {
   min-width: 0;
+  color: var(--color-ink);
   font: var(--text-subtitle);
+  text-decoration: none;
   overflow-wrap: anywhere;
+}
+
+/* La fila entera es el enlace; la estrella queda por encima y sigue siendo su botón. */
+.noteLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.noteLink:focus-visible {
+  outline: none;
+}
+
+.noteLink:focus-visible::after {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+
+.noteRow:hover .noteLink {
+  color: var(--color-brand);
+  text-decoration: underline;
 }
 
 .noteRowMain {
@@ -263,6 +276,11 @@
   align-items: center;
   min-width: 0;
   gap: var(--space-2);
+}
+
+.favoriteToggle {
+  position: relative;
+  z-index: var(--z-raised);
 }
 
 .favoriteToggle[aria-pressed='true'] {
@@ -341,6 +359,18 @@
   gap: var(--space-2);
   align-items: center;
   color: var(--color-ink-2);
+  font-size: var(--fs-body);
+}
+
+/* Las migas son el «volver» del lector: en `ink-2`, como `BackLink`, no enlaces de texto. */
+.breadcrumbs a {
+  color: var(--color-ink-2);
+  text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+  color: var(--color-ink);
+  text-decoration: underline;
 }
 
 .readerColumn {
@@ -379,6 +409,7 @@
 }
 
 .readerTitle {
+  font: var(--text-page-title);
   overflow-wrap: anywhere;
 }
 
@@ -396,51 +427,58 @@
   gap: var(--space-2);
 }
 
-.tags li {
+.tags a {
+  display: block;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-control);
   background: var(--color-brand-tint);
   color: var(--color-brand);
+  text-decoration: none;
+}
+
+/* Cada etiqueta abre la portada filtrada por ella. */
+.tags a:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 1023px) {
-  .searchForm {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
   .layout {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--space-5);
   }
 
-  .directory {
-    padding: var(--space-3) var(--space-4);
+  /* En una columna, el contenido va primero y el directorio detrás: en la portada la
+     carpeta ya se elige en los filtros, y en el lector las migas llevan a la suya. */
+  .layout > .sidebar {
+    order: 2;
   }
 
-  .readerLayout .sidebar {
+  .tocArea {
     grid-column: 1;
     grid-row: 1;
   }
 
   .readerLayout .readerColumn {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 2;
   }
 
-  .tocArea {
+  .readerLayout .sidebar {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
   }
 }
 
 @media (max-width: 639px) {
   .reader { padding: var(--space-5); }
-  .searchForm {
-    grid-template-columns: minmax(0, 1fr);
-  }
 
   .noteList li {
     display: grid;
     gap: var(--space-1);
+  }
+
+  /* La fecha, bajo el título y no bajo la estrella. */
+  .noteList .noteDate {
+    padding-left: calc(var(--control-h-touch) + var(--space-2));
   }
 }

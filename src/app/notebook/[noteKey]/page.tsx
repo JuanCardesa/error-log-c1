@@ -13,8 +13,8 @@ import { MarkdownRenderer } from '../MarkdownRenderer';
 import { NotebookDirectory } from '../NotebookDirectory';
 import { NotebookRelatedErrors } from '../NotebookRelatedErrors';
 import { TableOfContents } from '../TableOfContents';
-import { DeleteNotebookNote } from '../DeleteNotebookNote';
 import { FavoriteToggle } from '../FavoriteToggle';
+import { NoteActionsMenu } from '../NoteActionsMenu';
 import ui from '../../_shared/ui.module.css';
 import styles from '../notebook.module.css';
 
@@ -59,16 +59,15 @@ export default async function NotebookNotePage({ params }: { readonly params: Pr
         <div className={styles.readerColumn}>
           <div className={styles.readerActions}>
             <FavoriteToggle id={note.id} title={note.title} favoritedAt={note.favoritedAt} />
-            <a href={`/exportar/notebook-${String(note.id)}.md`} download className={ui.secondary}>{t.notebook.exportMd}</a>
-            <Link href={`${notebookNoteHref(note)}/editar`} className={styles.newNoteLink}>{t.notebook.edit}</Link>
-            <DeleteNotebookNote key={note.revision} note={{ id: note.id, uid: note.uid, revision: note.revision, title: note.title }} />
+            <Link href={`${notebookNoteHref(note)}/editar`} className={ui.secondary}>{t.notebook.edit}</Link>
+            <NoteActionsMenu key={note.revision} note={{ id: note.id, uid: note.uid, revision: note.revision, title: note.title }} />
           </div>
           <article className={styles.reader}>
             <h1 id={titleHeading?.slug} className={styles.readerTitle}>{note.title}</h1>
             <div className={styles.meta}>
               <span>{t.notebook.modified} <time dateTime={note.updatedAt}>{new Intl.DateTimeFormat(t.format.intl, { dateStyle: 'long' }).format(new Date(note.updatedAt))}</time></span>
               {note.tags.length > 0 && <ul className={styles.tags} aria-label={t.notebook.tags}>
-                {note.tags.map((tag) => <li key={tag}>{tag}</li>)}
+                {note.tags.map((tag) => <li key={tag}><Link href={`/notebook?${new URLSearchParams({ tag }).toString()}`}>{tag}</Link></li>)}
               </ul>}
             </div>
             {note.contentMarkdown === '' ? (

@@ -485,10 +485,12 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
           </select>
           {fieldError('folderId')}
         </label>
-        <label className={ui.field}>{n.tags} <span className={ui.optional}>{n.commaSeparated}</span>
+        <label className={ui.field}>{n.tags}
           <input className={ui.input} value={form.tagsText} placeholder={n.tagsPlaceholder} disabled={editorLocked || finishing}
             aria-invalid={fieldErrors['tags'] !== undefined}
             onChange={(event) => { change({ tagsText: event.target.value }); }} />
+          {/* Bajo el campo, no junto a la etiqueta: así los tres campos empiezan a la misma altura. */}
+          <span className={ui.help}>{n.commaSeparated}</span>
           {fieldError('tags')}
         </label>
       </div>
@@ -533,17 +535,25 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
       <div id="notebook-panel-preview" role="tabpanel" aria-labelledby="notebook-tab-preview" hidden={activeTab !== 'preview'}>
         {/* Oculta no se pinta: parsear el Markdown entero en cada pulsación frenaba la escritura en apuntes largos. */}
         {activeTab === 'preview' && <article className={styles.preview}>
-          <h1 id={hideFirstH1 ? firstHeading?.slug : undefined} className={styles.previewTitle}>{form.title.trim() || n.untitled}</h1>
+          {/* h2: el h1 de la página es «Editar apunte». */}
+          <h2 id={hideFirstH1 ? firstHeading?.slug : undefined} className={styles.previewTitle}>{form.title.trim() || n.untitled}</h2>
           {form.contentMarkdown === '' ? <p className={ui.help}>{n.nothingToShow}</p> : (
             <MarkdownRenderer markdown={form.contentMarkdown} basePath={savedNote === undefined ? '/notebook/' : readerHref} hideFirstH1={hideFirstH1} t={t} />
           )}
         </article>}
       </div>
 
+      {/*
+        El autoguardado ya guarda: lo principal es terminar, que guarda lo pendiente y vuelve al
+        lector. «Guardar ahora» solo aparece cuando queda algo por guardar, en vez de un primario gris.
+      */}
       <div className={styles.actions}>
-        <button type="button" className={ui.primary} disabled={editorLocked || finishing || issue !== null || !pendingChanges} onClick={() => { void save(true); }}>{n.saveNow}</button>
-        <button type="button" className={ui.secondary} disabled={editorLocked || finishing || issue !== null}
+        <button type="button" className={ui.primary} disabled={editorLocked || finishing || issue !== null}
           onClick={() => { void finishEditing(); }}>{n.finishEditing}</button>
+        {(pendingChanges || pending || issue !== null) && (
+          <button type="button" className={ui.secondary} disabled={editorLocked || finishing || issue !== null || !pendingChanges}
+            onClick={() => { void save(true); }}>{n.saveNow}</button>
+        )}
         {error !== null && <p role="alert" className={ui.fieldError}>{error}</p>}
       </div>
       <ConfirmDialog open={confirmDiscard} title={n.discardDraftTitle} confirmLabel={n.discardDraft}

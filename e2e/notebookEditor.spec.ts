@@ -33,8 +33,10 @@ test('crea, edita y previsualiza con el mismo Markdown del lector', async ({ pag
 
   await page.getByRole('tab', { name: 'Vista previa' }).click();
   const preview = page.getByRole('tabpanel', { name: 'Vista previa' });
-  await expect(preview.getByRole('heading', { level: 1, name: 'Past modal verbs' })).toHaveCount(1);
-  await expect(preview.getByRole('heading', { level: 1, name: 'Past modal verbs' })).toHaveAttribute('id', 'nb-past-modal-verbs');
+  // El título de la vista previa es un h2: el h1 de la página es «Nuevo apunte».
+  await expect(preview.getByRole('heading', { level: 2, name: 'Past modal verbs' })).toHaveCount(1);
+  await expect(preview.getByRole('heading', { level: 2, name: 'Past modal verbs' })).toHaveAttribute('id', 'nb-past-modal-verbs');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   await expect(preview.getByRole('heading', { name: 'Must have' })).toHaveAttribute('id', 'nb-must-have');
   await expect(preview.locator('strong')).toHaveText('deducción');
   await page.keyboard.press('Control+s');
@@ -59,4 +61,46 @@ test('crea, edita y previsualiza con el mismo Markdown del lector', async ({ pag
   await page.getByRole('link', { name: 'Volver a lectura' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Past modal verbs revisited' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'New rule' })).toBeVisible();
+});
+
+test('el editor termina como acción principal y solo ofrece «Guardar ahora» con cambios', async ({ page }) => {
+  await page.goto('/notebook/nuevo');
+  const finish = page.getByRole('button', { name: 'Terminar edición' });
+  await expect(finish).toBeVisible();
+  // Sin nada que guardar no hay un primario gris: el botón no está.
+  await expect(page.getByRole('button', { name: 'Guardar ahora' })).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Título' }).fill(`Guardar ${randomUUID().slice(0, 8)}`);
+  await expect(page.getByRole('button', { name: 'Guardar ahora' })).toBeEnabled();
+  await page.keyboard.press('Control+s');
+  await expect(page.getByText('Guardado', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Guardar ahora' })).toHaveCount(0);
+
+  // Las tres casillas de datos empiezan a la misma altura: la pista va bajo Etiquetas.
+  const tops = await Promise.all(['Título', 'Carpeta', 'Etiquetas'].map(async (name) => {
+    const field = name === 'Carpeta' ? page.getByRole('combobox', { name }) : page.getByRole('textbox', { name: new RegExp(`^${name}`, 'u') });
+    return (await field.boundingBox())?.y ?? -1;
+  }));
+  expect(new Set(tops.map(Math.round)).size, `alturas: ${tops.join('/')}`).toBe(1);
+});
+
+test('el lector deja Exportar y Borrar en el menú del apunte', async ({ page }) => {
+  await page.goto('/notebook/nuevo');
+  const title = `Lector ${randomUUID().slice(0, 8)}`;
+  await page.getByRole('textbox', { name: 'Título' }).fill(title);
+  await page.getByRole('textbox', { name: /Etiquetas/u }).fill('lector-e2e');
+  await page.getByRole('button', { name: 'Terminar edición' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+
+  await expect(page.getByRole('button', { name: 'Borrar apunte…' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Exportar .md' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Más acciones del apunte' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Exportar .md' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Borrar apunte…' })).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // Una etiqueta del lector abre la portada filtrada por ella.
+  await page.getByRole('list', { name: 'Etiquetas' }).getByRole('link', { name: 'lector-e2e' }).click();
+  await expect(page).toHaveURL(/\/notebook\?tag=lector-e2e$/u);
+  await expect(page.getByRole('button', { name: 'Etiqueta: lector-e2e' })).toBeVisible();
+  await expect(page.locator('section[aria-labelledby="notebook-list-title"]').getByRole('link', { name: title })).toBeVisible();
 });

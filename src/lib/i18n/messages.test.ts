@@ -41,6 +41,7 @@ function render(t: Messages, n: number) {
     'common.page': t.common.page(n),
     'common.backTo': t.common.backTo('Writing'),
     'common.filterValue': t.common.filterValue('Causa', 'Todas'),
+    'common.removeFilter': t.common.removeFilter('Gramática'),
     'nav.search': t.nav.search("Ctrl+K"),
     'palette.noResults': t.palette.noResults("café & té"),
     'palette.goTo': t.palette.goTo("[section]"),

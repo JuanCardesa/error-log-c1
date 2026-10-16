@@ -152,10 +152,11 @@ export function NotebookImport({ folders, initialFolderId }: {
               </select>
               {fieldError('folderId')}
             </label>
-            <label className={ui.field}>{n.tags} <span className={ui.optional}>{n.commaSeparated}</span>
+            <label className={ui.field}>{n.tags}
               <input className={ui.input} value={form.tagsText} placeholder={n.tagsPlaceholder} disabled={saving}
                 aria-invalid={fieldError('tags') !== null}
                 onChange={(event) => { setForm({ ...form, tagsText: event.target.value }); }} />
+              <span className={ui.help}>{n.commaSeparated}</span>
               {fieldError('tags')}
             </label>
           </div>
@@ -169,7 +170,7 @@ export function NotebookImport({ folders, initialFolderId }: {
 
           <section aria-label={n.notePreview}>
             <article className={editor.preview}>
-              <h1 id={hideFirstH1 ? firstHeading.slug : undefined} className={editor.previewTitle}>{form.title.trim() || n.untitled}</h1>
+              <h2 id={hideFirstH1 ? firstHeading.slug : undefined} className={editor.previewTitle}>{form.title.trim() || n.untitled}</h2>
               {draft.contentMarkdown === '' ? <p className={ui.help}>{n.fileEmpty}</p> : (
                 <MarkdownRenderer markdown={draft.contentMarkdown} hideFirstH1={hideFirstH1} t={t} />
               )}

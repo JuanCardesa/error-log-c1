@@ -198,6 +198,9 @@
   display: flex;
   flex-direction: column;
   min-width: 220px;
+  /* Un menú largo (las etiquetas del Notebook) se desplaza dentro en vez de salirse. */
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
   padding: var(--space-1-5);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-overlay);

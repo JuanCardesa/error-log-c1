@@ -99,7 +99,6 @@ export const en = {
     backTo: (place: string) => `Back to ${place}`,
     clearSearch: 'Clear search',
     clearFilters: 'Clear filters',
-    applyFilters: 'Apply filters',
     /** Botón de un menú de filtro: «Cause: All». */
     filterValue: (name: string, value: string) => `${name}: ${value}`,
     /** Zona de archivo propia (`FileDrop`), en lugar del «Choose File» del navegador. */
@@ -108,6 +107,7 @@ export const en = {
     fileChosen: 'Chosen:',
     fileReplace: 'Choose another',
     removeFilters: 'Remove filters',
+    removeFilter: (label: string) => `Remove filter ${label}`,
     period: 'Period',
     download: 'Download',
     chooseOption: 'Choose an option from the list.',
@@ -1505,7 +1505,6 @@ Photos and details of the task:
     folder: 'Folder',
     withSubfolders: (name: string) => `${name} and subfolders`,
     tag: 'Tag',
-    optionalPlaceholder: 'Optional',
     matchTitle: 'Match in the title',
     matchTag: 'Match in a tag',
     tags: 'Tags',
@@ -1526,6 +1525,7 @@ Photos and details of the task:
     deleteConflict: 'The note has changed. Cancel and reload the page to check the current version before deleting it.',
     deleteUncertain: 'The deletion couldn’t be confirmed. Please try again.',
     deleteNoteMenu: 'Delete note…',
+    moreActions: 'More actions for this note',
     deleteNote: 'Delete note',
     deleteTitle: (title: string) => `Delete ${title}`,
     deleteBody: 'This note and its links with Error Log will be deleted. The errors will be kept. This can’t be undone.',

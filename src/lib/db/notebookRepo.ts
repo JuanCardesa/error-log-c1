@@ -178,6 +178,15 @@ export function listFavoriteNotebookNotes(db: Db): NotebookNoteSummary[] {
     .orderBy(desc(notebookNote.favoritedAt), asc(notebookNote.id)).all();
 }
 
+/** Etiquetas en uso, las más repetidas primero: son las opciones del filtro de la portada. */
+export function listNotebookTags(db: Db): { readonly tag: string; readonly count: number }[] {
+  return db.$client.prepare<[], { tag: string; count: number }>(`
+    SELECT tag.value AS tag, count(*) AS count
+    FROM notebook_note AS n, json_each(n.tags) AS tag
+    GROUP BY tag.value ORDER BY count DESC, tag.value
+  `).all();
+}
+
 /** La marca no participa en el CAS del contenido ni modifica la fecha de edición. */
 export function setNotebookNoteFavorite(
   db: Db,

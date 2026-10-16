@@ -13,6 +13,7 @@ import {
   listNotebookFolders,
   listFavoriteNotebookNotes,
   listNotebookNotes,
+  listNotebookTags,
   listRecentNotebookNotes,
   saveNotebookNote,
   setNotebookNoteFavorite,
@@ -67,6 +68,15 @@ describe('repositorio de apuntes Notebook', () => {
     setNotebookNoteFavorite(db, { id: third.id, favorite: true }, '2026-09-29T09:00:00.000Z');
     expect(listFavoriteNotebookNotes(db).map((note) => note.id)).toEqual([second.id, third.id, first.id]);
     expect(listRecentNotebookNotes(db).map((note) => note.id)).toEqual([third.id, second.id, first.id]);
+  });
+
+  it('lista las etiquetas en uso, las más repetidas primero', () => {
+    createNotebookNote(db, noteInput({ tags: ['part4', 'modales'] }), NOW);
+    createNotebookNote(db, noteInput({ uid: 'd8766760-f8e8-4f34-b739-d07113f30d6a', tags: ['part4', 'essay'] }), NOW);
+    createNotebookNote(db, noteInput({ uid: 'd8766760-f8e8-4f34-b739-d07113f30d6b', tags: [] }), NOW);
+    expect(listNotebookTags(db)).toEqual([
+      { tag: 'part4', count: 2 }, { tag: 'essay', count: 1 }, { tag: 'modales', count: 1 },
+    ]);
   });
 
   it('crea una vez por UID y devuelve la fila ya confirmada al reintentar', () => {
