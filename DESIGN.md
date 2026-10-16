@@ -27,8 +27,8 @@ colors:
   viz-bar-past: "#9fbdb0"
   viz-acc-85: "#c9dcd3"
   viz-acc-70: "#dfe9e3"
-  viz-acc-55: "#ecedea"
-  viz-acc-low: "#f1e9da"
+  viz-acc-55: "#ebe6d8"
+  viz-acc-low: "#ecdcb9"
 typography:
   page-title:
     fontFamily: "Source Serif 4"
@@ -224,9 +224,19 @@ la tanda, menús, la paleta ⌘K y avisos). Nunca en tablas ni datos.
 
 ### Visualización
 - **Causas**: `viz-study` las que se estudian, `viz-exec` las de protocolo de examen.
-- **RUOE**: `viz-acc-*` como fondo de celda por tramo; el número y la ratio mandan.
-- **Evolución por part**: semanas previas en `viz-bar-past`, la última en `brand`, sin
-  práctica = 2 px de `rule`.
+- **RUOE**: `viz-acc-*` como fondo de celda por tramo; el número y la ratio (en tinta)
+  mandan. Escala ordinal: verde, verde claro, arena (55–69 %) y ámbar (menos del 55 %);
+  ningún tramo coincide con `surface-2`. Columnas de semana iguales (`table-layout: fixed`);
+  si no caben, la matriz se abre por las semanas recientes con la columna Part fija (con el
+  grano de papel, `--paper-grain`). El panel se abre con la part más floja de la última
+  semana con práctica, y lo dice.
+- **Evolución por part**: una columna por semana con su ratio encima y su fecha de inicio
+  debajo. Semanas previas en `viz-bar-past` y, en `brand`, la última **con práctica**, que es
+  la cifra del titular. Sin práctica = solo la línea base y «—». Una part sin práctica en
+  esas semanas no se dibuja: se nombra en una línea («Sin práctica en estas semanas: Part 5
+  y Part 6»), igual que en la matriz. En móvil, una part por fila.
+- **Filas que enlazan** (categorías de Progreso): el enlace se estira sobre la fila con
+  `::after`, la fila entera es el objetivo y la flecha se tiñe al pasar.
 
 ### Named Rules
 **The Glass Rule.** El cristal es para lo que flota sobre la página. Lo que se lee o se
