@@ -13,6 +13,8 @@
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-1);
+  /* El par serif se apila según el ancho del panel, no de la ventana (correction.module.css). */
+  container-type: inline-size;
 }
 
 .head {
@@ -70,6 +72,13 @@
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.ankiHint {
+  display: block;
+  margin-top: var(--space-1);
+  font: var(--text-aux);
+  color: var(--color-ink-2);
 }
 
 .actions {

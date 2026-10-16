@@ -46,6 +46,8 @@ export default async function ErroresPage({ searchParams }: { readonly searchPar
   const withItemsOnly = one(params['items']) === '1';
   const requestedPage = Number(one(params['p']));
   const selectedId = Number(one(params['error']));
+  // Al pasar de página con las flechas del detalle: abrir el primero o el último.
+  const at = one(params['at']);
 
   const now = new Date();
   const db = getDb();
@@ -82,6 +84,15 @@ export default async function ErroresPage({ searchParams }: { readonly searchPar
     for (const [key, value] of Object.entries({ ...base, ...overrides })) if (value !== undefined && value !== '') next.set(key, value);
     const text = next.toString();
     return text === '' ? '/errores' : `/errores?${text}`;
+  };
+
+  const edgeRow = at === 'first' ? result.rows[0] : at === 'last' ? result.rows.at(-1) : undefined;
+  const initialSelectedId = edgeRow?.error.id ?? (Number.isInteger(selectedId) && selectedId > 0 ? selectedId : null);
+  const paging = {
+    offset: (page - 1) * PAGE_SIZE,
+    total: result.total,
+    prevHref: pages > 1 ? href({ p: String(page > 1 ? page - 1 : pages) }) : null,
+    nextHref: pages > 1 ? href({ p: String(page < pages ? page + 1 : 1) }) : null,
   };
 
   const filtered = q !== '' || category !== undefined || cause !== undefined || confidence !== undefined
@@ -169,8 +180,9 @@ export default async function ErroresPage({ searchParams }: { readonly searchPar
         key={href({ p: String(page) })}
         rows={result.rows}
         mode="global"
-        initialSelectedId={Number.isInteger(selectedId) && selectedId > 0 ? selectedId : null}
+        initialSelectedId={initialSelectedId}
         outsideSelected={outside}
+        paging={paging}
         subcategorySuggestions={distinctSubcategories(db)}
         caption={t.errors.foundCaption}
         empty={(

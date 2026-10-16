@@ -112,7 +112,10 @@ test('un fallo de Anki se explica y el reintento posterior funciona', async ({ p
 test('Anki cerrado se explica sin fingir que no hay fallos', async ({ page, request }) => {
   await control(request, { disconnected: true });
   await page.goto('/anki');
+  // El estado se dice una vez; el aviso explica el porqué y sincronizar pasa a reintentar.
   await expect(page.getByText('No disponible', { exact: true })).toBeVisible();
+  await expect(page.getByText('No conectado.', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Volver a probar', exact: true })).toHaveAccessibleDescription(/Puedes seguir leyendo/);
   await expect(page.getByText('No se puede conectar', { exact: false }).first()).toBeVisible();
   await expect(page.getByText('Puedes seguir leyendo y editando la cola.', { exact: false })).toBeVisible();
 
@@ -254,7 +257,7 @@ test('corregir la categoria de un error convertido reagrupa su fallo en el repas
   // El aviso de la primera sincronización puede seguir a la vista: se espera el de esta.
   await expect(toast(page, 'Sincronizado: 1 repaso nuevo')).toBeVisible();
 
-  const heading = (name: string) => page.getByRole('heading', { level: 3 }).filter({ hasText: name });
+  const heading = (name: string) => page.getByRole('heading', { level: 2 }).filter({ hasText: name });
   await page.goto('/anki?tab=repasos');
   await expect(heading(categoryLabel(linked?.category ?? '', getMessages('es')))).toBeVisible();
 

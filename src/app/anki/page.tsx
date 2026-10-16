@@ -53,6 +53,8 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
   const t = await getT();
   const a = t.anki;
   const windowDays = parseWindow(params['w']);
+  // `?error=` llega desde el detalle de un error: «Crear la tarjeta».
+  const selectedError = Number(typeof params['error'] === 'string' ? params['error'] : '');
   const tab: Tab = params['tab'] === 'convertidas' || params['tab'] === 'repasos' ? params['tab'] : 'pendientes';
   const now = new Date();
   const db = getDb();
@@ -77,6 +79,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
           title="Anki"
           actions={(
             <div className={styles.connection}>
+              {/* El estado se dice aquí una vez; el aviso de abajo solo explica por qué. */}
               <span className={status.available ? styles.connOn : styles.connOff}>
                 <span className={styles.dot} aria-hidden="true" />
                 {status.available ? a.available : a.unavailable}
@@ -84,13 +87,12 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
               <span className={ui.help}>
                 {lastSynced === null ? a.notSyncedYet : a.syncedAgo(ago(lastSynced, now, t))}
               </span>
-              <SyncButton />
+              <SyncButton available={status.available} />
             </div>
           )}
         />
         {!status.available && (
           <div className={ui.notice} role="status" id="anki-status">
-            <span className={ui.noticeTitleWarn}>{a.notConnected}</span>
             <span className={styles.noticeText}>
               {status.text(t)} {a.keepWorking}
             </span>
@@ -102,7 +104,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
             {a.connectionHelp}
           </summary>
           <div className={`${ui.disclosureBody} ${styles.connectionBody}`}>
-            <p>{status.text(t)}</p>
+            {status.available && <p>{status.text(t)}</p>}
             <p>{a.deck(config?.sourceDeck ?? anki.sync?.sourceDeck ?? '—')}</p>
             {anki.sync?.rolloverHour != null && (
               <p>{a.rollover(anki.sync.rolloverHour, anki.sync.rolloverSource === 'config')}</p>
@@ -134,6 +136,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
           ) : (
             <PendingQueue
               available={status.available}
+              initialId={Number.isInteger(selectedError) && selectedError > 0 ? selectedError : undefined}
               entries={q5.queue.map((error) => {
                 const session = sessionById.get(error.sessionId);
                 return {
@@ -221,10 +224,10 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
                     {failing.map((group) => (
                       <details key={group.category ?? 'SIN_MAPEAR'} className={styles.group}>
                         <summary className={styles.groupSummary}>
-                          <h3 className={styles.groupName}>
+                          <h2 className={styles.groupName}>
                             <ChevronRight size={14} className="chevron" aria-hidden="true" />
                             {group.category === null ? a.noCategory : categoryLabel(group.category, t)}
-                          </h3>
+                          </h2>
                           <span className={styles.muted}>
                             {a.groupStats(group.lapses, group.learningFailures, group.reviews)}
                           </span>

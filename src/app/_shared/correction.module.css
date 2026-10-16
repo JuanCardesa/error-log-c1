@@ -63,7 +63,22 @@
   font: var(--text-correction);
 }
 
+/*
+ * Apilado (etiqueta encima): en móvil y en un contenedor estrecho como el panel de detalle,
+ * donde la columna de etiquetas dejaba la respuesta en tres líneas.
+ */
 @media (max-width: 639px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .detail dd + dt {
+    margin-top: var(--space-2);
+  }
+}
+
+@container (max-width: 420px) {
   .detail {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;

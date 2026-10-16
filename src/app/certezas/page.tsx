@@ -62,13 +62,14 @@ export default async function CertezasPage({ searchParams }: { readonly searchPa
 
       <FilterBar
         search={<LiveSearch placeholder={t.errors.searchPlaceholder} label={t.certainties.searchLabel} className={ui.filterSearch} />}
-        aside={t.certainties.count(rows.length, FIXED_WINDOW_DAYS)}
+        aside={t.certainties.count(rows.length)}
       />
 
       <ErrorExplorer
         key={q}
         rows={rows}
         mode="global"
+        showCause
         initialSelectedId={Number.isInteger(selected) && selected > 0 ? selected : null}
         subcategorySuggestions={distinctSubcategories(db)}
         caption={t.certainties.caption(FIXED_WINDOW_DAYS)}

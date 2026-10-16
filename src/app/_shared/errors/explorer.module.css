@@ -13,12 +13,22 @@
 .sessionMode .colItem { width: 56px; }
 .sessionMode .colCategory { width: 22%; }
 .sessionMode .colCause { width: 152px; }
-.sessionMode .colAnki { width: 128px; }
+.sessionMode .colAnki { width: 140px; }
 
 /* Modo global: Corrección · Contexto · Sesión · Anki. */
 .globalMode .colCorrection { width: 26%; }
 .globalMode .colSession { width: 24%; }
-.globalMode .colAnki { width: 128px; }
+.globalMode .colAnki { width: 140px; }
+
+/* Con Causa (Falsas certezas): Corrección · Contexto · Causa · Sesión · Anki. */
+.globalMode .colCause { width: 152px; }
+.globalMode.withCause .colCorrection { width: 24%; }
+.globalMode.withCause .colSession { width: 20%; }
+
+/* La fecha de la sesión bajo la corrección, solo cuando no cabe la columna Sesión. */
+.subDate {
+  display: none;
+}
 
 /* Con el panel abierto, fuera lo que no cabe: Causa y Anki, o Contexto. */
 .narrow .wide {
@@ -28,7 +38,9 @@
 .sessionMode.narrow .colItem { width: 44px; }
 .sessionMode.narrow .colCategory { width: 38%; }
 .globalMode.narrow .colCorrection { width: 44%; }
-.globalMode.narrow .colAnki { width: 116px; }
+.globalMode.narrow .colAnki { width: 140px; }
+.globalMode.withCause.narrow .colCorrection { width: 36%; }
+.globalMode.withCause.narrow .colSession { width: auto; }
 
 .mono {
   font: var(--text-data);
@@ -81,11 +93,19 @@
 @media (max-width: 639px) {
   .sessionMode .colCause,
   .sessionMode .colAnki,
-  .globalMode .wide {
+  .globalMode .wide,
+  .globalMode .colSession,
+  .globalMode.withCause .colAnki {
     display: none;
   }
 
+  .subDate {
+    display: inline;
+  }
+
   .sessionMode .colCategory { width: 34%; }
-  .globalMode .colCorrection { width: 44%; }
-  .globalMode .colAnki { width: 116px; }
+  .globalMode .colCorrection,
+  .globalMode.withCause .colCorrection { width: auto; }
+  .globalMode .colAnki { width: 132px; }
+  .globalMode .colCause { width: 128px; }
 }

@@ -107,6 +107,8 @@ test.describe('progreso', () => {
   test('las falsas certezas se listan con periodo fijo y se leen en su detalle', async ({ page }) => {
     await page.goto('/certezas');
     await expect(page.getByText('últimos 30 días, periodo fijo')).toBeVisible();
+    // La causa separa el despiste de lo que no se sabía: tiene su columna.
+    await expect(page.getByRole('columnheader', { name: 'Causa' })).toBeVisible();
     const first = page.getByRole('button', { name: /^Ver error/ }).first();
     await first.click();
     await expect(page.getByRole('complementary', { name: 'Detalle del error' })).toContainText('Seguro');
@@ -126,6 +128,33 @@ test.describe('progreso', () => {
 });
 
 test.describe('errores', () => {
+  test('el detalle cuenta sobre todos los resultados y sus flechas cruzan de página', async ({ page }) => {
+    await page.goto('/errores');
+    const total = Number((await page.getByText(/^\d+ resultados$/).innerText()).split(' ')[0]);
+    test.skip(total <= 25, 'hace falta más de una página de errores');
+
+    await page.goto('/errores?p=2');
+    await page.getByRole('button', { name: /^Ver error/ }).first().click();
+    const panel = page.getByRole('complementary', { name: 'Detalle del error' });
+    await expect(panel).toContainText(`26 de ${String(total)}`);
+
+    // Antes del primero de esta página va el último de la anterior, no el último de esta.
+    await panel.getByRole('button', { name: 'Error anterior' }).click();
+    await expect(page).toHaveURL(/p=1/);
+    await expect(panel).toContainText(`25 de ${String(total)}`);
+    await expect(page).not.toHaveURL(/at=/);
+  });
+
+  test('un error pendiente lleva a crear su tarjeta en Anki', async ({ page }) => {
+    await page.goto('/errores?anki=pendiente');
+    await page.getByRole('button', { name: /^Ver error/ }).first().click();
+    const panel = page.getByRole('complementary', { name: 'Detalle del error' });
+    const correction = (await panel.locator('dd').nth(1).innerText()).trim();
+    await panel.getByRole('link', { name: 'Crear la tarjeta' }).click();
+    await expect(page).toHaveURL(/\/anki\?error=\d+/);
+    await expect(page.getByRole('complementary', { name: 'Vista previa de la tarjeta' })).toContainText(correction);
+  });
+
   test('busca en todos los errores, filtra por categoría desde Progreso y abre el detalle', async ({ page }) => {
     await page.goto('/informe?w=60');
     const category = page.getByRole('table', { name: /Categorías/ }).getByRole('link').first();

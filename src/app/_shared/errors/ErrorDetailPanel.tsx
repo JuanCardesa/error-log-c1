@@ -93,8 +93,9 @@ export function ErrorDetailPanel({
       }}
     >
       <div className={styles.head}>
+        {/* La sesión ya está en los datos de abajo: aquí, qué error es y dónde va. */}
         <span className={styles.context}>
-          {t.errors.errorRef(error.itemRef)} · {title}
+          {t.errors.errorRef(error.itemRef)}
           {position !== null && <span className={styles.position}>{t.errors.position(position.index + 1, position.total)}</span>}
         </span>
         <button type="button" className={ui.iconButton} aria-label={t.review.prevError} onClick={onPrev} disabled={!canStep}>
@@ -136,7 +137,17 @@ export function ErrorDetailPanel({
             <dt>{t.errorForm.confidence}</dt>
             <dd>{t.labels.confidence[error.confidence]}</dd>
             <dt>Anki</dt>
-            <dd className={anki.className}>{anki.label}</dd>
+            <dd>
+              <span className={anki.className}>{anki.label}</span>
+              {ankiOverride === undefined && state === 'PENDING' && (
+                <> · <Link href={`/anki?error=${String(error.id)}`}>{t.errors.ankiCreate}</Link></>
+              )}
+              {ankiOverride === undefined && state === 'LEGACY' && (
+                <span className={styles.ankiHint}>
+                  {t.errors.ankiLegacyHint} <Link href="/anki?tab=convertidas">{t.errors.ankiLegacyLink}</Link>
+                </span>
+              )}
+            </dd>
             <dt>{t.errors.session}</dt>
             <dd>
               {showSessionLink ? (

@@ -117,7 +117,7 @@ function render(t: Messages, n: number) {
     'errors.removeFilter': t.errors.removeFilter("[label]"),
     'errors.results': t.errors.results(n),
     'certainties.introStrong': t.certainties.introStrong(30),
-    'certainties.count': t.certainties.count(n, 30),
+    'certainties.count': t.certainties.count(n),
     'certainties.caption': t.certainties.caption(30),
     'certainties.noMatch': t.certainties.noMatch("café & té"),
     'certainties.noneSure': t.certainties.noneSure(30),
