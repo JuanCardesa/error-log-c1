@@ -26,7 +26,7 @@ export function importSessionWithErrors(db: Db, value: unknown, options: {
     ok: false, fieldErrors,
     message: t.import.notCreated(
       !envelope.success && envelope.error.issues.some((issue) => issue.path[0] === 'errors') ? 'fields' : 'header',
-      !envelope.success ? importIssues(envelope.error, t) : '',
+      !envelope.success ? importIssues(envelope.error, value, t) : '',
     ),
   };
   const header = sessionInputSchema({ today: options.today, t }).safeParse({

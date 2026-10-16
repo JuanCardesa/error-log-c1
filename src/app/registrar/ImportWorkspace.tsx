@@ -353,19 +353,15 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
         </form>
       </section>
 
-      <div className={styles.progress}>
-        <div className={styles.segments} aria-hidden="true">
-          {rows.map((row) => (
-            <span
-              key={row.id}
-              className={`${styles.segment} ${pending.has(row.id) ? styles.segPending : styles.segDone} ${row.id === selectedId ? styles.segActive : ''}`}
-              onClick={() => { select(row.id); }}
-            />
-          ))}
-        </div>
-        <span className={styles.progressText}>
-          <span className={ui.ok}>{done}</span> / {rows.length} {t.review.complete}
-        </span>
+      {/* Solo un dibujo del avance: el índice y el selector son la navegación, y la barra
+          lo dice con palabras. */}
+      <div className={styles.segments} aria-hidden="true">
+        {rows.map((row) => (
+          <span
+            key={row.id}
+            className={`${styles.segment} ${pending.has(row.id) ? styles.segPending : styles.segDone} ${row.id === selectedId ? styles.segActive : ''}`}
+          />
+        ))}
       </div>
 
       <div className={`${ui.surface} ${styles.grid}`}>
@@ -467,9 +463,9 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
       )}
 
       <div className={styles.bar}>
-        <span id={`${scope}-pending`} className={`${styles.barText} ${pending.size > 0 ? ui.warn : ui.ok}`}>
+        <span id={`${scope}-pending`} className={`${styles.barText} ${pending.size > 0 || rows.length === 0 ? '' : ui.ok}`}>
           {pending.size > 0
-            ? t.review.pendingBar(pending.size)
+            ? t.review.pendingBar(done, rows.length)
             : rows.length === 0 ? t.review.noErrorsBar : t.review.readyBar(rows.length)}
         </span>
         <span className={ui.spacer} />
@@ -544,7 +540,7 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
       </p>
     );
   };
-  const detailsOpen = missing.includes('prompt') || ['prompt', 'itemRef', 'myAnswer', 'subcategory', 'lateInSession'].some((field) => errorFor(field).length > 0);
+  const detailsOpen = missing.includes('prompt') || ['prompt', 'itemRef', 'subcategory', 'lateInSession'].some((field) => errorFor(field).length > 0);
 
   return (
     <div className={styles.editor}>
@@ -574,13 +570,17 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
       </div>
 
       <div className={styles.answers}>
+        {/* Tachada como en el resto de la app, pero es un campo: se corrige aquí mismo. */}
         <div className={ui.field}>
-          <span>{t.correction.yourAnswer}</span>
-          {row.myAnswer.trim() === '' ? (
-            <span className={`${styles.mineBox} ${styles.mineMissing}`}>{t.correction.noAnswer}</span>
-          ) : (
-            <s className={styles.mineBox}>{row.myAnswer}</s>
-          )}
+          <label htmlFor={id('mine')}>{t.correction.yourAnswer}</label>
+          <input
+            id={id('mine')}
+            className={`${ui.input} ${styles.mineInput}`}
+            value={row.myAnswer}
+            placeholder={t.correction.noAnswer}
+            autoComplete="off"
+            onChange={(event) => { onChange({ myAnswer: event.target.value }); }}
+          />
         </div>
         <div className={ui.field}>
           <label htmlFor={id('correct')}>{t.correction.correction}</label>
@@ -679,10 +679,6 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
             <div className={ui.field}>
               <label htmlFor={id('f7')}>{t.errorForm.item}</label>
               <input id={id('f7')} className={ui.input} value={row.itemRef} autoComplete="off" onChange={(event) => { onChange({ itemRef: event.target.value }); }} />
-            </div>
-            <div className={ui.field}>
-              <label htmlFor={id('f8')}>{t.correction.yourAnswer}</label>
-              <input id={id('f8')} className={ui.input} value={row.myAnswer} autoComplete="off" onChange={(event) => { onChange({ myAnswer: event.target.value }); }} />
             </div>
             <div className={ui.field}>
               <label htmlFor={id('f9')}>{t.errorForm.subcategory}</label>

@@ -47,17 +47,10 @@
   display: none;
 }
 
-/* ── Progreso segmentado ─────────────────────────────────────────────────── */
-
-.progress {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
+/* ── Progreso segmentado: solo dibujo, la barra inferior lo dice con palabras ── */
 
 .segments {
   display: flex;
-  flex: 1;
   gap: 3px;
   min-width: 0;
 }
@@ -66,24 +59,20 @@
   flex: 1;
   height: 6px;
   border-radius: 1px;
-  cursor: pointer;
+  transition: background-color var(--dur-panel) var(--ease-out);
 }
 
 .segDone {
   background: var(--color-success);
 }
 
+/* Lo que falta es trabajo por hacer, no un aviso: en neutro. */
 .segPending {
-  background: var(--color-warning-soft);
+  background: var(--color-rule);
 }
 
 .segActive {
   box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 3px var(--color-brand);
-}
-
-.progressText {
-  font: var(--text-data);
-  white-space: nowrap;
 }
 
 /* ── Índice + editor ──────────────────────────────────────────────────────── */
@@ -114,6 +103,7 @@
 .indexCount {
   font-size: var(--fs-body);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .smallPill {
@@ -251,25 +241,24 @@
   gap: var(--space-4);
 }
 
-.mineBox {
-  display: flex;
-  align-items: center;
-  min-height: var(--control-h);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-control);
-  background: var(--color-bg);
+/* Tu respuesta, tachada como en toda la app mientras no se edita. */
+.mineInput {
   font: var(--text-prompt);
   color: var(--color-ink-2);
+}
+
+.mineInput:not(:placeholder-shown):not(:focus) {
   text-decoration-line: line-through;
   text-decoration-color: var(--color-danger);
   text-decoration-thickness: 1.5px;
-  overflow-wrap: anywhere;
 }
 
-.mineMissing {
+.mineInput:focus {
+  color: var(--color-ink);
+}
+
+.mineInput::placeholder {
   font-style: italic;
-  font-size: var(--fs-subtitle);
-  text-decoration: none;
 }
 
 .correctInput {
@@ -295,7 +284,7 @@
 
 .moreGrid {
   display: grid;
-  grid-template-columns: 96px repeat(2, minmax(0, 1fr));
+  grid-template-columns: 96px minmax(0, 1fr);
   gap: var(--space-3);
 }
 
@@ -306,7 +295,9 @@
   gap: 2px;
 }
 
-/* ── Barra inferior fija, en cristal ──────────────────────────────────────── */
+/* ── Barra inferior fija, en cristal ──────────────────────────────────────────
+ * A sangre como la cabecera, con el contenido alineado con la columna. El cristal de
+ * fuera de la columna es `border-image` desbordado: se pinta, pero no crea scroll. */
 
 .bar {
   position: sticky;
@@ -314,23 +305,30 @@
   z-index: var(--z-bar);
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3) var(--space-4);
   flex-wrap: wrap;
-  margin: 0 calc(-1 * var(--page-pad));
-  padding: var(--space-4) var(--page-pad);
-  background: var(--glass-footer-bg);
+  padding: var(--space-3) 0;
+  border-image: linear-gradient(to bottom, var(--glass-border) 0 1px, var(--glass-footer-bg) 1px) 0 fill / 0 / 0 100vw;
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  border-top: 1px solid var(--glass-border);
 }
 
 .barText {
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 1023px) {
   .grid {
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 264px minmax(0, 1fr);
+  }
+
+  .indexHead {
+    padding-inline: var(--space-3);
+  }
+
+  .indexRow {
+    padding-inline: var(--space-3);
   }
 
   .editorPane {
@@ -393,6 +391,10 @@
   .barText {
     flex-basis: 100%;
     font-size: var(--fs-label);
+  }
+
+  .bar > button {
+    flex: 1 1 auto;
   }
 }
 

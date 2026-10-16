@@ -311,14 +311,31 @@ export const es: PartialMessages<Messages> = {
   },
 
   import: {
-    envelope: 'sobre',
+    envelope: 'Tanda',
+    sessionField: 'Sesión',
+    errorsField: 'Errores',
+    rowField: (n, field) => `Error ${String(n)}${field === null ? '' : ` · ${field}`}`,
+    line: (n) => `Línea ${String(n)}`,
+    notInList: (value, options) => `${value} no es un valor admitido: usa ${options}.`,
+    mustBe: (value, expected) => `Llega ${value}; tiene que ser ${expected}.`,
+    missingField: 'Falta este campo.',
+    expected: {
+      intOrNull: 'un número entero o null',
+      boolean: 'true o false',
+      text: 'texto entre comillas',
+      textOrNull: 'texto entre comillas o null',
+      date: 'una fecha AAAA-MM-DD',
+      list: 'una lista de errores entre corchetes',
+    },
     unknownFields: (keys) => `campos no permitidos (${keys})`,
     tooManyRows: (n) => `El bloque admite como máximo ${String(n)} errores. Divide la tanda en partes.`,
     unclosedQuote: 'Hay una celda con comillas sin cerrar. Copia de nuevo la tabla completa.',
     tooLong: 'El texto es demasiado largo. Divide la importación en tandas más pequeñas.',
     empty: 'Pega primero tus errores.',
     invalidJson: 'El bloque está incompleto o no es JSON válido. Copia la respuesta completa de la IA.',
-    invalidEnvelope: (issues) => `Sobre inválido. ${issues}`,
+    invalidEnvelope: (n) => (n === 1
+      ? 'Hay un dato que no vale en la tanda. Corrígelo en el texto y vuelve a revisarla.'
+      : `Hay ${String(n)} datos que no valen en la tanda. Corrígelos en el texto y vuelve a revisarla.`),
     freeText: 'Para texto libre, usa «Copiar instrucciones para la IA» y pega aquí su respuesta. También puedes pegar filas de una hoja de calculo.',
     unknownColumns: 'Hay columnas desconocidas o repetidas. Usa las cabeceras de la plantilla.',
     rowColumns: (row) => `Fila ${String(row)}: usa las 6 columnas de la plantilla o incluye cabeceras.`,
@@ -381,6 +398,13 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
   sessions: {
     lede: 'Registrar práctica y consultar tu historial',
     importSection: 'Importar correcciones',
+    doneLabel: 'Tanda guardada',
+    donePendingCards: (n) => (n === 1
+      ? 'Esta sesión tiene 1 tarjeta pendiente de crear en Anki.'
+      : `Esta sesión tiene ${String(n)} tarjetas pendientes de crear en Anki.`),
+    doneNoCards: 'No queda ninguna tarjeta pendiente en Anki en esta sesión.',
+    doneToAnki: 'Ir a Anki',
+    donePasteAnother: 'Pegar otra tanda',
     emptyTitle: 'Aún no hay sesiones',
     emptyBody: 'Pega una tanda corregida o crea una sesión manual. Las sesiones sin errores también cuentan.',
     history: 'Historial de sesiones',
@@ -553,7 +577,8 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     placeholderSession: 'JSON, TSV o una fila por error (1–100 errores)',
     headerIgnored: (title) => `Si el texto trae cabecera de sesión, no sustituye ni suma los recuentos de «${title}».`,
     review: 'Revisar importación',
-    pasteHint: (keys) => `${keys} fuera de un campo pega y abre la revisión`,
+    pasteAnywhere: 'en cualquier parte de la página pega la tanda y abre la revisión',
+    selectLine: (n) => `Seleccionar la línea ${String(n)} del texto pegado`,
     formats: 'Formatos admitidos',
     formatsBody: 'Un bloque JSON con cabecera de sesión trae la tanda completa (hasta 300 errores). También vale un JSON solo con errores o filas copiadas de una hoja de cálculo con cabeceras (hasta 100). Máximo 200.000 caracteres. La app no lee imágenes.',
     aiTitle: 'Preparar correcciones con IA',
@@ -602,7 +627,6 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     headerIgnored: (title) => `El bloque traía cabecera: no sustituye ni suma los recuentos de «${title}».`,
     headerMissingItems: 'Faltan los ítems y aciertos de la sesión. Complétalos en «Editar sesión».',
     newSessionData: 'Datos de la sesión nueva',
-    complete: 'completos',
     filterList: 'Filtrar la lista',
     all: 'Todos',
     pendingCount: (n) => `Pendientes · ${String(n)}`,
@@ -619,7 +643,7 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     uncertainBody: 'Puede que la sesión se haya creado. Reintentar recuperará esa misma sesión si el guardado llegó al servidor. Tu borrador se conserva.',
     checkSessions: 'Consultar sesiones',
     rejectedTitle: 'No se pudo guardar esta revisión',
-    pendingBar: (n) => `${String(n)} por completar · no se guarda nada hasta ${n === 1 ? 'completarlo' : 'completarlos'}`,
+    pendingBar: (done, total) => `${String(done)} de ${String(total)} listos · la tanda se guarda entera`,
     noErrorsBar: 'Tanda sin errores',
     readyBar: (n) => `${errors(n)} ${n === 1 ? 'listo' : 'listos'} para enviar`,
     nextPending: 'Siguiente pendiente',
@@ -635,7 +659,7 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
     promptLabel: (itemRef) => `Enunciado${itemRef === null ? '' : ` · ítem ${itemRef}`}`,
     promptMissing: 'Falta el enunciado: escríbelo en «Más detalles».',
     rulePlaceholder: 'Qué debes recordar para no repetirlo',
-    moreDetailsHint: (timed) => `· enunciado, ítem, tu respuesta, subcategoría${timed ? ', al final de la sesión' : ''}`,
+    moreDetailsHint: (timed) => `· enunciado, ítem, subcategoría${timed ? ', al final de la sesión' : ''}`,
   },
 
   errors: {

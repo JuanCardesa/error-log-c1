@@ -25,7 +25,8 @@ export interface SessionTableRow {
 
 /**
  * Historial de sesiones. La referencia es el enlace (se puede abrir en otra pestaña) y la
- * fila entera es clicable. J y K mueven la selección e Intro la abre.
+ * fila entera es clicable. J y K mueven la selección e Intro la abre. Una sesión abierta
+ * lo dice junto a su título; las cerradas, que son casi todas, no llevan marca.
  */
 export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow[] }) {
   const t = useT();
@@ -73,7 +74,6 @@ export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow
             <th scope="col" className={styles.colPractice}>{t.sessionForm.practice}</th>
             <th scope="col" className={`${ui.colNum} ${styles.colScore}`}>{t.sessionForm.correct}</th>
             <th scope="col" className={`${ui.colNum} ${styles.colErrors}`}>{t.nav.errors}</th>
-            <th scope="col" className={`${ui.colStatus} ${styles.colStatus}`}>{t.sessionView.status}</th>
           </tr>
         </thead>
         <tbody>
@@ -90,9 +90,12 @@ export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow
               <td className={`${ui.colDate} ${styles.colDate} ${styles.muted}`}>{row.date}</td>
               <td>
                 <span className={styles.refCell}>
-                  <Link href={row.href} className={styles.ref} aria-current={index === selected || undefined}>
-                    {row.title}
-                  </Link>
+                  <span className={styles.refLine}>
+                    <Link href={row.href} className={styles.ref} aria-current={index === selected || undefined}>
+                      {row.title}
+                    </Link>
+                    {row.status === 'OPEN' && <StatusText status="OPEN" />}
+                  </span>
                   <span className={styles.sub}>
                     {row.source}
                     <span className={styles.mobileMeta}> · {row.practice} · {row.score}</span>
@@ -102,7 +105,6 @@ export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow
               <td className={styles.colPractice}>{row.practice}</td>
               <td className={`${ui.colNum} ${styles.colScore}`}>{row.score}</td>
               <td className={`${ui.colNum} ${styles.colErrors}`}>{row.errors}</td>
-              <td className={`${ui.colStatus} ${styles.colStatus}`}><StatusText status={row.status} /></td>
             </tr>
           ))}
         </tbody>

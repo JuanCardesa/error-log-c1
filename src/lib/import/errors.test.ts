@@ -1,11 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
 import { getMessages } from '../i18n';
-import { errorsForRow, importPrompt, importTemplate, MAX_IMPORT_LENGTH, MAX_SESSION_IMPORT_ROWS, parseImportedBatch } from './errors';
+import {
+  errorsForRow, ImportProblem, importPrompt, importTemplate, jsonLine, MAX_IMPORT_LENGTH, MAX_SESSION_IMPORT_ROWS, parseImportedBatch,
+} from './errors';
 
 const t = getMessages('es');
 const en = getMessages('en');
 const draftsOf = (source: string) => parseImportedBatch(source, t).errors;
+
+/** Lo que dice el aviso de una tanda rechazada: el resumen y una línea por dato. */
+function problemOf(source: string, locale = t): ImportProblem {
+  try {
+    parseImportedBatch(source, locale);
+  } catch (error) {
+    if (error instanceof ImportProblem) return error;
+    throw error;
+  }
+  throw new Error('la tanda se aceptó');
+}
+const linesOf = (problem: ImportProblem) => problem.issues.map((issue) => `${String(issue.line)} ${issue.field}: ${issue.message}`);
 
 const example = {
   itemRef: 4, prompt: 'They called ___ the meeting.', myAnswer: 'of', correctAnswer: 'off',
@@ -23,14 +37,44 @@ it.each([
   [{ session: { ...session, id: 123 }, errors: [example] }, 'id'],
   [{ session: { ...session, status: 'CLOSED' }, errors: [example] }, 'status'],
   [{ session: { ...session, durationMin: 10 }, errors: [example] }, 'durationMin'],
-  [{ session: { ...session, timed: 'false' }, errors: [example] }, 'timed'],
-  [{ session: { ...session, itemsCorrect: 9 }, errors: [example] }, 'itemsCorrect'],
-  [{ session: { ...session, part: 1 }, errors: [example] }, 'part'],
+  [{ session: { ...session, timed: 'false' }, errors: [example] }, 'Cronometrada: Llega "false"; tiene que ser true o false.'],
+  [{ session: { ...session, itemsCorrect: 9 }, errors: [example] }, 'Aciertos:'],
+  [{ session: { ...session, part: 1 }, errors: [example] }, 'Part:'],
   [{ session: { ...session, date: '2999-01-01' }, errors: [example] }, 'futura'],
-  [{ session }, 'errors'],
-  [{ session, errors: 'incorrecto' }, 'errors'],
+  [{ session }, 'Errores: Falta este campo.'],
+  [{ session, errors: 'incorrecto' }, 'Errores: Llega "incorrecto"; tiene que ser una lista de errores entre corchetes.'],
 ])('rechaza un sobre incompleto o manipulado con el campo concreto', (value, message) => {
-  expect(() => draftsOf(JSON.stringify(value))).toThrow(message);
+  expect(linesOf(problemOf(JSON.stringify(value))).join('\n')).toContain(message);
+});
+
+it('dice en qué línea está cada dato que no vale y qué valores admite, con su nombre legible', () => {
+  const fence = '```';
+  const body = JSON.stringify({ session: { ...session, kind: 'DRIL', source: 'BOOK', paper: 'RUOE' }, errors: [example] }, null, 2);
+  const pasted = `\n${fence}json\n${body}\n${fence}`;
+  const problem = problemOf(pasted);
+  expect(problem.message).toBe('Hay 2 datos que no valen en la tanda. Corrígelos en el texto y vuelve a revisarla.');
+  // Línea 1 en blanco, 2 la valla, 3 la llave, 4 «session», 5 «date», 6 «kind»… 8 «part», 9 «source».
+  expect(linesOf(problem)).toEqual([
+    '6 Tipo: "DRIL" no es un valor admitido: usa DRILL, PARCIAL, SIMULACRO, CLASE o WRITING.',
+    '9 Fuente: "BOOK" no es un valor admitido: usa LIBRO, WORKBOOK, TRAINER, PAST_PAPER (Examen pasado), ONLINE o ACADEMIA.',
+  ]);
+  expect(linesOf(problemOf(JSON.stringify({ session: { ...session, paper: 'R' }, errors: [] }), en))).toEqual([
+    '1 Exam format: "R" isn’t an accepted value: use RUOE (Reading & Use of English), WRITING, LISTENING or SPEAKING.',
+  ]);
+});
+
+it('señala un campo que sobra en su propia línea', () => {
+  const text = JSON.stringify({ session: { ...session, status: 'CLOSED' }, errors: [example] }, null, 2);
+  const line = text.split('\n').findIndex((value) => value.includes('"status"')) + 1;
+  expect(linesOf(problemOf(text))).toEqual([`${String(line)} Sesión: campos no permitidos (status)`]);
+});
+
+it('jsonLine sigue claves y posiciones, y para en el padre si el campo falta', () => {
+  const text = '{\n  "a": [\n    {"b": 1},\n    {\n      "b": "x\\"y",\n      "c": null\n    }\n  ]\n}';
+  expect(jsonLine(text, ['a', 1, 'c'])).toBe(6);
+  expect(jsonLine(text, ['a', 0, 'b'])).toBe(3);
+  expect(jsonLine(text, ['a', 1, 'missing'])).toBe(4);
+  expect(jsonLine(text, [])).toBe(1);
 });
 
 it('acepta un sobre sin ítems ni aciertos: quien solo ve los fallos no los sabe', () => {
@@ -114,8 +158,9 @@ describe('pegar errores', () => {
   it('explica el problema en el idioma de la interfaz', () => {
     expect(() => parseImportedBatch('', en)).toThrow('Paste your errors first.');
     expect(() => parseImportedBatch('a\tb\tc', en)).toThrow('6 columns');
-    expect(() => parseImportedBatch(JSON.stringify({ session: { ...session, date: '2999-01-01' }, errors: [example] }), en))
-      .toThrow('Invalid batch. session.date: The date can’t be in the future');
+    const future = problemOf(JSON.stringify({ session: { ...session, date: '2999-01-01' }, errors: [example] }), en);
+    expect(future.message).toBe('One value in the batch isn’t valid. Fix it in the text and review again.');
+    expect(linesOf(future)).toEqual(['1 Date: The date can’t be in the future']);
   });
 });
 
@@ -138,7 +183,7 @@ describe('el ejemplo de las instrucciones', () => {
     expect(prompt).toContain('part: entero positivo, o null.');
     expect(importPrompt(en)).toContain('part: positive integer, or null.');
     expect(() => parseImportedBatch(example.replace('"part": null', '"part": "3"'), t, '2026-09-23'))
-      .toThrow('Sobre inválido');
+      .toThrow('Hay un dato que no vale en la tanda');
   });
 
   it('anuncia el limite de filas del sobre, no el del array suelto', () => {

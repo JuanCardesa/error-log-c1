@@ -49,6 +49,22 @@ test('un texto que no se entiende se explica sin perderlo', async ({ page }) => 
   await expect(page.getByLabel('Pegar correcciones')).toHaveValue('texto libre sin formato');
 });
 
+test('un dato que no vale se explica con su nombre y su línea, y lleva a ella', async ({ page }) => {
+  await page.goto('/registrar');
+  const field = page.getByLabel('Pegar correcciones');
+  await field.fill(JSON.stringify({ session: { ...session, kind: 'DRIL' }, errors: [row] }, null, 2));
+  await page.getByRole('button', { name: 'Revisar importación' }).click();
+  const alert = page.getByRole('alert').filter({ hasText: 'Hay un dato que no vale en la tanda' });
+  await expect(alert).toContainText('Tipo "DRIL" no es un valor admitido: usa DRILL, PARCIAL, SIMULACRO, CLASE o WRITING.');
+  // La detección no repite el aviso debajo del campo.
+  await expect(page.getByText('Hay un dato que no vale en la tanda')).toHaveCount(1);
+
+  await alert.getByRole('button', { name: 'Seleccionar la línea 4 del texto pegado' }).click();
+  await expect(field).toBeFocused();
+  expect(await field.evaluate((element: HTMLTextAreaElement) => element.value.slice(element.selectionStart, element.selectionEnd)))
+    .toBe('    "kind": "DRIL",');
+});
+
 test('Ctrl+K abre la búsqueda y lleva a un error concreto', async ({ page }) => {
   await page.goto('/registrar');
   const search = page.getByRole('combobox', { name: 'Buscar' });

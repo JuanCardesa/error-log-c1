@@ -19,16 +19,17 @@ import { Kbd } from '../_shared/Kbd';
 import { longDate, practiceLabel, practiceLongLabel, score, sessionTitle, shortDate } from '../_shared/format';
 import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
+import { ankiState } from '../_shared/labels';
 import { StatusText } from '../_shared/StatusText';
 import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import type { SearchParams } from '../_shared/window';
 import { BackToList, RememberList } from './BackToList';
+import { BatchDone } from './BatchDone';
 import { ImportHost } from './ImportHost';
 import { type ListParams, hasFilters, listHref, parseListParams } from './listParams';
 import { ManualSession } from './ManualSession';
 import { PasteEntry } from './PasteEntry';
-import { SavedNotice } from './SavedNotice';
 import { SessionControls } from './SessionControls';
 import { SessionErrors } from './SessionErrors';
 import { SessionTable } from './SessionTable';
@@ -177,6 +178,7 @@ function SessionDetail({ session, params, today, t }: {
   const errorId = parseId(params['error']);
   const capture = params['modo'] === 'captura';
   const open = session.status === 'OPEN';
+  const pendingCards = errors.filter((error) => ankiState(error) === 'PENDING').length;
 
   return (
     <ImportHost
@@ -207,7 +209,7 @@ function SessionDetail({ session, params, today, t }: {
           actions={<SessionControls session={session} impact={sessionDeletionImpact(db, session.id)} today={today} />}
         />
 
-        {notice !== null && <SavedNotice message={notice} sessionId={session.id} />}
+        <BatchDone notice={notice} sessionId={session.id} pendingCards={pendingCards} />
 
         <SessionErrors
           session={session}

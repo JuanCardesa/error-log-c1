@@ -364,14 +364,31 @@ export const en = {
 
   import: {
     /** Nombre del objeto `{ session, errors }` cuando un aviso no apunta a un campo. */
-    envelope: 'batch',
+    envelope: 'Batch',
+    sessionField: 'Session',
+    errorsField: 'Errors',
+    rowField: (n: number, field: string | null) => `Error ${String(n)}${field === null ? '' : ` · ${field}`}`,
+    line: (n: number) => `Line ${String(n)}`,
+    notInList: (value: string, options: string) => `${value} isn’t an accepted value: use ${options}.`,
+    mustBe: (value: string, expected: string) => `Got ${value}; it must be ${expected}.`,
+    missingField: 'This field is missing.',
+    expected: {
+      intOrNull: 'a whole number or null',
+      boolean: 'true or false',
+      text: 'text in quotes',
+      textOrNull: 'text in quotes or null',
+      date: 'a date as YYYY-MM-DD',
+      list: 'a list of errors in square brackets',
+    },
     unknownFields: (keys: string) => `fields not allowed (${keys})`,
     tooManyRows: (n: number) => `A block can hold at most ${String(n)} errors. Split the batch into parts.`,
     unclosedQuote: 'A cell has an unclosed quote. Copy the whole table again.',
     tooLong: 'The text is too long. Split the import into smaller batches.',
     empty: 'Paste your errors first.',
     invalidJson: 'The block is incomplete or isn’t valid JSON. Copy the AI’s whole reply.',
-    invalidEnvelope: (issues: string) => `Invalid batch. ${issues}`,
+    invalidEnvelope: (n: number) => (n === 1
+      ? 'One value in the batch isn’t valid. Fix it in the text and review again.'
+      : `${String(n)} values in the batch aren’t valid. Fix them in the text and review again.`),
     freeText: 'For free text, use “Copy instructions for the AI” and paste its reply here. You can also paste rows from a spreadsheet.',
     unknownColumns: 'Some columns are unknown or repeated. Use the template headers.',
     rowColumns: (row: number) => `Row ${String(row)}: use the template’s 6 columns or include headers.`,
@@ -440,6 +457,13 @@ Session details and corrections (text or attached images):
   sessions: {
     lede: 'Log your practice and browse your history',
     importSection: 'Import corrections',
+    doneLabel: 'Batch saved',
+    donePendingCards: (n: number) => (n === 1
+      ? 'This session has 1 card waiting to be made in Anki.'
+      : `This session has ${String(n)} cards waiting to be made in Anki.`),
+    doneNoCards: 'No Anki cards are waiting in this session.',
+    doneToAnki: 'Go to Anki',
+    donePasteAnother: 'Paste another batch',
     emptyTitle: 'No sessions yet',
     emptyBody: 'Paste a corrected batch or create a manual session. Sessions with no errors count too.',
     history: 'Session history',
@@ -612,7 +636,8 @@ Session details and corrections (text or attached images):
     placeholderSession: 'JSON, TSV or one row per error (1–100 errors)',
     headerIgnored: (title: string) => `If the text includes session details, they don’t replace or add to the counts of “${title}”.`,
     review: 'Review import',
-    pasteHint: (keys: string) => `${keys} outside a field pastes and opens the review`,
+    pasteAnywhere: 'anywhere on this page pastes the batch and opens the review',
+    selectLine: (n: number) => `Select line ${String(n)} of the pasted text`,
     formats: 'Supported formats',
     formatsBody: 'A JSON block with session details brings the whole batch (up to 300 errors). JSON with errors only also works, and so do rows copied from a spreadsheet with headers (up to 100). Up to 200,000 characters. The app doesn’t read images.',
     aiTitle: 'Prepare corrections with AI',
@@ -661,7 +686,6 @@ Session details and corrections (text or attached images):
     headerIgnored: (title: string) => `The block had session details: they don’t replace or add to the counts of “${title}”.`,
     headerMissingItems: 'The session’s items and correct answers are missing. Fill them in under “Edit session”.',
     newSessionData: 'New session details',
-    complete: 'complete',
     filterList: 'Filter the list',
     all: 'All',
     pendingCount: (n: number) => `Pending · ${String(n)}`,
@@ -678,7 +702,7 @@ Session details and corrections (text or attached images):
     uncertainBody: 'The session may have been created. Retrying will recover that same session if the save reached the server. Your draft is kept.',
     checkSessions: 'Check sessions',
     rejectedTitle: 'This review couldn’t be saved',
-    pendingBar: (n: number) => `${String(n)} to complete · nothing is saved until ${n === 1 ? 'it is' : 'they are'} complete`,
+    pendingBar: (done: number, total: number) => `${String(done)} of ${String(total)} ready · the batch is saved in one go`,
     noErrorsBar: 'Batch with no errors',
     readyBar: (n: number) => `${errors(n)} ready to send`,
     nextPending: 'Next pending',
@@ -694,7 +718,7 @@ Session details and corrections (text or attached images):
     promptLabel: (itemRef: string | null) => `Prompt${itemRef === null ? '' : ` · item ${itemRef}`}`,
     promptMissing: 'The prompt is missing: write it under “More details”.',
     rulePlaceholder: 'What you need to remember so you don’t repeat it',
-    moreDetailsHint: (timed: boolean) => `· prompt, item, your answer, subcategory${timed ? ', at the end of the session' : ''}`,
+    moreDetailsHint: (timed: boolean) => `· prompt, item, subcategory${timed ? ', at the end of the session' : ''}`,
   },
 
   errors: {

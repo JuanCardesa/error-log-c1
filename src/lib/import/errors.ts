@@ -48,10 +48,191 @@ export function importEnvelopeSchema(today: string, t: Messages) {
   });
 }
 
-export function importIssues(error: z.ZodError, t: Messages): string {
-  return error.issues.map((issue) => `${issue.path.join('.') || t.import.envelope}: ${
-    issue.code === 'unrecognized_keys' ? t.import.unknownFields(issue.keys.join(', ')) : issue.message
-  }`).join('; ');
+/** Un dato de la tanda que no vale, con la etiqueta que se ve en la interfaz. */
+export interface ImportIssue {
+  /** Línea del texto pegado en la que está el dato, si se conoce. */
+  readonly line: number | null;
+  readonly field: string;
+  readonly message: string;
+}
+
+/** Una tanda que no se puede revisar: cada dato que no vale, en su línea. */
+export class ImportProblem extends Error {
+  readonly issues: readonly ImportIssue[];
+
+  constructor(message: string, issues: readonly ImportIssue[]) {
+    super(message);
+    this.name = 'ImportProblem';
+    this.issues = issues;
+  }
+}
+
+type Label = (t: Messages) => string;
+
+const SESSION_FIELDS: Readonly<Record<string, Label>> = {
+  date: (t) => t.sessionForm.date,
+  kind: (t) => t.sessionForm.kind,
+  paper: (t) => t.sessionForm.examFormat,
+  part: (t) => t.sessionForm.part,
+  source: (t) => t.sessionForm.source,
+  sourceRef: (t) => t.sessionForm.reference,
+  itemsTotal: (t) => t.sessionForm.itemsAttempted,
+  itemsCorrect: (t) => t.sessionForm.correct,
+  timed: (t) => t.sessionForm.timed,
+};
+
+const ERROR_FIELDS: Readonly<Record<string, Label>> = {
+  itemRef: (t) => t.errorForm.item,
+  prompt: (t) => t.errorForm.prompt,
+  myAnswer: (t) => t.correction.yourAnswer,
+  correctAnswer: (t) => t.correction.correction,
+  category: (t) => t.errorForm.category,
+  ruleNote: (t) => t.errorForm.rule,
+  cause: (t) => t.errorForm.cause,
+  confidence: (t) => t.errorForm.confidence,
+  subcategory: (t) => t.errorForm.subcategory,
+  lateInSession: (t) => t.errorForm.lateInSession,
+};
+
+// Lo que admite cada campo cuando llega con otro tipo.
+const EXPECTED: Readonly<Record<string, keyof Messages['import']['expected']>> = {
+  date: 'date', part: 'intOrNull', itemsTotal: 'intOrNull', itemsCorrect: 'intOrNull',
+  timed: 'boolean', sourceRef: 'textOrNull', prompt: 'text', correctAnswer: 'text', ruleNote: 'text',
+  errors: 'list',
+};
+
+// El valor se escribe tal cual; la etiqueta solo se añade cuando dice algo más.
+const OPTION_LABELS: Readonly<Record<string, (t: Messages) => Readonly<Record<string, string>>>> = {
+  kind: (t) => t.labels.kind,
+  paper: (t) => t.labels.paperLong,
+  source: (t) => t.labels.source,
+};
+
+function fieldLabel(path: readonly PropertyKey[], t: Messages): string {
+  const [head, second, third] = path;
+  if (head === undefined) return t.import.envelope;
+  if (head === 'session') {
+    if (second === undefined) return t.import.sessionField;
+    return SESSION_FIELDS[String(second)]?.(t) ?? String(second);
+  }
+  if (head === 'errors' && second === undefined) return t.import.errorsField;
+  const [row, field] = head === 'errors' ? [second, third] : [head, second];
+  if (typeof row !== 'number') return path.map(String).join('.');
+  return t.import.rowField(row + 1, field === undefined ? null : ERROR_FIELDS[String(field)]?.(t) ?? String(field));
+}
+
+function shown(value: unknown): string {
+  const text = JSON.stringify(value) ?? String(value);
+  return text.length > 40 ? `${text.slice(0, 39)}…` : text;
+}
+
+function issueMessage(issue: z.core.$ZodIssue, value: unknown, t: Messages): string {
+  const field = String(issue.path.at(-1) ?? '');
+  if (issue.code === 'unrecognized_keys') return t.import.unknownFields(issue.keys.join(', '));
+  if (issue.code === 'invalid_value') {
+    const labels = OPTION_LABELS[field]?.(t) ?? {};
+    const options = issue.values.map((option) => {
+      const code = String(option);
+      const label = labels[code];
+      return label === undefined || label.toLowerCase() === code.toLowerCase() ? code : `${code} (${label})`;
+    });
+    return t.import.notInList(shown(value), new Intl.ListFormat(t.format.intl, { type: 'disjunction' }).format(options));
+  }
+  if (issue.code === 'invalid_type') {
+    if (value === undefined) return t.import.missingField;
+    const expected = EXPECTED[field];
+    if (expected !== undefined) return t.import.mustBe(shown(value), t.import.expected[expected]);
+  }
+  return issue.message;
+}
+
+function valueAt(data: unknown, path: readonly PropertyKey[]): unknown {
+  let node = data;
+  for (const key of path) {
+    if (node === null || typeof node !== 'object') return undefined;
+    node = (node as Record<PropertyKey, unknown>)[key];
+  }
+  return node;
+}
+
+/**
+ * Cada problema de una tanda con la etiqueta de su campo y un mensaje sin los valores
+ * internos de Zod. Con `locate`, también la línea del texto pegado.
+ */
+export function describeIssues(
+  error: z.ZodError,
+  data: unknown,
+  t: Messages,
+  locate: (path: readonly PropertyKey[]) => number | null = () => null,
+): ImportIssue[] {
+  return error.issues.map((issue) => {
+    // Un campo que sobra se señala en su línea, no en la del objeto que lo trae.
+    const first = issue.code === 'unrecognized_keys' ? issue.keys[0] : undefined;
+    return {
+      line: locate(first === undefined ? issue.path : [...issue.path, first]),
+      field: fieldLabel(issue.path, t),
+      message: issueMessage(issue, valueAt(data, issue.path), t),
+    };
+  });
+}
+
+export function importIssues(error: z.ZodError, data: unknown, t: Messages): string {
+  return describeIssues(error, data, t).map((issue) => `${issue.field}: ${issue.message}`).join('; ');
+}
+
+/**
+ * Línea (desde 1) en la que empieza el valor de `path` en un JSON que `JSON.parse` ya
+ * aceptó. Si el camino no llega hasta el final (un campo que falta), la de su padre.
+ */
+export function jsonLine(text: string, path: readonly PropertyKey[]): number {
+  let at = 0;
+  let line = 1;
+  const space = () => {
+    while (at < text.length && /\s/.test(text.charAt(at))) {
+      if (text.charAt(at) === '\n') line += 1;
+      at += 1;
+    }
+  };
+  const string = (): string => {
+    const start = at;
+    at += 1;
+    while (at < text.length && text.charAt(at) !== '"') at += text.charAt(at) === '\\' ? 2 : 1;
+    at += 1;
+    return JSON.parse(text.slice(start, at)) as string;
+  };
+  // Con `depth`, sigue el camino y devuelve la línea buscada; con null, solo avanza.
+  const value = (depth: number | null): number | null => {
+    space();
+    const start = line;
+    if (depth === path.length) return start;
+    const open = text.charAt(at);
+    if (open === '{' || open === '[') {
+      const close = open === '{' ? '}' : ']';
+      at += 1;
+      space();
+      for (let index = 0; at < text.length && text.charAt(at) !== close; index += 1) {
+        let key = String(index);
+        if (open === '{') {
+          key = string();
+          space();
+          at += 1;
+        }
+        const follows = depth !== null && String(path[depth]) === key;
+        const found = value(follows ? depth + 1 : null);
+        if (follows) return found ?? start;
+        space();
+        if (text.charAt(at) === ',') at += 1;
+        space();
+      }
+      at += 1;
+    } else if (open === '"') {
+      string();
+    } else {
+      while (at < text.length && !/[\s,\]}]/.test(text.charAt(at))) at += 1;
+    }
+    return depth === null ? null : start;
+  };
+  return value(0) ?? 1;
 }
 
 /** Lo que proponemos cuando la tanda no trae causa ni confianza; se revisan en la vista previa. */
@@ -141,8 +322,11 @@ export interface ImportedBatch { session: ImportedSession | null; errors: Import
 
 export function parseImportedBatch(source: string, t: Messages, today = toIsoDate(new Date())): ImportedBatch {
   if (source.length > MAX_IMPORT_LENGTH) throw new Error(t.import.tooLong);
-  const text = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').replace(/^\n+|\n+$/g, '')
+  const pasted = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const text = pasted.replace(/^\n+|\n+$/g, '')
     .replace(/^\s*```(?:json|tsv)?[^\S\n]*\n/i, '').replace(/\n```\s*$/, '');
+  // Las líneas de un aviso cuentan lo pegado, con la valla de Markdown y los saltos iniciales.
+  const leadLines = pasted.slice(0, Math.max(0, pasted.indexOf(text))).split('\n').length - 1;
   if (text.trim() === '') throw new Error(t.import.empty);
   let data: unknown;
   let session: ImportedSession | null = null;
@@ -153,7 +337,10 @@ export function parseImportedBatch(source: string, t: Messages, today = toIsoDat
       if ('errors' in data && !('session' in data)) data = data.errors;
       else {
         const envelope = importEnvelopeSchema(today, t).safeParse(data, importParseOptions(t));
-        if (!envelope.success) throw new Error(t.import.invalidEnvelope(importIssues(envelope.error, t)));
+        if (!envelope.success) {
+          const issues = describeIssues(envelope.error, data, t, (path) => jsonLine(text, path) + leadLines);
+          throw new ImportProblem(t.import.invalidEnvelope(issues.length), issues);
+        }
         session = envelope.data.session;
         data = envelope.data.errors;
       }

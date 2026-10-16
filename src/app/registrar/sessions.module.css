@@ -17,7 +17,6 @@
 .colPractice { width: 180px; }
 .colScore { width: 100px; }
 .colErrors { width: 72px; }
-.colStatus { width: 110px; }
 
 .muted {
   color: var(--color-ink-2);
@@ -29,6 +28,14 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+/* Casi todas están cerradas: solo se marca la excepción, junto al título. */
+.refLine {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1-5) var(--space-3);
+  flex-wrap: wrap;
 }
 
 .ref {
@@ -168,10 +175,6 @@
     display: none;
   }
 
-  .colStatus {
-    width: 96px;
-  }
-
   .colDate {
     width: 64px;
   }
@@ -182,5 +185,86 @@
 
   .shortcuts {
     display: none;
+  }
+}
+
+/* ── Cierre de la tanda ──────────────────────────────────────────────────────
+ * Lo que se acaba de guardar y lo siguiente. Entra una vez, sin rebote: aparece, el
+ * check se asienta y queda quieto. */
+
+/* Vacía no ocupa sitio ni hueco en la columna, pero sigue montada como región viva. */
+.doneRegion:empty {
+  position: absolute;
+}
+
+.done {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3) var(--space-4);
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+  animation: done-in 240ms var(--ease-out) both;
+}
+
+.doneIcon {
+  color: var(--color-success);
+  animation: done-check 320ms var(--ease-out) 80ms both;
+}
+
+.doneText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.doneTitle {
+  font: var(--text-subtitle);
+}
+
+.doneCards {
+  font-size: var(--fs-body);
+  color: var(--color-ink-2);
+}
+
+.doneActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@keyframes done-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes done-check {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .done,
+  .doneIcon {
+    animation: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .done {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: var(--space-4);
+  }
+
+  .doneActions {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
   }
 }
