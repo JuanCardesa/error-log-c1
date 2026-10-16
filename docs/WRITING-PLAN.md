@@ -326,13 +326,17 @@ La segunda importación puede llevar el `id` («Copy JSON for the AI» en el lec
 | Fortaleza | Verde suave | Punteado |
 | Comentario | Sin fondo | Punteado gris |
 
-- De párrafo: filete de 3 px en el margen y un botón ¶. De documento: grupo «Whole text» en el panel.
+- En reposo solo se ven los errores (subrayado fino, sin fondo); los fondos y el resto de tipos
+  aparecen al pasar por el párrafo. Rediseño del 2026-10-16, ver el registro.
+- De párrafo: marca al margen con el color de su tipo, sin resaltar el párrafo. De documento:
+  «Texto completo» en el panel.
 - Procedencia como etiqueta pequeña (*Teacher · AI · Me*); lo de la IA dice además «AI suggestion».
-- Pulsar un resaltado selecciona y despliega su anotación en el panel; si hay varias solapadas, las lista.
-- El panel es la vía de teclado: botones, ↑/↓ o J/K, Intro lleva al fragmento, Escape cierra.
-- Filtros por tipo y «Pending only»; *Annotated | Clean* oculta todos los resaltados.
-- Crear: seleccionar texto → barra contextual *Error · Improvement · Strength · Comment* → editor con
-  foco, comentario, corrección y procedencia («Me» por defecto).
+- Pasar por un resaltado abre su nota junto al texto; un clic o Intro la fija con «Marcar como
+  estudiada» y «Ver en la lista». Si hay varias solapadas, manda el error.
+- El panel, cerrado por defecto, es la vía de teclado: ↑/↓ o J/K, Intro lleva al fragmento, Escape cierra.
+- Filtros por tipo con recuento y «Pendientes». Sin conmutador Anotado/Limpio.
+- Crear: «Más acciones → Anotar el texto», seleccionar texto → «Anotar selección» → editor en el
+  panel con tipo, foco, corrección, comentario y procedencia («Yo» por defecto).
 - «Studied» marca una anotación como revisada. Borrar muestra un Toast con Deshacer.
 - «Needs placing (n)» reúne las anotaciones sin colocar: elegir entre candidatos o seleccionar el
   fragmento y pulsar «Place here».
@@ -482,3 +486,4 @@ más allá del historial de transcripciones, conversión a la Cambridge English 
 | 2026-10-15 | TASK C1: el drawer permite editar estado, fecha de corrección, corrector, bandas de 0,5, comentario de la profesora y notas personales; fecha validada entre la fecha de escritura y hoy. El repositorio guarda el estado indicado sin inferirlo de las bandas. La suma sigue derivándose solo cuando existen los cuatro criterios y los parciales conservan el detalle disponible. | `pnpm typecheck`, `pnpm lint` (4 avisos anteriores), `pnpm exec vitest run --maxWorkers=2` (996 pruebas), build E2E y 4 pruebas de `e2e/writing.spec.ts`. Commit: `feat(writing): make assessments editable`. Siguiente TASK C2. |
 | 2026-10-15 | TASK C2: `/writing?tab=progreso` con recuentos, filtros en URL por medida/tipo/fechas, gráfico SVG ordinal y tabla accesible. Las fechas aproximadas conservan su punto con marcador hueco; las medias, n y última nota por criterio excluyen pendientes y aceptan parciales. Solo se destacan criterio más fuerte y margen de mejora con n ≥ 3 y diferencia ≥ 0,5. | `pnpm typecheck`, ESLint de los archivos nuevos, 7 pruebas de `progress.test.ts`, build E2E y 9 E2E de `writingLibrary.spec.ts` correctas (incluida vista móvil). Commit: `feat(writing): add progress dashboard`. Siguiente TASK C3. |
 | 2026-10-15 | TASK C3: exportación individual v2 con fecha registrada y procedencia, evaluación y anotaciones reimportables; dump completo v4 con anotaciones crudas. Documentados los contratos y el flujo en GUIDE, README, SPEC, PRODUCT y DESIGN; demo con transcripción, evaluación y dos anotaciones. | `pnpm typecheck`, `pnpm lint` (sin errores; 4 avisos previos), 1.005 pruebas Vitest, build E2E y 5 E2E de `export.spec.ts` y `writing.spec.ts`. La exportación se reimporta sin cambios. Fase C cerrada. |
+| 2026-10-16 | Rediseño del lector (skill impeccable, `shape` + `distill`): en reposo solo los errores con subrayado fino; fondos y notas de párrafo al pasar por el párrafo; nota flotante con «tu texto → corrección» que se fija con un clic; panel cerrado por defecto como columna al margen; anotar, corregir la transcripción en la hoja, editar datos y exportar en «Más acciones». Fuera el conmutador Anotado/Limpio, el contador duplicado y los botones sueltos. Arreglado: las notas de párrafo tapaban los errores de su párrafo y su filete era siempre rojo. | `pnpm typecheck`, `pnpm lint`, Vitest (1005) y 18 E2E de Writing correctas con build `.next-e2e`. |

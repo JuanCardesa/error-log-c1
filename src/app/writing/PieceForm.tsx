@@ -2,7 +2,7 @@
 
 import { ChevronRight, Pencil } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useId, useRef, useState } from 'react';
+import { useActionState, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
 import { CORRECTORS, GENRES, WRITING_STATUSES } from '@/lib/domain/enums';
 import type { SessionRow } from '@/lib/domain/types';
@@ -256,12 +256,16 @@ export function WritingDrawer({ open, onClose, originals, editing, editingSessio
   );
 }
 
-/** Abre el drawer desde el lector, o al llegar con `?editar=1` (los enlaces antiguos con `?edit`). */
+/**
+ * Abre el drawer desde el lector, o al llegar con `?editar=1` (los enlaces antiguos con `?edit`).
+ * Con `trigger`, quien lo usa decide desde dónde se abre (un ítem de menú, por ejemplo).
+ */
 export function WritingEditor(props: Omit<Parameters<typeof WritingDrawer>[0], 'open' | 'onClose'> & {
   readonly initiallyOpen: boolean;
   readonly closeHref: string;
+  readonly trigger?: (open: () => void) => ReactNode;
 }) {
-  const { initiallyOpen, closeHref, ...drawer } = props;
+  const { initiallyOpen, closeHref, trigger, ...drawer } = props;
   const t = useT();
   const [open, setOpen] = useState(initiallyOpen);
   // Cada apertura empieza de cero: lo que se dejó sin guardar no vuelve a aparecer.
@@ -272,12 +276,15 @@ export function WritingEditor(props: Omit<Parameters<typeof WritingDrawer>[0], '
     // Fuera de la URL lo que abría el drawer: recargar no lo reabre.
     if (initiallyOpen) router.replace(closeHref, { scroll: false });
   };
+  const openDrawer = () => { setRound(round + 1); setOpen(true); };
   return (
     <>
-      <button type="button" className={ui.secondary} onClick={() => { setRound(round + 1); setOpen(true); }} aria-haspopup="dialog">
-        <Pencil size={16} aria-hidden="true" />
-        {t.writing.editDetails}
-      </button>
+      {trigger === undefined ? (
+        <button type="button" className={ui.secondary} onClick={openDrawer} aria-haspopup="dialog">
+          <Pencil size={16} aria-hidden="true" />
+          {t.writing.editDetails}
+        </button>
+      ) : trigger(openDrawer)}
       <WritingDrawer key={round} {...drawer} open={open} onClose={close} />
     </>
   );

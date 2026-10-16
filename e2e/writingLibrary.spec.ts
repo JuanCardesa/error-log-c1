@@ -88,6 +88,13 @@ async function selectText(page: Page, quote: string) {
   }, quote);
 }
 
+/** Crear y colocar anotaciones se hace en el modo anotar, desde «Más acciones». */
+async function annotateMode(page: Page) {
+  await page.getByRole('button', { name: 'Más acciones' }).click();
+  await page.getByRole('menuitem', { name: 'Anotar el texto' }).click();
+  await expect(page.getByRole('region', { name: 'Anotar el texto' })).toBeVisible();
+}
+
 const entries = (page: Page) => page.getByRole('list', { name: /^\d+ redacci/ });
 
 /** Abrir y cerrar un menú exige que los manejadores de cliente ya estén hidratados. */
@@ -175,40 +182,43 @@ test('el lector enseña la redacción en su hoja, con el total arriba y la evalu
   } finally { cleanUp(tag); }
 });
 
-test('el lector filtra anotaciones, las recorre con teclado y abre el panel móvil', async ({ page }) => {
+test('el lector enseña la nota de un error, filtra el panel, lo recorre con teclado y abre el panel móvil', async ({ page }) => {
   const tag = randomUUID().slice(0, 8);
   try {
     const { essay } = shelf(tag);
     await page.goto(`/writing/${String(essay)}-cities-${tag}`);
-    await expect(page.getByText(/\d+ palabras? · 220–260/u)).toBeVisible();
-    const marked = page.getByRole('region', { name: 'Con anotaciones' }).getByText('there', { exact: true });
+    await expect(page.getByText(/\d+ palabras? \(220–260\)/u)).toBeVisible();
+    // El panel empieza cerrado: en reposo solo está el texto.
+    const panel = page.getByRole('complementary', { name: 'Anotaciones' });
+    await expect(panel).toHaveCount(0);
+    const marked = page.getByRole('region', { name: 'Transcripción' }).getByText('there', { exact: true });
     await expect(marked).toHaveAttribute('role', 'button');
     await marked.click();
-    const panel = page.getByRole('dialog', { name: 'Anotaciones' });
+    const note = page.getByRole('dialog', { name: 'Error' });
+    await expect(note).toContainText('their');
+    await expect(note).toContainText('Possessive.');
+    await note.getByRole('button', { name: 'Ver en la lista' }).click();
     await expect(panel).toBeVisible();
     const annotations = panel.getByRole('listbox').getByRole('option');
     await expect(annotations).toHaveCount(8);
-    await annotations.filter({ hasText: 'Possessive.' }).click();
     await expect(annotations.filter({ hasText: 'Possessive.' })).toHaveAttribute('aria-selected', 'true');
 
-    await panel.getByLabel('Tipo de anotación').selectOption('STRENGTH');
+    await panel.getByRole('button', { name: /^Fortalezas/ }).click();
     await expect(annotations).toHaveCount(2);
-    await panel.getByLabel('Tipo de anotación').selectOption('ALL');
-    await panel.getByLabel('Solo pendientes').check();
+    await panel.getByRole('button', { name: /^Todas/ }).click();
+    await panel.getByRole('button', { name: 'Pendientes' }).click();
     await expect(annotations).toHaveCount(8);
+    await annotations.filter({ hasText: 'Possessive.' }).focus();
     await page.keyboard.press('ArrowUp');
     await expect(annotations.filter({ hasText: 'Needs work.' })).toHaveAttribute('aria-selected', 'true');
-    await page.keyboard.press('Enter');
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Limpio' }).click();
-    await expect(page.locator('[data-reading-mode="clean"]')).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole('button', { name: 'Anotaciones (8)' }).click();
-    await expect(page.getByRole('dialog', { name: 'Anotaciones' })).toBeVisible();
+    await expect(panel).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'Anotaciones' })).toHaveCount(0);
+    await expect(panel).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   } finally { cleanUp(tag); }
 });
@@ -218,18 +228,21 @@ test('crear, editar, revisar, borrar y deshacer anotaciones; colocar una cita si
   try {
     const { essay } = shelf(tag);
     await page.goto(`/writing/${String(essay)}-cities-${tag}`);
+    await annotateMode(page);
     await selectText(page, 'although both measures are valuable');
     await page.getByRole('button', { name: 'Anotar selección', exact: true }).click();
-    const editor = page.getByRole('region', { name: 'Anotar selección' });
+    const editor = page.getByRole('form', { name: 'Nueva anotación' });
     await editor.getByLabel('Comentario').fill(`Created ${tag}`);
     await editor.getByRole('button', { name: 'Guardar anotación' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Anotación guardada.' })).toBeVisible();
 
-    const panel = page.getByRole('region', { name: 'Anotaciones' });
+    const panel = page.getByRole('complementary', { name: 'Anotaciones' });
     const note = panel.getByRole('listbox').locator('li').filter({ hasText: `Created ${tag}` });
     await expect(note).toBeVisible();
+    // Las acciones de una anotación aparecen al elegirla.
+    await note.getByRole('option').click();
     await note.getByRole('button', { name: 'Editar anotación' }).click();
-    const edit = page.getByRole('region', { name: 'Editar anotación' });
+    const edit = page.getByRole('form', { name: 'Editar anotación' });
     await edit.getByLabel('Comentario').fill(`Edited ${tag}`);
     await edit.getByRole('button', { name: 'Guardar anotación' }).click();
     await expect(panel.getByRole('listbox').locator('li').filter({ hasText: `Edited ${tag}` })).toBeVisible();
@@ -246,11 +259,12 @@ test('crear, editar, revisar, borrar y deshacer anotaciones; colocar una cita si
     pending.annotations = [{ kind: 'ERROR', focus: 'GRAMMAR', source: 'PROFESOR', target: { scope: 'SPAN', quote: 'missingword' }, comment: 'Place this.', suggestion: null }];
     const unplacedId = importPiece(pending);
     await page.goto(`/writing/${String(unplacedId)}-unplaced-${tag}`);
-    const placePanel = page.getByRole('region', { name: 'Anotaciones' });
+    await annotateMode(page);
+    const placePanel = page.getByRole('complementary', { name: 'Anotaciones' });
     await placePanel.getByRole('option').filter({ hasText: 'Place this.' }).click();
     await selectText(page, 'unclear');
     await page.getByRole('button', { name: 'Colocar aquí', exact: true }).click();
-    await expect(page.getByRole('dialog', { name: 'Anotaciones' }).getByRole('option').filter({ hasText: 'unclear' })).toBeVisible();
+    await expect(placePanel.getByRole('option').filter({ hasText: 'unclear' })).toBeVisible();
   } finally { cleanUp(tag); }
 });
 
@@ -269,13 +283,14 @@ test('corregir la transcripción guarda historial, actualiza palabras y reancla 
     const thereId = old.there.id;
     const linkerId = old.linker.id;
     await page.goto(`/writing/${String(essay)}-cities-${tag}`);
-    await page.getByRole('button', { name: 'Corregir transcripción' }).click();
+    await page.getByRole('button', { name: 'Más acciones' }).click();
+    await page.getByRole('menuitem', { name: 'Corregir transcripción' }).click();
     const revised = `A short new introduction.\n\n${old.piece.originalText?.replace('there effect', 'their effect') ?? ''}`;
     await page.getByRole('textbox', { name: 'Transcripción' }).fill(revised);
     await page.getByRole('button', { name: 'Guardar texto' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Transcripción corregida.' })).toBeVisible();
     await expect(page.getByText('their effect is more limited.')).toBeVisible();
-    await expect(page.getByText(/\d+ palabras? · 220–260/u)).toBeVisible();
+    await expect(page.getByText(/\d+ palabras? \(220–260\)/u)).toBeVisible();
 
     const after = withDb((db) => ({
       piece: db.select().from(writingPiece).where(eq(writingPiece.id, essay)).get(),
@@ -288,7 +303,8 @@ test('corregir la transcripción guarda historial, actualiza palabras y reancla 
     expect(after.linker?.anchor).toMatchObject({ exact: 'as a result', start: revised.indexOf('as a result') });
     expect(after.history).toHaveLength(1);
     expect(after.history[0]).toMatchObject({ text: old.piece.originalText, textRevision: 1 });
-    await expect(page.getByRole('region', { name: 'Anotaciones' }).getByRole('listbox').getByRole('option').filter({ hasText: 'Possessive.' })).toBeVisible();
+    await page.getByRole('button', { name: /^Anotaciones \(/ }).click();
+    await expect(page.getByRole('complementary', { name: 'Anotaciones' }).getByRole('listbox').getByRole('option').filter({ hasText: 'Possessive.' })).toBeVisible();
   } finally { cleanUp(tag); }
 });
 

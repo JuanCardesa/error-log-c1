@@ -303,8 +303,13 @@ ha guardado nada».
 - Writing es un destino principal con Biblioteca, Reescrituras y Progreso. La biblioteca
   filtra redacciones por búsqueda, estado, tipo y orden; el lector presenta el texto en
   una hoja serif y las correcciones en un panel, con Drawer en móvil.
-- El lector permite alternar texto anotado y limpio, revisar anotaciones y editar la
-  transcripción o evaluación. La pestaña Progreso muestra medidas, filtros, evolución
+- El lector muestra en reposo solo los errores, con un subrayado rojo fino y sin fondo.
+  Al pasar por un párrafo (o con foco o un toque) aparecen sus fondos y sus notas de
+  párrafo, como marcas al margen. Pasar por un error abre una nota con «tu texto →
+  corrección», el comentario y el tipo; con un clic se queda y trae sus acciones.
+- El panel de anotaciones está cerrado por defecto y se abre como columna al margen
+  (Drawer bajo 1024 px). Anotar, corregir la transcripción en la propia hoja, editar
+  los datos y exportar viven en «Más acciones». La pestaña Progreso muestra medidas, filtros, evolución
   ordinal y estadísticas por criterio; cada vacío conserva su significado y las fechas
   aproximadas se distinguen visualmente.
 - La acción de exportación del lector descarga JSON reimportable con evaluación,

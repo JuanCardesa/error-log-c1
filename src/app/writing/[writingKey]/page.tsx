@@ -15,7 +15,8 @@ import { getT } from '../../_shared/i18nServer';
 import ui from '../../_shared/ui.module.css';
 import { BANDS } from '../bands';
 import { editableRow, libraryItems, pieceOptions } from '../entries';
-import { WritingEditor } from '../PieceForm';
+import { ReaderActions } from '../ReaderActions';
+import { ReaderProvider } from '../ReaderContext';
 import { WritingStatusText } from '../WritingStatusText';
 import { WritingReadingView } from '../WritingReadingView';
 import { WritingTranscriptionEditor } from '../WritingTranscriptionEditor';
@@ -60,27 +61,34 @@ export default async function WritingReaderPage({ params, searchParams }: {
     reviewedAt: writingAnnotation.reviewedAt,
   }).from(writingAnnotation).where(eq(writingAnnotation.pieceId, piece.id)).all();
   const marked = assessed > 0 || piece.corrector !== null || piece.correctedOn !== null || piece.teacherComment !== null;
+  const words = text === null ? piece.wordCount : piece.wordCount ?? countWords(text);
+  const wordRange = piece.wordMin === null || piece.wordMax === null ? '220–260' : `${String(piece.wordMin)}–${String(piece.wordMax)}`;
 
   return (
+    <ReaderProvider>
     <div className={styles.readerPage}>
       <div className={styles.readerBar}>
         <Link href="/writing" className={ui.backLink}>
           <ArrowLeft size={16} aria-hidden="true" />
           {t.writingImport.backToWriting}
         </Link>
-        {text !== null && (
-          <Link href={`/exportar/writing-${String(piece.id)}.json`} className={`${ui.secondary} ${ui.compact}`} download>
-            {w.exportJson}
-          </Link>
-        )}
-        <WritingEditor
-          editing={editableRow(piece)}
-          editingSession={session}
-          originals={pieceOptions(items, t)}
-          transcribed={text !== null}
-          today={toIsoDate(new Date())}
-          initiallyOpen={(await searchParams).editar === '1'}
-          closeHref={href}
+        <ReaderActions
+          count={annotations.length}
+          exportHref={text === null ? null : `/exportar/writing-${String(piece.id)}.json`}
+          editor={{
+            editing: editableRow(piece),
+            editingSession: session,
+            originals: pieceOptions(items, t),
+            transcribed: text !== null,
+            today: toIsoDate(new Date()),
+            initiallyOpen: (await searchParams).editar === '1',
+            closeHref: href,
+          }}
+          labels={{
+            annotations: w.reading.annotationPanel, annotationsCount: w.reading.annotations(annotations.length),
+            moreActions: w.reading.moreActions, editDetails: w.editDetails,
+            correctTranscription: w.reading.correctTranscription, annotateText: w.reading.annotateText, exportJson: w.exportJson,
+          }}
         />
       </div>
 
@@ -93,7 +101,7 @@ export default async function WritingReaderPage({ params, searchParams }: {
                 <time dateTime={piece.date}>{mediumDate(piece.date, t)}</time>
                 {piece.dateBasis !== 'WRITTEN' && ` · ${t.writingImport.approximate}`}
               </span>
-              {piece.wordCount !== null && <span>{w.words(piece.wordCount)}</span>}
+              {words !== null && <span>{text === null ? w.words(words) : w.reading.wordCount(words, wordRange)}</span>}
               <span><WritingStatusText status={piece.status} t={t} /></span>
             </p>
             <h1 id="writing-title" className={styles.sheetTitle}>{item.title}</h1>
@@ -128,19 +136,16 @@ export default async function WritingReaderPage({ params, searchParams }: {
           </div>
         ) : (
           <WritingReadingView pieceId={piece.id} text={text} annotations={annotations} labels={{
-              wordCount: w.reading.wordCount(piece.wordCount ?? countWords(text),
-                piece.wordMin === null || piece.wordMax === null ? '220–260' : `${String(piece.wordMin)}–${String(piece.wordMax)}`),
-              annotated: w.reading.annotated, clean: w.reading.clean,
-              annotationsOne: w.reading.annotations(1).replace('1', '{count}'),
-              annotationsMany: w.reading.annotations(2).replace('2', '{count}'),
               closeAnnotations: w.reading.closeAnnotations, annotationPanel: w.reading.annotationPanel,
               filterType: w.reading.filterType, kindLabel: w.reading.kindLabel, focusLabel: w.reading.focusLabel,
               allKinds: w.reading.allKinds, pendingOnly: w.reading.pendingOnly,
-              wholeText: w.reading.wholeText, needsPlacing: w.reading.needsPlacing,
+              wholeText: w.reading.wholeText, wholeTextNote: w.reading.wholeTextNote, needsPlacing: w.reading.needsPlacing,
               paragraphPrefix: w.reading.paragraph(1).replace('1', ''),
               noAnnotations: w.reading.noAnnotations, noAnnotationsYet: w.reading.noAnnotationsYet,
               reviewed: w.reading.reviewed, unreviewed: w.reading.unreviewed,
-              previous: w.reading.previous, next: w.reading.next, jump: w.reading.jump,
+              showInList: w.reading.showInList, newAnnotation: w.reading.newAnnotation,
+              annotateText: w.reading.annotateText, annotateHint: w.reading.annotateHint,
+              finishAnnotating: w.reading.finishAnnotating, transcriptionHint: w.reading.transcriptionHint,
               createAnnotation: w.reading.createAnnotation, editAnnotation: w.reading.editAnnotation,
               deleteAnnotation: w.reading.deleteAnnotation, placeHere: w.reading.placeHere,
               correctTranscription: w.reading.correctTranscription,
@@ -148,15 +153,11 @@ export default async function WritingReaderPage({ params, searchParams }: {
               cancel: t.common.cancel,
               chooseCandidate: w.reading.chooseCandidate, saving: w.reading.saving,
               comment: w.reading.comment, suggestion: w.reading.suggestion,
-              savingSource: w.reading.savingSource, missingAnnotation: w.reading.missingAnnotation,
-              missingText: w.reading.missingText, invalidTarget: w.reading.invalidTarget, staleAnchor: w.reading.staleAnchor,
-              restoreConflict: w.reading.restoreConflict, invalidInput: w.reading.invalidInput,
-              annotationSaved: w.reading.annotationSaved, annotationPlaced: w.reading.annotationPlaced,
-              annotationStudied: w.reading.annotationStudied, annotationDeleted: w.reading.annotationDeleted,
-              annotationRestored: w.reading.annotationRestored, noMatches: w.reading.noMatches,
+              savingSource: w.reading.savingSource, invalidTarget: w.reading.invalidTarget,
+              restoreConflict: w.reading.restoreConflict, noMatches: w.reading.noMatches,
               aiSuggestion: w.reading.aiSuggestion, markStudied: w.reading.markStudied,
               saveAnnotation: w.reading.saveAnnotation,
-              kind: w.reading.kind, source: w.reading.source, focus: w.reading.focus,
+              kind: w.reading.kind, kindPlural: w.reading.kindPlural, source: w.reading.source, focus: w.reading.focus,
             }} />
         )}
 
@@ -206,5 +207,6 @@ export default async function WritingReaderPage({ params, searchParams }: {
         </section>
       </article>
     </div>
+    </ReaderProvider>
   );
 }
