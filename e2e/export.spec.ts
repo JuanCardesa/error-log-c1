@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
 
 import { expect, test } from '@playwright/test';
+import { eq } from 'drizzle-orm';
 
 import { createDb } from '../src/lib/db/client';
 import { loadDataset } from '../src/lib/db/load';
-import { createError, deleteError } from '../src/lib/db/repo';
+import { createError, deleteError, deleteSession } from '../src/lib/db/repo';
+import { writingPiece } from '../src/lib/db/schema';
 import { applyWritingImport, previewWritingImport } from '../src/lib/db/writingRepo';
 import { getMessages } from '../src/lib/i18n';
 import { toIsoDate } from '../src/lib/time/dates';
@@ -14,6 +16,7 @@ import { E2E_DB } from './globalSetup';
 test('descarga CSV con UTF-8 y respuestas tratadas como texto; el JSON conserva el original', async ({ request }) => {
   const db = createDb(E2E_DB);
   let createdId: number | undefined;
+  let writingSessionId: number | undefined;
   try {
     const sample = loadDataset(db).errors[0];
     if (sample === undefined) throw new Error('Falta un error en el seed');
@@ -32,6 +35,8 @@ test('descarga CSV con UTF-8 y respuestas tratadas como texto; el JSON conserva 
       sessionSource: 'ACADEMIA', sessionId: null, digest: writingPreview.digest,
     }, { ...writingContext, now: new Date() });
     if (!writingResult.ok) throw new Error(JSON.stringify(writingResult));
+    writingSessionId = db.select({ id: writingPiece.sessionId }).from(writingPiece)
+      .where(eq(writingPiece.id, writingResult.pieceId)).get()?.id ?? undefined;
     const csv = await request.get('/exportar/q4.csv');
     expect(csv.ok()).toBe(true);
     const bytes = await csv.body();
@@ -56,6 +61,9 @@ test('descarga CSV con UTF-8 y respuestas tratadas como texto; el JSON conserva 
     expect(JSON.parse(dumpText)).toMatchObject({ formatVersion: 4, writingAnnotations: expect.arrayContaining([expect.objectContaining({ pieceId: writingResult.pieceId })]) });
   } finally {
     if (createdId !== undefined) deleteError(db, createdId);
+    // La sesión que creó la importación se lleva en cascada la redacción y sus anotaciones;
+    // si se quedara, las pruebas de importación la encontrarían como redacción parecida.
+    if (writingSessionId !== undefined) deleteSession(db, writingSessionId);
     db.$client.close();
   }
 });
