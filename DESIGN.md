@@ -292,7 +292,10 @@ sigue siendo el valor interno.
   Certezas retiran también la Sesión y llevan su fecha bajo la corrección.
 - **Puntos de ruptura:** < 640 móvil (dos filas de cabecera, controles de 44 px, detalle y
   editores a pantalla completa); 640–1023 una columna con el detalle como pantalla;
-  ≥ 1024 listado y panel lado a lado. Nunca scroll horizontal de página: las tablas y
+  ≥ 1024 listado y panel lado a lado. Una sola excepción con nombre: el lector del Notebook
+  añade el índice como tercera columna a partir de 1280, porque antes directorio, folio e
+  índice no caben con `--reading-max`; entre 1024 y 1279 el índice va plegado encima del
+  folio. Nunca scroll horizontal de página: las tablas y
   matrices anchas se desplazan dentro de su contenedor (con `position: relative`, para que
   el `caption` accesible no escape).
 
@@ -340,7 +343,7 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   escribir (250 ms).
 - **FilterMenu**: un filtro como menú de enlaces; el botón dice el filtro y su valor
   («Causa: Todas»). Activo, el botón va en `brand-tint` con su × para quitarlo sin abrir el
-  menú.
+  menú. Un menú largo (las etiquetas del Notebook) se desplaza dentro, hasta 420 px.
 - **Pills** (`ui.pills`) para Todas/Abiertas y **chip** (`ui.chip`) para un filtro que no
   tiene menú (p. ej. «Solo sesiones con ítems», que llega desde Progreso).
 
@@ -465,8 +468,16 @@ siempre. Un fallo de transporte se dice como «No pudimos confirmar el guardado�
 ## Notebook
 
 - Entrada en la cabecera, en el grupo de la biblioteca junto a Writing, y en la paleta. La
-  portada abre con búsqueda, carpetas, modificados recientes, la acción «Nuevo apunte» y
-  la secundaria «Importar .md». El estado vacío explica cómo crear el primero.
+  portada usa `PageHeader` con la acción «Nuevo apunte» y la secundaria «Importar .md», y
+  debajo un `FilterBar` como el de Errores: búsqueda al escribir, **Carpeta** (cada raíz con
+  sus subcarpetas, sus hijas y «Sin carpeta») y **Etiqueta** (las que ya se usan, las más
+  repetidas primero, con su recuento). Todo se aplica al elegirlo y conserva lo demás. El
+  estado vacío explica cómo crear el primero.
+- El directorio es navegación, no una tarjeta: sin caja, con su cabecera sobre el mismo
+  filete que la del listado; enlaces en tinta y el actual en marca y 600. Organizar
+  carpetas queda debajo, tras un filete. Cada fila del listado es el enlace al apunte (el
+  enlace se estira sobre ella) y la estrella queda por encima con su propio botón. Bajo
+  1024 px el directorio va después del contenido, en la portada y en el lector.
 - Portada en `/notebook`, alta en `/notebook/nuevo`, importación en `/notebook/importar`,
   lector en `/notebook/<id>-<slug>` y editor en su subruta `/editar`. El sufijo describe
   el título; el ID conserva el enlace tras renombrar. Las descargas usan
@@ -478,14 +489,21 @@ siempre. Un fallo de transporte se dice como «No pudimos confirmar el guardado�
   editables, lista los avisos (frontmatter no interpretado, campos descartados, HTML,
   imágenes, destinos no resolubles) y enseña la vista previa con el renderizador del
   lector. Solo «Crear apunte» escribe, y siempre crea un apunte nuevo.
+- El lector no tiene acciones a la vista que no sean de lectura: Favorito y Editar como
+  secundarios y un menú «⋯» con Exportar .md y, tras un separador, Borrar apunte… (en rojo
+  y con confirmación). Las migas son su «volver», en `ink-2`. Cada etiqueta abre la portada
+  filtrada por ella.
 - La lectura usa Source Serif 4 y `--reading-max`; directorio e índice acompañan al
   texto en pantallas amplias. Bajo 1024 px, directorio e índice se despliegan y el
   contenido ocupa una columna. Las tablas Markdown desplazan dentro de su contenedor.
 - La estrella de favoritos confirma con el servidor antes de cambiar. El directorio muestra
   hasta ocho y la vista Favoritos reúne todos; la marca no altera la fecha ni la revisión.
 - El editor usa Plex, textarea nativo, toolbar pequeña y pestañas Editar/Vista previa.
-  La vista previa comparte renderizador con el lector. Guardar ahora y Ctrl/⌘+S
-  complementan autosave; un estado visible distingue pendiente, guardando, guardado,
+  La vista previa comparte renderizador con el lector y titula con `h2` (el `h1` es «Editar
+  apunte»). Título, Carpeta y Etiquetas empiezan a la misma altura: la pista «separadas por
+  comas» va bajo el campo. El primario es **Terminar edición**, que guarda lo pendiente y
+  vuelve al lector; «Guardar ahora» (secundario) solo aparece mientras queda algo por
+  guardar, en vez de un primario gris. Ctrl/⌘+S y el autosave lo complementan; un estado visible distingue pendiente, guardando, guardado,
   conflicto y error. El borrador local se escribe a los 250 ms y se puede recuperar o
   descargar. El envío al servidor empieza tras un segundo sin cambios; solo la respuesta
   confirmada muestra «guardado». Un conflicto conserva el borrador y permite cargar lo
