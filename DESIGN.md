@@ -278,7 +278,8 @@ sigue siendo el valor interno.
   pestañas debajo. Las hojas de lectura (una redacción, un apunte) llevan su título en la
   hoja, pero el «volver» va en el mismo sitio.
 - Listado + detalle: rejilla `minmax(0,1fr) 360px` con el panel pegado arriba. Con el
-  panel abierto, la tabla retira columnas (Causa y Anki, o Contexto).
+  panel abierto, la tabla retira columnas (Causa y Anki, o Contexto). En móvil, Errores y
+  Certezas retiran también la Sesión y llevan su fecha bajo la corrección.
 - **Puntos de ruptura:** < 640 móvil (dos filas de cabecera, controles de 44 px, detalle y
   editores a pantalla completa); 640–1023 una columna con el detalle como pantalla;
   ≥ 1024 listado y panel lado a lado. Nunca scroll horizontal de página: las tablas y
@@ -350,10 +351,28 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   `button` cuando es la alternativa a pegar el texto.
 - **StatusText**: rombo «Abierta» en aviso, cuadrado «Cerrada» en tinta secundaria.
 - **AnkiStateText**: el estado Anki en una fila. «Pendiente» en tinta con anillo hueco,
-  «Convertida» en `success` con punto, «Marca manual» y «No aplica» en `ink-2`. En el panel
-  de detalle, donde es la llamada a la acción, «Pendiente» sí va en aviso.
+  «Convertida» en `success` con punto, «Sin verificar» (la marca manual de versiones
+  anteriores) y «No aplica» en `ink-2`. La columna mide 140 px: cabe «Not applicable».
 - **CorrectionPair**: en línea (mono) para listas; en detalle (serif, dos filas). Sin
-  respuesta propia: «Mi respuesta no registrada», en cursiva y sin tachar.
+  respuesta propia: «Mi respuesta no registrada», en cursiva y sin tachar. En móvil y en un
+  contenedor de menos de 420 px (el panel de detalle, la vista previa de Anki) la etiqueta
+  va encima de la respuesta.
+
+### Detalle de error
+- **Cabecera:** «Error 38 · 26 de 27» y sus flechas; la sesión está en los datos de abajo.
+  Con la lista paginada, la posición se cuenta sobre todos los resultados y las flechas
+  siguen en la página de al lado al llegar al borde (`?at=first|last`, que se limpia).
+- **Anki** dice el siguiente paso: «Pendiente» va en aviso con «Crear la tarjeta» (abre
+  Anki con su vista previa, `?error=`); «Sin verificar» explica de dónde viene y enlaza a
+  Convertidas, donde se puede devolver a pendientes.
+- **Falsas certezas** añade la columna Causa: es la que separa el despiste de lo que no se
+  sabía. La entradilla dice el periodo y el recuento solo los casos.
+
+### Anki
+- El estado de la conexión se dice una vez, a la derecha del título («Disponible» o «No
+  disponible»); el aviso de debajo solo explica el porqué. Sin conexión, «Sincronizar» pasa a
+  «Volver a probar» y remite al aviso (`aria-describedby`).
+- Los grupos de Repasos son `h2`: no hay salto de `h1` a `h3`.
 
 ### Capas
 - **Toast** (`useToast`): abajo al centro, por encima de cualquier panel; fuera de las filas
