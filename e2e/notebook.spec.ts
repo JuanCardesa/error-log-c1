@@ -305,9 +305,12 @@ test('la paleta muestra hasta tres apuntes junto a errores y sesiones y navega p
   } finally { db.$client.close(); }
 
   await page.goto('/registrar');
-  await page.keyboard.press('Control+k');
   const search = page.getByRole('combobox', { name: 'Buscar' });
-  await expect(search).toBeFocused();
+  // Hasta hidratar no hay atajo: se repite la tecla hasta que la paleta se abre.
+  await expect(async () => {
+    await page.keyboard.press('Control+k');
+    await expect(search).toBeFocused({ timeout: 1000 });
+  }).toPass();
   await search.fill('commitment');
   await expect(page.getByRole('option', { name: /Commitment note/u })).toHaveCount(3);
   await expect(page.getByRole('option').filter({ hasText: 'commitement' })).toBeVisible();

@@ -201,11 +201,16 @@
   --header-h: 56px;
 }
 
+@media (max-width: 799px) {
+  :root {
+    /* Dos filas: marca, Más y buscar; debajo, los seis destinos. */
+    --header-h: 92px;
+  }
+}
+
 @media (max-width: 639px) {
   :root {
     --page-pad: 16px;
-    /* Dos filas: marca + Más, y los cuatro destinos. */
-    --header-h: 92px;
   }
 }
 

@@ -154,7 +154,16 @@
 
 @media (max-width: 1023px) {
   .inner {
-    gap: var(--space-4);
+    gap: var(--space-3);
+  }
+
+  /* Tableta: los seis destinos, Más y buscar en una fila; sin el aire de escritorio no caben a 800. */
+  .navLink {
+    padding: 0 var(--space-2);
+  }
+
+  .navSep {
+    margin: 0 var(--space-1);
   }
 
   .searchText {
@@ -167,10 +176,11 @@
 }
 
 /*
- * Móvil: dos filas. Marca, Más y buscar arriba; los seis destinos repartidos debajo, sin
- * scroll horizontal y con la sección activa siempre a la vista.
+ * Móvil y tableta estrecha: dos filas. Marca, Más y buscar arriba; los seis destinos
+ * repartidos debajo, sin scroll horizontal y con la sección activa siempre a la vista.
+ * Por debajo de 800 px la fila única no cabe con margen.
  */
-@media (max-width: 639px) {
+@media (max-width: 799px) {
   .inner {
     display: grid;
     grid-template-columns: 1fr auto auto;

@@ -277,7 +277,7 @@ sigue siendo el valor interno.
 ## Layout
 
 - Página de 1200 px de contenido (1264 con márgenes), padding 32/32/96; 24 en tableta y 16
-  en móvil. Cabecera fija de 56 px en cristal (dos filas en móvil).
+  en móvil. Cabecera fija de 56 px en cristal; por debajo de 800 px, dos filas (92 px), porque la fila única no cabe con margen.
 - Navegación en dos grupos, **Ritual | Biblioteca**: Sesiones · Errores · Progreso · Anki,
   un filete vertical, Notebook · Writing. **Más ▾** guarda Exportar datos y, tras un
   separador, el idioma (English / Español), que se elige ahí mismo; no hay página de Ajustes
