@@ -23,6 +23,9 @@ function seed(target: Db, now: Date) {
   } finally { source.$client.close(); }
 }
 
+const LEGACY_PIECE_COLUMNS = ['id', 'session_id', 'date', 'genre', 'word_count', 'minutes', 'timed', 'rewrite_of',
+  'corrector', 'band_content', 'band_communicative', 'band_organisation', 'band_language'].join(', ');
+
 let db: Db;
 beforeEach(() => {
   db = createDb(':memory:');
@@ -41,7 +44,8 @@ function snapshot() {
       errors: db.$client.prepare<[], Record<string, unknown>>('SELECT * FROM error_row ORDER BY id').all()
         // Columnas que no existen en el esquema historico del fixture.
         .map(({ anki_note_id: _link, anki_content_hash: _hash, ...row }) => row),
-      pieces: db.$client.prepare<[], { session_id: number }>('SELECT * FROM writing_piece ORDER BY id').all(),
+      // Las columnas de 0012 no existen en el esquema historico; su relleno tiene su prueba.
+      pieces: db.$client.prepare<[], { session_id: number }>(`SELECT ${LEGACY_PIECE_COLUMNS} FROM writing_piece ORDER BY id`).all(),
     },
     schema: db.$client.prepare('SELECT type, name, sql FROM sqlite_schema ORDER BY name').all(),
     journal: db.$client.prepare('SELECT * FROM __drizzle_migrations').all(),
@@ -138,6 +142,51 @@ it('exige una transaccion propia y restaura foreign_keys si estaban desactivadas
   db.$client.pragma('foreign_keys = OFF');
   migrate(db);
   expect(db.$client.pragma('foreign_keys', { simple: true })).toBe(0);
+});
+
+it('0012 rellena los textos anteriores: uid propio, estado segun su evaluacion y alta en su fecha', () => {
+  seed(db, new Date('2020-01-20T12:00:00Z'));
+  // Un texto sin evaluar y un ID borrado por encima de todos: AUTOINCREMENT no debe reutilizarlo.
+  const writingSession = () => Number(db.$client.prepare(`INSERT INTO session (date, kind, paper, part, source, items_total, items_correct)
+    VALUES ('2020-01-19', 'WRITING', 'WRITING', 2, 'LIBRO', NULL, NULL)`).run().lastInsertRowid);
+  const insertPiece = db.$client.prepare("INSERT INTO writing_piece (id, session_id, date, genre) VALUES (?, ?, '2020-01-19', 'REPORT')");
+  insertPiece.run(900, writingSession());
+  insertPiece.run(901, writingSession());
+  db.$client.exec('DELETE FROM writing_piece WHERE id = 901');
+  migrate(db);
+
+  const rows = db.$client.prepare<[], Record<string, unknown>>(`SELECT id, uid, status, date, date_basis, created_at,
+    updated_at, text_revision, original_text, text_fingerprint FROM writing_piece ORDER BY id`).all();
+  expect(rows).toHaveLength(3);
+  expect(new Set(rows.map((row) => row['uid'])).size).toBe(3);
+  for (const row of rows) {
+    expect(row['uid']).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(row).toMatchObject({ date_basis: 'WRITTEN', text_revision: 1, original_text: null, text_fingerprint: null,
+      created_at: `${String(row['date'])}T00:00:00.000Z`, updated_at: `${String(row['date'])}T00:00:00.000Z` });
+  }
+  // Los dos del seed tienen bandas y corrector; el nuevo, nada.
+  expect(rows.map((row) => row['status'])).toEqual(['CORRECTED', 'CORRECTED', 'AWAITING']);
+  expect(db.$client.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'writing_piece'").get()).toEqual({ seq: 901 });
+  expect(db.$client.prepare('SELECT name FROM sqlite_temp_schema').all()).toEqual([]);
+
+  // Ya con el esquema nuevo: medios puntos sí, otros decimales no.
+  db.$client.exec('UPDATE writing_piece SET band_language = 2.5 WHERE id = 900');
+  expect(() => db.$client.exec('UPDATE writing_piece SET band_language = 2.3 WHERE id = 900')).toThrow(/CHECK/);
+});
+
+it('0012 no reconstruye writing_piece con foreign_keys activos: borraria las reescrituras copiadas', () => {
+  seed(db, new Date('2020-01-20T12:00:00Z'));
+  const migrations = readMigrationFiles({ migrationsFolder: MIGRATIONS_DIR });
+  const workspace = migrations[12];
+  if (workspace === undefined) throw new Error('Falta la migracion 0012');
+  db.$client.pragma('foreign_keys = OFF');
+  for (const migration of migrations.slice(1, 12)) for (const statement of migration.sql) db.$client.exec(statement);
+  db.$client.pragma('foreign_keys = ON');
+  const before = snapshot().data;
+  expect(() => db.$client.transaction(() => {
+    for (const statement of workspace.sql) db.$client.exec(statement);
+  })()).toThrow(/foreign_keys_off/);
+  expect(snapshot().data).toEqual(before);
 });
 
 it('cuenta lo pendiente con el mismo criterio con el que migra, para decidir la copia previa', () => {

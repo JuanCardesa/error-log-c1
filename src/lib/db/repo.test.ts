@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { migrate } from './migrate';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -32,7 +33,6 @@ import {
   listWritingPieces,
   setSessionStatus,
   updateWritingPiece,
-  writingSessionsWithoutPiece,
   unmarkAnkiAdded,
   updateError,
   updateSession,
@@ -261,6 +261,10 @@ describe('textos de writing', () => {
       sessionId,
       date: '2026-09-10',
       genre: 'ESSAY',
+      status: 'AWAITING',
+      correctedOn: null,
+      teacherComment: null,
+      personalNotes: null,
       wordCount: 240,
       minutes: 45,
       timed: true,
@@ -316,6 +320,36 @@ describe('textos de writing', () => {
     expect(getWritingPiece(db, created.id)?.bandLanguage).toBe(4);
   });
 
+  it('persiste los campos de evaluacion editables', () => {
+    const session = writingSession();
+    const created = createWritingPiece(db, pieceInput(session.id));
+    updateWritingPiece(db, created.id, pieceInput(session.id, {
+      status: 'CORRECTED', correctedOn: '2026-09-12', teacherComment: 'Clear argument', personalNotes: 'Review linking',
+    }));
+    expect(getWritingPiece(db, created.id)).toMatchObject({
+      status: 'CORRECTED', correctedOn: '2026-09-12', teacherComment: 'Clear argument', personalNotes: 'Review linking',
+    });
+  });
+
+  it('deduce el estado de la evaluacion y no lo deshace al quitarla', () => {
+    const state = (id: number) => db.$client
+      .prepare<[number], { status: string; updated_at: string }>('SELECT status, updated_at FROM writing_piece WHERE id = ?').get(id);
+    const unmarked = { corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null };
+    const pending = createWritingPiece(db, pieceInput(writingSession().id, unmarked));
+    const marked = createWritingPiece(db, pieceInput(writingSession('2026-09-11').id, { bandLanguage: 2.5 }));
+    expect(state(pending.id)?.status).toBe('AWAITING');
+    expect(state(marked.id)?.status).toBe('CORRECTED');
+
+    db.$client.prepare("UPDATE writing_piece SET updated_at = '2020-01-01T00:00:00.000Z' WHERE id = ?").run(pending.id);
+    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, { ...unmarked, bandContent: 4, status: 'CORRECTED' }));
+    expect(state(pending.id)?.status).toBe('CORRECTED');
+    expect(state(pending.id)?.updated_at).not.toBe('2020-01-01T00:00:00.000Z');
+    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, { ...unmarked, status: 'AWAITING' }));
+    expect(state(pending.id)?.status).toBe('AWAITING');
+    updateWritingPiece(db, pending.id, pieceInput(pending.sessionId, { ...unmarked, status: 'NOT_SUBMITTED' }));
+    expect(state(pending.id)?.status).toBe('NOT_SUBMITTED');
+  });
+
   it('borra', () => {
     const session = writingSession();
     const created = createWritingPiece(db, pieceInput(session.id));
@@ -336,14 +370,16 @@ describe('textos de writing', () => {
     expect(getWritingPiece(db, rewrite.id)?.rewriteOf).toBe(original.id);
   });
 
-  it('solo ofrece sesiones de Writing que sigan libres', () => {
-    const free = writingSession('2026-09-12');
-    const taken = writingSession('2026-09-01');
-    // Una sesion de RUOE no puede albergar un texto: no debe aparecer.
-    createSession(db, sessionInput({ paper: 'RUOE' }));
-    createWritingPiece(db, pieceInput(taken.id, { date: '2026-09-01' }));
+  it('con transcripción conserva las palabras contadas aunque el formulario mande otras', () => {
+    const transcribed = createWritingPiece(db, pieceInput(writingSession().id, { wordCount: 5 }));
+    db.update(writingPiece).set({ originalText: 'Two words', textFingerprint: 'huella', wordCount: 2 })
+      .where(eq(writingPiece.id, transcribed.id)).run();
+    updateWritingPiece(db, transcribed.id, pieceInput(transcribed.sessionId, { wordCount: 999 }));
+    expect(getWritingPiece(db, transcribed.id)?.wordCount).toBe(2);
 
-    expect(writingSessionsWithoutPiece(db).map((s) => s.id)).toEqual([free.id]);
+    const legacy = createWritingPiece(db, pieceInput(writingSession('2026-09-11').id, { wordCount: 5 }));
+    updateWritingPiece(db, legacy.id, pieceInput(legacy.sessionId, { wordCount: 240 }));
+    expect(getWritingPiece(db, legacy.id)?.wordCount).toBe(240);
   });
 });
 
@@ -433,8 +469,8 @@ describe('consecuencias de borrar una sesion', () => {
   it('cuenta sus errores, los convertidos, su texto y las reescrituras que pierden el vinculo', () => {
     const essay = createSession(db, sessionInput({ kind: 'WRITING', paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null }));
     const rewrite = createSession(db, sessionInput({ kind: 'WRITING', paper: 'WRITING', part: 1, itemsTotal: null, itemsCorrect: null }));
-    const piece = createWritingPiece(db, { sessionId: essay.id, date: '2026-09-10', genre: 'ESSAY', wordCount: null, minutes: null, timed: false, rewriteOf: null, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
-    createWritingPiece(db, { sessionId: rewrite.id, date: '2026-09-11', genre: 'ESSAY', wordCount: null, minutes: null, timed: false, rewriteOf: piece.id, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
+    const piece = createWritingPiece(db, { sessionId: essay.id, date: '2026-09-10', genre: 'ESSAY', status: 'AWAITING', correctedOn: null, teacherComment: null, personalNotes: null, wordCount: null, minutes: null, timed: false, rewriteOf: null, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
+    createWritingPiece(db, { sessionId: rewrite.id, date: '2026-09-11', genre: 'ESSAY', status: 'AWAITING', correctedOn: null, teacherComment: null, personalNotes: null, wordCount: null, minutes: null, timed: false, rewriteOf: piece.id, corrector: null, bandContent: null, bandCommunicative: null, bandOrganisation: null, bandLanguage: null });
     const converted = createError(db, errorInput(essay.id));
     createError(db, errorInput(essay.id, { itemRef: '9' }));
     linkAnkiNote(db, converted.id, {

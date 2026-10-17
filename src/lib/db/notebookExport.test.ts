@@ -181,7 +181,7 @@ describe('volcado JSON', () => {
 
   it('conserva exportedAt, rows y anki, y añade formatVersion y notebook', () => {
     const parsed = JSON.parse(dump()) as Record<string, unknown>;
-    expect(Object.keys(parsed)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki', 'notebook']);
+    expect(Object.keys(parsed)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki', 'writingAnnotations', 'notebook']);
     expect(parsed['formatVersion']).toBe(JSON_DUMP_FORMAT_VERSION);
     expect(parsed['exportedAt']).toBe(NOW.toISOString());
   });

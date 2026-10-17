@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AiPromptValues } from './en';
+import type { AiPromptValues, WritingPromptValues } from './en';
 import { getMessages, LOCALES, type Messages } from './index';
 
 const prompt: AiPromptValues = {
@@ -12,6 +12,16 @@ const prompt: AiPromptValues = {
   causes: 'CONFUSION',
   confidences: 'SEGURO',
   maxRows: 120,
+};
+
+const writingPrompt: WritingPromptValues = {
+  example: '{"format":"error-log-writing"}',
+  types: 'ESSAY, REPORT',
+  statuses: 'AWAITING, CORRECTED',
+  sources: 'PROFESOR, IA, YO',
+  kinds: 'ERROR, STRENGTH',
+  focuses: 'GRAMMAR, SPELLING',
+  maxAnnotations: 120,
 };
 
 // Zero, singular and plural also exercise absent/present metadata and optional clauses.
@@ -159,7 +169,12 @@ function render(t: Messages, n: number) {
     'anki.cardCreated': t.anki.cardCreated("had taken"),
     'anki.itemSuffix': t.anki.itemSuffix("Q7"),
     'anki.synced': t.anki.synced(n, 12, n, n),
-    'writing.rewritesOf': t.writing.rewritesOf("Mi apunte — café", "15/10/2026"),
+    'writing.awaitingCount': t.writing.awaitingCount(n),
+    'writing.correctedCount': t.writing.correctedCount(n),
+    'writing.typeFilter': t.writing.typeFilter("Letter / Email"),
+    'writing.listLabel': t.writing.listLabel(n),
+    'writing.toReview': t.writing.toReview(n),
+    'writing.score': t.writing.score("12.5"),
     'writing.words': t.writing.words(n),
     'writing.noPairs': t.writing.noPairs(30),
     'writing.repeatSummary': t.writing.repeatSummary(n, 12, "42.5%", "[threshold]"),
@@ -169,6 +184,39 @@ function render(t: Messages, n: number) {
     'writing.newCol': t.writing.newCol("15/10/2026"),
     'writing.pairRepeat': t.writing.pairRepeat(n, 12, "42.5%"),
     'writing.sessionNumber': t.writing.sessionNumber(7),
+    'writing.progress.count': t.writing.progress.count(n),
+    'writing.progress.corrected': t.writing.progress.corrected(n),
+    'writing.progress.awaiting': t.writing.progress.awaiting(n),
+    'writing.progress.chartLabel': t.writing.progress.chartLabel("Language"),
+    'writing.reading.wordCount': t.writing.reading.wordCount(245, '220–260'),
+    'writing.reading.annotations': t.writing.reading.annotations(n),
+    'writing.reading.paragraph': t.writing.reading.paragraph(n),
+    'writingImport.tooLong': t.writingImport.tooLong(488),
+    'writingImport.tooManyAnnotations': t.writingImport.tooManyAnnotations(n),
+    'writingImport.updateOf': t.writingImport.updateOf("Mi apunte — café"),
+    'writingImport.matchedBy.similarity': t.writingImport.matchedBy.similarity("42.5%"),
+    'writingImport.updateOption': t.writingImport.updateOption("Mi apunte — café", "42.5%"),
+    'writingImport.total': t.writingImport.total("12.5"),
+    'writingImport.partial': t.writingImport.partial(n),
+    'writingImport.outcome.placed': t.writingImport.outcome.placed(n),
+    'writingImport.outcome.loose': t.writingImport.outcome.loose(n),
+    'writingImport.outcome.unplaced': t.writingImport.outcome.unplaced(n),
+    'writingImport.outcome.paragraph': t.writingImport.outcome.paragraph(n),
+    'writingImport.outcome.document': t.writingImport.outcome.document(n),
+    'writingImport.outcome.duplicate': t.writingImport.outcome.duplicate(n),
+    'writingImport.reason.several': t.writingImport.reason.several(n + 2),
+    'writingImport.inParagraph': t.writingImport.inParagraph(n),
+    'writingImport.annotationLabel': t.writingImport.annotationLabel(n, "Error"),
+    'writingImport.warning.totalMismatch': t.writingImport.warning.totalMismatch("13", "12.5"),
+    'writingImport.warning.totalIncomplete': t.writingImport.warning.totalIncomplete("12.5"),
+    'writingImport.warning.textDiffers': t.writingImport.warning.textDiffers("42.5%"),
+    'writingImport.warning.dateCorrected': t.writingImport.warning.dateCorrected("15/10/2026"),
+    'writingImport.warning.dateImported': t.writingImport.warning.dateImported("15/10/2026"),
+    'writingImport.error.paragraphOutOfRange': t.writingImport.error.paragraphOutOfRange(n, 5, 4),
+    'writingImport.error.correctedBeforeWritten': t.writingImport.error.correctedBeforeWritten("15/10/2026", "9/10/2026"),
+    'writingImport.linkedSession': t.writingImport.linkedSession("Mi apunte — café"),
+    'writingImport.unplacedAfter': t.writingImport.unplacedAfter(n),
+    'writingImport.aiPrompt': t.writingImport.aiPrompt(writingPrompt),
     'export.downloadLabel': t.export.downloadLabel("[label]"),
     'notebookImport.kept': t.notebookImport.kept("[reason]"),
     'notebookImport.frontmatterTooBig': t.notebookImport.frontmatterTooBig(512),

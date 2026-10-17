@@ -3,14 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { getDb } from '@/lib/db/client';
-import {
-  createWritingPiece,
-  getSession,
-  getWritingPiece,
-  hasWritingPiece,
-  listWritingPieces,
-  updateWritingPiece,
-} from '@/lib/db/repo';
+import { getSession, getWritingPiece, listWritingPieces, updateWritingPiece } from '@/lib/db/repo';
 import { formErrors } from '@/lib/i18n/zod';
 import { toIsoDate } from '@/lib/time/dates';
 import { checkRewriteLink } from '@/lib/validation/rewriteChain';
@@ -24,11 +17,16 @@ function readPiece(form: FormData) {
     sessionId: integer(form, 'sessionId'),
     date: text(form, 'date'),
     genre: text(form, 'genre'),
+    status: text(form, 'status'),
+    correctedOn: text(form, 'correctedOn') || null,
+    teacherComment: text(form, 'teacherComment'),
+    personalNotes: text(form, 'personalNotes'),
     wordCount: integer(form, 'wordCount'),
     minutes: integer(form, 'minutes'),
     timed: checkbox(form, 'timed'),
     rewriteOf: integer(form, 'rewriteOf'),
     corrector: text(form, 'corrector') === '' ? null : text(form, 'corrector'),
+    // `integer` solo convierte el texto; el esquema admite medios puntos en las bandas.
     bandContent: integer(form, 'bandContent'),
     bandCommunicative: integer(form, 'bandCommunicative'),
     bandOrganisation: integer(form, 'bandOrganisation'),
@@ -44,7 +42,8 @@ export async function saveWritingPieceAction(
   const t = await getT();
   const editingId = integer(form, 'id');
 
-  if (editingId !== null && !isValidId(editingId)) {
+  // Solo se editan textos guardados: los nuevos entran por la importación, con su texto.
+  if (editingId === null || !isValidId(editingId)) {
     return { ok: false, fieldErrors: {}, message: t.writing.invalidId };
   }
 
@@ -59,34 +58,27 @@ export async function saveWritingPieceAction(
 
   let result: FormState;
   try {
-    // La validacion y la escritura comparten bloqueo: otra pestaña no puede ocupar
-    // la sesion ni cambiar la cadena de reescrituras entre ambas operaciones.
+    // La validacion y la escritura comparten bloqueo: otra pestaña no puede cambiar la
+    // cadena de reescrituras entre ambas operaciones.
     result = db.$client.transaction((): FormState => {
-      const original = editingId === null ? null : getWritingPiece(db, editingId);
-      if (editingId !== null && original === null) {
+      const original = getWritingPiece(db, editingId);
+      if (original === null) {
         return { ok: false, fieldErrors: {}, message: t.writing.gone };
       }
-      if (original !== null && original.sessionId !== parsed.data.sessionId) {
+      if (original.sessionId !== parsed.data.sessionId) {
         return { ok: false, fieldErrors: { sessionId: [t.writing.sessionLocked] }, message: null };
       }
       const session = getSession(db, parsed.data.sessionId);
-      if (session === null || session.paper !== 'WRITING') {
+      if (session?.paper !== 'WRITING') {
         return { ok: false, fieldErrors: { sessionId: [t.writing.sessionUnavailable] }, message: null };
       }
-      if (editingId === null && hasWritingPiece(db, session.id)) {
-        return { ok: false, fieldErrors: { sessionId: [t.writing.sessionTaken] }, message: null };
-      }
 
-      const check = checkRewriteLink(listWritingPieces(db), editingId ?? 0, parsed.data.rewriteOf);
+      const check = checkRewriteLink(listWritingPieces(db), editingId, parsed.data.rewriteOf);
       if (!check.ok) {
         return { ok: false, fieldErrors: { rewriteOf: [t.writing.rewriteErrors[check.reason]] }, message: null };
       }
-      if (editingId !== null) {
-        updateWritingPiece(db, editingId, parsed.data);
-        return { ok: true, fieldErrors: {}, message: t.writing.textUpdated, createdId: editingId };
-      }
-      const created = createWritingPiece(db, parsed.data);
-      return { ok: true, fieldErrors: {}, message: t.writing.textSaved, createdId: created.id };
+      updateWritingPiece(db, editingId, parsed.data);
+      return { ok: true, fieldErrors: {}, message: t.writing.textUpdated, createdId: editingId };
     }).immediate();
   } catch {
     return { ok: false, fieldErrors: {}, message: t.writing.saveFailed };

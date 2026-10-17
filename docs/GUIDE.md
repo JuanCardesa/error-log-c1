@@ -147,7 +147,7 @@ Importa **un `.md` por vez** con vista previa. Descarga cada apunte como `.md`, 
 cuaderno como ZIP o todos los datos como JSON desde **Exportar**. El ZIP incluye
 Markdown y un manifiesto, pero volver a importar sus `.md` no restaura los vínculos
 con errores. La demo incluye ocho apuntes ficticios para recorrer estas pantallas.
-Las marcas de estudio y los favoritos viajan en el JSON (versión 3) y las copias SQLite;
+Las marcas de estudio, los favoritos y las anotaciones de Writing viajan en el JSON (versión 4) y las copias SQLite;
 las descargas `.md` y ZIP conservan el Markdown original sin ese estado de la app.
 
 **Límites actuales:** Notebook no admite adjuntos ni imágenes: al leer se muestra su
@@ -159,6 +159,26 @@ con `pnpm db:backup` y `pnpm db:restore`.
 | Lector con índice | Búsqueda con fragmentos |
 | --- | --- |
 | ![Apunte de oraciones enfáticas con carpetas a la izquierda e índice de apartados a la derecha](screenshots/notebook-lector.png) | ![Resultados de búsqueda de preposición en Notebook con fragmentos de los apuntes](screenshots/notebook-busqueda.png) |
+
+## Writing: redacciones y correcciones
+
+En **Writing** puedes importar un JSON preparado con ChatGPT o Claude, pegar el texto
+manualmente o registrar la corrección más tarde con otra importación. La app no lee fotos
+ni se conecta a una IA. La vista previa muestra cambios y anotaciones antes de guardar.
+
+La **Biblioteca** busca en títulos y transcripciones y filtra por estado y tipo. **Progreso**
+grafica la nota total o un criterio, con filtros por tipo y fechas; las fechas aproximadas
+se marcan con puntos huecos. Las medias excluyen las pendientes y las notas parciales solo
+cuentan para el criterio que tienen. **Reescrituras** compara originales y revisiones.
+
+Abre una redacción para leer su transcripción con anotaciones, marcarlas como estudiadas,
+corregir el texto y editar sus bandas (0–5 en medios puntos), estado y comentarios. El total
+solo aparece con los cuatro criterios. **Exportar JSON** descarga esa redacción y sus
+anotaciones; el contrato y un ejemplo están en [JSON de Writing](WRITING-JSON.md). El dump
+completo también incluye las anotaciones, pero no se puede reimportar; usa copias SQLite
+para restaurar.
+
+La demo incluye un ensayo con una corrección y una fortaleza de ejemplo.
 
 ## Progreso y Anki
 

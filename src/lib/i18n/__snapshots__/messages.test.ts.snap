@@ -211,16 +211,100 @@ Session details and corrections (text or attached images):
   "validation.maxTags": "Maximum 0 tags",
   "validation.partRange": "RUOE needs a part between 1 and 120",
   "validation.ruleMinLength": "The rule needs at least 0 characters",
+  "writing.awaitingCount": "Awaiting (0)",
+  "writing.correctedCount": "Corrected (0)",
+  "writing.listLabel": "0 writings",
   "writing.newCol": "New · 15/10/2026",
   "writing.noPairs": "No original–rewrite pairs in the last 30 days.",
   "writing.originalCol": "Original · 15/10/2026",
   "writing.pairLabel": "Mi apunte — café and its rewrite",
   "writing.pairRepeat": "0 of 12 errors from the original are repeated in the rewrite (42.5%).",
   "writing.pairTitle": "Mi apunte — café → Rewrite",
+  "writing.progress.awaiting": "0 awaiting",
+  "writing.progress.chartLabel": "Language progress over time",
+  "writing.progress.corrected": "0 corrected",
+  "writing.progress.count": "0 writings",
+  "writing.reading.annotations": "Annotations (0)",
+  "writing.reading.paragraph": "Paragraph 0",
+  "writing.reading.wordCount": "245 words (220–260)",
   "writing.repeatSummary": "0 of 12 errors from the originals are repeated when rewriting (42.5%; threshold [threshold]). Same error = same category, subcategory and correction.",
-  "writing.rewritesOf": "Rewrites “Mi apunte — café” from 15/10/2026",
+  "writing.score": "12.5/20",
   "writing.sessionNumber": "Session #7",
+  "writing.toReview": "0 to review",
+  "writing.typeFilter": "Type: Letter / Email",
   "writing.words": "0 words",
+  "writingImport.aiPrompt": "Turn the photos of my handwritten Cambridge C1 Advanced writing into JSON so I can import it into my Error Log C1. The photos may include my teacher’s handwritten corrections, comments and marks.
+
+OUTPUT FORMAT
+
+Return only this JSON object, with no Markdown, no code blocks and no explanations before or after it. Keep the types in the example: numbers are numbers, never strings.
+
+{"format":"error-log-writing"}
+
+Allowed values, written exactly as they appear here:
+- writing.type: ESSAY, REPORT (LETTER also covers an email).
+- assessment.status: AWAITING, CORRECTED. AWAITING means it hasn’t been corrected yet.
+- assessment.assessedBy and annotations[].source: PROFESOR, IA, YO. PROFESOR is my teacher, IA is you, YO is me.
+- annotations[].kind: ERROR, STRENGTH.
+- annotations[].focus: GRAMMAR, SPELLING, or null.
+- annotations[].target: {"scope": "DOCUMENT"}, {"scope": "PARAGRAPH", "paragraph": 2} or {"scope": "SPAN", "quote": "…", "paragraph": 2, "occurrence": null}.
+
+THE TEXT
+
+- Transcribe my text exactly as I wrote it, mistakes included. Never correct, improve or complete it.
+- Separate paragraphs with one blank line. Don’t break lines inside a paragraph, except for a heading, a greeting or a sign-off.
+- Include any title or headings I wrote as part of the text.
+- If a word is hard to read, write your best reading and add an annotation of kind COMMENT and source IA saying so. Never write "illegible".
+
+THE CORRECTION
+
+- Use PROFESOR only for what my teacher wrote or marked. Never present your own opinions as hers.
+- Copy her comments and corrections word for word, in the language she wrote them.
+- scores: only the marks she gave, from 0 to 5 (halves allowed). Leave null any criterion she didn’t mark; never estimate it. Write total only if she wrote it.
+- teacherComment is her general comment on the whole text.
+- If there is no correction yet, use "assessment": {"status": "AWAITING"} and an empty annotations list.
+
+ANNOTATIONS
+
+- quote is copied exactly from your transcription: the shortest fragment that identifies the point, with no spaces at either end.
+- paragraph is the number of the paragraph (from 1) that contains the quote. If the same quote appears more than once in that paragraph, add occurrence: 1 for the first, 2 for the second, and so on.
+- Use PARAGRAPH for a comment on a whole paragraph and DOCUMENT for the whole text or its structure.
+- suggestion is the correction or better alternative; comment explains it. Include at least one of them; a STRENGTH may carry just its focus.
+- Add annotations of your own (source IA) only if I ask for them. At most 120 annotations in total.
+
+WHAT YOU MUST NOT MAKE UP
+
+- writtenOn and correctedOn are dates (YYYY-MM-DD) only if they appear or I give them to you; otherwise null.
+- Never make up dates, scores, the task or comments. When in doubt, use null.
+- id is null unless I give you one. If I paste a JSON exported from Error Log to add the correction, keep its id and its text exactly as they are.
+
+Photos and details of the task:
+",
+  "writingImport.annotationLabel": "#1 · Error",
+  "writingImport.error.correctedBeforeWritten": "The correction (9/10/2026) is earlier than the date written (15/10/2026).",
+  "writingImport.error.paragraphOutOfRange": "Annotation #1 points to paragraph 5, but the text has 4.",
+  "writingImport.inParagraph": "paragraph 0",
+  "writingImport.linkedSession": "It’ll be linked to the Writing session “Mi apunte — café”.",
+  "writingImport.matchedBy.similarity": "42.5% of the words match a saved writing.",
+  "writingImport.outcome.document": "0 on the whole text",
+  "writingImport.outcome.duplicate": "0 already imported",
+  "writingImport.outcome.loose": "0 placed ignoring spaces, quotes or capitals",
+  "writingImport.outcome.paragraph": "0 on a whole paragraph",
+  "writingImport.outcome.placed": "0 placed on the text",
+  "writingImport.outcome.unplaced": "0 to place by hand",
+  "writingImport.partial": "0 of 4 criteria: no total",
+  "writingImport.reason.several": "appears 2 times",
+  "writingImport.tooLong": "The JSON is too long: the limit is 488 KiB.",
+  "writingImport.tooManyAnnotations": "At most 0 annotations per import",
+  "writingImport.total": "12.5 / 20",
+  "writingImport.unplacedAfter": "0 annotations are waiting to be placed.",
+  "writingImport.updateOf": "Update of “Mi apunte — café”",
+  "writingImport.updateOption": "Update “Mi apunte — café” · 42.5% of the words match",
+  "writingImport.warning.dateCorrected": "No writing date: the correction date (15/10/2026) is used, marked as approximate.",
+  "writingImport.warning.dateImported": "No writing date: today’s date (15/10/2026) is used, marked as approximate.",
+  "writingImport.warning.textDiffers": "This transcription differs from the saved one (42.5% of the words in common). The saved text is kept and the annotations are placed on it.",
+  "writingImport.warning.totalIncomplete": "The JSON gives a total of 12.5 / 20 without all four criteria: no total is stored.",
+  "writingImport.warning.totalMismatch": "The JSON says 13 / 20, but the criteria add up to 12.5. The total is always calculated from the criteria.",
 }
 `;
 
@@ -435,16 +519,100 @@ Session details and corrections (text or attached images):
   "validation.maxTags": "Maximum 1 tags",
   "validation.partRange": "RUOE needs a part between 1 and 120",
   "validation.ruleMinLength": "The rule needs at least 1 characters",
+  "writing.awaitingCount": "Awaiting (1)",
+  "writing.correctedCount": "Corrected (1)",
+  "writing.listLabel": "1 writing",
   "writing.newCol": "New · 15/10/2026",
   "writing.noPairs": "No original–rewrite pairs in the last 30 days.",
   "writing.originalCol": "Original · 15/10/2026",
   "writing.pairLabel": "Mi apunte — café and its rewrite",
   "writing.pairRepeat": "1 of 12 errors from the original is repeated in the rewrite (42.5%).",
   "writing.pairTitle": "Mi apunte — café → Rewrite",
+  "writing.progress.awaiting": "1 awaiting",
+  "writing.progress.chartLabel": "Language progress over time",
+  "writing.progress.corrected": "1 corrected",
+  "writing.progress.count": "1 writing",
+  "writing.reading.annotations": "Annotations (1)",
+  "writing.reading.paragraph": "Paragraph 1",
+  "writing.reading.wordCount": "245 words (220–260)",
   "writing.repeatSummary": "1 of 12 errors from the originals is repeated when rewriting (42.5%; threshold [threshold]). Same error = same category, subcategory and correction.",
-  "writing.rewritesOf": "Rewrites “Mi apunte — café” from 15/10/2026",
+  "writing.score": "12.5/20",
   "writing.sessionNumber": "Session #7",
+  "writing.toReview": "1 to review",
+  "writing.typeFilter": "Type: Letter / Email",
   "writing.words": "1 word",
+  "writingImport.aiPrompt": "Turn the photos of my handwritten Cambridge C1 Advanced writing into JSON so I can import it into my Error Log C1. The photos may include my teacher’s handwritten corrections, comments and marks.
+
+OUTPUT FORMAT
+
+Return only this JSON object, with no Markdown, no code blocks and no explanations before or after it. Keep the types in the example: numbers are numbers, never strings.
+
+{"format":"error-log-writing"}
+
+Allowed values, written exactly as they appear here:
+- writing.type: ESSAY, REPORT (LETTER also covers an email).
+- assessment.status: AWAITING, CORRECTED. AWAITING means it hasn’t been corrected yet.
+- assessment.assessedBy and annotations[].source: PROFESOR, IA, YO. PROFESOR is my teacher, IA is you, YO is me.
+- annotations[].kind: ERROR, STRENGTH.
+- annotations[].focus: GRAMMAR, SPELLING, or null.
+- annotations[].target: {"scope": "DOCUMENT"}, {"scope": "PARAGRAPH", "paragraph": 2} or {"scope": "SPAN", "quote": "…", "paragraph": 2, "occurrence": null}.
+
+THE TEXT
+
+- Transcribe my text exactly as I wrote it, mistakes included. Never correct, improve or complete it.
+- Separate paragraphs with one blank line. Don’t break lines inside a paragraph, except for a heading, a greeting or a sign-off.
+- Include any title or headings I wrote as part of the text.
+- If a word is hard to read, write your best reading and add an annotation of kind COMMENT and source IA saying so. Never write "illegible".
+
+THE CORRECTION
+
+- Use PROFESOR only for what my teacher wrote or marked. Never present your own opinions as hers.
+- Copy her comments and corrections word for word, in the language she wrote them.
+- scores: only the marks she gave, from 0 to 5 (halves allowed). Leave null any criterion she didn’t mark; never estimate it. Write total only if she wrote it.
+- teacherComment is her general comment on the whole text.
+- If there is no correction yet, use "assessment": {"status": "AWAITING"} and an empty annotations list.
+
+ANNOTATIONS
+
+- quote is copied exactly from your transcription: the shortest fragment that identifies the point, with no spaces at either end.
+- paragraph is the number of the paragraph (from 1) that contains the quote. If the same quote appears more than once in that paragraph, add occurrence: 1 for the first, 2 for the second, and so on.
+- Use PARAGRAPH for a comment on a whole paragraph and DOCUMENT for the whole text or its structure.
+- suggestion is the correction or better alternative; comment explains it. Include at least one of them; a STRENGTH may carry just its focus.
+- Add annotations of your own (source IA) only if I ask for them. At most 120 annotations in total.
+
+WHAT YOU MUST NOT MAKE UP
+
+- writtenOn and correctedOn are dates (YYYY-MM-DD) only if they appear or I give them to you; otherwise null.
+- Never make up dates, scores, the task or comments. When in doubt, use null.
+- id is null unless I give you one. If I paste a JSON exported from Error Log to add the correction, keep its id and its text exactly as they are.
+
+Photos and details of the task:
+",
+  "writingImport.annotationLabel": "#2 · Error",
+  "writingImport.error.correctedBeforeWritten": "The correction (9/10/2026) is earlier than the date written (15/10/2026).",
+  "writingImport.error.paragraphOutOfRange": "Annotation #2 points to paragraph 5, but the text has 4.",
+  "writingImport.inParagraph": "paragraph 1",
+  "writingImport.linkedSession": "It’ll be linked to the Writing session “Mi apunte — café”.",
+  "writingImport.matchedBy.similarity": "42.5% of the words match a saved writing.",
+  "writingImport.outcome.document": "1 on the whole text",
+  "writingImport.outcome.duplicate": "1 already imported",
+  "writingImport.outcome.loose": "1 placed ignoring spaces, quotes or capitals",
+  "writingImport.outcome.paragraph": "1 on a whole paragraph",
+  "writingImport.outcome.placed": "1 placed on the text",
+  "writingImport.outcome.unplaced": "1 to place by hand",
+  "writingImport.partial": "1 of 4 criteria: no total",
+  "writingImport.reason.several": "appears 3 times",
+  "writingImport.tooLong": "The JSON is too long: the limit is 488 KiB.",
+  "writingImport.tooManyAnnotations": "At most 1 annotation per import",
+  "writingImport.total": "12.5 / 20",
+  "writingImport.unplacedAfter": "1 annotation is waiting to be placed.",
+  "writingImport.updateOf": "Update of “Mi apunte — café”",
+  "writingImport.updateOption": "Update “Mi apunte — café” · 42.5% of the words match",
+  "writingImport.warning.dateCorrected": "No writing date: the correction date (15/10/2026) is used, marked as approximate.",
+  "writingImport.warning.dateImported": "No writing date: today’s date (15/10/2026) is used, marked as approximate.",
+  "writingImport.warning.textDiffers": "This transcription differs from the saved one (42.5% of the words in common). The saved text is kept and the annotations are placed on it.",
+  "writingImport.warning.totalIncomplete": "The JSON gives a total of 12.5 / 20 without all four criteria: no total is stored.",
+  "writingImport.warning.totalMismatch": "The JSON says 13 / 20, but the criteria add up to 12.5. The total is always calculated from the criteria.",
 }
 `;
 
@@ -659,16 +827,100 @@ Session details and corrections (text or attached images):
   "validation.maxTags": "Maximum 2 tags",
   "validation.partRange": "RUOE needs a part between 1 and 120",
   "validation.ruleMinLength": "The rule needs at least 2 characters",
+  "writing.awaitingCount": "Awaiting (2)",
+  "writing.correctedCount": "Corrected (2)",
+  "writing.listLabel": "2 writings",
   "writing.newCol": "New · 15/10/2026",
   "writing.noPairs": "No original–rewrite pairs in the last 30 days.",
   "writing.originalCol": "Original · 15/10/2026",
   "writing.pairLabel": "Mi apunte — café and its rewrite",
   "writing.pairRepeat": "2 of 12 errors from the original are repeated in the rewrite (42.5%).",
   "writing.pairTitle": "Mi apunte — café → Rewrite",
+  "writing.progress.awaiting": "2 awaiting",
+  "writing.progress.chartLabel": "Language progress over time",
+  "writing.progress.corrected": "2 corrected",
+  "writing.progress.count": "2 writings",
+  "writing.reading.annotations": "Annotations (2)",
+  "writing.reading.paragraph": "Paragraph 2",
+  "writing.reading.wordCount": "245 words (220–260)",
   "writing.repeatSummary": "2 of 12 errors from the originals are repeated when rewriting (42.5%; threshold [threshold]). Same error = same category, subcategory and correction.",
-  "writing.rewritesOf": "Rewrites “Mi apunte — café” from 15/10/2026",
+  "writing.score": "12.5/20",
   "writing.sessionNumber": "Session #7",
+  "writing.toReview": "2 to review",
+  "writing.typeFilter": "Type: Letter / Email",
   "writing.words": "2 words",
+  "writingImport.aiPrompt": "Turn the photos of my handwritten Cambridge C1 Advanced writing into JSON so I can import it into my Error Log C1. The photos may include my teacher’s handwritten corrections, comments and marks.
+
+OUTPUT FORMAT
+
+Return only this JSON object, with no Markdown, no code blocks and no explanations before or after it. Keep the types in the example: numbers are numbers, never strings.
+
+{"format":"error-log-writing"}
+
+Allowed values, written exactly as they appear here:
+- writing.type: ESSAY, REPORT (LETTER also covers an email).
+- assessment.status: AWAITING, CORRECTED. AWAITING means it hasn’t been corrected yet.
+- assessment.assessedBy and annotations[].source: PROFESOR, IA, YO. PROFESOR is my teacher, IA is you, YO is me.
+- annotations[].kind: ERROR, STRENGTH.
+- annotations[].focus: GRAMMAR, SPELLING, or null.
+- annotations[].target: {"scope": "DOCUMENT"}, {"scope": "PARAGRAPH", "paragraph": 2} or {"scope": "SPAN", "quote": "…", "paragraph": 2, "occurrence": null}.
+
+THE TEXT
+
+- Transcribe my text exactly as I wrote it, mistakes included. Never correct, improve or complete it.
+- Separate paragraphs with one blank line. Don’t break lines inside a paragraph, except for a heading, a greeting or a sign-off.
+- Include any title or headings I wrote as part of the text.
+- If a word is hard to read, write your best reading and add an annotation of kind COMMENT and source IA saying so. Never write "illegible".
+
+THE CORRECTION
+
+- Use PROFESOR only for what my teacher wrote or marked. Never present your own opinions as hers.
+- Copy her comments and corrections word for word, in the language she wrote them.
+- scores: only the marks she gave, from 0 to 5 (halves allowed). Leave null any criterion she didn’t mark; never estimate it. Write total only if she wrote it.
+- teacherComment is her general comment on the whole text.
+- If there is no correction yet, use "assessment": {"status": "AWAITING"} and an empty annotations list.
+
+ANNOTATIONS
+
+- quote is copied exactly from your transcription: the shortest fragment that identifies the point, with no spaces at either end.
+- paragraph is the number of the paragraph (from 1) that contains the quote. If the same quote appears more than once in that paragraph, add occurrence: 1 for the first, 2 for the second, and so on.
+- Use PARAGRAPH for a comment on a whole paragraph and DOCUMENT for the whole text or its structure.
+- suggestion is the correction or better alternative; comment explains it. Include at least one of them; a STRENGTH may carry just its focus.
+- Add annotations of your own (source IA) only if I ask for them. At most 120 annotations in total.
+
+WHAT YOU MUST NOT MAKE UP
+
+- writtenOn and correctedOn are dates (YYYY-MM-DD) only if they appear or I give them to you; otherwise null.
+- Never make up dates, scores, the task or comments. When in doubt, use null.
+- id is null unless I give you one. If I paste a JSON exported from Error Log to add the correction, keep its id and its text exactly as they are.
+
+Photos and details of the task:
+",
+  "writingImport.annotationLabel": "#3 · Error",
+  "writingImport.error.correctedBeforeWritten": "The correction (9/10/2026) is earlier than the date written (15/10/2026).",
+  "writingImport.error.paragraphOutOfRange": "Annotation #3 points to paragraph 5, but the text has 4.",
+  "writingImport.inParagraph": "paragraph 2",
+  "writingImport.linkedSession": "It’ll be linked to the Writing session “Mi apunte — café”.",
+  "writingImport.matchedBy.similarity": "42.5% of the words match a saved writing.",
+  "writingImport.outcome.document": "2 on the whole text",
+  "writingImport.outcome.duplicate": "2 already imported",
+  "writingImport.outcome.loose": "2 placed ignoring spaces, quotes or capitals",
+  "writingImport.outcome.paragraph": "2 on a whole paragraph",
+  "writingImport.outcome.placed": "2 placed on the text",
+  "writingImport.outcome.unplaced": "2 to place by hand",
+  "writingImport.partial": "2 of 4 criteria: no total",
+  "writingImport.reason.several": "appears 4 times",
+  "writingImport.tooLong": "The JSON is too long: the limit is 488 KiB.",
+  "writingImport.tooManyAnnotations": "At most 2 annotations per import",
+  "writingImport.total": "12.5 / 20",
+  "writingImport.unplacedAfter": "2 annotations are waiting to be placed.",
+  "writingImport.updateOf": "Update of “Mi apunte — café”",
+  "writingImport.updateOption": "Update “Mi apunte — café” · 42.5% of the words match",
+  "writingImport.warning.dateCorrected": "No writing date: the correction date (15/10/2026) is used, marked as approximate.",
+  "writingImport.warning.dateImported": "No writing date: today’s date (15/10/2026) is used, marked as approximate.",
+  "writingImport.warning.textDiffers": "This transcription differs from the saved one (42.5% of the words in common). The saved text is kept and the annotations are placed on it.",
+  "writingImport.warning.totalIncomplete": "The JSON gives a total of 12.5 / 20 without all four criteria: no total is stored.",
+  "writingImport.warning.totalMismatch": "The JSON says 13 / 20, but the criteria add up to 12.5. The total is always calculated from the criteria.",
 }
 `;
 
@@ -883,16 +1135,100 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
   "validation.maxTags": "Máximo 0 etiquetas",
   "validation.partRange": "RUOE requiere una part entre 1 y 120",
   "validation.ruleMinLength": "La regla necesita al menos 0 caracteres",
+  "writing.awaitingCount": "Pendientes (0)",
+  "writing.correctedCount": "Corregidas (0)",
+  "writing.listLabel": "0 redacciones",
   "writing.newCol": "Nueva · 15/10/2026",
   "writing.noPairs": "Ningún par original y reescritura en los últimos 30 días.",
   "writing.originalCol": "Original · 15/10/2026",
   "writing.pairLabel": "Mi apunte — café y su reescritura",
   "writing.pairRepeat": "0 de 12 errores del original se repiten en la reescritura (42.5%).",
   "writing.pairTitle": "Mi apunte — café → Reescritura",
+  "writing.progress.awaiting": "0 pendientes",
+  "writing.progress.chartLabel": "Evolución de Language",
+  "writing.progress.corrected": "0 corregidas",
+  "writing.progress.count": "0 redacciones",
+  "writing.reading.annotations": "Anotaciones (0)",
+  "writing.reading.paragraph": "Párrafo 0",
+  "writing.reading.wordCount": "245 palabras (220–260)",
   "writing.repeatSummary": "0 de 12 errores de los originales se repiten al reescribir (42.5%; umbral [threshold]). Mismo error = misma categoría, subcategoría y corrección.",
-  "writing.rewritesOf": "Reescribe «Mi apunte — café» del 15/10/2026",
+  "writing.score": "12.5/20",
   "writing.sessionNumber": "Sesión #7",
+  "writing.toReview": "0 por revisar",
+  "writing.typeFilter": "Tipo: Letter / Email",
   "writing.words": "0 palabras",
+  "writingImport.aiPrompt": "Convierte en JSON las fotos de mi redacción manuscrita del Cambridge C1 Advanced para importarla en mi Error Log C1. Las fotos pueden incluir las correcciones, comentarios y notas a mano de mi profesora.
+
+FORMATO DE SALIDA
+
+Devuelve solo este objeto JSON, sin Markdown, sin bloques de código y sin explicaciones antes o después. Respeta los tipos del ejemplo: los números van como números, nunca como texto.
+
+{"format":"error-log-writing"}
+
+Valores permitidos, escritos exactamente como aparecen aquí:
+- writing.type: ESSAY, REPORT (LETTER incluye también un email).
+- assessment.status: AWAITING, CORRECTED. AWAITING significa que aún no está corregida.
+- assessment.assessedBy y annotations[].source: PROFESOR, IA, YO. PROFESOR es mi profesora, IA eres tú, YO soy yo.
+- annotations[].kind: ERROR, STRENGTH.
+- annotations[].focus: GRAMMAR, SPELLING, o null.
+- annotations[].target: {"scope": "DOCUMENT"}, {"scope": "PARAGRAPH", "paragraph": 2} o {"scope": "SPAN", "quote": "…", "paragraph": 2, "occurrence": null}.
+
+EL TEXTO
+
+- Transcribe mi texto exactamente como lo escribí, con sus errores. Nunca lo corrijas, mejores ni completes.
+- Separa los párrafos con una línea en blanco. No partas líneas dentro de un párrafo, salvo en un encabezado, un saludo o una despedida.
+- Incluye en el texto el título o los encabezados que yo escribí.
+- Si una palabra se lee mal, escribe tu mejor lectura y añade una anotación de tipo COMMENT y fuente IA que lo diga. Nunca escribas "ilegible".
+
+LA CORRECCIÓN
+
+- Usa PROFESOR solo para lo que escribió o marcó mi profesora. Nunca presentes tus opiniones como suyas.
+- Copia sus comentarios y correcciones palabra por palabra, en el idioma en que los escribió.
+- scores: solo las notas que puso, de 0 a 5 (se admiten medios puntos). Deja en null el criterio que no puntuó; nunca lo estimes. Escribe total solo si ella lo escribió.
+- teacherComment es su comentario general sobre todo el texto.
+- Si aún no hay corrección, usa "assessment": {"status": "AWAITING"} y una lista de anotaciones vacía.
+
+ANOTACIONES
+
+- quote se copia exactamente de tu transcripción: el fragmento más corto que identifique el punto, sin espacios en los extremos.
+- paragraph es el número del párrafo (desde 1) que contiene la cita. Si la misma cita aparece más de una vez en ese párrafo, añade occurrence: 1 para la primera, 2 para la segunda, etc.
+- Usa PARAGRAPH para un comentario sobre un párrafo entero y DOCUMENT para todo el texto o su estructura.
+- suggestion es la corrección o una alternativa mejor; comment la explica. Incluye al menos una de las dos; una STRENGTH puede llevar solo su foco.
+- Añade anotaciones propias (fuente IA) solo si te las pido. Como mucho 120 anotaciones en total.
+
+LO QUE NO DEBES INVENTAR
+
+- writtenOn y correctedOn son fechas (AAAA-MM-DD) solo si aparecen o te las doy; si no, null.
+- Nunca inventes fechas, notas, la tarea ni comentarios. Ante la duda, null.
+- id es null salvo que yo te dé uno. Si pego un JSON exportado de Error Log para añadir la corrección, conserva su id y su texto tal cual.
+
+Fotos y datos de la tarea:
+",
+  "writingImport.annotationLabel": "#1 · Error",
+  "writingImport.error.correctedBeforeWritten": "La corrección (9/10/2026) es anterior a la fecha de escritura (15/10/2026).",
+  "writingImport.error.paragraphOutOfRange": "La anotación #1 apunta al párrafo 5, pero el texto tiene 4.",
+  "writingImport.inParagraph": "párrafo 0",
+  "writingImport.linkedSession": "Se enlazará con la sesión de Writing «Mi apunte — café».",
+  "writingImport.matchedBy.similarity": "El 42.5% de las palabras coincide con una redacción guardada.",
+  "writingImport.outcome.document": "0 sobre todo el texto",
+  "writingImport.outcome.duplicate": "0 ya importadas",
+  "writingImport.outcome.loose": "0 colocadas sin fijarse en espacios, comillas o mayúsculas",
+  "writingImport.outcome.paragraph": "0 sobre un párrafo entero",
+  "writingImport.outcome.placed": "0 colocadas en el texto",
+  "writingImport.outcome.unplaced": "0 por colocar a mano",
+  "writingImport.partial": "0 de 4 criterios: sin total",
+  "writingImport.reason.several": "aparece 2 veces",
+  "writingImport.tooLong": "El JSON es demasiado largo: el límite es 488 KiB.",
+  "writingImport.tooManyAnnotations": "Como mucho 0 anotaciones por importación",
+  "writingImport.total": "12.5 / 20",
+  "writingImport.unplacedAfter": "0 anotaciones esperan a que las coloques.",
+  "writingImport.updateOf": "Actualización de «Mi apunte — café»",
+  "writingImport.updateOption": "Actualizar «Mi apunte — café» · coincide el 42.5% de las palabras",
+  "writingImport.warning.dateCorrected": "Sin fecha de escritura: se usa la de corrección (15/10/2026), marcada como aproximada.",
+  "writingImport.warning.dateImported": "Sin fecha de escritura: se usa la de hoy (15/10/2026), marcada como aproximada.",
+  "writingImport.warning.textDiffers": "Esta transcripción difiere de la guardada (42.5% de palabras en común). Se conserva el texto guardado y las anotaciones se colocan sobre él.",
+  "writingImport.warning.totalIncomplete": "El JSON da un total de 12.5 / 20 sin los cuatro criterios: no se guarda ningún total.",
+  "writingImport.warning.totalMismatch": "El JSON dice 13 / 20, pero los criterios suman 12.5. El total siempre se calcula con los criterios.",
 }
 `;
 
@@ -1107,16 +1443,100 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
   "validation.maxTags": "Máximo 1 etiquetas",
   "validation.partRange": "RUOE requiere una part entre 1 y 120",
   "validation.ruleMinLength": "La regla necesita al menos 1 caracteres",
+  "writing.awaitingCount": "Pendientes (1)",
+  "writing.correctedCount": "Corregidas (1)",
+  "writing.listLabel": "1 redacción",
   "writing.newCol": "Nueva · 15/10/2026",
   "writing.noPairs": "Ningún par original y reescritura en los últimos 30 días.",
   "writing.originalCol": "Original · 15/10/2026",
   "writing.pairLabel": "Mi apunte — café y su reescritura",
   "writing.pairRepeat": "1 de 12 errores del original se repite en la reescritura (42.5%).",
   "writing.pairTitle": "Mi apunte — café → Reescritura",
+  "writing.progress.awaiting": "1 pendiente",
+  "writing.progress.chartLabel": "Evolución de Language",
+  "writing.progress.corrected": "1 corregida",
+  "writing.progress.count": "1 redacción",
+  "writing.reading.annotations": "Anotaciones (1)",
+  "writing.reading.paragraph": "Párrafo 1",
+  "writing.reading.wordCount": "245 palabras (220–260)",
   "writing.repeatSummary": "1 de 12 errores de los originales se repite al reescribir (42.5%; umbral [threshold]). Mismo error = misma categoría, subcategoría y corrección.",
-  "writing.rewritesOf": "Reescribe «Mi apunte — café» del 15/10/2026",
+  "writing.score": "12.5/20",
   "writing.sessionNumber": "Sesión #7",
+  "writing.toReview": "1 por revisar",
+  "writing.typeFilter": "Tipo: Letter / Email",
   "writing.words": "1 palabra",
+  "writingImport.aiPrompt": "Convierte en JSON las fotos de mi redacción manuscrita del Cambridge C1 Advanced para importarla en mi Error Log C1. Las fotos pueden incluir las correcciones, comentarios y notas a mano de mi profesora.
+
+FORMATO DE SALIDA
+
+Devuelve solo este objeto JSON, sin Markdown, sin bloques de código y sin explicaciones antes o después. Respeta los tipos del ejemplo: los números van como números, nunca como texto.
+
+{"format":"error-log-writing"}
+
+Valores permitidos, escritos exactamente como aparecen aquí:
+- writing.type: ESSAY, REPORT (LETTER incluye también un email).
+- assessment.status: AWAITING, CORRECTED. AWAITING significa que aún no está corregida.
+- assessment.assessedBy y annotations[].source: PROFESOR, IA, YO. PROFESOR es mi profesora, IA eres tú, YO soy yo.
+- annotations[].kind: ERROR, STRENGTH.
+- annotations[].focus: GRAMMAR, SPELLING, o null.
+- annotations[].target: {"scope": "DOCUMENT"}, {"scope": "PARAGRAPH", "paragraph": 2} o {"scope": "SPAN", "quote": "…", "paragraph": 2, "occurrence": null}.
+
+EL TEXTO
+
+- Transcribe mi texto exactamente como lo escribí, con sus errores. Nunca lo corrijas, mejores ni completes.
+- Separa los párrafos con una línea en blanco. No partas líneas dentro de un párrafo, salvo en un encabezado, un saludo o una despedida.
+- Incluye en el texto el título o los encabezados que yo escribí.
+- Si una palabra se lee mal, escribe tu mejor lectura y añade una anotación de tipo COMMENT y fuente IA que lo diga. Nunca escribas "ilegible".
+
+LA CORRECCIÓN
+
+- Usa PROFESOR solo para lo que escribió o marcó mi profesora. Nunca presentes tus opiniones como suyas.
+- Copia sus comentarios y correcciones palabra por palabra, en el idioma en que los escribió.
+- scores: solo las notas que puso, de 0 a 5 (se admiten medios puntos). Deja en null el criterio que no puntuó; nunca lo estimes. Escribe total solo si ella lo escribió.
+- teacherComment es su comentario general sobre todo el texto.
+- Si aún no hay corrección, usa "assessment": {"status": "AWAITING"} y una lista de anotaciones vacía.
+
+ANOTACIONES
+
+- quote se copia exactamente de tu transcripción: el fragmento más corto que identifique el punto, sin espacios en los extremos.
+- paragraph es el número del párrafo (desde 1) que contiene la cita. Si la misma cita aparece más de una vez en ese párrafo, añade occurrence: 1 para la primera, 2 para la segunda, etc.
+- Usa PARAGRAPH para un comentario sobre un párrafo entero y DOCUMENT para todo el texto o su estructura.
+- suggestion es la corrección o una alternativa mejor; comment la explica. Incluye al menos una de las dos; una STRENGTH puede llevar solo su foco.
+- Añade anotaciones propias (fuente IA) solo si te las pido. Como mucho 120 anotaciones en total.
+
+LO QUE NO DEBES INVENTAR
+
+- writtenOn y correctedOn son fechas (AAAA-MM-DD) solo si aparecen o te las doy; si no, null.
+- Nunca inventes fechas, notas, la tarea ni comentarios. Ante la duda, null.
+- id es null salvo que yo te dé uno. Si pego un JSON exportado de Error Log para añadir la corrección, conserva su id y su texto tal cual.
+
+Fotos y datos de la tarea:
+",
+  "writingImport.annotationLabel": "#2 · Error",
+  "writingImport.error.correctedBeforeWritten": "La corrección (9/10/2026) es anterior a la fecha de escritura (15/10/2026).",
+  "writingImport.error.paragraphOutOfRange": "La anotación #2 apunta al párrafo 5, pero el texto tiene 4.",
+  "writingImport.inParagraph": "párrafo 1",
+  "writingImport.linkedSession": "Se enlazará con la sesión de Writing «Mi apunte — café».",
+  "writingImport.matchedBy.similarity": "El 42.5% de las palabras coincide con una redacción guardada.",
+  "writingImport.outcome.document": "1 sobre todo el texto",
+  "writingImport.outcome.duplicate": "1 ya importada",
+  "writingImport.outcome.loose": "1 colocada sin fijarse en espacios, comillas o mayúsculas",
+  "writingImport.outcome.paragraph": "1 sobre un párrafo entero",
+  "writingImport.outcome.placed": "1 colocada en el texto",
+  "writingImport.outcome.unplaced": "1 por colocar a mano",
+  "writingImport.partial": "1 de 4 criterios: sin total",
+  "writingImport.reason.several": "aparece 3 veces",
+  "writingImport.tooLong": "El JSON es demasiado largo: el límite es 488 KiB.",
+  "writingImport.tooManyAnnotations": "Como mucho 1 anotación por importación",
+  "writingImport.total": "12.5 / 20",
+  "writingImport.unplacedAfter": "1 anotación espera a que la coloques.",
+  "writingImport.updateOf": "Actualización de «Mi apunte — café»",
+  "writingImport.updateOption": "Actualizar «Mi apunte — café» · coincide el 42.5% de las palabras",
+  "writingImport.warning.dateCorrected": "Sin fecha de escritura: se usa la de corrección (15/10/2026), marcada como aproximada.",
+  "writingImport.warning.dateImported": "Sin fecha de escritura: se usa la de hoy (15/10/2026), marcada como aproximada.",
+  "writingImport.warning.textDiffers": "Esta transcripción difiere de la guardada (42.5% de palabras en común). Se conserva el texto guardado y las anotaciones se colocan sobre él.",
+  "writingImport.warning.totalIncomplete": "El JSON da un total de 12.5 / 20 sin los cuatro criterios: no se guarda ningún total.",
+  "writingImport.warning.totalMismatch": "El JSON dice 13 / 20, pero los criterios suman 12.5. El total siempre se calcula con los criterios.",
 }
 `;
 
@@ -1331,15 +1751,99 @@ Datos de la sesion y correcciones (texto o imagenes adjuntas):
   "validation.maxTags": "Máximo 2 etiquetas",
   "validation.partRange": "RUOE requiere una part entre 1 y 120",
   "validation.ruleMinLength": "La regla necesita al menos 2 caracteres",
+  "writing.awaitingCount": "Pendientes (2)",
+  "writing.correctedCount": "Corregidas (2)",
+  "writing.listLabel": "2 redacciones",
   "writing.newCol": "Nueva · 15/10/2026",
   "writing.noPairs": "Ningún par original y reescritura en los últimos 30 días.",
   "writing.originalCol": "Original · 15/10/2026",
   "writing.pairLabel": "Mi apunte — café y su reescritura",
   "writing.pairRepeat": "2 de 12 errores del original se repiten en la reescritura (42.5%).",
   "writing.pairTitle": "Mi apunte — café → Reescritura",
+  "writing.progress.awaiting": "2 pendientes",
+  "writing.progress.chartLabel": "Evolución de Language",
+  "writing.progress.corrected": "2 corregidas",
+  "writing.progress.count": "2 redacciones",
+  "writing.reading.annotations": "Anotaciones (2)",
+  "writing.reading.paragraph": "Párrafo 2",
+  "writing.reading.wordCount": "245 palabras (220–260)",
   "writing.repeatSummary": "2 de 12 errores de los originales se repiten al reescribir (42.5%; umbral [threshold]). Mismo error = misma categoría, subcategoría y corrección.",
-  "writing.rewritesOf": "Reescribe «Mi apunte — café» del 15/10/2026",
+  "writing.score": "12.5/20",
   "writing.sessionNumber": "Sesión #7",
+  "writing.toReview": "2 por revisar",
+  "writing.typeFilter": "Tipo: Letter / Email",
   "writing.words": "2 palabras",
+  "writingImport.aiPrompt": "Convierte en JSON las fotos de mi redacción manuscrita del Cambridge C1 Advanced para importarla en mi Error Log C1. Las fotos pueden incluir las correcciones, comentarios y notas a mano de mi profesora.
+
+FORMATO DE SALIDA
+
+Devuelve solo este objeto JSON, sin Markdown, sin bloques de código y sin explicaciones antes o después. Respeta los tipos del ejemplo: los números van como números, nunca como texto.
+
+{"format":"error-log-writing"}
+
+Valores permitidos, escritos exactamente como aparecen aquí:
+- writing.type: ESSAY, REPORT (LETTER incluye también un email).
+- assessment.status: AWAITING, CORRECTED. AWAITING significa que aún no está corregida.
+- assessment.assessedBy y annotations[].source: PROFESOR, IA, YO. PROFESOR es mi profesora, IA eres tú, YO soy yo.
+- annotations[].kind: ERROR, STRENGTH.
+- annotations[].focus: GRAMMAR, SPELLING, o null.
+- annotations[].target: {"scope": "DOCUMENT"}, {"scope": "PARAGRAPH", "paragraph": 2} o {"scope": "SPAN", "quote": "…", "paragraph": 2, "occurrence": null}.
+
+EL TEXTO
+
+- Transcribe mi texto exactamente como lo escribí, con sus errores. Nunca lo corrijas, mejores ni completes.
+- Separa los párrafos con una línea en blanco. No partas líneas dentro de un párrafo, salvo en un encabezado, un saludo o una despedida.
+- Incluye en el texto el título o los encabezados que yo escribí.
+- Si una palabra se lee mal, escribe tu mejor lectura y añade una anotación de tipo COMMENT y fuente IA que lo diga. Nunca escribas "ilegible".
+
+LA CORRECCIÓN
+
+- Usa PROFESOR solo para lo que escribió o marcó mi profesora. Nunca presentes tus opiniones como suyas.
+- Copia sus comentarios y correcciones palabra por palabra, en el idioma en que los escribió.
+- scores: solo las notas que puso, de 0 a 5 (se admiten medios puntos). Deja en null el criterio que no puntuó; nunca lo estimes. Escribe total solo si ella lo escribió.
+- teacherComment es su comentario general sobre todo el texto.
+- Si aún no hay corrección, usa "assessment": {"status": "AWAITING"} y una lista de anotaciones vacía.
+
+ANOTACIONES
+
+- quote se copia exactamente de tu transcripción: el fragmento más corto que identifique el punto, sin espacios en los extremos.
+- paragraph es el número del párrafo (desde 1) que contiene la cita. Si la misma cita aparece más de una vez en ese párrafo, añade occurrence: 1 para la primera, 2 para la segunda, etc.
+- Usa PARAGRAPH para un comentario sobre un párrafo entero y DOCUMENT para todo el texto o su estructura.
+- suggestion es la corrección o una alternativa mejor; comment la explica. Incluye al menos una de las dos; una STRENGTH puede llevar solo su foco.
+- Añade anotaciones propias (fuente IA) solo si te las pido. Como mucho 120 anotaciones en total.
+
+LO QUE NO DEBES INVENTAR
+
+- writtenOn y correctedOn son fechas (AAAA-MM-DD) solo si aparecen o te las doy; si no, null.
+- Nunca inventes fechas, notas, la tarea ni comentarios. Ante la duda, null.
+- id es null salvo que yo te dé uno. Si pego un JSON exportado de Error Log para añadir la corrección, conserva su id y su texto tal cual.
+
+Fotos y datos de la tarea:
+",
+  "writingImport.annotationLabel": "#3 · Error",
+  "writingImport.error.correctedBeforeWritten": "La corrección (9/10/2026) es anterior a la fecha de escritura (15/10/2026).",
+  "writingImport.error.paragraphOutOfRange": "La anotación #3 apunta al párrafo 5, pero el texto tiene 4.",
+  "writingImport.inParagraph": "párrafo 2",
+  "writingImport.linkedSession": "Se enlazará con la sesión de Writing «Mi apunte — café».",
+  "writingImport.matchedBy.similarity": "El 42.5% de las palabras coincide con una redacción guardada.",
+  "writingImport.outcome.document": "2 sobre todo el texto",
+  "writingImport.outcome.duplicate": "2 ya importadas",
+  "writingImport.outcome.loose": "2 colocadas sin fijarse en espacios, comillas o mayúsculas",
+  "writingImport.outcome.paragraph": "2 sobre un párrafo entero",
+  "writingImport.outcome.placed": "2 colocadas en el texto",
+  "writingImport.outcome.unplaced": "2 por colocar a mano",
+  "writingImport.partial": "2 de 4 criterios: sin total",
+  "writingImport.reason.several": "aparece 4 veces",
+  "writingImport.tooLong": "El JSON es demasiado largo: el límite es 488 KiB.",
+  "writingImport.tooManyAnnotations": "Como mucho 2 anotaciones por importación",
+  "writingImport.total": "12.5 / 20",
+  "writingImport.unplacedAfter": "2 anotaciones esperan a que las coloques.",
+  "writingImport.updateOf": "Actualización de «Mi apunte — café»",
+  "writingImport.updateOption": "Actualizar «Mi apunte — café» · coincide el 42.5% de las palabras",
+  "writingImport.warning.dateCorrected": "Sin fecha de escritura: se usa la de corrección (15/10/2026), marcada como aproximada.",
+  "writingImport.warning.dateImported": "Sin fecha de escritura: se usa la de hoy (15/10/2026), marcada como aproximada.",
+  "writingImport.warning.textDiffers": "Esta transcripción difiere de la guardada (42.5% de palabras en común). Se conserva el texto guardado y las anotaciones se colocan sobre él.",
+  "writingImport.warning.totalIncomplete": "El JSON da un total de 12.5 / 20 sin los cuatro criterios: no se guarda ningún total.",
+  "writingImport.warning.totalMismatch": "El JSON dice 13 / 20, pero los criterios suman 12.5. El total siempre se calcula con los criterios.",
 }
 `;

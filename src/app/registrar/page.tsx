@@ -104,7 +104,7 @@ function SessionList({ params, fromWriting, newSession, today, t }: {
             shortcut
             initiallyOpen={fromWriting || newSession}
             preset={fromWriting ? { kind: 'WRITING', paper: 'WRITING', part: 1 } : undefined}
-            returnTo={fromWriting ? '/writing?registrar=1&sesion={id}' : undefined}
+            returnTo={fromWriting ? '/writing/importar?sesion={id}' : undefined}
           />
         </header>
 

@@ -6,12 +6,16 @@ import {
   index,
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
 import {
+  ANNOTATION_FOCUSES,
+  ANNOTATION_KINDS,
+  ANNOTATION_SCOPES,
   CATEGORIES,
   CAUSES,
   CONFIDENCES,
@@ -21,9 +25,12 @@ import {
   SESSION_KINDS,
   SESSION_STATUSES,
   SOURCES,
+  WRITING_DATE_BASES,
+  WRITING_STATUSES,
 } from '../domain/enums';
 import { RULE_NOTE_MIN_LENGTH } from '../validation/schemas';
 import { NOTEBOOK_LIMITS } from '../notebook/schemas';
+import { WRITING_LIMITS } from '../writing/limits';
 
 /**
  * Schema de la base. Los CHECK repiten a proposito invariantes que ya valida Zod
@@ -34,6 +41,22 @@ import { NOTEBOOK_LIMITS } from '../notebook/schemas';
  * admite funciones no deterministas como `date('now')` dentro de un CHECK. Ese
  * invariante vive solo en Zod.
  */
+
+/** Marca de tiempo ISO 8601 en UTC, con milisegundos, como `error_row.created_at`. */
+const NOW = sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`;
+
+/**
+ * UUID v4 calculado por SQLite. Como DEFAULT, cualquier escritura (el seed, una migración,
+ * un `sqlite3` a mano) obtiene uno distinto por fila sin pasar por la aplicación.
+ */
+const UUID_V4 = `lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4'
+  || substr(lower(hex(randomblob(2))), 2) || '-' || substr('89ab', 1 + (abs(random()) % 4), 1)
+  || substr(lower(hex(randomblob(2))), 2) || '-' || lower(hex(randomblob(6)))`;
+
+/** Lista SQL de un enum cerrado, para los CHECK de las tablas nuevas. */
+function inList(values: readonly string[]) {
+  return sql.raw(values.map((value) => `'${value}'`).join(', '));
+}
 
 export const session = sqliteTable(
   'session',
@@ -224,13 +247,33 @@ export const writingPiece = sqliteTable(
       onDelete: 'set null',
     }),
     corrector: text('corrector', { enum: CORRECTORS }),
-    bandContent: integer('band_content'),
-    bandCommunicative: integer('band_communicative'),
-    bandOrganisation: integer('band_organisation'),
-    bandLanguage: integer('band_language'),
+    // REAL desde 0012: las bandas admiten medios puntos. NULL es «sin evaluar», no cero.
+    bandContent: real('band_content'),
+    bandCommunicative: real('band_communicative'),
+    bandOrganisation: real('band_organisation'),
+    bandLanguage: real('band_language'),
+    /** Identidad del texto en el contrato JSON; la genera la base. */
+    uid: text('uid').notNull().unique().default(sql`(${sql.raw(UUID_V4)})`),
+    title: text('title'),
+    taskPrompt: text('task_prompt'),
+    /** Lo que se escribió, errores incluidos. Nulo solo en textos anteriores a 0012. */
+    originalText: text('original_text'),
+    textFingerprint: text('text_fingerprint'),
+    textRevision: integer('text_revision').notNull().default(1),
+    dateBasis: text('date_basis', { enum: WRITING_DATE_BASES }).notNull().default('WRITTEN'),
+    correctedOn: text('corrected_on'),
+    status: text('status', { enum: WRITING_STATUSES }).notNull().default('AWAITING'),
+    teacherComment: text('teacher_comment'),
+    personalNotes: text('personal_notes'),
+    /** Rango de palabras propio. Nulos los dos: el de la tarea, 220–260. */
+    wordMin: integer('word_min'),
+    wordMax: integer('word_max'),
+    createdAt: text('created_at').notNull().default(NOW),
+    updatedAt: text('updated_at').notNull().default(NOW),
   },
   (table) => [
     index('writing_rewrite_of_idx').on(table.rewriteOf),
+    index('writing_text_fingerprint_idx').on(table.textFingerprint),
 
     // Un texto no puede reescribirse a si mismo. Los ciclos mas largos necesitan
     // recorrer el grafo y se comprueban en src/lib/validation/rewriteChain.ts.
@@ -243,12 +286,123 @@ export const writingPiece = sqliteTable(
       AND (${table.bandOrganisation} IS NULL OR ${table.bandOrganisation} BETWEEN 0 AND 5)
       AND (${table.bandLanguage} IS NULL OR ${table.bandLanguage} BETWEEN 0 AND 5)
     `),
+    check('writing_bands_half_points', sql`
+      (${table.bandContent} IS NULL OR ${table.bandContent} * 2 = CAST(${table.bandContent} * 2 AS INTEGER))
+      AND (${table.bandCommunicative} IS NULL OR ${table.bandCommunicative} * 2 = CAST(${table.bandCommunicative} * 2 AS INTEGER))
+      AND (${table.bandOrganisation} IS NULL OR ${table.bandOrganisation} * 2 = CAST(${table.bandOrganisation} * 2 AS INTEGER))
+      AND (${table.bandLanguage} IS NULL OR ${table.bandLanguage} * 2 = CAST(${table.bandLanguage} * 2 AS INTEGER))
+    `),
     check('writing_counts_non_negative', sql`
       (${table.wordCount} IS NULL OR ${table.wordCount} >= 0)
       AND (${table.minutes} IS NULL OR ${table.minutes} >= 0)
     `),
+    check('writing_texts_length', sql`
+      (${table.title} IS NULL OR length(trim(${table.title})) BETWEEN 1 AND ${sql.raw(String(WRITING_LIMITS.title))})
+      AND (${table.taskPrompt} IS NULL OR length(trim(${table.taskPrompt})) BETWEEN 1 AND ${sql.raw(String(WRITING_LIMITS.taskPrompt))})
+      AND (${table.originalText} IS NULL OR (length(trim(${table.originalText})) >= 1 AND length(${table.originalText}) <= ${sql.raw(String(WRITING_LIMITS.text))}))
+      AND (${table.teacherComment} IS NULL OR length(trim(${table.teacherComment})) BETWEEN 1 AND ${sql.raw(String(WRITING_LIMITS.longNote))})
+      AND (${table.personalNotes} IS NULL OR length(trim(${table.personalNotes})) BETWEEN 1 AND ${sql.raw(String(WRITING_LIMITS.longNote))})
+    `),
+    // La huella sale del texto: existe exactamente cuando existe el texto.
+    check('writing_fingerprint_follows_text', sql`
+      (${table.originalText} IS NULL) = (${table.textFingerprint} IS NULL)
+    `),
+    check('writing_text_revision_positive', sql`${table.textRevision} >= 1`),
+    check('writing_status', sql`${table.status} IN (${inList(WRITING_STATUSES)})`),
+    check('writing_date_basis', sql`${table.dateBasis} IN (${inList(WRITING_DATE_BASES)})`),
+    check('writing_corrected_after_written', sql`
+      ${table.correctedOn} IS NULL OR ${table.correctedOn} >= ${table.date}
+    `),
+    check('writing_word_range', sql`
+      (${table.wordMin} IS NULL AND ${table.wordMax} IS NULL)
+      OR (
+        ${table.wordMin} IS NOT NULL AND ${table.wordMax} IS NOT NULL
+        AND ${table.wordMin} >= 1 AND ${table.wordMin} <= ${table.wordMax}
+        AND ${table.wordMax} <= ${sql.raw(String(WRITING_LIMITS.wordRange))}
+      )
+    `),
   ],
 );
+
+/**
+ * Una anotación sobre un texto: un fragmento (`SPAN`), un párrafo o el texto entero. Un
+ * fragmento sin `anchor` está sin colocar: su cita no se encontró con seguridad y espera a
+ * que se elija a mano. Nunca se ancla por aproximación.
+ */
+export const writingAnnotation = sqliteTable('writing_annotation', {
+  id: text('id').primaryKey(),
+  pieceId: integer('piece_id').notNull().references(() => writingPiece.id, { onDelete: 'cascade' }),
+  kind: text('kind', { enum: ANNOTATION_KINDS }).notNull(),
+  focus: text('focus', { enum: ANNOTATION_FOCUSES }),
+  source: text('source', { enum: CORRECTORS }).notNull(),
+  scope: text('scope', { enum: ANNOTATION_SCOPES }).notNull(),
+  /** Offsets UTF-16 sobre `original_text`, con el texto exacto y su contexto. */
+  anchor: text('anchor', { mode: 'json' }).$type<StudyAnchor>(),
+  paragraph: integer('paragraph'),
+  /** La cita tal como llegó al importar, para colocarla a mano si no se encontró. */
+  quote: text('quote'),
+  comment: text('comment'),
+  suggestion: text('suggestion'),
+  reviewedAt: text('reviewed_at'),
+  /** Identifica una anotación importada: volver a importarla no la duplica. */
+  importKey: text('import_key'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('writing_annotation_piece_idx').on(table.pieceId),
+  uniqueIndex('writing_annotation_import_key_unique').on(table.pieceId, table.importKey)
+    .where(sql`${table.importKey} IS NOT NULL`),
+  check('writing_annotation_enums', sql`
+    ${table.kind} IN (${inList(ANNOTATION_KINDS)})
+    AND (${table.focus} IS NULL OR ${table.focus} IN (${inList(ANNOTATION_FOCUSES)}))
+    AND ${table.source} IN (${inList(CORRECTORS)})
+    AND ${table.scope} IN (${inList(ANNOTATION_SCOPES)})
+  `),
+  check('writing_annotation_target', sql`
+    (${table.scope} = 'DOCUMENT' AND ${table.anchor} IS NULL AND ${table.paragraph} IS NULL AND ${table.quote} IS NULL)
+    OR (${table.scope} = 'PARAGRAPH' AND ${table.anchor} IS NULL AND ${table.paragraph} IS NOT NULL AND ${table.quote} IS NULL)
+    OR (${table.scope} = 'SPAN' AND (${table.anchor} IS NOT NULL OR ${table.quote} IS NOT NULL))
+  `),
+  check('writing_annotation_paragraph', sql`
+    ${table.paragraph} IS NULL OR (typeof(${table.paragraph}) = 'integer' AND ${table.paragraph} >= 1)
+  `),
+  // Un fragmento resaltado sin nada que decir no sirve para estudiar; un acierto puede
+  // decirlo solo con su foco.
+  check('writing_annotation_has_content', sql`
+    ${table.comment} IS NOT NULL OR ${table.suggestion} IS NOT NULL
+    OR (${table.kind} = 'STRENGTH' AND ${table.focus} IS NOT NULL)
+  `),
+  check('writing_annotation_lengths', sql`
+    (${table.comment} IS NULL OR length(trim(${table.comment})) BETWEEN 1 AND ${sql.raw(String(WRITING_LIMITS.annotationNote))})
+    AND (${table.suggestion} IS NULL OR length(trim(${table.suggestion})) BETWEEN 1 AND ${sql.raw(String(WRITING_LIMITS.annotationNote))})
+    AND (${table.quote} IS NULL OR length(${table.quote}) BETWEEN 1 AND ${sql.raw(String(WRITING_LIMITS.text))})
+  `),
+  check('writing_annotation_anchor', sql`${table.anchor} IS NULL OR (CASE WHEN json_valid(${table.anchor}) THEN
+    json_type(${table.anchor}, '$.start') = 'integer' AND json_extract(${table.anchor}, '$.start') >= 0
+    AND json_type(${table.anchor}, '$.end') = 'integer' AND json_extract(${table.anchor}, '$.end') > json_extract(${table.anchor}, '$.start')
+    AND json_type(${table.anchor}, '$.exact') = 'text' AND length(json_extract(${table.anchor}, '$.exact')) > 0
+    ELSE 0 END)`),
+]);
+
+/** Transcripciones reemplazadas, con la revisión que estuvo vigente hasta el cambio. */
+export const writingTextHistory = sqliteTable('writing_text_history', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  pieceId: integer('piece_id').notNull().references(() => writingPiece.id, { onDelete: 'cascade' }),
+  text: text('text').notNull(),
+  textRevision: integer('text_revision').notNull(),
+  replacedAt: text('replaced_at').notNull(),
+}, (table) => [
+  uniqueIndex('writing_text_history_piece_revision_unique').on(table.pieceId, table.textRevision),
+  check('writing_text_history_revision_positive', sql`${table.textRevision} >= 1`),
+]);
+
+/** Como `session_import_receipt`: un reintento no recrea un texto aunque se haya borrado. */
+export const writingImportReceipt = sqliteTable('writing_import_receipt', {
+  importId: text('import_id').primaryKey(),
+  payloadHash: text('payload_hash').notNull(),
+  pieceId: integer('piece_id').notNull(),
+  createdAt: text('created_at').notNull().default(NOW),
+});
 
 /** Carpetas de dos niveles; los triggers de 0008 protegen movimientos entre niveles. */
 export const notebookFolder = sqliteTable('notebook_folder', {

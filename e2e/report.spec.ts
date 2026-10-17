@@ -63,16 +63,16 @@ test.describe('progreso', () => {
   test('la navegación lleva a cada sección y marca dónde estás', async ({ page }) => {
     await page.goto('/informe');
     const nav = page.getByRole('navigation', { name: 'Secciones' });
-    for (const name of ['Sesiones', 'Errores', 'Progreso', 'Anki', 'Notebook']) {
+    for (const name of ['Sesiones', 'Errores', 'Progreso', 'Anki', 'Notebook', 'Writing']) {
       await expect(nav.getByRole('link', { name, exact: true })).toBeVisible();
     }
     await expect(nav.getByRole('link', { name: 'Progreso', exact: true })).toHaveAttribute('aria-current', 'page');
     await expect(nav.getByRole('link', { name: 'Anki', exact: true })).not.toHaveAttribute('aria-current', 'page');
 
-    // Writing y Exportar, a un clic en «Más».
+    // Exportar y Ajustes, a un clic en «Más».
     await page.getByRole('button', { name: 'Más' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Writing' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Notebook' })).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: 'Ajustes' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: 'Writing' })).toHaveCount(0);
     await page.getByRole('menuitem', { name: 'Exportar datos' }).click();
     await expect(page).toHaveURL(/\/exportar/);
 

@@ -205,9 +205,29 @@ describe('texto de writing', () => {
     expect(piece.safeParse({ ...base, bandContent: -1 }).success).toBe(false);
   });
 
+  it('acepta medios puntos y explica por que rechaza otros decimales', () => {
+    const base = { sessionId: 1, date: '2026-09-10', genre: 'ESSAY' as const };
+    expect(piece.safeParse({ ...base, bandLanguage: 2.5 }).data?.bandLanguage).toBe(2.5);
+    expect(piece.safeParse({ ...base, bandLanguage: 0.5 }).success).toBe(true);
+    const wrong = piece.safeParse({ ...base, bandLanguage: 2.3 });
+    expect(wrong.error?.issues.map((issue) => issue.message)).toEqual([t.validation.halfPoints]);
+    expect(piece.safeParse({ ...base, bandLanguage: 5.5 }).success).toBe(false);
+  });
+
   it('deja las bandas sin puntuar como null', () => {
     const result = piece.safeParse({ sessionId: 1, date: '2026-09-10', genre: 'REPORT' });
     expect(result.data?.bandLanguage).toBeNull();
+  });
+
+  it('valida fecha, estado y notas de la evaluación', () => {
+    const base = { sessionId: 1, date: '2026-09-10', genre: 'ESSAY' as const };
+    expect(piece.parse({ ...base, status: 'CORRECTED', correctedOn: '2026-09-11', teacherComment: 'Buen argumento', personalNotes: 'Revisar los conectores' }))
+      .toMatchObject({ status: 'CORRECTED', correctedOn: '2026-09-11', teacherComment: 'Buen argumento' });
+    expect(piece.safeParse({ ...base, correctedOn: '2026-09-09' }).success).toBe(false);
+    expect(piece.safeParse({ ...base, correctedOn: '2026-09-15' }).success).toBe(false);
+    expect(piece.safeParse({ ...base, status: 'UNKNOWN' }).success).toBe(false);
+    expect(piece.parse({ ...base, teacherComment: '   ', personalNotes: '' }))
+      .toMatchObject({ teacherComment: null, personalNotes: null });
   });
 });
 

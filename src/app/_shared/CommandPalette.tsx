@@ -9,6 +9,7 @@ import {
   Download,
   List,
   type LucideIcon,
+  PenLine,
   Plus,
   RefreshCw,
   Search,
@@ -118,6 +119,7 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
       { key: 'gp', group: 'actions', icon: ChartColumn, label: t.palette.goTo(t.nav.progress), kbd: 'G P', href: '/informe' },
       { key: 'ga', group: 'actions', icon: RefreshCw, label: t.palette.goTo(t.nav.anki), kbd: 'G A', href: '/anki' },
       { key: 'gn', group: 'actions', icon: BookOpen, label: t.palette.goTo(t.nav.notebook), kbd: 'G N', href: '/notebook' },
+      { key: 'gw', group: 'actions', icon: PenLine, label: t.palette.goTo(t.nav.writing), kbd: 'G W', href: '/writing' },
       { key: 'export', group: 'actions', icon: Download, label: t.nav.exportData, href: '/exportar' },
     ];
     return [...found, ...actions.filter((action) => q === '' || action.label.toLowerCase().includes(q))];

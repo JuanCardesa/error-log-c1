@@ -10,76 +10,1210 @@
   gap: var(--space-3);
 }
 
+.headActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
   padding: var(--space-5) var(--space-3);
   border-top: 1px solid var(--color-ink);
   color: var(--color-ink-2);
 }
 
-.scroll {
-  overflow-x: auto;
-  /* Bloque contenedor: el caption .sr-only, absoluto, no escapa del scroll. */
-  position: relative;
-}
-
-.table {
-  width: 100%;
-  min-width: 720px;
-  border-collapse: collapse;
-  border-top: 1px solid var(--color-ink);
-  font-size: 14px;
-}
-
-.table th {
-  padding: 10px var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  color: var(--color-ink-2);
-  font: var(--text-label);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.table th abbr {
-  text-decoration: none;
-}
-
-.table td {
-  height: 56px;
-  padding: var(--space-2) var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-}
-
-.table tbody tr:hover {
-  background: var(--color-surface-2);
-}
-
-.colDate { width: 72px; }
-.colGenre { width: 84px; }
-.colBand { width: 76px; text-align: center !important; }
-.colCorrector { width: 96px; }
-
 .muted {
   color: var(--color-ink-2);
 }
 
-.ref {
-  color: var(--color-ink);
-  font: 500 16px/22px var(--font-serif);
-  text-decoration: none;
+/* ── Biblioteca ───────────────────────────────────────────────────────────── */
+
+.library {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-.ref:hover {
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.search {
+  flex: 1 1 280px;
+  max-width: 380px;
+}
+
+/* Tipo y orden van juntos: si no caben, bajan los dos a la línea siguiente. */
+.toolbarMenus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.filterButton {
+  border: 1px solid var(--color-rule);
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-ink);
+}
+
+/* Un documento por fila: título en serif, sus datos debajo y la nota a la derecha. */
+.entry {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-1);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.entryMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.entryTitle {
+  color: var(--color-ink);
+  font: 600 19px/26px var(--font-serif);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.entryTitle:hover {
   color: var(--color-brand);
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
+
+/*
+ * «Essay · 2 Oct 2026 · 245 words». Cada dato lleva su punto delante y el bloque se corre a
+ * la izquierda lo que mide un punto, recortado: el de principio de línea queda fuera, así que
+ * una línea partida nunca empieza por «·».
+ */
+.entryMeta,
+.sheetMeta {
+  --meta-dot: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 0 0 calc(-1 * var(--meta-dot));
+  clip-path: inset(0 0 0 var(--meta-dot));
+  color: var(--color-ink-2);
+  font: var(--text-aux);
+}
+
+.entryMeta > *::before,
+.sheetMeta > *::before {
+  content: '·';
+  display: inline-block;
+  width: var(--meta-dot);
+  color: var(--color-ink-disabled);
+  text-align: center;
+}
+
+.entryScore {
+  flex-shrink: 0;
+  color: var(--color-ink);
+  font: 500 15px/22px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Lector ───────────────────────────────────────────────────────────────── */
+
+.readerPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: calc(var(--reading-max) + 320px + var(--space-5) + 2 * var(--space-7));
+  margin: 0 auto;
+}
+
+.readerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* La misma hoja que el lector del Notebook y la vista previa de la importación. */
+.sheet {
+  min-width: 0;
+  padding: var(--space-7);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--study-paper-radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.sheetHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.sheetHeading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.sheetTitle {
+  font: var(--text-page-title);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.sheetTotal {
+  flex-shrink: 0;
+  margin: 0;
+  font: 500 18px/26px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.task {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--color-rule);
+}
+
+.task h2 {
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.task p {
+  margin: 0;
+  color: var(--color-ink-2);
+  font: var(--text-field);
+  font-family: var(--font-serif);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Tal como se escribió: los blancos y los saltos de línea también son del texto. */
+.text {
+  position: relative;
+}
+
+.text p {
+  position: relative;
+  margin: 0 0 var(--space-5);
+  font: var(--text-prompt);
+  line-height: 30px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.text p:last-child {
+  margin-bottom: 0;
+}
+
+/*
+ * Las marcas de la profesora. En reposo solo se ven los errores, con una línea fina de
+ * corrector y sin fondo; lo demás espera a que se pase por su párrafo.
+ */
+.mark {
+  --mark-ink: var(--study-red);
+  --mark-tint: transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 5px;
+  text-decoration-skip-ink: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition:
+    background-color var(--dur-panel) var(--ease-out),
+    text-decoration-color var(--dur-panel) var(--ease-out);
+}
+
+.mark[data-kind='ERROR'] {
+  --mark-tint: color-mix(in srgb, var(--study-red) 11%, transparent);
+  text-decoration-color: var(--mark-ink);
+}
+
+.mark[data-kind='ERROR'][data-reviewed='true'] {
+  --mark-ink: color-mix(in srgb, var(--study-red) 45%, transparent);
+}
+
+.mark[data-kind='IMPROVEMENT'] {
+  --mark-ink: var(--color-brand);
+  --mark-tint: color-mix(in srgb, var(--color-brand) 11%, transparent);
+  text-decoration-style: dashed;
+}
+
+.mark[data-kind='STRENGTH'] {
+  --mark-ink: var(--study-green);
+  --mark-tint: color-mix(in srgb, var(--study-green) 13%, transparent);
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+}
+
+.mark[data-kind='COMMENT'] {
+  --mark-ink: var(--color-ink-2);
+  --mark-tint: color-mix(in srgb, var(--color-ink-2) 9%, transparent);
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+}
+
+/* Al pasar por un párrafo (o tocarlo, o entrar con el teclado) aparece todo lo marcado en él. */
+.text p:hover .mark,
+.text p:focus-within .mark,
+.text p[data-revealed='true'] .mark,
+.text[data-reading-mode='annotate'] .mark {
+  background-color: var(--mark-tint);
+  text-decoration-color: var(--mark-ink);
+  transition-delay: 60ms;
+}
+
+.mark:hover,
+.mark[aria-expanded='true'] {
+  background-color: color-mix(in srgb, var(--mark-ink) 20%, transparent);
+  transition-delay: 0ms;
+}
+
+/* La anotación elegida en el panel se distingue en el texto por un fondo más intenso. */
+.readingLayout[data-panel='open'] .mark[data-selected='true'] {
+  background-color: color-mix(in srgb, var(--mark-ink) 24%, transparent);
+  text-decoration-color: var(--mark-ink);
+}
+
+/* Notas sobre un párrafo entero: una marca al margen, del color de su tipo. */
+.paragraphNote {
+  --note-ink: var(--color-ink-2);
+  position: absolute;
+  top: 4px;
+  left: -40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--note-ink);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--dur-panel) var(--ease-out), background-color var(--dur-fast) ease-out;
+}
+
+.paragraphNote::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
+.paragraphNote[data-kind='ERROR'] { --note-ink: var(--study-red); opacity: 1; }
+.paragraphNote[data-kind='IMPROVEMENT'] { --note-ink: var(--color-brand); }
+.paragraphNote[data-kind='STRENGTH'] { --note-ink: var(--study-green); }
+
+.text p:hover .paragraphNote,
+.text p:focus-within .paragraphNote,
+.text p[data-revealed='true'] .paragraphNote,
+.text[data-reading-mode='annotate'] .paragraphNote,
+.paragraphNote[aria-expanded='true'],
+.readingLayout[data-panel='open'] .paragraphNote[data-selected='true'] {
+  opacity: 1;
+}
+
+.paragraphNote:hover,
+.paragraphNote[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--note-ink) 12%, transparent);
+}
+
+.paragraphNoteCount {
+  font: 500 11px/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Modo anotar: el + abre una nota sobre el párrafo; solo aparece al pasar por él. */
+.addParagraphNote {
+  position: absolute;
+  top: 4px;
+  left: -40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 22px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-ink-2);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--dur-fast) ease-out;
+}
+
+.text p:has(.paragraphNote) .addParagraphNote {
+  top: 32px;
+}
+
+.text p:hover .addParagraphNote,
+.addParagraphNote:focus-visible {
+  opacity: 1;
+}
+
+.addParagraphNote:hover {
+  border-color: var(--color-control);
+  color: var(--color-ink);
+}
+
+/* La nota junto al texto: al pasar el ratón se lee; con un clic se queda y trae acciones. */
+.note {
+  position: absolute;
+  z-index: 20;
+  top: var(--note-y, 0);
+  left: var(--note-x, 0);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: max-content;
+  min-width: 200px;
+  max-width: min(340px, 100%);
+  padding: 12px 14px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-overlay);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-menu);
+  color: var(--color-ink);
+  font: var(--text-body);
+  white-space: normal;
+  pointer-events: none;
+  animation: note-in 140ms var(--ease-out);
+}
+
+.note[data-side='above'] {
+  animation-name: note-in-above;
+}
+
+.note[data-pinned='true'] {
+  pointer-events: auto;
+}
+
+.note:focus {
+  outline: none;
+}
+
+.note:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@keyframes note-in {
+  from { opacity: 0; translate: 0 4px; }
+}
+
+@keyframes note-in-above {
+  from { opacity: 0; translate: 0 -4px; }
+}
+
+/* «Tu texto → corrección», como en el resto de la app: lo propio tachado, la corrección en serif. */
+.notePair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  font: 400 17px/24px var(--font-serif);
+}
+
+.notePair s {
+  color: var(--color-ink-2);
+  text-decoration-color: var(--color-danger);
+  text-decoration-thickness: 1.5px;
+}
+
+.notePair strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.noteArrow {
+  color: var(--color-ink-2);
+  font: var(--text-body);
+}
+
+.noteTarget {
+  font: 400 16px/23px var(--font-serif);
+  overflow-wrap: anywhere;
+}
+
+.noteTarget[data-scope='SPAN'] {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--color-ink-2);
+}
+
+.noteTarget[data-scope='SPAN'][data-kind='ERROR'] { text-decoration-color: var(--study-red); }
+.noteTarget[data-scope='SPAN'][data-kind='IMPROVEMENT'] { text-decoration-color: var(--color-brand); text-decoration-style: dashed; }
+.noteTarget[data-scope='SPAN'][data-kind='STRENGTH'] { text-decoration-color: var(--study-green); text-decoration-style: dotted; text-decoration-thickness: 2px; }
+.noteTarget[data-scope='SPAN'][data-kind='COMMENT'] { text-decoration-style: dotted; text-decoration-thickness: 2px; }
+
+.noteTarget:not([data-scope='SPAN']) {
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.noteComment {
+  overflow-wrap: anywhere;
+}
+
+.noteMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 6px;
+  color: var(--color-ink-2);
+  font: var(--text-aux);
+}
+
+/* Forma además de color: un cuadradito por tipo, con su nombre al lado. */
+.kindDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--color-ink-2);
+}
+
+.kindDot[data-kind='ERROR'] { background: var(--study-red); }
+.kindDot[data-kind='IMPROVEMENT'] { background: var(--color-brand); }
+.kindDot[data-kind='STRENGTH'] { border-radius: 50%; background: var(--study-green); }
+.kindDot[data-kind='COMMENT'] { background: none; box-shadow: inset 0 0 0 1.5px var(--color-ink-2); }
+
+.noteActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-rule);
+  font-size: 13px;
+}
+
+.noteClose {
+  width: 28px;
+  height: 28px;
+  margin: -4px -6px -4px auto;
+}
+
+/* ── Panel de anotaciones ──────────────────────────────────────────────────── */
+
+/*
+ * El texto se alinea con el título. Abierto, el panel ocupa el margen derecho, como un
+ * aparato de notas al margen: en una pantalla ancha cabe sin mover el texto.
+ */
+.readingLayout {
+  --panel-w: 0px;
+  --panel-gap: 0px;
+  display: grid;
+  grid-template-columns: minmax(0, var(--reading-max)) var(--panel-w);
+  column-gap: var(--panel-gap);
+  align-items: start;
+  justify-content: start;
+  transition:
+    grid-template-columns 240ms var(--ease-out),
+    column-gap 240ms var(--ease-out);
+}
+
+.readingLayout[data-panel='open'] {
+  --panel-w: 320px;
+  --panel-gap: var(--space-5);
+}
+
+.readingMain {
+  min-width: 0;
+}
+
+.annotationPanel {
+  position: sticky;
+  top: calc(var(--header-h) + var(--space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 320px;
+  max-height: calc(100vh - var(--header-h) - 2 * var(--space-4));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-left: var(--space-5);
+  border-left: 1px solid var(--color-rule);
+  background: var(--color-surface);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease-out, visibility 0s linear 240ms;
+}
+
+.readingLayout[data-panel='open'] .annotationPanel {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 200ms var(--ease-out) 80ms, visibility 0s;
+}
+
+.annotationPanel:focus {
+  outline: none;
+}
+
+.annotationHead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  background: var(--color-surface);
+}
+
+.annotationHead h2 {
+  margin: 0;
+  font: var(--text-subtitle);
+}
+
+.annotationHeadActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pillCount {
+  color: var(--color-ink-2);
+  font: 400 12px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.annotationFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.annotationFilters > button,
+.pendingPill {
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.annotationFilters > button[aria-pressed='true'] .pillCount {
+  color: var(--color-brand);
+}
+
+.pendingPill {
+  box-shadow: inset 0 0 0 1px var(--color-rule);
+}
+
+.pendingPill[aria-pressed='true'] {
+  box-shadow: none;
+}
+
+.annotationList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-ink);
+}
+
+.annotationItem {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.annotationItem[data-selected='true'] {
+  background: var(--color-selected);
+  box-shadow: inset 3px 0 0 var(--color-brand);
+}
+
+.annotationRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 10px 12px 13px;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: var(--text-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.annotationItem:not([data-selected='true']) .annotationRow:hover {
+  background: var(--color-surface-2);
+}
+
+.annotationRow:focus-visible {
+  outline-offset: -2px;
+}
+
+.annotationRow .notePair {
+  font-size: 16px;
+  line-height: 23px;
+}
+
+.rowActions,
+.candidateList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 0 10px 12px 13px;
+  font-size: 13px;
+}
+
+.candidateList {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.unplacedHeading {
+  margin: 0;
+  padding: var(--space-4) 10px 6px 13px;
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.annotationScrim {
+  display: none;
+}
+
+/* Formulario de anotación, dentro del panel. */
+.annotationEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.annotationEditor h3 {
+  margin: 0;
+  font: var(--text-label);
+}
+
+.editorTarget {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  font: 400 15px/22px var(--font-serif);
+  overflow-wrap: anywhere;
+}
+
+.editorRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.editorActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ── Modos: anotar y corregir la transcripción ─────────────────────────────── */
+
+.modeBar {
+  position: sticky;
+  top: calc(var(--header-h) + var(--space-2));
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-5);
+  padding: 8px 8px 8px var(--space-4);
+  border-radius: var(--radius-panel);
+  background: var(--color-brand-tint);
+}
+
+.modeBar p {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-ink);
+  font: var(--text-body);
+}
+
+.modeBar .modeSelection {
+  overflow: hidden;
+  font: 400 15px/22px var(--font-serif);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modeSelection::before { content: '«'; }
+.modeSelection::after { content: '»'; }
+
+.modeBarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.transcriptionEditor {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--reading-max);
+}
+
+.transcriptionText {
+  width: 100%;
+  min-height: 60vh;
+  field-sizing: content;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-control);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: var(--text-prompt);
+  line-height: 30px;
+  resize: vertical;
+}
+
+/* ── Barra del lector ──────────────────────────────────────────────────────── */
+
+.readerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.panelToggle[aria-expanded='true'] {
+  border-color: var(--color-brand-tint);
+  background: var(--color-brand-tint);
+  color: var(--color-brand);
+}
+
+.panelToggleCount {
+  min-width: 22px;
+  padding: 2px 5px;
+  border-radius: var(--radius-control);
+  background: var(--color-surface-2);
+  color: var(--color-ink);
+  font: 500 12px/16px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.panelToggle[aria-expanded='true'] .panelToggleCount {
+  background: var(--color-surface);
+  color: var(--color-brand);
+}
+
+@media (max-width: 1023px) {
+  .readingLayout,
+  .readingLayout[data-panel='open'] {
+    display: block;
+  }
+
+  .annotationPanel {
+    position: fixed;
+    z-index: 81;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(400px, 100vw);
+    max-height: none;
+    padding: 0 var(--space-5) var(--space-5);
+    border-left: 1px solid var(--color-rule);
+    box-shadow: var(--shadow-drawer);
+    opacity: 1;
+    transform: translateX(100%);
+    transition: transform 200ms var(--ease-out), visibility 0s linear 200ms;
+  }
+
+  .readingLayout[data-panel='open'] .annotationPanel {
+    transform: none;
+    transition: transform 220ms var(--ease-out), visibility 0s;
+  }
+
+  .annotationHead {
+    margin: 0 calc(-1 * var(--space-5));
+    padding: var(--space-4) var(--space-4) var(--space-2) var(--space-5);
+  }
+
+  .annotationScrim {
+    position: fixed;
+    z-index: 80;
+    inset: 0;
+    display: block;
+    border: 0;
+    background: rgb(32 35 31 / 32%);
+  }
+}
+
+@media (max-width: 639px) {
+  .paragraphNote,
+  .addParagraphNote {
+    left: -24px;
+    min-width: 20px;
+    width: auto;
+    padding: 0 2px;
+  }
+
+  .paragraphNoteCount {
+    display: none;
+  }
+
+  .panelToggleText {
+    display: none;
+  }
+
+  /* Sin ratón la nota se abre como una hoja al pie de la pantalla. */
+  .note {
+    position: fixed;
+    z-index: 82;
+    top: auto;
+    right: var(--space-2);
+    bottom: var(--space-2);
+    left: var(--space-2);
+    width: auto;
+    max-width: none;
+    padding: var(--space-4);
+    box-shadow: var(--shadow-dialog);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readingLayout,
+  .annotationPanel,
+  .readingLayout[data-panel='open'] .annotationPanel,
+  .mark,
+  .paragraphNote {
+    transition: none;
+  }
+
+  .note {
+    animation: none;
+  }
+}
+
+.noText {
+  padding: var(--space-5);
+  border: 1px dashed var(--color-rule);
+  border-radius: var(--radius-panel);
+  color: var(--color-ink-2);
+}
+
+.noTextTitle {
+  margin-bottom: var(--space-1);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.assessment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-rule);
+}
+
+.assessment h2 {
+  font: var(--text-subtitle);
+}
+
+/* Nombre arriba y nota debajo; las notas se alinean aunque «Communicative Achievement» ocupe dos líneas. */
+.scores {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-3);
+  margin: 0;
+}
+
+.scores div {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+  row-gap: 2px;
+}
+
+.scores dt {
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.scores dd {
+  margin: 0;
+  font: 500 16px/22px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreTotal dd {
+  font-weight: 600;
+}
+
+.markedBy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  margin: 0;
+  color: var(--color-ink-2);
+  font: var(--text-body);
+}
+
+.comment {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.comment figcaption {
+  color: var(--color-ink-2);
+  font: var(--text-label);
+}
+
+.comment blockquote {
+  margin: 0;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-rule);
+  font: var(--text-field);
+  font-family: var(--font-serif);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .sheet {
+    padding: var(--space-5);
+  }
+
+  .scores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .progressSummary p { padding: var(--space-2) var(--space-1); }
+  .progressSummary strong { font-size: 20px; }
+}
+
+/* ── Reescrituras ─────────────────────────────────────────────────────────── */
+
+/* ── Progreso ───────────────────────────────────────────────────────────── */
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.progressSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--color-ink);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.progressSummary p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: var(--space-3);
+}
+
+.progressSummary p + p {
+  border-left: 1px solid var(--color-rule);
+}
+
+.progressSummary strong {
+  font: 500 24px/30px var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.progressSummary span,
+.progressLegend,
+.progressHighlights p {
+  color: var(--color-ink-2);
+  font: var(--text-aux);
+}
+
+.progressFilters {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.progressFilters label {
+  flex: 1 1 145px;
+}
+
+.progressPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--color-rule);
+}
+
+.progressPanel h3,
+.progressHighlights h4 {
+  margin: 0;
+  font: var(--text-subtitle);
+}
+
+.progressPanelHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.progressLegend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.point,
+.approxPoint {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border: 2px solid var(--color-brand);
+  border-radius: 50%;
+  background: var(--color-brand);
+}
+
+.approxPoint {
+  margin-left: var(--space-2);
+  background: var(--color-surface);
+}
+
+.progressChartScroll,
+.progressTableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.progressChart {
+  display: block;
+  width: 100%;
+  min-width: 720px;
+  height: auto;
+  overflow: visible;
+}
+
+.chartGrid { stroke: var(--color-rule); stroke-width: 1; }
+
+.chartAxis,
+.chartDate,
+.chartValue {
+  fill: var(--color-ink-2);
+  font: 12px var(--font-sans);
+}
+
+.chartDate { font-size: 11px; }
+.chartValue { fill: var(--color-ink); font: 12px var(--font-mono); }
+.chartLine { fill: none; stroke: var(--color-brand); stroke-width: 2; }
+
+.progressChart .point {
+  fill: var(--color-brand);
+  stroke: var(--color-brand);
+  stroke-width: 2;
+}
+
+.progressChart .approxPoint {
+  fill: var(--color-surface);
+  stroke: var(--color-brand);
+  stroke-width: 2;
+}
+
+.progressData summary {
+  width: fit-content;
+  color: var(--color-brand);
+  cursor: pointer;
+  text-underline-offset: 3px;
+}
+
+.progressTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.progressTable caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.progressTable th,
+.progressTable td {
+  padding: 10px var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.progressTable thead th { color: var(--color-ink-2); font: var(--text-label); }
+.progressTable tbody th { font-weight: 500; }
+
+.progressHighlights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.progressHighlights dl { display: flex; flex-wrap: wrap; gap: var(--space-5); margin: 0; }
+.progressHighlights dl div { display: flex; flex-direction: column; gap: 2px; }
+.progressHighlights dt { color: var(--color-ink-2); font: var(--text-aux); }
+.progressHighlights dd { margin: 0; font-weight: 600; }
 
 .unrated {
   font-size: 12px;
   color: var(--color-ink-disabled);
   white-space: nowrap;
 }
-
-/* ── Reescrituras ─────────────────────────────────────────────────────────── */
 
 .rewrites {
   display: flex;
@@ -184,12 +1318,4 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   padding-top: var(--space-3);
-}
-
-.noSession {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-4);
-  color: var(--color-ink-2);
 }

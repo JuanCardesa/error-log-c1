@@ -1,4 +1,6 @@
 import type {
+  AnnotationFocus,
+  AnnotationKind,
   Category,
   Cause,
   CauseSide,
@@ -9,7 +11,10 @@ import type {
   SessionKind,
   SessionStatus,
   Source,
+  WritingStatus,
 } from '../domain/enums';
+import type { LibrarySort } from '../writing/library';
+import type { PieceField } from '../writing/plan';
 import type { Locale } from './index';
 
 /**
@@ -34,6 +39,17 @@ export interface AiPromptValues {
   readonly causes: string;
   readonly confidences: string;
   readonly maxRows: number;
+}
+
+/** Lo que el prompt de Writing toma del contrato JSON v1: tampoco se traduce. */
+export interface WritingPromptValues {
+  readonly example: string;
+  readonly types: string;
+  readonly statuses: string;
+  readonly sources: string;
+  readonly kinds: string;
+  readonly focuses: string;
+  readonly maxAnnotations: number;
 }
 
 const errors = (n: number) => `${String(n)} ${n === 1 ? 'error' : 'errors'}`;
@@ -217,7 +233,7 @@ export const en = {
       ESSAY: 'Essay',
       REPORT: 'Report',
       PROPOSAL: 'Proposal',
-      LETTER: 'Letter',
+      LETTER: 'Letter / Email',
       REVIEW: 'Review',
     } satisfies Record<Genre, string>,
     corrector: {
@@ -225,6 +241,31 @@ export const en = {
       YO: 'Me',
       IA: 'AI',
     } satisfies Record<Corrector, string>,
+    writingStatus: {
+      AWAITING: 'Awaiting correction',
+      CORRECTED: 'Corrected',
+      NOT_SUBMITTED: 'Not submitted',
+    } satisfies Record<WritingStatus, string>,
+    annotationKind: {
+      ERROR: 'Error',
+      IMPROVEMENT: 'Improvement',
+      STRENGTH: 'Strength',
+      COMMENT: 'Comment',
+    } satisfies Record<AnnotationKind, string>,
+    annotationFocus: {
+      GRAMMAR: 'Grammar',
+      SPELLING: 'Spelling',
+      PUNCTUATION: 'Punctuation',
+      WORD_ORDER: 'Word order',
+      VOCABULARY: 'Vocabulary',
+      COLLOCATION: 'Collocation',
+      REGISTER: 'Register',
+      CLARITY: 'Clarity',
+      LINKING: 'Linking',
+      ORGANISATION: 'Organisation',
+      CONTENT: 'Content',
+      OTHER: 'Other',
+    } satisfies Record<AnnotationFocus, string>,
     ankiState: {
       PENDING: 'Pending',
       CONVERTED: 'Converted',
@@ -309,6 +350,7 @@ export const en = {
     duplicateTag: 'Duplicate tag',
     maxBytes: (n: number) => `Maximum ${String(n)} UTF-8 bytes`,
     invalidQuery: 'Invalid search',
+    halfPoints: 'Use whole or half points (for example, 2.5)',
   },
 
   import: {
@@ -945,18 +987,136 @@ Session details and corrections (text or attached images):
   },
 
   writing: {
-    logWriting: 'Log Writing',
+    reading: {
+      wordCount: (count: number, range: string | null) => `${String(count)} words${range === null ? '' : ` (${range})`}`,
+      annotations: (count: number) => `Annotations (${String(count)})`,
+      closeAnnotations: 'Close annotations',
+      annotationPanel: 'Annotations',
+      filterType: 'Filter annotations',
+      kindLabel: 'Type',
+      focusLabel: 'Focus',
+      allKinds: 'All',
+      pendingOnly: 'Pending',
+      wholeText: 'Whole text',
+      paragraph: (number: number) => `Paragraph ${String(number)}`,
+      needsPlacing: 'Needs placing',
+      noAnnotations: 'No annotations match these filters.',
+      noAnnotationsYet: 'No annotations on this writing yet.',
+      reviewed: 'Studied',
+      unreviewed: 'Pending',
+      showInList: 'Show in list',
+      moreActions: 'More actions',
+      annotateText: 'Annotate the text',
+      annotateHint: 'Select a passage to annotate it, or use + beside a paragraph.',
+      finishAnnotating: 'Done',
+      wholeTextNote: 'Note on the whole text',
+      newAnnotation: 'New annotation',
+      transcriptionHint: 'Annotations are re-anchored to the new text when you save.',
+      createAnnotation: 'Annotate selection',
+      editAnnotation: 'Edit annotation',
+      deleteAnnotation: 'Delete annotation',
+      placeHere: 'Place here',
+      chooseCandidate: 'Choose this match',
+      saving: 'Saving…',
+      comment: 'Comment',
+      suggestion: 'Correction or suggestion',
+      savingSource: 'Source',
+      missingAnnotation: 'This annotation no longer exists. Refresh and try again.',
+      missingText: 'This writing has no transcription to annotate.',
+      invalidTarget: 'That selection no longer matches the saved text. Select it again.',
+      staleAnchor: 'This annotation no longer matches its text. Refresh before editing.',
+      restoreConflict: 'This annotation has already been restored.',
+      invalidInput: 'The annotation could not be saved. Check its details and try again.',
+      annotationSaved: 'Annotation saved.',
+      annotationPlaced: 'Annotation placed in the text.',
+      annotationStudied: 'Marked as studied.',
+      annotationDeleted: 'Annotation deleted.',
+      annotationRestored: 'Annotation restored.',
+      noMatches: 'No exact matches were found. Select its text to place it.',
+      aiSuggestion: 'AI suggestion',
+      markStudied: 'Mark studied',
+      saveAnnotation: 'Save annotation',
+      correctTranscription: 'Correct transcription',
+      saveTranscription: 'Save text',
+      transcription: 'Transcription',
+      transcriptionSaved: 'Transcription corrected. Anchors and word count have been updated.',
+      transcriptionInvalid: 'The transcription must contain between 1 and 20,000 characters.',
+      writingMissing: 'This Writing record no longer exists.',
+      kind: { ERROR: 'Error', IMPROVEMENT: 'Improvement', STRENGTH: 'Strength', COMMENT: 'Comment' },
+      kindPlural: { ERROR: 'Errors', IMPROVEMENT: 'Improvements', STRENGTH: 'Strengths', COMMENT: 'Comments' },
+      source: { PROFESOR: 'Teacher', IA: 'AI', YO: 'Me' },
+      focus: {
+        GRAMMAR: 'Grammar', SPELLING: 'Spelling', PUNCTUATION: 'Punctuation', WORD_ORDER: 'Word order',
+        VOCABULARY: 'Vocabulary', COLLOCATION: 'Collocation', REGISTER: 'Register', CLARITY: 'Clarity',
+        LINKING: 'Linking', ORGANISATION: 'Organisation', CONTENT: 'Content', OTHER: 'Other',
+      },
+    },
     editWriting: 'Edit Writing',
+    editDetails: 'Edit details',
+    exportJson: 'Export JSON',
     views: 'Writing views',
-    texts: 'Texts',
+    library: 'Library',
+    progressTab: 'Progress',
+    progress: {
+      title: 'Progress',
+      count: (n: number) => `${String(n)} ${n === 1 ? 'writing' : 'writings'}`,
+      corrected: (n: number) => `${String(n)} corrected`,
+      awaiting: (n: number) => `${String(n)} awaiting`,
+      metric: 'Measure',
+      metrics: { TOTAL: 'Total', CONTENT: 'Content', COMMUNICATIVE: 'Communication', ORGANISATION: 'Organisation', LANGUAGE: 'Language' },
+      type: 'Type',
+      allTypes: 'All types',
+      from: 'From',
+      to: 'To',
+      apply: 'Apply filters',
+      empty: 'There are no scores for these filters.',
+      chartLabel: (metric: string) => `${metric} progress over time`,
+      showData: 'Show data',
+      tableCaption: 'Scores shown in the chart',
+      date: 'Date',
+      approximate: 'Approximate date',
+      written: 'Known writing date',
+      score: 'Score',
+      criterion: 'Criterion',
+      criteriaTitle: 'Criterion averages',
+      mean: 'Mean',
+      n: 'n',
+      last: 'Last',
+      highlights: 'Criteria to watch',
+      strongest: 'Strongest',
+      room: 'Most room to improve',
+      noHighlights: 'At least three scores per criterion and a difference of 0.5 are needed to show these highlights.',
+    },
     rewrites: 'Rewrites',
     notFound: 'We couldn’t find that Writing record: it may have been deleted with its session.',
     unrated: 'Not rated',
-    empty: 'No Writing texts yet. Log a text’s assessment once it has been marked.',
-    textsCaption: 'Writing texts with their four bands',
+    empty: 'No writings yet. Import the first one with its text and, if you have it, the correction.',
+    noMatch: 'No writing matches this search.',
+    searchLabel: 'Search writings',
+    searchPlaceholder: 'Search by title or text',
+    statusFilter: 'Status',
+    awaitingCount: (n: number) => `Awaiting (${String(n)})`,
+    correctedCount: (n: number) => `Corrected (${String(n)})`,
+    typeFilterLabel: 'Type',
+    typeFilter: (type: string) => `Type: ${type}`,
+    allTypes: 'All types',
+    sortLabel: 'Sort',
+    sort: {
+      recent: 'Newest first',
+      oldest: 'Oldest first',
+      score: 'Highest score',
+    } satisfies Record<LibrarySort, string>,
+    listLabel: (n: number) => `${String(n)} ${n === 1 ? 'writing' : 'writings'}`,
+    noTranscription: 'No transcription',
+    noTextBody: 'This text was logged before transcriptions existed: only its details and assessment were saved.',
+    toReview: (n: number) => `${String(n)} to review`,
+    rewrite: 'Rewrite',
+    rewriteOf: 'Rewrite of',
+    score: (total: string) => `${total}/20`,
+    noScore: 'No score',
+    task: 'Task',
     genre: 'Genre',
     corrector: 'Marked by',
-    rewritesOf: (title: string, date: string) => `Rewrites “${title}” from ${date}`,
     notMarked: 'Not marked',
     words: (n: number) => `${String(n)} ${n === 1 ? 'word' : 'words'}`,
     noPairs: (days: number) => `No original–rewrite pairs in the last ${String(days)} days.`,
@@ -976,24 +1136,18 @@ Session details and corrections (text or attached images):
       `${String(repeated)} of ${errors(total)} from the original ${repeated === 1 ? 'is' : 'are'} repeated in the rewrite (${pct}).`,
     originalErrors: 'Errors in the original',
     rewriteErrorsLink: 'in the rewrite',
-    saved: 'Writing saved',
     updated: 'Writing updated',
-    saveWriting: 'Save Writing',
-    noFreeSessions: 'There are no available Writing sessions. Each session can have one text: create a session and return here with it selected.',
-    createSession: 'Create Writing session',
-    freeSession: 'Available Writing session',
     sessionNumber: (id: number) => `Session #${String(id)}`,
-    proposedHint: 'Date and minutes are suggested from the session; you can change them.',
-    createAnother: 'Create another Writing session',
     sessionFixed: 'The session of a saved text doesn’t change.',
     text: 'Text',
     addAssessment: 'Add assessment',
     ifMarked: '· if it has been marked',
-    emptyBands: 'Empty bands are saved as “Not rated”, not as zero.',
+    emptyBands: 'Half points are allowed (2.5). Empty bands are saved as “Not rated”, not as zero.',
     isRewrite: 'It’s a rewrite',
     original: 'Original text',
     chooseOriginal: 'Choose the original',
     wordsAndDuration: 'Words and duration',
+    duration: 'Duration',
     wordsLabel: 'Words',
     minutes: 'Minutes',
     timed: 'Timed',
@@ -1001,15 +1155,199 @@ Session details and corrections (text or attached images):
     gone: 'That text no longer exists. Your changes are still in the form.',
     sessionLocked: 'The session of an existing text can’t be changed.',
     sessionUnavailable: 'That Writing session is no longer available.',
-    sessionTaken: 'That session already has a text. Choose another session or edit the existing one.',
     rewriteErrors: {
       self: 'A text can’t be a rewrite of itself',
       missing: 'The original text doesn’t exist',
       cycle: 'That link would create a cycle of rewrites',
     },
     textUpdated: 'Text updated.',
-    textSaved: 'Text saved.',
     saveFailed: 'The text couldn’t be saved. Your changes are still here so you can try again.',
+  },
+
+  writingImport: {
+    empty: 'Paste the JSON first.',
+    tooLong: (kib: number) => `The JSON is too long: the limit is ${String(kib)} KiB.`,
+    notJson: 'This isn’t valid JSON. Copy the AI’s whole reply again, without any text around it.',
+    wrongFormat: 'This JSON isn’t a Writing import: it needs "format": "error-log-writing".',
+    wrongVersion: 'This JSON uses a format version Error Log doesn’t know. Ask the AI for version 1.',
+    needsContent: 'Add a comment or a correction; a strength can carry just its focus',
+    startEnd: '“start” and “end” go together, with “end” after “start”',
+    wordRange: 'The range needs 1 ≤ minimum ≤ maximum ≤ 2,000 words',
+    correctedBeforeWritten: 'The correction can’t be earlier than the date it was written',
+    invalidRecordedDate: 'The recorded date does not match its declared date and source',
+    tooManyAnnotations: (n: number) => `At most ${String(n)} ${n === 1 ? 'annotation' : 'annotations'} per import`,
+    title: 'Import Writing',
+    backToWriting: 'Back to Writing',
+    intro: 'Paste the JSON that ChatGPT or Claude prepared from the photos of your writing. Nothing is saved until you confirm.',
+    jsonLabel: 'JSON from the AI',
+    fileLabel: 'Or choose a .json file',
+    readFailed: 'The file couldn’t be read. Choose it again.',
+    review: 'Review import',
+    reviewing: 'Checking…',
+    reviewFailed: 'The JSON couldn’t be checked. Try again.',
+    aiTitle: 'Prepare it with ChatGPT or Claude',
+    aiStep1: 'Copy the instructions and paste them into a new chat.',
+    aiStep2: 'Attach the photos of your writing, and of the teacher’s correction if you have it.',
+    aiStep3: 'Paste the JSON it returns here. To add the correction later, import again: the same writing is updated.',
+    manualTitle: 'No AI? Paste the text',
+    manualTitleField: 'Title',
+    manualTextField: 'Text',
+    manualReview: 'Review this text',
+    issuesTitle: 'The JSON can’t be imported yet',
+    issueRoot: 'JSON',
+    newWriting: 'New writing',
+    updateOf: (title: string) => `Update of “${title}”`,
+    matchedBy: {
+      id: 'Same ID as a saved writing.',
+      fingerprint: 'Same text as a saved writing.',
+      similarity: (pct: string) => `${pct} of the words match a saved writing.`,
+    },
+    destination: 'Where should it go?',
+    createNew: 'Create a new writing',
+    updateOption: (title: string, pct: string) => `Update “${title}” · ${pct} of the words match`,
+    untitled: 'Untitled',
+    originalText: 'Original text',
+    detailsTitle: 'Details',
+    written: 'Written',
+    corrected: 'Corrected',
+    approximate: 'approximate',
+    dateWritten: 'Date written',
+    dateHelp: 'Leave it empty if you don’t know it: the correction date, or today’s, is used and marked as approximate.',
+    assessmentTitle: 'Assessment',
+    notAssessed: 'Not marked yet',
+    totalLabel: 'Total',
+    total: (total: string) => `${total} / 20`,
+    partial: (n: number) => `${String(n)} of 4 criteria: no total`,
+    teacherComment: 'Teacher’s comment',
+    changesTitle: 'Changes to the saved writing',
+    transcriptionAdded: 'Transcription added',
+    yes: 'Yes',
+    no: 'No',
+    annotationsTitle: 'Annotations',
+    noAnnotations: 'No annotations.',
+    outcome: {
+      placed: (n: number) => `${String(n)} placed on the text`,
+      loose: (n: number) => `${String(n)} placed ignoring spaces, quotes or capitals`,
+      unplaced: (n: number) => `${String(n)} to place by hand`,
+      paragraph: (n: number) => `${String(n)} on a whole paragraph`,
+      document: (n: number) => `${String(n)} on the whole text`,
+      duplicate: (n: number) => `${String(n)} already imported`,
+    },
+    toPlace: 'To place by hand after importing',
+    loosely: 'Placed ignoring spaces, quotes or capitals: check them',
+    reason: {
+      notFound: 'not found in the text',
+      several: (n: number) => `appears ${String(n)} times`,
+      contradicts: 'doesn’t match the occurrence or context given',
+    },
+    inParagraph: (n: number) => `paragraph ${String(n)}`,
+    annotationLabel: (index: number, kind: string) => `#${String(index + 1)} · ${kind}`,
+    warning: {
+      totalMismatch: (total: string, sum: string) => `The JSON says ${total} / 20, but the criteria add up to ${sum}. The total is always calculated from the criteria.`,
+      totalIncomplete: (total: string) => `The JSON gives a total of ${total} / 20 without all four criteria: no total is stored.`,
+      textDiffers: (pct: string) => `This transcription differs from the saved one (${pct} of the words in common). The saved text is kept and the annotations are placed on it.`,
+      dateCorrected: (date: string) => `No writing date: the correction date (${date}) is used, marked as approximate.`,
+      dateImported: (date: string) => `No writing date: today’s date (${date}) is used, marked as approximate.`,
+    },
+    error: {
+      targetMissing: 'The writing chosen to update no longer exists. Choose another destination.',
+      paragraphOutOfRange: (index: number, paragraph: number, paragraphs: number) => `Annotation #${String(index + 1)} points to paragraph ${String(paragraph)}, but the text has ${String(paragraphs)}.`,
+      correctedBeforeWritten: (date: string, corrected: string) => `The correction (${corrected}) is earlier than the date written (${date}).`,
+    },
+    beforeImport: 'Before importing',
+    blockedTitle: 'Fix this before importing',
+    nothingToDo: 'This writing already has everything in this JSON: there’s nothing to change.',
+    sessionSource: 'Where the task comes from',
+    linkedSession: (title: string) => `It’ll be linked to the Writing session “${title}”.`,
+    confirmCreate: 'Import writing',
+    confirmUpdate: 'Update writing',
+    importing: 'Importing…',
+    created: 'Writing imported',
+    updated: 'Writing updated',
+    unplacedAfter: (n: number) => `${String(n)} ${n === 1 ? 'annotation is' : 'annotations are'} waiting to be placed.`,
+    stale: 'The writing changed since this preview. Review the new one before confirming.',
+    receiptChanged: 'This import was already confirmed with other data. Review it again before confirming.',
+    deleted: 'This import was already done and the writing was deleted afterwards: it won’t be recreated.',
+    sessionUnavailable: 'That Writing session is no longer free. Open the import again from Writing.',
+    uncertain: 'The import couldn’t be confirmed. Press the button again: it won’t be duplicated.',
+    field: {
+      title: 'Title',
+      genre: 'Type',
+      date: 'Date written',
+      dateBasis: 'Date basis',
+      taskPrompt: 'Task',
+      originalText: 'Text',
+      textFingerprint: 'Text fingerprint',
+      wordCount: 'Words',
+      wordMin: 'Minimum words',
+      wordMax: 'Maximum words',
+      timed: 'Timed',
+      minutes: 'Minutes',
+      status: 'Status',
+      corrector: 'Marked by',
+      correctedOn: 'Corrected',
+      bandContent: 'Content',
+      bandCommunicative: 'Communicative Achievement',
+      bandOrganisation: 'Organisation',
+      bandLanguage: 'Language',
+      teacherComment: 'Teacher’s comment',
+      personalNotes: 'Personal notes',
+    } satisfies Record<PieceField, string>,
+    /**
+     * Instrucciones para que una IA prepare el JSON a partir de las fotos. Claves, valores y
+     * ejemplo son el contrato (`v`) y no se traducen; el texto y la corrección se copian tal cual.
+     */
+    aiPrompt: (v: WritingPromptValues) => `Turn the photos of my handwritten Cambridge C1 Advanced writing into JSON so I can import it into my Error Log C1. The photos may include my teacher’s handwritten corrections, comments and marks.
+
+OUTPUT FORMAT
+
+Return only this JSON object, with no Markdown, no code blocks and no explanations before or after it. Keep the types in the example: numbers are numbers, never strings.
+
+${v.example}
+
+Allowed values, written exactly as they appear here:
+- writing.type: ${v.types} (LETTER also covers an email).
+- assessment.status: ${v.statuses}. AWAITING means it hasn’t been corrected yet.
+- assessment.assessedBy and annotations[].source: ${v.sources}. PROFESOR is my teacher, IA is you, YO is me.
+- annotations[].kind: ${v.kinds}.
+- annotations[].focus: ${v.focuses}, or null.
+- annotations[].target: {"scope": "DOCUMENT"}, {"scope": "PARAGRAPH", "paragraph": 2} or {"scope": "SPAN", "quote": "…", "paragraph": 2, "occurrence": null}.
+
+THE TEXT
+
+- Transcribe my text exactly as I wrote it, mistakes included. Never correct, improve or complete it.
+- Separate paragraphs with one blank line. Don’t break lines inside a paragraph, except for a heading, a greeting or a sign-off.
+- Include any title or headings I wrote as part of the text.
+- If a word is hard to read, write your best reading and add an annotation of kind COMMENT and source IA saying so. Never write "illegible".
+
+THE CORRECTION
+
+- Use PROFESOR only for what my teacher wrote or marked. Never present your own opinions as hers.
+- Copy her comments and corrections word for word, in the language she wrote them.
+- scores: only the marks she gave, from 0 to 5 (halves allowed). Leave null any criterion she didn’t mark; never estimate it. Write total only if she wrote it.
+- teacherComment is her general comment on the whole text.
+- If there is no correction yet, use "assessment": {"status": "AWAITING"} and an empty annotations list.
+
+ANNOTATIONS
+
+- quote is copied exactly from your transcription: the shortest fragment that identifies the point, with no spaces at either end.
+- paragraph is the number of the paragraph (from 1) that contains the quote. If the same quote appears more than once in that paragraph, add occurrence: 1 for the first, 2 for the second, and so on.
+- Use PARAGRAPH for a comment on a whole paragraph and DOCUMENT for the whole text or its structure.
+- suggestion is the correction or better alternative; comment explains it. Include at least one of them; a STRENGTH may carry just its focus.
+- Add annotations of your own (source IA) only if I ask for them. At most ${String(v.maxAnnotations)} annotations in total.
+
+WHAT YOU MUST NOT MAKE UP
+
+- writtenOn and correctedOn are dates (YYYY-MM-DD) only if they appear or I give them to you; otherwise null.
+- Never make up dates, scores, the task or comments. When in doubt, use null.
+- id is null unless I give you one. If I paste a JSON exported from Error Log to add the correction, keep its id and its text exactly as they are.
+
+Photos and details of the task:
+`,
+  },
+
+  writingExport: {
+    noTranscription: 'This writing has no transcription to export in the Writing format.',
   },
 
   export: {
