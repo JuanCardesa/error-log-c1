@@ -9,8 +9,10 @@ import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { q7AnkiReviews } from '@/lib/queries/q7AnkiReviews';
 import type { Messages } from '@/lib/i18n';
 import { dateTime, percent, sessionTitle, shortDate } from '../_shared/format';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
 import { categoryLabel } from '../_shared/labels';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -51,6 +53,8 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
   const t = await getT();
   const a = t.anki;
   const windowDays = parseWindow(params['w']);
+  // `?error=` llega desde el detalle de un error: «Crear la tarjeta».
+  const selectedError = Number(typeof params['error'] === 'string' ? params['error'] : '');
   const tab: Tab = params['tab'] === 'convertidas' || params['tab'] === 'repasos' ? params['tab'] : 'pendientes';
   const now = new Date();
   const db = getDb();
@@ -71,22 +75,24 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
   return (
     <div className={styles.page}>
       <div className={styles.head}>
-        <div className={ui.pageHead}>
-          <h1 className={ui.pageTitle}>Anki</h1>
-          <div className={styles.connection}>
-            <span className={status.available ? styles.connOn : styles.connOff}>
-              <span className={styles.dot} aria-hidden="true" />
-              {status.available ? a.available : a.unavailable}
-            </span>
-            <span className={ui.help}>
-              {lastSynced === null ? a.notSyncedYet : a.syncedAgo(ago(lastSynced, now, t))}
-            </span>
-            <SyncButton />
-          </div>
-        </div>
+        <PageHeader
+          title="Anki"
+          actions={(
+            <div className={styles.connection}>
+              {/* El estado se dice aquí una vez; el aviso de abajo solo explica por qué. */}
+              <span className={status.available ? styles.connOn : styles.connOff}>
+                <span className={styles.dot} aria-hidden="true" />
+                {status.available ? a.available : a.unavailable}
+              </span>
+              <span className={ui.help}>
+                {lastSynced === null ? a.notSyncedYet : a.syncedAgo(ago(lastSynced, now, t))}
+              </span>
+              <SyncButton available={status.available} />
+            </div>
+          )}
+        />
         {!status.available && (
           <div className={ui.notice} role="status" id="anki-status">
-            <span className={ui.noticeTitleWarn}>{a.notConnected}</span>
             <span className={styles.noticeText}>
               {status.text(t)} {a.keepWorking}
             </span>
@@ -98,7 +104,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
             {a.connectionHelp}
           </summary>
           <div className={`${ui.disclosureBody} ${styles.connectionBody}`}>
-            <p>{status.text(t)}</p>
+            {status.available && <p>{status.text(t)}</p>}
             <p>{a.deck(config?.sourceDeck ?? anki.sync?.sourceDeck ?? '—')}</p>
             {anki.sync?.rolloverHour != null && (
               <p>{a.rollover(anki.sync.rolloverHour, anki.sync.rolloverSource === 'config')}</p>
@@ -126,12 +132,11 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
             <strong>{a.pendingLeadStrong(q5.queue.length)}</strong>{a.pendingLeadRest}
           </p>
           {q5.queue.length === 0 ? (
-            <p className={styles.empty}>
-              {q5.eligible === 0 && data.errors.length === 0 ? a.noEligibleYet : a.nonePending}
-            </p>
+            <EmptyState cause={q5.eligible === 0 && data.errors.length === 0 ? a.noEligibleYet : a.nonePending} />
           ) : (
             <PendingQueue
               available={status.available}
+              initialId={Number.isInteger(selectedError) && selectedError > 0 ? selectedError : undefined}
               entries={q5.queue.map((error) => {
                 const session = sessionById.get(error.sessionId);
                 return {
@@ -175,7 +180,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
           <section className={`${styles.section} ${styles.narrow}`} aria-label={a.convertedTab}>
             <p className={styles.lead}>{a.convertedLead(RECENT_CONVERSIONS)}</p>
             {entries.length === 0
-              ? <p className={styles.empty}>{a.noneConverted}</p>
+              ? <EmptyState cause={a.noneConverted} />
               : <ConvertedList entries={entries} available={status.available} />}
             <p className={ui.help}>{a.convertedHelp}</p>
           </section>
@@ -193,7 +198,7 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
               <WindowSwitch current={windowDays} basePath="/anki" keep={{ tab: 'repasos' }} label={a.reviewsPeriod} />
             </div>
             {!synced ? (
-              <p className={styles.empty}>{a.syncToSee}</p>
+              <EmptyState cause={a.syncToSee} />
             ) : (
               <>
                 <dl className={styles.metrics}>
@@ -211,18 +216,18 @@ export default async function AnkiPage({ searchParams }: { readonly searchParams
                   </div>
                 </dl>
                 {reviews.reviews === 0 ? (
-                  <p className={styles.empty}>{a.noReviews(windowDays)}</p>
+                  <EmptyState cause={a.noReviews(windowDays)} />
                 ) : failing.length === 0 ? (
-                  <p className={styles.empty}>{a.noFailures}</p>
+                  <EmptyState cause={a.noFailures} />
                 ) : (
                   <div className={styles.groups}>
                     {failing.map((group) => (
                       <details key={group.category ?? 'SIN_MAPEAR'} className={styles.group}>
                         <summary className={styles.groupSummary}>
-                          <h3 className={styles.groupName}>
+                          <h2 className={styles.groupName}>
                             <ChevronRight size={14} className="chevron" aria-hidden="true" />
                             {group.category === null ? a.noCategory : categoryLabel(group.category, t)}
-                          </h3>
+                          </h2>
                           <span className={styles.muted}>
                             {a.groupStats(group.lapses, group.learningFailures, group.reviews)}
                           </span>

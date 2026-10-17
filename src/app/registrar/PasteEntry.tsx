@@ -4,10 +4,11 @@ import { ChevronRight, Info } from 'lucide-react';
 import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import type { Messages } from '@/lib/i18n';
-import { importPrompt, importTemplate, parseImportedBatch } from '@/lib/import/errors';
+import { type ImportIssue, ImportProblem, importPrompt, importTemplate, parseImportedBatch } from '@/lib/import/errors';
 import { ConfirmDialog } from '../_shared/ConfirmDialog';
 import { sessionTitle } from '../_shared/format';
 import { useT } from '../_shared/i18nClient';
+import { Kbd } from '../_shared/Kbd';
 import { useShortcutLabels } from '../_shared/shortcuts';
 import { useImportHost } from './ImportHost';
 import styles from './paste.module.css';
@@ -22,6 +23,14 @@ import ui from '../_shared/ui.module.css';
  */
 
 type Detection = { readonly tone: 'idle' | 'ok' | 'warn'; readonly text: string };
+
+/** Lo que impide revisar: el resumen y, si la tanda es JSON, cada dato en su línea. */
+type Problem = { readonly message: string; readonly issues: readonly ImportIssue[] };
+
+function problemFrom(error: unknown, fallback: string): Problem {
+  if (error instanceof ImportProblem) return { message: error.message, issues: error.issues };
+  return { message: error instanceof Error ? error.message : fallback, issues: [] };
+}
 
 function detect(text: string, today: string, t: Messages): Detection {
   if (text.trim() === '') return { tone: 'idle', text: t.paste.detectIdle };
@@ -45,7 +54,7 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
   const keys = useShortcutLabels();
   const t = useT();
   const id = useId();
-  const [problem, setProblem] = useState('');
+  const [problem, setProblem] = useState<Problem | null>(null);
   const [copyMessage, setCopyMessage] = useState('');
   const area = useRef<HTMLTextAreaElement>(null);
   const instructions = useRef<HTMLTextAreaElement>(null);
@@ -56,11 +65,23 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
   const review = (source: string) => {
     try {
       host.review(parseImportedBatch(source, t, host.today));
-      setProblem('');
+      setProblem(null);
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : t.paste.unreadable);
+      setProblem(problemFrom(error, t.paste.unreadable));
       area.current?.focus();
     }
+  };
+
+  // Lleva al dato que no vale: selecciona su línea y la deja a la vista.
+  const selectLine = (line: number) => {
+    const field = area.current;
+    if (field === null) return;
+    const lines = field.value.split('\n');
+    const start = lines.slice(0, line - 1).reduce((sum, value) => sum + value.length + 1, 0);
+    field.focus();
+    field.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
+    const height = Number.parseFloat(getComputedStyle(field).lineHeight);
+    if (Number.isFinite(height)) field.scrollTop = Math.max(0, (line - 2) * height);
   };
 
   // Llegar desde la paleta con #pegar deja el cursor en el campo.
@@ -91,16 +112,24 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
     <div className={styles.entry}>
       {variant === 'entry' && <StoredDraftNotice />}
 
-      <label htmlFor={id} className={ui.label}>
-        {variant === 'entry' ? t.paste.labelEntry : t.paste.labelSession}
-      </label>
+      <div className={styles.head}>
+        <label htmlFor={id} className={ui.label}>
+          {variant === 'entry' ? t.paste.labelEntry : t.paste.labelSession}
+        </label>
+        {/* La entrada de verdad: Ctrl+V en cualquier parte. El campo es la alternativa. */}
+        {variant === 'entry' && (
+          <span className={`${styles.keyHint} keyboard-hint`}>
+            <Kbd>{keys.paste}</Kbd> {t.paste.pasteAnywhere}
+          </span>
+        )}
+      </div>
       <textarea
         id={id}
         ref={area}
         rows={variant === 'entry' ? 3 : 4}
         className={`${ui.textarea} ${ui.mono}`}
         value={host.text}
-        onChange={(event) => { host.setText(event.target.value); setProblem(''); }}
+        onChange={(event) => { host.setText(event.target.value); setProblem(null); }}
         onKeyDown={(event) => {
           if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
@@ -108,8 +137,8 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
           }
         }}
         placeholder={variant === 'entry' ? t.paste.placeholderEntry : t.paste.placeholderSession}
-        aria-invalid={problem !== '' || undefined}
-        aria-describedby={`${id}-detect${problem === '' ? '' : ` ${id}-problem`}`}
+        aria-invalid={problem !== null || undefined}
+        aria-describedby={`${id}-detect${problem === null ? '' : ` ${id}-problem`}`}
       />
       {variant === 'session' && host.fixedTarget !== null && (
         <span className={ui.helpInfo}>
@@ -118,18 +147,32 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
       )}
       <div className={styles.actions}>
         <button type="button" className={ui.primary} onClick={() => { review(host.text); }}>{t.paste.review}</button>
+        {/* Con el aviso abajo, la detección no lo repite. */}
         <span id={`${id}-detect`} className={detection.tone === 'ok' ? `${ui.help} ${ui.ok}` : detection.tone === 'warn' ? ui.helpWarn : ui.help}>
-          {detection.text}
+          {problem === null ? detection.text : null}
         </span>
         <span className={ui.spacer} />
-        {variant === 'entry' && (
-          <span className={`${ui.help} ${styles.keyHint}`}>
-            {t.paste.pasteHint(keys.paste)}
-          </span>
-        )}
         {onCancel !== undefined && <button type="button" className={ui.ghost} onClick={onCancel}>{t.common.cancel}</button>}
       </div>
-      {problem !== '' && <p id={`${id}-problem`} role="alert" className={ui.fieldError}>{problem}</p>}
+      {problem !== null && (
+        <div id={`${id}-problem`} role="alert" className={styles.problem}>
+          <p className={ui.fieldError}>{problem.message}</p>
+          {problem.issues.length > 0 && (
+            <ul className={styles.issues}>
+              {problem.issues.map((issue) => (
+                <li key={`${String(issue.line)}-${issue.field}-${issue.message}`}>
+                  {issue.line !== null && (
+                    <button type="button" className={styles.issueLine} aria-label={t.paste.selectLine(issue.line)} onClick={() => { if (issue.line !== null) selectLine(issue.line); }}>
+                      {t.import.line(issue.line)}
+                    </button>
+                  )}
+                  <span><strong className={styles.issueField}>{issue.field}</strong> {issue.message}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className={styles.help}>
         <details className={ui.disclosure}>

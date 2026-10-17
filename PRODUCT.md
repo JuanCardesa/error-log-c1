@@ -78,7 +78,8 @@ dashboard. La conversión a Anki solo se sella cuando la tarjeta existe y está 
 
 - Cuaderno personal para convertir errores concretos en conocimiento consultable:
   apuntes Markdown con carpetas de hasta dos niveles, tags opcionales e índice por
-  encabezados. Se entra desde Más y desde la búsqueda global, sin añadir ruido al
+  encabezados. Se entra desde la cabecera, en el grupo de la biblioteca (Notebook ·
+  Writing), separado del ritual diario, y desde la búsqueda global, sin añadir ruido al
   recorrido diario de registro.
 - La lectura y la búsqueda son el recorrido principal. Escribir requiere vista previa,
   guardado automático confirmado, borrador recuperable y aviso de conflictos entre

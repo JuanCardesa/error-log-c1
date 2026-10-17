@@ -2,7 +2,7 @@
 
 import { RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 import { CorrectionPair } from '../_shared/CorrectionPair';
 import { useT } from '../_shared/i18nClient';
@@ -17,7 +17,11 @@ import styles from './anki.module.css';
  * las filas, que desaparecen al revalidar.
  */
 
-export function SyncButton() {
+/**
+ * Sin Anki, sincronizar es volver a intentar la conexión: lo dice así y remite al aviso que
+ * explica por qué no hay conexión.
+ */
+export function SyncButton({ available }: { readonly available: boolean }) {
   const t = useT();
   const [pending, start] = useTransition();
   const toast = useToast();
@@ -27,6 +31,7 @@ export function SyncButton() {
       className={`${ui.secondary} ${ui.compact}`}
       disabled={pending}
       aria-busy={pending}
+      aria-describedby={available ? undefined : 'anki-status'}
       onClick={() => {
         start(async () => {
           try {
@@ -39,7 +44,7 @@ export function SyncButton() {
       }}
     >
       <RefreshCw size={16} aria-hidden="true" />
-      {pending ? t.anki.syncing : t.anki.sync}
+      {pending ? t.anki.syncing : available ? t.anki.sync : t.anki.retry}
     </button>
   );
 }
@@ -60,12 +65,25 @@ export interface QueueEntry {
 }
 
 /** Cola completa y vista previa de la seleccionada. Se crea de una en una. */
-export function PendingQueue({ entries, available }: { readonly entries: readonly QueueEntry[]; readonly available: boolean }) {
+export function PendingQueue({ entries, available, initialId }: {
+  readonly entries: readonly QueueEntry[];
+  readonly available: boolean;
+  /** Error con el que abrir la vista previa; si no está en la cola, el primero. */
+  readonly initialId?: number;
+}) {
   const t = useT();
-  const [selectedId, setSelectedId] = useState<number | null>(entries[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<number | null>(
+    entries.find((entry) => entry.id === initialId)?.id ?? entries[0]?.id ?? null,
+  );
   const [creating, start] = useTransition();
   const toast = useToast();
   const index = entries.findIndex((entry) => entry.id === selectedId);
+
+  // Llegando desde un error, su fila puede quedar fuera de la vista en una cola larga.
+  useEffect(() => {
+    if (initialId === undefined) return;
+    document.querySelector(`[data-entry="${String(initialId)}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [initialId]);
   const current = index >= 0 ? entries[index] : entries[0];
 
   if (entries.length === 0) return null;
@@ -90,12 +108,12 @@ export function PendingQueue({ entries, available }: { readonly entries: readonl
 
   return (
     <div className={styles.queueLayout}>
-      <div className={styles.queueTable}>
-        <table className={styles.table}>
+      <div className={`${ui.scrollX} ${styles.queueTable}`}>
+        <table className={`${ui.dataTable} ${ui.dataTableFixed}`}>
           <caption className="sr-only">{t.anki.queueCaption}</caption>
           <thead>
             <tr>
-              <th scope="col" className={styles.colDate}>{t.sessionForm.date}</th>
+              <th scope="col" className={`${ui.colDate} ${styles.colDate}`}>{t.sessionForm.date}</th>
               <th scope="col">{t.correction.correction}</th>
               <th scope="col" className={styles.colCategory}>{t.errorForm.category}</th>
             </tr>
@@ -104,8 +122,8 @@ export function PendingQueue({ entries, available }: { readonly entries: readonl
             {entries.map((entry) => {
               const selected = entry.id === current?.id;
               return (
-                <tr key={entry.id} className={selected ? styles.selected : undefined} onClick={() => { setSelectedId(entry.id); }}>
-                  <td className={`${styles.colDate} ${styles.muted}`}>{entry.date}</td>
+                <tr key={entry.id} data-entry={entry.id} data-clickable data-selected={selected || undefined} onClick={() => { setSelectedId(entry.id); }}>
+                  <td className={`${ui.colDate} ${styles.colDate} ${styles.muted}`}>{entry.date}</td>
                   <td>
                     <button
                       type="button"

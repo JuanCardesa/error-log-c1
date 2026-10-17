@@ -2,10 +2,13 @@ import Link from 'next/link';
 
 import { getDb } from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
+import { partsFor } from '@/lib/domain/enums';
 import { q3RuoeAccuracy } from '@/lib/queries/q3RuoeAccuracy';
 import { sliceWindow } from '@/lib/queries/window';
-import { percent, sessionTitle, shortDate } from '../_shared/format';
+import { partList, percent, sessionTitle, shortDate } from '../_shared/format';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -52,32 +55,37 @@ export default async function RuoePage({ searchParams }: { readonly searchParams
       };
     }),
   }));
+  const unpractised = partsFor('RUOE').filter((part) => !rows.some((row) => row.part === part));
 
   return (
     <div className={styles.page}>
-      <div className={styles.head}>
-        <div className={ui.pageHead}>
-          <h1 className={ui.pageTitle}>{t.nav.progress}</h1>
-          <WindowSwitch current={windowDays} basePath="/ruoe" />
-        </div>
-        <RouteTabs
-          label={t.progress.views}
-          items={[
-            { href: `/informe${w}`, label: t.progress.summary, current: false },
-            { href: `/ruoe${w}`, label: t.labels.paperLong.RUOE, current: true },
-          ]}
-        />
-      </div>
+      <PageHeader
+        title={t.nav.progress}
+        actions={<WindowSwitch current={windowDays} basePath="/ruoe" />}
+        tabs={(
+          <RouteTabs
+            label={t.progress.views}
+            items={[
+              { href: `/informe${w}`, label: t.progress.summary, current: false },
+              { href: `/ruoe${w}`, label: t.labels.paperLong.RUOE, current: true },
+            ]}
+          />
+        )}
+      />
 
       {rows.length === 0 ? (
-        <div className={styles.empty}>
-          <p>{t.ruoe.empty(windowDays)}</p>
-          {windowDays === 30
+        <EmptyState
+          cause={t.ruoe.empty(windowDays)}
+          action={windowDays === 30
             ? <Link href="/ruoe?w=60" className={ui.textLink}>{t.ruoe.see60}</Link>
             : <Link href="/registrar" className={ui.textLink}>{t.common.goToSessions}</Link>}
-        </div>
+        />
       ) : (
-        <RuoeMatrix weeks={weeks.map(({ iso, range, partial }) => ({ iso, range, partial }))} rows={rows} />
+        <RuoeMatrix
+          weeks={weeks.map(({ iso, range, partial }) => ({ iso, range, partial }))}
+          rows={rows}
+          unpractised={unpractised.length === 0 ? null : partList(unpractised, t)}
+        />
       )}
     </div>
   );

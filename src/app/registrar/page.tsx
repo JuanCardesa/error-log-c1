@@ -17,16 +17,19 @@ import type { Messages } from '@/lib/i18n';
 import { toIsoDate } from '@/lib/time/dates';
 import { Kbd } from '../_shared/Kbd';
 import { longDate, practiceLabel, practiceLongLabel, score, sessionTitle, shortDate } from '../_shared/format';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
+import { ankiState } from '../_shared/labels';
 import { StatusText } from '../_shared/StatusText';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import type { SearchParams } from '../_shared/window';
 import { BackToList, RememberList } from './BackToList';
+import { BatchDone } from './BatchDone';
 import { ImportHost } from './ImportHost';
 import { type ListParams, hasFilters, listHref, parseListParams } from './listParams';
 import { ManualSession } from './ManualSession';
 import { PasteEntry } from './PasteEntry';
-import { SavedNotice } from './SavedNotice';
 import { SessionControls } from './SessionControls';
 import { SessionErrors } from './SessionErrors';
 import { SessionTable } from './SessionTable';
@@ -94,37 +97,36 @@ function SessionList({ params, fromWriting, newSession, today, t }: {
     <ImportHost key="lista" today={today} openSessions={listOpenSessions(db)} subcategorySuggestions={distinctSubcategories(db)}>
       <RememberList />
       <div className={styles.page}>
-        <header className={ui.pageHead}>
-          <div>
-            <h1 className={ui.pageTitle}>{t.nav.sessions}</h1>
-            <p className={ui.lede}>{t.sessions.lede}</p>
-          </div>
-          <ManualSession
-            today={today}
-            shortcut
-            initiallyOpen={fromWriting || newSession}
-            preset={fromWriting ? { kind: 'WRITING', paper: 'WRITING', part: 1 } : undefined}
-            returnTo={fromWriting ? '/writing/importar?sesion={id}' : undefined}
-          />
-        </header>
+        <PageHeader
+          title={t.nav.sessions}
+          lede={t.sessions.lede}
+          actions={(
+            <ManualSession
+              today={today}
+              shortcut
+              initiallyOpen={fromWriting || newSession}
+              preset={fromWriting ? { kind: 'WRITING', paper: 'WRITING', part: 1 } : undefined}
+              returnTo={fromWriting ? '/writing/importar?sesion={id}' : undefined}
+            />
+          )}
+        />
 
         <section id="pegar" aria-label={t.sessions.importSection}>
           <PasteEntry variant="entry" globalPaste />
         </section>
 
         {empty ? (
-          <section className={styles.empty} aria-labelledby="empty-heading">
-            <h2 id="empty-heading" className={ui.sectionTitle}>{t.sessions.emptyTitle}</h2>
-            <p>{t.sessions.emptyBody}</p>
+          <section aria-labelledby="empty-heading">
+            <EmptyState title={t.sessions.emptyTitle} titleId="empty-heading" cause={t.sessions.emptyBody} />
           </section>
         ) : (
           <section className={styles.history} aria-label={t.sessions.history}>
             <SessionsToolbar params={params} openCount={openCount} />
             {rows.length === 0 ? (
-              <div className={`${ui.tableEmpty} ${styles.table}`}>
-                <span>{params.q === '' ? t.sessions.noMatchFilters : t.sessions.noMatchQuery(params.q)}</span>
-                <Link href="/registrar" className={ui.textLink}>{t.common.clearSearch}</Link>
-              </div>
+              <EmptyState
+                cause={params.q === '' ? t.sessions.noMatchFilters : t.sessions.noMatchQuery(params.q)}
+                action={<Link href="/registrar" className={ui.textLink}>{t.common.clearSearch}</Link>}
+              />
             ) : (
               <SessionTable rows={rows.map((row) => ({
                 id: row.id,
@@ -149,7 +151,7 @@ function SessionList({ params, fromWriting, newSession, today, t }: {
                   : <span className={styles.pageDisabled}>{t.common.listNext}</span>}
               </nav>
             )}
-            <div className={styles.shortcuts} aria-hidden="true">
+            <div className={`${styles.shortcuts} keyboard-hint`} aria-hidden="true">
               <span><Kbd>J</Kbd><Kbd>K</Kbd>{t.sessions.keyMove}</span>
               <span><Kbd>↵</Kbd>{t.sessions.keyOpen}</span>
               <span><Kbd>N</Kbd>{t.sessions.keyNew}</span>
@@ -176,6 +178,7 @@ function SessionDetail({ session, params, today, t }: {
   const errorId = parseId(params['error']);
   const capture = params['modo'] === 'captura';
   const open = session.status === 'OPEN';
+  const pendingCards = errors.filter((error) => ankiState(error) === 'PENDING').length;
 
   return (
     <ImportHost
@@ -186,27 +189,27 @@ function SessionDetail({ session, params, today, t }: {
       subcategorySuggestions={subcategories}
     >
       <div className={styles.detail}>
-        <BackToList />
-        <header className={styles.detailHead}>
-          <div className={styles.titleBlock}>
-            <div className={styles.titleRow}>
-              <h1 className={ui.pageTitle}>{sessionTitle(session, t)}</h1>
-              <StatusText status={session.status} />
-            </div>
-            <div className={styles.facts}>
-              <span>{longDate(session.date, t)}</span>
-              <span>{practiceLongLabel(session, t)}</span>
-              <span>{t.labels.source[session.source]}</span>
-              <span className={styles.factStrong}>
-                {session.itemsTotal === null ? t.sessions.noItemCount : t.sessions.scoreCorrect(score(session))}
+        <PageHeader
+          back={{ node: <BackToList /> }}
+          title={sessionTitle(session, t)}
+          titleAside={<StatusText status={session.status} />}
+          lede={(
+            <>
+              <span className={styles.facts}>
+                <span>{longDate(session.date, t)}</span>
+                <span>{practiceLongLabel(session, t)}</span>
+                <span>{t.labels.source[session.source]}</span>
+                <span className={styles.factStrong}>
+                  {session.itemsTotal === null ? t.sessions.noItemCount : t.sessions.scoreCorrect(score(session))}
+                </span>
               </span>
-            </div>
-            {!open && <span className={ui.help}>{t.sessions.closedHelp}</span>}
-          </div>
-          <SessionControls session={session} impact={sessionDeletionImpact(db, session.id)} today={today} />
-        </header>
+              {!open && <span className={ui.help}>{t.sessions.closedHelp}</span>}
+            </>
+          )}
+          actions={<SessionControls session={session} impact={sessionDeletionImpact(db, session.id)} today={today} />}
+        />
 
-        {notice !== null && <SavedNotice message={notice} sessionId={session.id} />}
+        <BatchDone notice={notice} sessionId={session.id} pendingCards={pendingCards} />
 
         <SessionErrors
           session={session}
@@ -224,9 +227,7 @@ function SessionDetail({ session, params, today, t }: {
 function SessionNotFound({ t }: { readonly t: Messages }) {
   return (
     <div className={styles.notFound}>
-      <BackToList />
-      <h1 className={ui.pageTitle}>{t.sessions.notFoundTitle}</h1>
-      <p>{t.sessions.notFoundBody}</p>
+      <PageHeader back={{ node: <BackToList /> }} title={t.sessions.notFoundTitle} lede={t.sessions.notFoundBody} />
       <Link href="/registrar" className={ui.secondary}>{t.common.goToSessions}</Link>
     </div>
   );

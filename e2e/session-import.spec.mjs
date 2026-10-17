@@ -61,7 +61,11 @@ test('una tanda con cabecera y campos pendientes: vista previa editable y sesió
   await workspace(page).getByRole('textbox', { name: 'Regla', exact: true }).fill('Pay a compliment se usa para hacer un cumplido.');
   await workspace(page).getByRole('button', { name: /^Crear sesión y guardar 1 error/ }).click();
   await expect(page).toHaveURL(/registrar\?s=\d+/);
-  await expect(page.getByRole('status').filter({ hasText: 'Sesión creada con 1 error' })).toBeVisible();
+  // El cierre dice lo guardado, lo que deja en Anki y lo siguiente.
+  const done = page.getByRole('status').filter({ hasText: 'Sesión creada con 1 error' });
+  await expect(done).toContainText('Esta sesión tiene 1 tarjeta pendiente de crear en Anki.');
+  await expect(done.getByRole('link', { name: 'Ir a Anki' })).toHaveAttribute('href', '/anki');
+  await expect(done.getByRole('link', { name: 'Pegar otra tanda' })).toBeVisible();
   const id = Number(new URL(page.url()).searchParams.get('s'));
   expect(withDb(countSessions)).toBe(before + 1);
   expect(withDb((db) => getSession(db, id))).toMatchObject({ kind: 'CLASE', durationMin: 17, timed: true, itemsTotal: 4, itemsCorrect: 3, paper: null, part: null, status: 'OPEN' });
@@ -77,7 +81,7 @@ test('una tanda sin ítems ni aciertos abre la revisión y los pide antes de cre
   await expect(headerEditor(page).getByLabel('Ítems intentados')).toHaveValue('');
 
   await workspace(page).getByRole('button', { name: /^Crear sesión y guardar 1 error/ }).click();
-  await expect(page.getByText('Completa los ítems y aciertos de la sesión antes de guardar.')).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Completa los ítems y aciertos de la sesión antes de guardar.' })).toBeVisible();
   expect(withDb(countSessions)).toBe(before);
 
   await headerEditor(page).getByLabel('Ítems intentados').fill('12');
@@ -124,7 +128,7 @@ test('ofrece añadir a una abierta sin reemplazar su cabecera ni sumar los recue
 
 test('explica un sobre manipulado sin preparar una vista previa falsa', async ({ page }) => {
   await preview(page, { session: { ...session, status: 'CLOSED' }, errors: [row] });
-  await expect(page.getByRole('alert').filter({ hasText: 'Sobre inválido' })).toContainText('campos no permitidos (status)');
+  await expect(page.getByRole('alert').filter({ hasText: 'Hay un dato que no vale en la tanda' })).toContainText('Sesión campos no permitidos (status)');
   await expect(workspace(page)).toHaveCount(0);
 });
 

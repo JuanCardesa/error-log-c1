@@ -5,7 +5,6 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 
 import type { SessionRow } from '@/lib/domain/types';
 import type { ImportedBatch } from '@/lib/import/errors';
-import { useToast } from '../_shared/Toast';
 import { ImportWorkspace } from './ImportWorkspace';
 import { type TandaDraft, blankHeader, clearDraft, useStoredDraft } from './tandaDraft';
 
@@ -30,6 +29,8 @@ interface ImportHostValue {
   readonly discardStored: () => void;
   /** Cuántas tandas se han guardado en la sesión fija: la vista cierra el pegado al cambiar. */
   readonly savedRounds: number;
+  /** La última tanda guardada en la sesión fija, para su cierre. */
+  readonly lastSaved: { readonly message: string; readonly round: number } | null;
 }
 
 const ImportHostContext = createContext<ImportHostValue | null>(null);
@@ -50,8 +51,8 @@ export function ImportHost({ today, openSessions, fixedTarget = null, subcategor
   const [text, setText] = useState('');
   const [reviewing, setReviewing] = useState<TandaDraft | null>(null);
   const [savedRounds, setSavedRounds] = useState(0);
+  const [lastMessage, setLastMessage] = useState<string | null>(null);
   const router = useRouter();
-  const toast = useToast();
   const storedDraft = useStoredDraft();
 
   // Solo se ofrece recuperar un borrador que encaja aquí: en una sesión, el suyo.
@@ -81,7 +82,8 @@ export function ImportHost({ today, openSessions, fixedTarget = null, subcategor
     recover: () => { if (stored !== null) setReviewing(stored); },
     discardStored: clearDraft,
     savedRounds,
-  }), [text, fixedTarget, today, stored, savedRounds]);
+    lastSaved: lastMessage === null ? null : { message: lastMessage, round: savedRounds },
+  }), [text, fixedTarget, today, stored, savedRounds, lastMessage]);
 
   return (
     <ImportHostContext.Provider value={value}>
@@ -100,7 +102,7 @@ export function ImportHost({ today, openSessions, fixedTarget = null, subcategor
               // La acción ya revalida la sesión: solo hay que salir de la revisión.
               setReviewing(null);
               setSavedRounds((value) => value + 1);
-              toast({ message });
+              setLastMessage(message);
               return;
             }
             router.push(`/registrar?s=${String(sessionId)}&aviso=${encodeURIComponent(message)}`);

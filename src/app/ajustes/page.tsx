@@ -1,21 +1,9 @@
-import ui from '../_shared/ui.module.css';
-import { getT } from '../_shared/i18nServer';
-import { LanguageSetting } from './LanguageSetting';
-import styles from './ajustes.module.css';
+import { redirect } from 'next/navigation';
 
-/** Ajustes de la interfaz. Por ahora, el idioma. */
-
-export const dynamic = 'force-dynamic';
-
-export default async function AjustesPage() {
-  const t = await getT();
-  return (
-    <div className={styles.page}>
-      <header>
-        <h1 className={ui.pageTitle}>{t.settings.title}</h1>
-        <p className={ui.lede}>{t.settings.lede}</p>
-      </header>
-      <LanguageSetting />
-    </div>
-  );
+/**
+ * Ajustes era una página para un solo control: el idioma se elige ahora en «Más» y en ⌘K.
+ * Los enlaces guardados a /ajustes llevan a Sesiones.
+ */
+export default function AjustesPage() {
+  redirect('/registrar');
 }

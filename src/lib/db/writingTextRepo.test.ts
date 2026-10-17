@@ -86,6 +86,39 @@ describe('corrección de transcripciones', () => {
     expect(saved).toMatchObject({ scope: 'SPAN', paragraph: null, anchor: null, quote: 'A phrase before the target stays.' });
   });
 
+  it('sigue a su párrafo cuando se reordenan sin cambiar cuántos hay', () => {
+    const paragraph = createWritingAnnotation(db, {
+      pieceId, scope: 'PARAGRAPH', paragraph: 2, kind: 'STRENGTH', focus: 'CONTENT', source: 'YO',
+      comment: 'Clear.', suggestion: null,
+    }, now);
+    if (!paragraph.ok) throw new Error(paragraph.reason);
+    const swapped = 'A stable second paragraph.\n\nThe quick brown fox jumps over the log.\n\nA phrase before the target stays.';
+    expect(updateWritingText(db, pieceId, swapped, new Date(now.getTime() + 1000))).toMatchObject({ ok: true, unplaced: 0 });
+    const saved = db.select().from(writingAnnotation).where(eq(writingAnnotation.id, paragraph.row.id)).get();
+    expect(saved).toMatchObject({ scope: 'PARAGRAPH', paragraph: 1 });
+  });
+
+  it('conserva el sitio de un párrafo corregido mientras no cambie cuántos hay', () => {
+    const paragraph = createWritingAnnotation(db, {
+      pieceId, scope: 'PARAGRAPH', paragraph: 2, kind: 'ERROR', focus: 'GRAMMAR', source: 'YO',
+      comment: 'Typo.', suggestion: null,
+    }, now);
+    if (!paragraph.ok) throw new Error(paragraph.reason);
+    const edited = original.replace('A stable second paragraph.', 'A steady second paragraph.');
+    expect(updateWritingText(db, pieceId, edited, new Date(now.getTime() + 1000))).toMatchObject({ ok: true, unplaced: 0 });
+    const saved = db.select().from(writingAnnotation).where(eq(writingAnnotation.id, paragraph.row.id)).get();
+    expect(saved).toMatchObject({ scope: 'PARAGRAPH', paragraph: 2 });
+  });
+
+  it('rechaza como conflicto un guardado hecho sobre una revisión superada', () => {
+    expect(updateWritingText(db, pieceId, 'Saved from the first tab.', new Date(now.getTime() + 1000), 1))
+      .toMatchObject({ ok: true, revision: 2 });
+    expect(updateWritingText(db, pieceId, 'Stale draft from the second tab.', new Date(now.getTime() + 2000), 1))
+      .toEqual({ ok: false, reason: 'conflict' });
+    expect(db.select({ text: writingPiece.originalText }).from(writingPiece).where(eq(writingPiece.id, pieceId)).get())
+      .toEqual({ text: 'Saved from the first tab.' });
+  });
+
   it('normaliza espacios externos y no crea otra revisión si el texto no cambia', () => {
     expect(updateWritingText(db, pieceId, `  ${original}\r\n`, now)).toMatchObject({ ok: true, revision: 1 });
     expect(db.select().from(writingTextHistory).where(eq(writingTextHistory.pieceId, pieceId)).all()).toHaveLength(0);

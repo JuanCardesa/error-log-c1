@@ -1,16 +1,15 @@
 'use client';
 
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { FilterBar } from '../_shared/FilterBar';
+import { FilterMenu } from '../_shared/FilterMenu';
 import { useT } from '../_shared/i18nClient';
-import { Menu } from '../_shared/Menu';
-import overlay from '../_shared/overlay.module.css';
 import ui from '../_shared/ui.module.css';
 import { type ListParams, listHref } from './listParams';
-import styles from './sessions.module.css';
 
 /**
  * Búsqueda y filtros del historial. Todo vive en la URL: volver desde una sesión
@@ -42,15 +41,18 @@ export function SessionsToolbar({ params, openCount }: { readonly params: ListPa
   const practice = PRACTICES.find((value) => value === params.practica) ?? '';
 
   return (
-    <div className={styles.toolbar}>
-      <input
-        type="search"
-        className={`${ui.input} ${styles.search}`}
-        value={q}
-        onChange={(event) => { setQ(event.target.value); }}
-        placeholder={t.sessionView.searchPlaceholder}
-        aria-label={t.sessionView.searchLabel}
-      />
+    <FilterBar
+      search={(
+        <input
+          type="search"
+          className={`${ui.input} ${ui.filterSearch}`}
+          value={q}
+          onChange={(event) => { setQ(event.target.value); }}
+          placeholder={t.sessionView.searchPlaceholder}
+          aria-label={t.sessionView.searchLabel}
+        />
+      )}
+    >
       <nav className={ui.pills} aria-label={t.sessionView.status}>
         <Link href={listHref(params, { estado: '' })} className={ui.pill} aria-current={params.estado === '' ? 'true' : undefined} scroll={false}>
           {t.common.all}
@@ -60,38 +62,27 @@ export function SessionsToolbar({ params, openCount }: { readonly params: ListPa
         </Link>
       </nav>
       <span className={ui.spacer} />
-      <Menu
+      <FilterMenu
+        align="end"
         label={t.sessionForm.practice}
-        trigger={(props) => (
-          <button type="button" {...props} className={`${ui.ghost} ${ui.compact} ${styles.filterButton}`}>
-            {t.sessionView.practiceFilter(practiceLabel(practice))}
-            <ChevronDown size={14} aria-hidden="true" />
-          </button>
-        )}
-      >
-        {(close) => PRACTICES.map((value) => (
-          <Link
-            key={value}
-            role="menuitem"
-            href={listHref(params, { practica: value })}
-            className={overlay.menuItem}
-            aria-current={value === params.practica ? 'page' : undefined}
-            onClick={close}
-            scroll={false}
-          >
-            {value === '' ? t.sessionView.allPractices : practiceLabel(value)}
-          </Link>
-        ))}
-      </Menu>
+        text={practice === '' ? t.sessionForm.practice : t.sessionView.practiceFilter(practiceLabel(practice))}
+        options={PRACTICES.map((value) => ({
+          key: value, href: listHref(params, { practica: value }), current: value === params.practica,
+          label: value === '' ? t.sessionView.allPractices : practiceLabel(value),
+        }))}
+        clear={practice === '' ? undefined : {
+          href: listHref(params, { practica: '' }), label: t.errors.removeFilter(practiceLabel(practice)),
+        }}
+      />
       <Link
         href={listHref(params, { orden: params.orden === 'asc' ? '' : 'asc' })}
-        className={`${ui.ghost} ${ui.compact} ${styles.filterButton}`}
+        className={ui.filterButton}
         scroll={false}
         aria-label={params.orden === 'asc' ? t.sessionView.sortAsc : t.sessionView.sortDesc}
       >
         <ArrowUpDown size={16} aria-hidden="true" />
         {t.sessionForm.date} {params.orden === 'asc' ? '↑' : '↓'}
       </Link>
-    </div>
+    </FilterBar>
   );
 }

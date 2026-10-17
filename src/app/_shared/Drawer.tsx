@@ -4,13 +4,17 @@ import { X } from 'lucide-react';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 import { useT } from './i18nClient';
+import { useInertBehind, useMediaQuery } from './layer';
 import styles from './overlay.module.css';
 import ui from './ui.module.css';
+
+/** Bajo 640 px el drawer ocupa todo el ancho (`overlay.module.css`). */
+const FULL_SCREEN = '(max-width: 639px)';
 
 /**
  * Panel lateral para dar de alta o editar sin salir de la vista. No es modal: no atrapa
  * el foco y la página sigue detrás. Escape lo cierra y el foco vuelve a quien lo abrió.
- * En móvil ocupa la pantalla.
+ * En móvil ocupa la pantalla y entonces el fondo queda inerte.
  *
  * Se queda montado mientras `open` es falso si `keepMounted`: lo escrito no se pierde al
  * cerrarlo por error.
@@ -27,6 +31,8 @@ export function Drawer({ open, title, onClose, children, footer, keepMounted = f
   const titleId = useId();
   const ref = useRef<HTMLElement>(null);
   const trigger = useRef<Element | null>(null);
+  const fullScreen = useMediaQuery(FULL_SCREEN);
+  useInertBehind(ref, open && fullScreen);
 
   useEffect(() => {
     if (!open) return;

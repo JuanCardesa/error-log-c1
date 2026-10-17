@@ -7,6 +7,7 @@ import {
   CircleAlert,
   ClipboardPaste,
   Download,
+  Languages,
   List,
   type LucideIcon,
   PenLine,
@@ -17,10 +18,12 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
+import { LOCALES } from '@/lib/i18n';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import { useT } from './i18nClient';
 import { type PaletteResults, searchPaletteAction } from './searchActions';
 import { useShortcutLabels } from './shortcuts';
+import { useLocaleSwitch } from './useLocaleSwitch';
 import styles from './palette.module.css';
 
 /**
@@ -39,7 +42,8 @@ interface Item {
   readonly mine?: string | null;
   readonly sub?: string;
   readonly kbd?: string;
-  readonly href: string;
+  /** Una ruta a la que ir, o una acción que se queda en la página (cambiar de idioma). */
+  readonly href: string | (() => void);
 }
 
 const EMPTY: PaletteResults = { errors: [], sessions: [], notes: [] };
@@ -51,6 +55,8 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
   const router = useRouter();
   const keys = useShortcutLabels();
   const t = useT();
+  const language = useLocaleSwitch();
+  const otherLocale = LOCALES.find((locale) => locale !== language.shown) ?? language.shown;
   const listId = useId();
   const [query, setQuery] = useState('');
   const [resultState, setResultState] = useState<{ query: string; results: PaletteResults }>({ query: '', results: EMPTY });
@@ -121,9 +127,13 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
       { key: 'gn', group: 'actions', icon: BookOpen, label: t.palette.goTo(t.nav.notebook), kbd: 'G N', href: '/notebook' },
       { key: 'gw', group: 'actions', icon: PenLine, label: t.palette.goTo(t.nav.writing), kbd: 'G W', href: '/writing' },
       { key: 'export', group: 'actions', icon: Download, label: t.nav.exportData, href: '/exportar' },
+      {
+        key: 'language', group: 'actions', icon: Languages, label: t.palette.switchLanguage(t.settings.languages[otherLocale]),
+        href: () => { language.choose(otherLocale); },
+      },
     ];
     return [...found, ...actions.filter((action) => q === '' || action.label.toLowerCase().includes(q))];
-  }, [query, results, keys.paste, t]);
+  }, [query, results, keys.paste, t, language, otherLocale]);
 
   const current = Math.min(active, Math.max(0, items.length - 1));
 
@@ -138,7 +148,8 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
   const run = (item: Item | undefined) => {
     if (item === undefined) return;
     close();
-    router.push(item.href);
+    if (typeof item.href === 'string') router.push(item.href);
+    else item.href();
   };
 
   return (
@@ -229,7 +240,7 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
             {items.length === 0 && <p className={styles.empty}>{t.palette.noResults(query)}</p>}
           </div>
 
-          <div className={styles.foot} aria-hidden="true">
+          <div className={`${styles.foot} keyboard-hint`} aria-hidden="true">
             <span>{t.palette.navigate}</span>
             <span>{t.palette.open}</span>
             <span>{t.palette.close}</span>

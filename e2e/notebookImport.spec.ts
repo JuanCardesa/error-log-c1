@@ -64,7 +64,7 @@ test('importa un .md desde la portada: revisa avisos y vista previa y crea un ap
     await expect(notices.getByText(/Campos de otra exportación que no se aplican: notebook_uid\./u)).toBeVisible();
 
     const preview = form.getByRole('region', { name: 'Vista previa del apunte' });
-    await expect(preview.getByRole('heading', { level: 1, name: 'Modales en pasado' })).toHaveCount(1);
+    await expect(preview.getByRole('heading', { level: 2, name: 'Modales en pasado' })).toHaveCount(1);
     await expect(preview.getByRole('heading', { name: 'Must have' })).toHaveAttribute('id', 'nb-must-have');
     await expect(preview.getByText('![esquema](https://tracker.example/esquema.png)')).toBeVisible();
 

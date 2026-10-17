@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import type { NotebookFolder, NotebookNote } from '@/lib/notebook/types';
 import { useT } from '../_shared/i18nClient';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import { getNoteAction } from './actions';
 import { NotebookEditor } from './NotebookEditor';
@@ -35,11 +35,10 @@ export function NotebookEditorEntry({ id, uid, folders, requestedDraftKey }: {
 
   if (note !== null) return <NotebookEditor note={note} folders={folders} requestedDraftKey={requestedDraftKey} />;
   return <div>
-    <h1>{t.notebook.editNote}</h1>
+    <PageHeader back={{ href: '/notebook', label: t.nav.notebook }} title={t.notebook.editNote} />
     {error === null ? <p role="status">{t.notebook.loadingCurrent}</p> : <>
       <p role="alert">{error}</p>
       <button type="button" className={ui.secondary} onClick={() => { setError(null); setAttempt(attempt + 1); }}>{t.common.retry}</button>
     </>}
-    <Link href="/notebook" className={ui.backLink}>{t.notebook.backToNotebook}</Link>
   </div>;
 }

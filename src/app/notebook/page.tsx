@@ -2,19 +2,21 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { getDb } from '@/lib/db/client';
-import { listFavoriteNotebookNotes, listNotebookFolders, listRecentNotebookNotes } from '@/lib/db/notebookRepo';
+import { listFavoriteNotebookNotes, listNotebookFolders, listNotebookTags, listRecentNotebookNotes } from '@/lib/db/notebookRepo';
 import { searchNotebookHits, searchNotebookNotes } from '@/lib/db/notebookSearch';
 import { searchNotebookSchema } from '@/lib/notebook/schemas';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import type { NotebookNoteSummary } from '@/lib/notebook/types';
 import type { Messages } from '@/lib/i18n';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import { FolderManager } from './FolderManager';
 import { FavoriteToggle } from './FavoriteToggle';
 import { NotebookDraftNotice } from './NotebookDraftNotice';
 import { NotebookDirectory } from './NotebookDirectory';
-import { NotebookSearchControls } from './NotebookSearchControls';
+import { NotebookSearchControls, type NotebookFilterHref } from './NotebookSearchControls';
 import { NotebookSearchResults } from './NotebookSearchResults';
 import styles from './notebook.module.css';
 
@@ -36,7 +38,7 @@ function noteRows(notes: readonly NotebookNoteSummary[], t: Messages) {
   return (
     <ul className={styles.noteList}>
       {notes.map((note) => (
-        <li key={note.id}>
+        <li key={note.id} className={styles.noteRow}>
           <div className={styles.noteRowMain}>
             <FavoriteToggle id={note.id} title={note.title} favoritedAt={note.favoritedAt} compact />
             <Link href={notebookNoteHref(note)} className={styles.noteLink}>{note.title}</Link>
@@ -110,24 +112,34 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
     const suffix = query.toString();
     return `/notebook${suffix ? `?${suffix}` : ''}`;
   };
+  /** Un filtro cambia su valor y conserva la búsqueda y el otro filtro; vuelve a la página 1. */
+  const filterHref: NotebookFilterHref = (patch) => {
+    const next = new URLSearchParams();
+    const values = { q: query.trim(), carpeta: folderParam, tag: tag.trim(), ...patch };
+    for (const key of ['q', 'carpeta', 'tag'] as const) {
+      const value = values[key];
+      if (value !== undefined && value !== '') next.set(key, value);
+    }
+    const suffix = next.toString();
+    return `/notebook${suffix ? `?${suffix}` : ''}`;
+  };
 
   return (
     <div className={styles.page}>
-      <header className={styles.pageHead}>
-        <div>
-          <p className={styles.eyebrow}>{n.eyebrow}</p>
-          <h1 className={styles.pageTitle}>{t.nav.notebook}</h1>
-          <p className={styles.intro}>{n.intro}</p>
-        </div>
-        <div className={styles.headActions}>
-          <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/importar' : `/notebook/importar?carpeta=${String(selectedFolderId)}`}
-            className={ui.secondary}>{n.importMd}</Link>
-          <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/nuevo' : `/notebook/nuevo?carpeta=${String(selectedFolderId)}`}
-            className={styles.newNoteLink}>{n.newNote}</Link>
-        </div>
-      </header>
+      <PageHeader
+        title={t.nav.notebook}
+        lede={n.intro}
+        actions={(
+          <>
+            <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/importar' : `/notebook/importar?carpeta=${String(selectedFolderId)}`}
+              className={ui.secondary}>{n.importMd}</Link>
+            <Link href={selectedFolderId === undefined || selectedFolderId === null ? '/notebook/nuevo' : `/notebook/nuevo?carpeta=${String(selectedFolderId)}`}
+              className={ui.primary}>{n.newNote}</Link>
+          </>
+        )}
+      />
       <NotebookDraftNotice />
-      <NotebookSearchControls folders={folders} folderParam={folderParam} tag={tag} t={t} />
+      <NotebookSearchControls folders={folders} tags={listNotebookTags(db)} folderParam={folderParam} tag={tag} href={filterHref} t={t} />
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
           <NotebookDirectory folders={folders} favorites={favorites} selectedFolderId={selectedFolderId} favoritesView={favoritesView} />
@@ -139,25 +151,22 @@ export default async function NotebookPage({ searchParams }: { readonly searchPa
             {(selectedFolderId !== undefined || searching || favoritesView) && <Link href="/notebook" className={styles.backLink}>{n.seeRecent}</Link>}
           </div>
           {searching && searchInput?.success === false && (
-            <div role="alert" className={styles.empty}><p>{n.checkQuery}</p></div>
+            <EmptyState role="alert" cause={n.checkQuery} />
           )}
           {searchResults !== null && (searchResults.items.length > 0 ? (
             <NotebookSearchResults hits={searchResults.items} folders={folders} query={query} t={t} />
           ) : (
-            <div className={styles.empty}>
-              <p>{n.noMatch}</p>
-              <p>{n.tryAnother}</p>
-            </div>
+            <EmptyState cause={n.noMatch} detail={n.tryAnother} />
           ))}
           {listing !== null && (listing.items.length > 0 ? noteRows(listing.items, t) : (
-            <div className={styles.empty}>
-              <p>{favoritesView ? n.noFavorites : selectedFolderId === undefined && folders.length === 0
+            <EmptyState
+              cause={favoritesView ? n.noFavorites : selectedFolderId === undefined && folders.length === 0
                 ? n.emptyNotebook
                 : selectedFolderId === undefined
                   ? n.noNotesYet
-                  : n.noNotesHere}</p>
-              <p>{favoritesView ? n.favoritesHint : n.savedAppearHere}</p>
-            </div>
+                  : n.noNotesHere}
+              detail={favoritesView ? n.favoritesHint : n.savedAppearHere}
+            />
           ))}
           {(searchResults !== null || listing !== null && selectedFolderId !== undefined && !favoritesView)
             && (page > 1 || (searchResults?.hasMore ?? listing?.hasMore ?? false)) && (

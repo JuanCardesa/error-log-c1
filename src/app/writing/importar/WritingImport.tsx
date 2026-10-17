@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useId, useRef, useState, useSyncExternalStore, useTransition, type FormEvent } from 'react';
@@ -14,7 +14,9 @@ import type { AnnotationView, WritingImportView } from '@/lib/writing/previewVie
 import { writingPrompt } from '@/lib/writing/prompt';
 import { paragraphsOf } from '@/lib/writing/text';
 import { decimal, mediumDate, percent } from '../../_shared/format';
+import { FileDrop } from '../../_shared/FileDrop';
 import { useT } from '../../_shared/i18nClient';
+import { PageHeader } from '../../_shared/PageHeader';
 import { useToast } from '../../_shared/Toast';
 import ui from '../../_shared/ui.module.css';
 import { BANDS } from '../bands';
@@ -142,8 +144,7 @@ export function WritingImport({ linkedSession }: { readonly linkedSession: Linke
     setIssues([]);
   }
 
-  async function choose(file: File | null) {
-    if (file === null) return;
+  async function choose(file: File) {
     try {
       const text = await file.text();
       edit(text);
@@ -223,17 +224,7 @@ export function WritingImport({ linkedSession }: { readonly linkedSession: Linke
 
   return (
     <div className={styles.page}>
-      <div className={styles.head}>
-        <div>
-          <p className={styles.eyebrow}>{t.nav.writing}</p>
-          <h1 className={ui.pageTitle}>{w.title}</h1>
-          <p className={styles.intro}>{w.intro}</p>
-        </div>
-        <Link href="/writing" className={ui.backLink}>
-          <ArrowLeft size={16} aria-hidden="true" />
-          {w.backToWriting}
-        </Link>
-      </div>
+      <PageHeader back={{ href: '/writing', label: t.nav.writing }} title={w.title} lede={w.intro} />
 
       <div className={styles.entry}>
         <label className={ui.field}>{w.jsonLabel}
@@ -246,11 +237,8 @@ export function WritingImport({ linkedSession }: { readonly linkedSession: Linke
             aria-busy={checking} onClick={() => { review(source, {}); }}>
             {checking ? w.reviewing : w.review}
           </button>
-          <label className={styles.file}>
-            {w.fileLabel}
-            <input type="file" accept=".json,application/json" disabled={!ready || saving}
-              onChange={(event) => { void choose(event.currentTarget.files?.[0] ?? null); event.currentTarget.value = ''; }} />
-          </label>
+          <FileDrop variant="button" label={w.fileLabel} accept=".json,application/json" disabled={!ready || saving}
+            onFile={(file) => { void choose(file); }} />
         </div>
         {linkedSession !== null && <p className={ui.help}>{w.linkedSession(linkedSession.title)}</p>}
         {message !== null && view === null && <p role="alert" className={ui.fieldError}>{message}</p>}

@@ -13,8 +13,10 @@ import styles from './writing.module.css';
  * Sin `controlled` trae su botón (la redacción que aún no tiene texto); con él lo abre el
  * lector desde «Más acciones» y `onDone` lo devuelve a la lectura.
  */
-export function WritingTranscriptionEditor({ pieceId, initialText, labels, controlled = false, onDone }: {
+export function WritingTranscriptionEditor({ pieceId, revision, initialText, labels, controlled = false, onDone }: {
   readonly pieceId: number;
+  /** La revisión que se está corrigiendo: si otra pestaña guarda antes, el servidor avisa. */
+  readonly revision: number;
   readonly initialText: string;
   readonly controlled?: boolean;
   readonly onDone?: () => void;
@@ -41,7 +43,7 @@ export function WritingTranscriptionEditor({ pieceId, initialText, labels, contr
   async function save() {
     if (working) return;
     setWorking(true);
-    const result = await updateWritingTextAction(pieceId, draft);
+    const result = await updateWritingTextAction(pieceId, draft, revision);
     setWorking(false);
     toast({ message: result.message, tone: result.ok ? 'ok' : 'error' });
     if (result.ok) { close(); router.refresh(); }

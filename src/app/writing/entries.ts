@@ -33,6 +33,6 @@ export function pieceOptions(items: readonly LibraryItem[], t: Messages): PieceO
 /** Lo que edita el drawer: sin el texto, que no hace falta mandar al navegador dos veces. */
 export function editableRow(piece: WritingRow): WritingEditablePiece {
   const { id, sessionId, date, genre, status, correctedOn, teacherComment, personalNotes, wordCount, minutes, timed, rewriteOf, corrector } = piece;
-  const { bandContent, bandCommunicative, bandOrganisation, bandLanguage } = piece;
-  return { id, sessionId, date, genre, status, correctedOn, teacherComment, personalNotes, wordCount, minutes, timed, rewriteOf, corrector, bandContent, bandCommunicative, bandOrganisation, bandLanguage };
+  const { bandContent, bandCommunicative, bandOrganisation, bandLanguage, updatedAt } = piece;
+  return { id, sessionId, date, genre, status, correctedOn, teacherComment, personalNotes, wordCount, minutes, timed, rewriteOf, corrector, bandContent, bandCommunicative, bandOrganisation, bandLanguage, updatedAt };
 }

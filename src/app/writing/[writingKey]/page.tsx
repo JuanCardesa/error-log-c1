@@ -1,4 +1,3 @@
-import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -10,6 +9,7 @@ import { toIsoDate } from '@/lib/time/dates';
 import { assessedCriteria, writingTotal } from '@/lib/writing/library';
 import { countWords } from '@/lib/writing/text';
 import { parseWritingKey, writingHref } from '@/lib/writing/urls';
+import { BackLink } from '../../_shared/BackLink';
 import { decimal, mediumDate } from '../../_shared/format';
 import { getT } from '../../_shared/i18nServer';
 import ui from '../../_shared/ui.module.css';
@@ -62,16 +62,16 @@ export default async function WritingReaderPage({ params, searchParams }: {
   }).from(writingAnnotation).where(eq(writingAnnotation.pieceId, piece.id)).all();
   const marked = assessed > 0 || piece.corrector !== null || piece.correctedOn !== null || piece.teacherComment !== null;
   const words = text === null ? piece.wordCount : piece.wordCount ?? countWords(text);
-  const wordRange = piece.wordMin === null || piece.wordMax === null ? '220–260' : `${String(piece.wordMin)}–${String(piece.wordMax)}`;
+  const [wordMin, wordMax] = piece.wordMin === null || piece.wordMax === null ? [220, 260] : [piece.wordMin, piece.wordMax];
+  const wordRange = `${String(wordMin)}–${String(wordMax)}`;
+  // Fuera del rango del enunciado se dice en claro: en el examen cuesta nota.
+  const outside = text === null || words === null ? null : words < wordMin ? 'below' : words > wordMax ? 'above' : null;
 
   return (
     <ReaderProvider>
     <div className={styles.readerPage}>
       <div className={styles.readerBar}>
-        <Link href="/writing" className={ui.backLink}>
-          <ArrowLeft size={16} aria-hidden="true" />
-          {t.writingImport.backToWriting}
-        </Link>
+        <BackLink href="/writing" label={t.nav.writing} />
         <ReaderActions
           count={annotations.length}
           exportHref={text === null ? null : `/exportar/writing-${String(piece.id)}.json`}
@@ -101,7 +101,10 @@ export default async function WritingReaderPage({ params, searchParams }: {
                 <time dateTime={piece.date}>{mediumDate(piece.date, t)}</time>
                 {piece.dateBasis !== 'WRITTEN' && ` · ${t.writingImport.approximate}`}
               </span>
-              {words !== null && <span>{text === null ? w.words(words) : w.reading.wordCount(words, wordRange)}</span>}
+              {words !== null && <span>{text === null ? w.words(words) : w.reading.wordCount(words, outside === null ? wordRange : null)}</span>}
+              {outside !== null && (
+                <span className={styles.metaWarn}>{outside === 'below' ? w.reading.wordsBelow(wordRange) : w.reading.wordsAbove(wordRange)}</span>
+              )}
               <span><WritingStatusText status={piece.status} t={t} /></span>
             </p>
             <h1 id="writing-title" className={styles.sheetTitle}>{item.title}</h1>
@@ -129,13 +132,13 @@ export default async function WritingReaderPage({ params, searchParams }: {
           <div className={styles.noText}>
             <p className={styles.noTextTitle}>{w.noTranscription}</p>
             <p>{w.noTextBody}</p>
-            <WritingTranscriptionEditor pieceId={piece.id} initialText="" labels={{
-              correct: w.reading.correctTranscription, save: w.reading.saveTranscription,
+            <WritingTranscriptionEditor pieceId={piece.id} revision={piece.textRevision} initialText="" labels={{
+              correct: w.reading.addTranscription, save: w.reading.saveTranscription,
               transcription: w.reading.transcription, saving: w.reading.saving, cancel: t.common.cancel,
             }} />
           </div>
         ) : (
-          <WritingReadingView pieceId={piece.id} text={text} annotations={annotations} labels={{
+          <WritingReadingView pieceId={piece.id} revision={piece.textRevision} text={text} annotations={annotations} labels={{
               closeAnnotations: w.reading.closeAnnotations, annotationPanel: w.reading.annotationPanel,
               filterType: w.reading.filterType, kindLabel: w.reading.kindLabel, focusLabel: w.reading.focusLabel,
               allKinds: w.reading.allKinds, pendingOnly: w.reading.pendingOnly,
@@ -176,12 +179,10 @@ export default async function WritingReaderPage({ params, searchParams }: {
                       </div>
                     );
                   })}
-                  <div className={styles.scoreTotal}>
-                    <dt>{t.writingImport.totalLabel}</dt>
-                    <dd className="num">{total === null ? t.writingImport.partial(assessed) : w.score(decimal(total, t))}</dd>
-                  </div>
                 </dl>
               )}
+              {/* El total ya va arriba, junto al título; aquí solo se explica cuando falta. */}
+              {assessed > 0 && total === null && <p className={ui.help}>{t.writingImport.partial(assessed)}</p>}
               {(piece.corrector !== null || piece.correctedOn !== null) && (
                 <p className={styles.markedBy}>
                   {piece.corrector !== null && <span>{w.corrector}: {t.labels.corrector[piece.corrector]}</span>}

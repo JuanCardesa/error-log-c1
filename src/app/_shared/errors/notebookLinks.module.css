@@ -32,7 +32,9 @@
 .results { max-height: 240px; overflow: auto; }
 .results li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-rule); }
 .results button { padding: 0; border: 0; background: none; color: var(--color-brand); text-align: left; cursor: pointer; overflow-wrap: anywhere; }
-.results button:hover { text-decoration: underline; }
+@media (hover: hover) {
+  .results button:hover { text-decoration: underline; }
+}
 .paging { font: var(--text-aux); }
 .paging button { height: var(--control-h-compact); }
 .saveRow { justify-content: flex-end; }

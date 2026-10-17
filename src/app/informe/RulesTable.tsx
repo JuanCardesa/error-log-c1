@@ -19,32 +19,32 @@ export function RulesDetails({ report, t }: { readonly report: RulesReport; read
         <ChevronRight size={14} className="chevron" aria-hidden="true" />
         {t.progress.rulesSummary}
       </summary>
-      <div className={styles.rulesWrap}>
-        <table className={styles.rulesTable}>
+      <div className={`${ui.scrollX} ${styles.rulesWrap}`}>
+        <table className={`${ui.dataTable} ${styles.rulesTable}`}>
           <caption className="sr-only">{t.progress.rulesCaption}</caption>
           <thead>
             <tr>
-              <th scope="col">#</th>
-              <th scope="col">{t.sessionView.status}</th>
+              <th scope="col" className={ui.colNum}>#</th>
+              <th scope="col" className={ui.colStatus}>{t.sessionView.status}</th>
               <th scope="col">{t.progress.signal}</th>
-              <th scope="col" className={styles.num}>{t.progress.value}</th>
-              <th scope="col" className={styles.num}>{t.progress.threshold}</th>
-              <th scope="col" className={styles.num}>{t.progress.sample}</th>
+              <th scope="col" className={ui.colNum}>{t.progress.value}</th>
+              <th scope="col" className={ui.colNum}>{t.progress.threshold}</th>
+              <th scope="col" className={ui.colNum}>{t.progress.sample}</th>
               <th scope="col">{t.progress.recommendation}</th>
             </tr>
           </thead>
           <tbody>
             {report.rules.map((rule) => (
-              <tr key={rule.id} className={rule.status === 'DO NOW' ? styles.ruleWinner : undefined}>
-                <td className={styles.mono}>{rule.id}</td>
-                <td className={rule.status === 'DO NOW' ? styles.ruleNow : undefined}>{t.labels.ruleStatus[rule.status]}</td>
+              <tr key={rule.id} data-selected={rule.status === 'DO NOW' || undefined}>
+                <td className={ui.colNum}>{rule.id}</td>
+                <td className={rule.status === 'DO NOW' ? `${ui.colStatus} ${styles.ruleNow}` : ui.colStatus}>{t.labels.ruleStatus[rule.status]}</td>
                 <td>
                   {signalLabel(rule, t)}
                   {rule.detail === null ? '' : ` · ${categoryLabel(rule.detail, t)}`}
                 </td>
-                <td className={styles.num}>{formatValue(rule, t)}</td>
-                <td className={styles.num}>{formatThreshold(rule, t)}</td>
-                <td className={styles.num}>{rule.sampleSize}</td>
+                <td className={ui.colNum}>{formatValue(rule, t)}</td>
+                <td className={ui.colNum}>{formatThreshold(rule, t)}</td>
+                <td className={ui.colNum}>{rule.sampleSize}</td>
                 <td>{recommendationTitle(rule, t)}</td>
               </tr>
             ))}

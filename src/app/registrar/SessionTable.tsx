@@ -8,6 +8,7 @@ import type { SessionStatus } from '@/lib/domain/enums';
 import { useT } from '../_shared/i18nClient';
 import { StatusText } from '../_shared/StatusText';
 import { isPlainKey } from '../_shared/shortcuts';
+import ui from '../_shared/ui.module.css';
 import styles from './sessions.module.css';
 
 export interface SessionTableRow {
@@ -24,7 +25,8 @@ export interface SessionTableRow {
 
 /**
  * Historial de sesiones. La referencia es el enlace (se puede abrir en otra pestaña) y la
- * fila entera es clicable. J y K mueven la selección e Intro la abre.
+ * fila entera es clicable. J y K mueven la selección e Intro la abre. Una sesión abierta
+ * lo dice junto a su título; las cerradas, que son casi todas, no llevan marca.
  */
 export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow[] }) {
   const t = useT();
@@ -62,35 +64,38 @@ export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow
   }, [router]);
 
   return (
-    <div className={styles.tableWrap}>
-      <table ref={table} className={styles.table}>
+    <div className={ui.scrollX}>
+      <table ref={table} className={`${ui.dataTable} ${ui.dataTableFixed}`}>
         <caption className="sr-only">{t.nav.sessions}</caption>
         <thead>
           <tr>
-            <th scope="col" className={styles.colDate}>{t.sessionForm.date}</th>
+            <th scope="col" className={`${ui.colDate} ${styles.colDate}`}>{t.sessionForm.date}</th>
             <th scope="col">{t.sessionForm.reference}</th>
             <th scope="col" className={styles.colPractice}>{t.sessionForm.practice}</th>
-            <th scope="col" className={`${styles.colScore} ${styles.right}`}>{t.sessionForm.correct}</th>
-            <th scope="col" className={`${styles.colErrors} ${styles.right}`}>{t.nav.errors}</th>
-            <th scope="col" className={styles.colStatus}>{t.sessionView.status}</th>
+            <th scope="col" className={`${ui.colNum} ${styles.colScore}`}>{t.sessionForm.correct}</th>
+            <th scope="col" className={`${ui.colNum} ${styles.colErrors}`}>{t.nav.errors}</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, index) => (
             <tr
               key={row.id}
-              className={index === selected ? styles.selected : undefined}
+              data-clickable
+              data-selected={index === selected || undefined}
               onClick={(event) => {
                 if (event.target instanceof HTMLElement && event.target.closest('a') !== null) return;
                 router.push(row.href);
               }}
             >
-              <td className={`${styles.colDate} ${styles.muted}`}>{row.date}</td>
+              <td className={`${ui.colDate} ${styles.colDate} ${styles.muted}`}>{row.date}</td>
               <td>
                 <span className={styles.refCell}>
-                  <Link href={row.href} className={styles.ref} aria-current={index === selected || undefined}>
-                    {row.title}
-                  </Link>
+                  <span className={styles.refLine}>
+                    <Link href={row.href} className={styles.ref} aria-current={index === selected || undefined}>
+                      {row.title}
+                    </Link>
+                    {row.status === 'OPEN' && <StatusText status="OPEN" />}
+                  </span>
                   <span className={styles.sub}>
                     {row.source}
                     <span className={styles.mobileMeta}> · {row.practice} · {row.score}</span>
@@ -98,9 +103,8 @@ export function SessionTable({ rows }: { readonly rows: readonly SessionTableRow
                 </span>
               </td>
               <td className={styles.colPractice}>{row.practice}</td>
-              <td className={`${styles.colScore} ${styles.right}`}>{row.score}</td>
-              <td className={`${styles.colErrors} ${styles.right}`}>{row.errors}</td>
-              <td className={styles.colStatus}><StatusText status={row.status} /></td>
+              <td className={`${ui.colNum} ${styles.colScore}`}>{row.score}</td>
+              <td className={`${ui.colNum} ${styles.colErrors}`}>{row.errors}</td>
             </tr>
           ))}
         </tbody>

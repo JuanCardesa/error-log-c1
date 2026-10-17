@@ -40,7 +40,7 @@ test('el envoltorio de una tabla entra en el orden de tabulación y se desplaza 
   await expect(table).toHaveAttribute('tabindex', '0');
 
   // Desde las acciones del apunte se llega tabulando, sin saltos ni trampas de foco.
-  await page.getByRole('link', { name: 'Exportar .md' }).focus();
+  await page.getByRole('button', { name: 'Más acciones del apunte' }).focus();
   let reached = false;
   for (let step = 0; step < 15 && !reached; step += 1) {
     await page.keyboard.press('Tab');

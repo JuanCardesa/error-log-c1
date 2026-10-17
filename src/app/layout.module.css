@@ -18,7 +18,7 @@
   margin: var(--space-3) auto 0;
   padding: var(--space-2) var(--page-pad);
   color: var(--color-warning);
-  font-size: 13px;
+  font-size: var(--fs-label);
 }
 
 .demo strong {

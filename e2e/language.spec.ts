@@ -14,7 +14,7 @@ import { E2E_DB } from './globalSetup';
 import { readZipEntries } from './zip';
 
 /**
- * Idioma de la interfaz. El resto de pruebas fija el español con la cookie de Ajustes;
+ * Idioma de la interfaz. El resto de pruebas fija el español con la cookie del idioma;
  * aquí se parte de un navegador sin preferencia, como una instalación nueva, y además
  * en español: el idioma del navegador no decide el de la app.
  */
@@ -65,22 +65,23 @@ test('sin preferencia, la interfaz está en inglés y el contenido del usuario n
   await expect(panel.getByText(error.ruleNote)).toBeVisible();
 });
 
-test('se cambia a español en Ajustes al momento, se conserva al recargar y se vuelve al inglés', async ({ page, context }) => {
+test('se cambia a español desde «Más» al momento, se conserva al recargar y se vuelve al inglés', async ({ page, context }) => {
   await page.goto('/registrar');
   await page.getByRole('button', { name: 'More', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Settings' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
-  const english = page.getByRole('radio', { name: 'English' });
-  const spanish = page.getByRole('radio', { name: 'Español' });
-  await expect(english).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('menuitemradio', { name: 'English' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('menuitemradio', { name: 'Español' })).toHaveAttribute('aria-checked', 'false');
 
   // Una marca en `window` sobrevive solo si no se recarga la página.
   await page.evaluate(() => { (window as Window & { sinRecarga?: boolean }).sinRecarga = true; });
-  await spanish.click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Ajustes' })).toBeVisible();
+  await page.getByRole('menuitemradio', { name: 'Español' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sesiones' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'es');
   await expect(page.getByRole('navigation', { name: 'Secciones' }).getByRole('link', { name: 'Sesiones', exact: true })).toBeVisible();
-  await expect(spanish).toHaveAttribute('aria-checked', 'true');
+  // El menú se cierra y el foco vuelve a su botón, ya en español.
+  await expect(page.getByRole('button', { name: 'Más', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Más', exact: true }).click();
+  await expect(page.getByRole('menuitemradio', { name: 'Español' })).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
   expect(await page.evaluate(() => (window as Window & { sinRecarga?: boolean }).sinRecarga)).toBe(true);
 
   // La preferencia dura: cookie de un año, y la página recargada sale ya en español.
@@ -88,19 +89,27 @@ test('se cambia a español en Ajustes al momento, se conserva al recargar y se v
   expect(cookie?.value).toBe('es');
   expect(cookie?.expires ?? 0).toBeGreaterThan(Date.now() / 1000 + 300 * 24 * 3600);
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1, name: 'Ajustes' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sesiones' })).toBeVisible();
 
   // Otras vistas también cambian; el apunte sigue igual.
   await page.goto(notebookNoteHref(note));
   await expect(page.getByRole('link', { name: 'Editar', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: note.title })).toBeVisible();
 
-  await page.goto('/ajustes');
-  await page.getByRole('radio', { name: 'English' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+  // De vuelta al inglés desde ⌘K, sin salir del apunte.
+  await page.keyboard.press('Control+k');
+  await page.getByRole('combobox', { name: 'Buscar' }).fill('idioma');
+  await page.getByRole('option', { name: 'Cambiar idioma a English' }).click();
+  await expect(page.getByRole('link', { name: 'Edit', exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Edit', exact: true })).toBeVisible();
+});
+
+test('la antigua página de Ajustes lleva a Sesiones', async ({ page }) => {
+  await page.goto('/ajustes');
+  await expect(page).toHaveURL(/\/registrar$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Sessions' })).toBeVisible();
 });
 
 test('los mensajes del servidor llegan en el idioma elegido', async ({ page }) => {
@@ -119,7 +128,7 @@ test('recorre las secciones y sus vistas secundarias en inglés', async ({ page 
 
   await navigation.getByRole('link', { name: 'Errors', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Errors' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Filters', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Category', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'False certainties', exact: true }).click();
   await expect(page.getByRole('searchbox', { name: 'Search false certainties' })).toBeVisible();
 
@@ -163,23 +172,24 @@ test('Atrás y Adelante actualizan las vistas visitadas al cambiar de idioma sin
   await page.evaluate(() => { (window as Window & { sinRecarga?: boolean }).sinRecarga = true; });
   await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Errors', exact: true }).click();
   await expectLanguage(page, 'en', 'Errors');
-  await page.getByRole('button', { name: 'More', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Settings' }).click();
+  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Progress', exact: true }).click();
+  await expectLanguage(page, 'en', 'Progress');
 
   for (const locale of ['es', 'en'] as const) {
-    await page.getByRole('radio', { name: locale === 'es' ? 'Español' : 'English' }).click();
-    await expectLanguage(page, locale, locale === 'es' ? 'Ajustes' : 'Settings');
+    await page.getByRole('button', { name: locale === 'es' ? 'More' : 'Más', exact: true }).click();
+    await page.getByRole('menuitemradio', { name: locale === 'es' ? 'Español' : 'English' }).click();
+    await expectLanguage(page, locale, locale === 'es' ? 'Progreso' : 'Progress');
     await page.goBack();
     await expectLanguage(page, locale, locale === 'es' ? 'Errores' : 'Errors');
     // El título viene del servidor; el botón usa el contexto de cliente.
-    await expect(page.getByRole('button', { name: locale === 'es' ? 'Filtros' : 'Filters', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: locale === 'es' ? 'Categoría' : 'Category', exact: true })).toBeVisible();
     await page.goBack();
     await expectLanguage(page, locale, locale === 'es' ? 'Sesiones' : 'Sessions');
     await expect(page.getByRole('button', { name: locale === 'es' ? /Nueva sesión manual/ : /New manual session/ })).toBeVisible();
     await page.goForward();
     await expectLanguage(page, locale, locale === 'es' ? 'Errores' : 'Errors');
     await page.goForward();
-    await expectLanguage(page, locale, locale === 'es' ? 'Ajustes' : 'Settings');
+    await expectLanguage(page, locale, locale === 'es' ? 'Progreso' : 'Progress');
     expect(await page.evaluate(() => (window as Window & { sinRecarga?: boolean }).sinRecarga)).toBe(true);
   }
 });
@@ -204,13 +214,14 @@ test('cambiar la preferencia no altera JSON, CSV, Markdown ni el contenido del Z
     };
   };
 
-  await page.goto('/ajustes');
-  await expectLanguage(page, 'en', 'Settings');
+  await page.goto('/exportar');
+  await expectLanguage(page, 'en', 'Export data');
   const english = new Map<string, Awaited<ReturnType<typeof download>>>();
   for (const file of files) english.set(file, await download(file));
 
-  await page.getByRole('radio', { name: 'Español' }).click();
-  await expectLanguage(page, 'es', 'Ajustes');
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('menuitemradio', { name: 'Español' }).click();
+  await expectLanguage(page, 'es', 'Exportar datos');
   for (const file of files) {
     const before = english.get(file);
     if (before === undefined) throw new Error(`Falta la descarga inglesa de ${file}`);

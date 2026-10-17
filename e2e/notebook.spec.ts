@@ -198,9 +198,10 @@ test('busca en título, etiquetas y cuerpo con filtros, fragmento y enlace al ap
   let rootId: number;
   let childId: number;
   let bodyHref: string;
+  const rootName = `Search root ${randomUUID().slice(0, 8)}`;
   try {
     const at = new Date().toISOString();
-    const root = createNotebookFolder(db, { name: `Search root ${randomUUID().slice(0, 8)}`, parentId: null }, at);
+    const root = createNotebookFolder(db, { name: rootName, parentId: null }, at);
     const child = createNotebookFolder(db, { name: 'Search child', parentId: root.id }, at);
     const other = createNotebookFolder(db, { name: `Search other ${randomUUID().slice(0, 8)}`, parentId: null }, at);
     rootId = root.id;
@@ -233,21 +234,29 @@ test('busca en título, etiquetas y cuerpo con filtros, fragmento y enlace al ap
   await expect(results.getByText(/La catenative inversion aparece aquí/u)).toBeVisible();
   await expect(results.locator('mark')).toHaveCount(4);
 
-  await page.getByRole('combobox', { name: 'Carpeta' }).selectOption(String(rootId));
-  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
+  // Cada filtro se aplica al elegirlo, sin botón de aplicar, y conserva la búsqueda.
+  await expect(page.getByRole('button', { name: 'Aplicar filtros' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Carpeta', exact: true }).click();
+  await page.getByRole('menuitem', { name: `${rootName} y subcarpetas` }).click();
   await expect(page).toHaveURL(new RegExp(`carpeta=${String(rootId)}`));
+  await expect(page).toHaveURL(/q=Catenative\+inversion/u);
   await expect(results.getByRole('link', { name: 'Catenative inversion', exact: true })).toBeVisible();
   await expect(results.getByRole('link', { name: 'Catenative inversion in context' })).toBeVisible();
   await expect(bodyLink).toHaveCount(0);
 
-  await page.getByRole('combobox', { name: 'Carpeta' }).selectOption(String(childId));
-  await page.getByRole('textbox', { name: 'Etiqueta' }).fill('syntax');
-  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
+  await page.getByRole('button', { name: `Carpeta: ${rootName}` }).click();
+  await page.getByRole('menuitem', { name: '↳ Search child' }).click();
+  await expect(page).toHaveURL(new RegExp(`carpeta=${String(childId)}`));
+  await page.getByRole('button', { name: 'Etiqueta', exact: true }).click();
+  await page.getByRole('menuitem', { name: /^syntax · \d+$/u }).click();
+  await expect(page).toHaveURL(/tag=syntax/u);
+  await expect(page.getByRole('button', { name: 'Etiqueta: syntax' })).toBeVisible();
   await expect(results.getByRole('link', { name: 'Catenative inversion in context' })).toBeVisible();
   await expect(results.getByRole('link', { name: 'Catenative inversion', exact: true })).toHaveCount(0);
 
-  await page.getByRole('combobox', { name: 'Carpeta' }).selectOption('sin-carpeta');
-  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
+  await page.getByRole('link', { name: 'Quitar filtro syntax' }).click();
+  await page.getByRole('button', { name: 'Carpeta: Search child' }).click();
+  await page.getByRole('menuitem', { name: 'Sin carpeta' }).click();
   await expect(bodyLink).toBeVisible();
   await bodyLink.click();
   await expect(page).toHaveURL(/#nb-regla-1$/u);
@@ -296,9 +305,12 @@ test('la paleta muestra hasta tres apuntes junto a errores y sesiones y navega p
   } finally { db.$client.close(); }
 
   await page.goto('/registrar');
-  await page.keyboard.press('Control+k');
   const search = page.getByRole('combobox', { name: 'Buscar' });
-  await expect(search).toBeFocused();
+  // Hasta hidratar no hay atajo: se repite la tecla hasta que la paleta se abre.
+  await expect(async () => {
+    await page.keyboard.press('Control+k');
+    await expect(search).toBeFocused({ timeout: 1000 });
+  }).toPass();
   await search.fill('commitment');
   await expect(page.getByRole('option', { name: /Commitment note/u })).toHaveCount(3);
   await expect(page.getByRole('option').filter({ hasText: 'commitement' })).toBeVisible();

@@ -26,7 +26,7 @@ export function NotebookSearchResults({ hits, folders, query, t }: {
         const parent = folders.find((item) => item.id === folder?.parentId);
         const href = `${notebookNoteHref(note)}${excerpt?.heading === null || excerpt?.heading === undefined ? '' : `#${excerpt.heading.slug}`}`;
         return (
-          <li key={note.id}>
+          <li key={note.id} className={styles.noteRow}>
             <p className={styles.resultPath}>
               {t.nav.notebook} · {parent === undefined ? '' : `${parent.name} / `}{folder?.name ?? t.notebook.noFolder}
               {excerpt?.heading !== null && excerpt?.heading !== undefined && ` / ${excerpt.heading.text}`}

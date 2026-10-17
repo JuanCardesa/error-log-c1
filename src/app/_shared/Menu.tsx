@@ -9,7 +9,9 @@ import styles from './overlay.module.css';
  * vuelve al botón. Un clic fuera también lo cierra.
  *
  * `trigger` recibe los props que debe llevar el botón; los ítems son `<a>` o `<button>`
- * con la clase `menuItem` del módulo de capas.
+ * con la clase `menuItem` del módulo de capas, como `menuitem` o `menuitemradio`.
+ * `children` recibe `close`, que solo cierra (un enlace navega después), y `restore`, que
+ * además devuelve el foco al botón (una opción que se queda en la página).
  */
 export function Menu({ trigger, children, align = 'end', label }: {
   readonly trigger: (props: {
@@ -19,7 +21,7 @@ export function Menu({ trigger, children, align = 'end', label }: {
     onClick: () => void;
     ref: React.RefObject<HTMLButtonElement | null>;
   }) => ReactNode;
-  readonly children: (close: () => void) => ReactNode;
+  readonly children: (close: () => void, restore: () => void) => ReactNode;
   readonly align?: 'start' | 'end';
   readonly label: string;
 }) {
@@ -30,7 +32,7 @@ export function Menu({ trigger, children, align = 'end', label }: {
   const menu = useRef<HTMLDivElement>(null);
 
   const items = (): HTMLElement[] =>
-    Array.from(menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+    Array.from(menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemradio"]') ?? []);
 
   useEffect(() => {
     if (!open) return;
@@ -45,6 +47,12 @@ export function Menu({ trigger, children, align = 'end', label }: {
   const close = () => {
     setOpen(false);
     button.current?.focus();
+  };
+
+  // Lo mismo sin leer el ref durante el render: el botón es quien controla este menú.
+  const restore = () => {
+    setOpen(false);
+    document.querySelector<HTMLElement>(`[aria-controls="${CSS.escape(id)}"]`)?.focus();
   };
 
   return (
@@ -82,7 +90,7 @@ export function Menu({ trigger, children, align = 'end', label }: {
           }
         }}
       >
-        {open && children(() => { setOpen(false); })}
+        {open && children(() => { setOpen(false); }, restore)}
       </div>
     </div>
   );

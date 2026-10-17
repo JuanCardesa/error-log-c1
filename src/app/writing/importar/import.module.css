@@ -4,26 +4,6 @@
   min-width: 0;
 }
 
-.head {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.eyebrow {
-  margin: 0 0 var(--space-2);
-  color: var(--color-brand);
-  font: var(--text-label);
-}
-
-.intro {
-  max-width: var(--reading-max);
-  margin: var(--space-2) 0 0;
-  color: var(--color-ink-2);
-}
-
 /* ── Entrada ──────────────────────────────────────────────────────────────── */
 
 .entry {
@@ -46,20 +26,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4);
-}
-
-.file {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-ink-2);
-  font: var(--text-aux);
-}
-
-.file input {
-  max-width: 100%;
-  font: inherit;
 }
 
 .helpers {
@@ -194,7 +160,7 @@
   max-width: calc(var(--reading-max) + 2 * var(--space-7));
   padding: var(--space-7);
   border: 1px solid var(--color-rule);
-  border-radius: var(--study-paper-radius);
+  border-radius: var(--radius-paper);
   background: var(--color-surface);
   box-shadow: var(--shadow-1);
 }

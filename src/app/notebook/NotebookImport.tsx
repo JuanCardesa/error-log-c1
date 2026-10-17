@@ -8,7 +8,9 @@ import type { NotebookImportDraft } from '@/lib/notebook/import';
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import { NOTEBOOK_IMPORT_ACCEPT, NOTEBOOK_LIMITS, notebookImportSizeError } from '@/lib/notebook/schemas';
 import type { NotebookFolder } from '@/lib/notebook/types';
+import { FileDrop } from '../_shared/FileDrop';
 import { useT } from '../_shared/i18nClient';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import { importMarkdownAction, previewMarkdownImportAction } from './actions';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -41,14 +43,13 @@ export function NotebookImport({ folders, initialFolderId }: {
   // Si se elige otro archivo mientras se analiza el anterior, gana el último.
   const requestRef = useRef(0);
 
-  const choose = (next: File | null) => {
+  const choose = (next: File) => {
     const request = ++requestRef.current;
     setFile(next);
     setPreview(null);
     setFileError(null);
     setError(null);
     setFieldErrors({});
-    if (next === null) return;
     const sizeError = notebookImportSizeError(next.size, t);
     if (sizeError !== null) { setFileError(sizeError); return; }
     const data = new FormData();
@@ -114,23 +115,18 @@ export function NotebookImport({ folders, initialFolderId }: {
 
   return (
     <div className={editor.editor}>
-      <div className={editor.heading}>
-        <div>
-          <p className={editor.eyebrow}>{t.nav.notebook}</p>
-          <h1>{n.importNote}</h1>
-        </div>
-        <Link href="/notebook" className={ui.backLink}>{n.backToNotebook}</Link>
-      </div>
+      <PageHeader back={{ href: '/notebook', label: t.nav.notebook }} title={n.importNote} />
 
       <div className={styles.chooser}>
-        <label className={ui.field}>{n.markdownFile}
-          <span className={ui.optional}>
-            {n.fileHint(NOTEBOOK_LIMITS.contentBytes / 1024)}
-          </span>
-          <input type="file" accept={NOTEBOOK_IMPORT_ACCEPT} disabled={saving}
-            aria-invalid={fileError !== null}
-            onChange={(event) => { choose(event.currentTarget.files?.[0] ?? null); }} />
-        </label>
+        <FileDrop
+          label={n.markdownFile}
+          hint={n.fileHint(NOTEBOOK_LIMITS.contentBytes / 1024)}
+          accept={NOTEBOOK_IMPORT_ACCEPT}
+          fileName={file?.name ?? null}
+          disabled={saving}
+          invalid={fileError !== null}
+          onFile={choose}
+        />
         <p className={ui.help}>{n.importHelp}</p>
         {analyzing && <p role="status" className={ui.help}>{n.analysing}</p>}
         {fileError !== null && <p role="alert" className={ui.fieldError}>{fileError}</p>}
@@ -156,10 +152,11 @@ export function NotebookImport({ folders, initialFolderId }: {
               </select>
               {fieldError('folderId')}
             </label>
-            <label className={ui.field}>{n.tags} <span className={ui.optional}>{n.commaSeparated}</span>
+            <label className={ui.field}>{n.tags}
               <input className={ui.input} value={form.tagsText} placeholder={n.tagsPlaceholder} disabled={saving}
                 aria-invalid={fieldError('tags') !== null}
                 onChange={(event) => { setForm({ ...form, tagsText: event.target.value }); }} />
+              <span className={ui.help}>{n.commaSeparated}</span>
               {fieldError('tags')}
             </label>
           </div>
@@ -173,7 +170,7 @@ export function NotebookImport({ folders, initialFolderId }: {
 
           <section aria-label={n.notePreview}>
             <article className={editor.preview}>
-              <h1 id={hideFirstH1 ? firstHeading.slug : undefined} className={editor.previewTitle}>{form.title.trim() || n.untitled}</h1>
+              <h2 id={hideFirstH1 ? firstHeading.slug : undefined} className={editor.previewTitle}>{form.title.trim() || n.untitled}</h2>
               {draft.contentMarkdown === '' ? <p className={ui.help}>{n.fileEmpty}</p> : (
                 <MarkdownRenderer markdown={draft.contentMarkdown} hideFirstH1={hideFirstH1} t={t} />
               )}

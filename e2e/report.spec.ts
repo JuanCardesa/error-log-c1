@@ -69,9 +69,9 @@ test.describe('progreso', () => {
     await expect(nav.getByRole('link', { name: 'Progreso', exact: true })).toHaveAttribute('aria-current', 'page');
     await expect(nav.getByRole('link', { name: 'Anki', exact: true })).not.toHaveAttribute('aria-current', 'page');
 
-    // Exportar y Ajustes, a un clic en «Más».
+    // Exportar y el idioma, a un clic en «Más».
     await page.getByRole('button', { name: 'Más' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Ajustes' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Idioma' }).getByRole('menuitemradio')).toHaveCount(2);
     await expect(page.getByRole('menuitem', { name: 'Writing' })).toHaveCount(0);
     await page.getByRole('menuitem', { name: 'Exportar datos' }).click();
     await expect(page).toHaveURL(/\/exportar/);
@@ -104,9 +104,37 @@ test.describe('progreso', () => {
     await expect(page.getByRole('complementary', { name: 'Detalle de la celda' })).toContainText('aciertos en');
   });
 
+  test('RUOE se abre con una celda elegida, con columnas iguales y las parts sin práctica nombradas', async ({ page }) => {
+    await page.goto('/ruoe?w=60');
+    // El panel nunca está vacío: arranca con la part más floja de la última semana.
+    await expect(page.locator('button[aria-pressed="true"]')).toHaveCount(1);
+    const detail = page.getByRole('complementary', { name: 'Detalle de la celda' });
+    await expect(detail).toContainText('La part más floja de la última semana');
+    await expect(detail).toContainText('aciertos en');
+
+    const widths = await page.locator('thead th').evaluateAll((cells) =>
+      cells.slice(1).map((cell) => cell.getBoundingClientRect().width));
+    // Hasta 1 px por el reparto de subpíxeles; antes iban de 74 a 104 px.
+    expect(Math.max(...widths) - Math.min(...widths), `anchos de semana: ${widths.join('/')}`).toBeLessThanOrEqual(1);
+  });
+
+  test('la evolución por part da cuenta de las ocho parts', async ({ page }) => {
+    await page.goto('/informe?w=60');
+    const evolution = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Evolución por part' }) });
+    const charts = await evolution.getByRole('img').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label') ?? ''));
+    const missing = (await evolution.getByText(/^Sin práctica en estas semanas/).allInnerTexts()).join(' ');
+    for (let part = 1; part <= 8; part++) {
+      const drawn = charts.some((label) => label.startsWith(`Part ${String(part)}:`));
+      const named = new RegExp(`Part ${String(part)}\\b`).test(missing);
+      expect(drawn !== named, `Part ${String(part)}: dibujada ${String(drawn)}, nombrada ${String(named)}`).toBe(true);
+    }
+  });
+
   test('las falsas certezas se listan con periodo fijo y se leen en su detalle', async ({ page }) => {
     await page.goto('/certezas');
     await expect(page.getByText('últimos 30 días, periodo fijo')).toBeVisible();
+    // La causa separa el despiste de lo que no se sabía: tiene su columna.
+    await expect(page.getByRole('columnheader', { name: 'Causa' })).toBeVisible();
     const first = page.getByRole('button', { name: /^Ver error/ }).first();
     await first.click();
     await expect(page.getByRole('complementary', { name: 'Detalle del error' })).toContainText('Seguro');
@@ -126,6 +154,33 @@ test.describe('progreso', () => {
 });
 
 test.describe('errores', () => {
+  test('el detalle cuenta sobre todos los resultados y sus flechas cruzan de página', async ({ page }) => {
+    await page.goto('/errores');
+    const total = Number((await page.getByText(/^\d+ resultados$/).innerText()).split(' ')[0]);
+    test.skip(total <= 25, 'hace falta más de una página de errores');
+
+    await page.goto('/errores?p=2');
+    await page.getByRole('button', { name: /^Ver error/ }).first().click();
+    const panel = page.getByRole('complementary', { name: 'Detalle del error' });
+    await expect(panel).toContainText(`26 de ${String(total)}`);
+
+    // Antes del primero de esta página va el último de la anterior, no el último de esta.
+    await panel.getByRole('button', { name: 'Error anterior' }).click();
+    await expect(page).toHaveURL(/p=1/);
+    await expect(panel).toContainText(`25 de ${String(total)}`);
+    await expect(page).not.toHaveURL(/at=/);
+  });
+
+  test('un error pendiente lleva a crear su tarjeta en Anki', async ({ page }) => {
+    await page.goto('/errores?anki=pendiente');
+    await page.getByRole('button', { name: /^Ver error/ }).first().click();
+    const panel = page.getByRole('complementary', { name: 'Detalle del error' });
+    const correction = (await panel.locator('dd').nth(1).innerText()).trim();
+    await panel.getByRole('link', { name: 'Crear la tarjeta' }).click();
+    await expect(page).toHaveURL(/\/anki\?error=\d+/);
+    await expect(page.getByRole('complementary', { name: 'Vista previa de la tarjeta' })).toContainText(correction);
+  });
+
   test('busca en todos los errores, filtra por categoría desde Progreso y abre el detalle', async ({ page }) => {
     await page.goto('/informe?w=60');
     const category = page.getByRole('table', { name: /Categorías/ }).getByRole('link').first();
@@ -147,5 +202,19 @@ test.describe('errores', () => {
 
     await page.getByRole('searchbox', { name: 'Buscar errores' }).fill('zzz sin coincidencias zzz');
     await expect(page.getByText('Ningún error coincide con la búsqueda y los filtros activos.')).toBeVisible();
+  });
+
+  test('cada filtro se aplica al elegirlo, sin botón de aplicar, y se quita con su ×', async ({ page }) => {
+    await page.goto('/errores');
+    await expect(page.getByRole('button', { name: 'Aplicar filtros' })).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Causa', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Confusión' }).click();
+    await expect(page).toHaveURL(/causa=CONFUSION/);
+    await expect(page.getByRole('button', { name: 'Causa: Confusión' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Quitar filtro Confusión' }).click();
+    await expect(page).not.toHaveURL(/causa=/);
+    await expect(page.getByRole('button', { name: 'Causa', exact: true })).toBeVisible();
   });
 });

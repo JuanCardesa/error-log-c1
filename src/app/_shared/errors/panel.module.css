@@ -5,7 +5,7 @@
   top: calc(var(--header-h) + var(--space-6));
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--space-4);
   max-height: calc(100vh - var(--header-h) - 56px);
   padding: var(--space-5);
   overflow: auto;
@@ -13,6 +13,8 @@
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-1);
+  /* El par serif se apila según el ancho del panel, no de la ventana (correction.module.css). */
+  container-type: inline-size;
 }
 
 .head {
@@ -35,7 +37,7 @@
 .view {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--space-4);
 }
 
 .prompt {
@@ -57,9 +59,9 @@
 .facts {
   display: grid;
   grid-template-columns: 100px minmax(0, 1fr);
-  gap: 6px var(--space-3);
+  gap: var(--space-1-5) var(--space-3);
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 
 .facts dt {
@@ -72,6 +74,13 @@
   overflow-wrap: anywhere;
 }
 
+.ankiHint {
+  display: block;
+  margin-top: var(--space-1);
+  font: var(--text-aux);
+  color: var(--color-ink-2);
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
@@ -82,7 +91,7 @@
 .edit {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-3);
 }
 
 .editActions {

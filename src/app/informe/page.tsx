@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getDb } from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
 import { listSessions } from '@/lib/db/repo';
+import { partsFor } from '@/lib/domain/enums';
 import { MIN_N } from '@/lib/domain/thresholds';
 import { q1CauseSplit } from '@/lib/queries/q1CauseSplit';
 import { q2CategoryRate } from '@/lib/queries/q2CategoryRate';
@@ -12,8 +13,10 @@ import { q5AnkiDebt } from '@/lib/queries/q5AnkiDebt';
 import { sliceWindow } from '@/lib/queries/window';
 import { runRules } from '@/lib/rules';
 import { toIsoDate, windowStart } from '@/lib/time/dates';
-import { dateRange, decimal, percent, score, sessionTitle, shortDate } from '../_shared/format';
+import { dateRange, decimal, partList, percent, score, sessionTitle, shortDate } from '../_shared/format';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -55,19 +58,19 @@ export default async function InformePage({ searchParams }: { readonly searchPar
   const w = windowDays === 30 ? '' : `?w=${String(windowDays)}`;
 
   const head = (
-    <div className={styles.head}>
-      <div className={ui.pageHead}>
-        <h1 className={ui.pageTitle}>{t.nav.progress}</h1>
-        <WindowSwitch current={windowDays} basePath="/informe" />
-      </div>
-      <RouteTabs
-        label={p.views}
-        items={[
-          { href: `/informe${w}`, label: p.summary, current: true },
-          { href: `/ruoe${w}`, label: t.labels.paperLong.RUOE, current: false },
-        ]}
-      />
-    </div>
+    <PageHeader
+      title={t.nav.progress}
+      actions={<WindowSwitch current={windowDays} basePath="/informe" />}
+      tabs={(
+        <RouteTabs
+          label={p.views}
+          items={[
+            { href: `/informe${w}`, label: p.summary, current: true },
+            { href: `/ruoe${w}`, label: t.labels.paperLong.RUOE, current: false },
+          ]}
+        />
+      )}
+    />
   );
 
   if (data.sessions.length === 0) {
@@ -75,7 +78,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
       <div className={styles.page}>
         {head}
         <section className={styles.emptyState}>
-          <h2 className={styles.recoTitle}>{p.emptyTitle}</h2>
+          <h2 className={ui.decisionTitle}>{p.emptyTitle}</h2>
           <p>{p.emptyBody}</p>
           <Link href="/registrar" className={ui.primary}>{t.common.goToSessions}</Link>
         </section>
@@ -93,20 +96,46 @@ export default async function InformePage({ searchParams }: { readonly searchPar
   const categoryHref = (category: string) =>
     `/errores?cat=${category}&w=${String(windowDays)}&items=1`;
 
+  // Evolución: cada part con práctica en las últimas semanas, y su cifra es la de la última
+  // semana con práctica, que es la barra resaltada. Las parts sin práctica en esas semanas
+  // (también las que no se han hecho nunca) se nombran en una línea en vez de dibujarse vacías.
+  const evolution = q3.rows.map((row) => {
+    const cells = weeks.map((week) => {
+      const index = q3.weeks.indexOf(week.iso);
+      return index < 0 ? null : row.cells[index] ?? null;
+    });
+    const label = cells.map((cell, i) => {
+      const value = cell === null ? p.noPractice : `${percent(cell.pct, t)} (${String(cell.correct)}/${String(cell.total)})`;
+      return `${weeks[i]?.range ?? ''} ${value}`;
+    });
+    return {
+      part: row.part,
+      cells,
+      latest: cells.findLastIndex((cell) => cell !== null),
+      label: `${t.format.part(row.part)}: ${label.join(', ')}`,
+    };
+  });
+  const barClass = (cell: unknown, index: number, latest: number) => {
+    if (cell === null) return styles.barNone;
+    return index === latest ? styles.barLast : styles.barPast;
+  };
+  const practised = evolution.filter((row) => row.latest >= 0);
+  const unpractised = partsFor('RUOE').filter((part) => !practised.some((row) => row.part === part));
+
   return (
     <div className={styles.page}>
       {head}
 
-      <section className={styles.reco} aria-labelledby="reco-title">
-        <span className={styles.kicker}>{rec.kicker}</span>
-        <h2 id="reco-title" className={styles.recoTitle}>
+      <section className={ui.decision} aria-labelledby="reco-title">
+        <span className={ui.decisionKicker}>{rec.kicker}</span>
+        <h2 id="reco-title" className={ui.decisionTitle}>
           {slice.sessions.length === 0 ? p.noPracticeTitle : rec.title}
         </h2>
-        <p className={styles.evidence}>
+        <p className={ui.decisionEvidence}>
           {slice.sessions.length === 0 ? p.noPracticeBody(windowDays) : rec.evidence}
         </p>
         {(rec.action !== null || rec.why !== null) && slice.sessions.length > 0 && (
-          <div className={styles.recoActions}>
+          <div className={ui.decisionActions}>
             {rec.action !== null && <Link href={rec.action.href} className={ui.primary}>{rec.action.label}</Link>}
             {rec.why !== null && (
               <details className={ui.disclosure}>
@@ -119,7 +148,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
             )}
           </div>
         )}
-        <div className={styles.coverage}>
+        <div className={ui.decisionCoverage}>
           <span>{p.period(dateRange(windowStart(now, windowDays), toIsoDate(now), t))}</span>
           <span>{t.format.sessions(slice.sessions.length)}</span>
           <span>{p.itemsCounted(q2.itemsAttempted)}</span>
@@ -128,7 +157,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
       </section>
 
       {q1.total > 0 && q1.total < MIN_N && (
-        <p className={styles.smallSample}>
+        <p className={`${ui.smallSample} ${styles.smallSampleBand}`}>
           <strong>{p.smallSample}</strong>
           <span>{p.smallSampleBody(q1.total, windowDays)}</span>
         </p>
@@ -138,27 +167,28 @@ export default async function InformePage({ searchParams }: { readonly searchPar
         <section className={styles.block} aria-labelledby="cat-heading">
           <h2 id="cat-heading" className={ui.sectionTitle}>{p.whereTitle}</h2>
           {q2.rows.length === 0 ? (
-            <p className={styles.blockEmpty}>{p.whereEmpty}</p>
+            <EmptyState cause={p.whereEmpty} />
           ) : (
             <>
-              <table className={styles.catTable}>
+              <table className={ui.dataTable}>
                 <caption className="sr-only">{p.catCaption}</caption>
                 <thead>
                   <tr>
                     <th scope="col">{t.errorForm.category}</th>
-                    <th scope="col" className={styles.num}>{t.nav.errors}</th>
-                    <th scope="col" className={styles.num}>{p.per100}</th>
+                    <th scope="col" className={ui.colNum}>{t.nav.errors}</th>
+                    <th scope="col" className={ui.colNum}>{p.per100}</th>
                     <th scope="col"><span className="sr-only">{p.seeErrors}</span></th>
                   </tr>
                 </thead>
                 <tbody>
+                  {/* La fila entera abre sus errores: el enlace se estira sobre ella y la flecha lo anuncia. */}
                   {topCategories.map((row) => (
-                    <tr key={row.category}>
-                      <td>
+                    <tr key={row.category} className={styles.catRow}>
+                      <th scope="row">
                         <Link href={categoryHref(row.category)} className={styles.catLink}>{t.labels.category[row.category]}</Link>
-                      </td>
-                      <td className={styles.num}>{row.errors}</td>
-                      <td className={styles.num}>{decimal(row.ratePer100, t, 2)}</td>
+                      </th>
+                      <td className={ui.colNum}>{row.errors}</td>
+                      <td className={ui.colNum}>{decimal(row.ratePer100, t, 2)}</td>
                       <td className={styles.arrowCell} aria-hidden="true"><ArrowRight size={14} /></td>
                     </tr>
                   ))}
@@ -188,7 +218,7 @@ export default async function InformePage({ searchParams }: { readonly searchPar
         <section className={styles.block} aria-labelledby="cause-heading">
           <h2 id="cause-heading" className={ui.sectionTitle}>{p.whyTitle}</h2>
           {q1.total === 0 ? (
-            <p className={styles.blockEmpty}>{p.whyEmpty}</p>
+            <EmptyState cause={p.whyEmpty} />
           ) : (
             <>
               <div className={styles.causes}>
@@ -225,41 +255,46 @@ export default async function InformePage({ searchParams }: { readonly searchPar
           </Link>
         </div>
         {q3.rows.length === 0 ? (
-          <p className={styles.blockEmpty}>{p.evolutionEmpty}</p>
+          <EmptyState cause={p.evolutionEmpty} />
         ) : (
           <>
-            <div className={styles.multiples}>
-              {q3.rows.map((row) => {
-                const cells = weeks.map((week) => {
-                  const index = q3.weeks.indexOf(week.iso);
-                  return index < 0 ? null : row.cells[index] ?? null;
-                });
-                const latest = [...cells].reverse().find((cell) => cell !== null) ?? null;
-                return (
-                  <div key={row.part} className={styles.multiple}>
+            {practised.length > 0 && (
+              <div className={styles.multiples}>
+                {practised.map(({ part, cells, latest, label }) => (
+                  <div key={part} className={styles.multiple}>
                     <span className={styles.multipleHead}>
-                      <span className={styles.multiplePart}>{t.format.part(row.part)}</span>
-                      <span className={styles.mono}>{latest === null ? '—' : percent(latest.pct, t)}</span>
+                      <span className={styles.multiplePart}>{t.format.part(part)}</span>
+                      <span className={styles.mono}>{percent(cells[latest]?.pct ?? 0, t)}</span>
                     </span>
-                    <div className={styles.bars} role="img" aria-label={`${t.format.part(row.part)}: ${cells.map((cell, i) => `${weeks[i]?.range ?? ''} ${cell === null ? p.noPractice : percent(cell.pct, t)}`).join(', ')}`}>
+                    <div
+                      className={styles.chart}
+                      style={{ gridTemplateColumns: `repeat(${String(weeks.length)}, minmax(0, 1fr))` }}
+                      role="img"
+                      aria-label={label}
+                    >
                       {cells.map((cell, index) => (
-                        <span
-                          key={weeks[index]?.iso ?? index}
-                          className={cell === null ? styles.barNone : index === cells.length - 1 ? styles.barLast : styles.barPast}
-                          style={cell === null ? undefined : { height: `${String(Math.max(2, Math.round((cell.pct / 100) * BAR_MAX_PX)))}px` }}
-                        />
+                        <span key={weeks[index]?.iso ?? index} className={styles.week}>
+                          <span className={styles.ratio}>
+                            {cell === null ? '—' : `${String(cell.correct)}/${String(cell.total)}`}
+                          </span>
+                          <span className={styles.barSlot}>
+                            <span
+                              className={barClass(cell, index, latest)}
+                              style={cell === null ? undefined : { height: `${String(Math.max(2, Math.round((cell.pct / 100) * BAR_MAX_PX)))}px` }}
+                            />
+                          </span>
+                          <span className={styles.weekDate}>{shortDate(weeks[index]?.start ?? '', t)}</span>
+                        </span>
                       ))}
                     </div>
-                    <span className={styles.ratios}>
-                      {cells.map((cell) => (cell === null ? '—' : `${String(cell.correct)}/${String(cell.total)}`)).join(' · ')}
-                    </span>
                   </div>
-                );
-              })}
-            </div>
-            <span className={ui.help}>
-              {p.weeksHelp(weeks.length, weeks[0]?.range ?? '', weeks.at(-1)?.range ?? '')}
-            </span>
+                ))}
+              </div>
+            )}
+            {unpractised.length > 0 && (
+              <p className={styles.unpractised}>{p.partsWithoutPractice(partList(unpractised, t))}</p>
+            )}
+            <span className={ui.help}>{p.weeksHelp(weeks.length)}</span>
           </>
         )}
       </section>

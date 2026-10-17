@@ -12,77 +12,11 @@
   gap: var(--space-3);
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.search {
-  flex: 1 1 280px;
-  max-width: 380px;
-}
-
-.filterButton {
-  border: 1px solid var(--color-rule);
-  font-weight: 400;
-  font-size: 14px;
-}
-
-.tableWrap {
-  overflow-x: auto;
-  /* Bloque contenedor: el caption .sr-only, absoluto, no escapa del scroll. */
-  position: relative;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  border-top: 1px solid var(--color-ink);
-  font-size: 14px;
-  table-layout: fixed;
-}
-
-.table th {
-  padding: 10px var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  color: var(--color-ink-2);
-  font: var(--text-label);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.table td {
-  height: var(--row-h);
-  padding: 6px var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
-  vertical-align: middle;
-}
-
-.table tbody tr {
-  cursor: pointer;
-}
-
-.table tbody tr:hover {
-  background: var(--color-surface-2);
-}
-
-.table tbody tr.selected {
-  background: var(--color-selected);
-  box-shadow: inset 3px 0 0 var(--color-brand);
-}
-
+/* Anchos del historial; el resto lo pone `ui.dataTable`. */
 .colDate { width: 88px; }
 .colPractice { width: 180px; }
 .colScore { width: 100px; }
 .colErrors { width: 72px; }
-.colStatus { width: 110px; }
-
-.right {
-  text-align: right !important;
-  font-variant-numeric: tabular-nums;
-}
 
 .muted {
   color: var(--color-ink-2);
@@ -96,6 +30,14 @@
   min-width: 0;
 }
 
+/* Casi todas están cerradas: solo se marca la excepción, junto al título. */
+.refLine {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1-5) var(--space-3);
+  flex-wrap: wrap;
+}
+
 .ref {
   color: var(--color-ink);
   font-weight: 500;
@@ -105,9 +47,11 @@
   overflow-wrap: anywhere;
 }
 
-.ref:hover {
-  color: var(--color-ink);
-  text-decoration-color: var(--color-ink-2);
+@media (hover: hover) {
+  .ref:hover {
+    color: var(--color-ink);
+    text-decoration-color: var(--color-ink-2);
+  }
 }
 
 .sub {
@@ -125,7 +69,7 @@
   justify-content: center;
   gap: var(--space-4);
   padding-top: var(--space-2);
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--color-ink-2);
 }
 
@@ -140,35 +84,17 @@
 
 .shortcuts {
   display: flex;
-  gap: 20px;
+  gap: var(--space-5);
   flex-wrap: wrap;
   padding-top: var(--space-1);
-  font-size: 12px;
+  font-size: var(--fs-meta);
   color: var(--color-ink-2);
 }
 
 .shortcuts > span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  max-width: 560px;
-  padding-top: var(--space-5);
-  border-top: 1px solid var(--color-rule);
-}
-
-.empty p {
-  color: var(--color-ink-2);
-}
-
-.emptyAction {
-  padding-top: var(--space-2);
+  gap: var(--space-1-5);
 }
 
 /* ── Detalle de sesión ────────────────────────────────────────────────────── */
@@ -177,33 +103,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-}
-
-.detailHead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.titleBlock {
-  display: flex;
-  flex: 1 1 320px;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.titleRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.titleRow h1 {
-  overflow-wrap: anywhere;
 }
 
 .facts {
@@ -246,9 +145,9 @@
 .dataList {
   display: grid;
   grid-template-columns: 140px minmax(0, 1fr);
-  gap: 6px var(--space-3);
+  gap: var(--space-1-5) var(--space-3);
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 
 .dataList dt {
@@ -278,10 +177,6 @@
     display: none;
   }
 
-  .colStatus {
-    width: 96px;
-  }
-
   .colDate {
     width: 64px;
   }
@@ -292,5 +187,95 @@
 
   .shortcuts {
     display: none;
+  }
+}
+
+/* ── Cierre de la tanda ──────────────────────────────────────────────────────
+ * Lo que se acaba de guardar y lo siguiente. Entra una vez, sin rebote: aparece, el
+ * check se asienta y queda quieto. */
+
+/* Vacía no ocupa sitio ni hueco en la columna, pero sigue montada como región viva. */
+.doneRegion:empty {
+  position: absolute;
+}
+
+.done {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3) var(--space-4);
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-1);
+  animation: done-in 240ms var(--ease-out) both;
+}
+
+.doneIcon {
+  color: var(--color-success);
+  animation: done-check 320ms var(--ease-out) 80ms both;
+}
+
+.doneText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.doneTitle {
+  font: var(--text-subtitle);
+}
+
+.doneCards {
+  font-size: var(--fs-body);
+  color: var(--color-ink-2);
+}
+
+.doneActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+@keyframes done-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes done-check {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .done,
+  .doneIcon {
+    animation: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .done {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: var(--space-4);
+  }
+
+  .doneActions {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+}
+
+/* Táctil: la zona que se pulsa llega a 44 px sin mover la fila. */
+@media (pointer: coarse) {
+  .ref,
+  .pagination a {
+    padding-block: var(--space-3);
+    margin-block: calc(-1 * var(--space-3));
   }
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -12,6 +11,8 @@ import { formErrors } from '@/lib/i18n/zod';
 import ui from '../_shared/ui.module.css';
 import { ConfirmDialog } from '../_shared/ConfirmDialog';
 import { useT } from '../_shared/i18nClient';
+import { BackLink } from '../_shared/BackLink';
+import { PageHeader } from '../_shared/PageHeader';
 import { createNoteAction, finishEditingAction, getNoteAction, getNoteByUidAction, saveNoteAction } from './actions';
 import { formatNotebookSelection, type Formatting } from './editorFormatting';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -63,6 +64,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [discardError, setDiscardError] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState(note);
   const savedRef = useRef(note);
@@ -408,24 +410,21 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
 
   return (
     <div className={styles.editor} onKeyDownCapture={onEditorKeyDown}>
-      <div className={styles.heading}>
-        <div>
-          <p className={styles.eyebrow}>{t.nav.notebook}</p>
-          <h1>{savedNote === undefined ? n.newNote : n.editNote}</h1>
-        </div>
-        <Link href={readerHref} className={ui.backLink} onClick={(event) => {
+      <PageHeader
+        title={savedNote === undefined ? n.newNote : n.editNote}
+        back={{ node: (
+        <BackLink href={readerHref} label={savedNote === undefined ? t.nav.notebook : n.reading} onClick={(event) => {
           if (finishingRef.current) { event.preventDefault(); return; }
           if (pendingChanges || issueRef.current !== null) {
-            if (!window.confirm(n.leaveConfirm)) event.preventDefault();
-            else draft.flushNow();
+            event.preventDefault();
+            setConfirmLeave(true);
           } else if (savedRef.current !== undefined && !editorLocked) {
             event.preventDefault();
             void finishEditing();
           }
-        }}>
-          {savedNote === undefined ? n.backToNotebook : n.backToReading}
-        </Link>
-      </div>
+        }} />
+        ) }}
+      />
 
       {draft.candidate !== null && (
         <section className={styles.draftNotice} aria-label={n.recoverableDraft}>
@@ -487,10 +486,12 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
           </select>
           {fieldError('folderId')}
         </label>
-        <label className={ui.field}>{n.tags} <span className={ui.optional}>{n.commaSeparated}</span>
+        <label className={ui.field}>{n.tags}
           <input className={ui.input} value={form.tagsText} placeholder={n.tagsPlaceholder} disabled={editorLocked || finishing}
             aria-invalid={fieldErrors['tags'] !== undefined}
             onChange={(event) => { change({ tagsText: event.target.value }); }} />
+          {/* Bajo el campo, no junto a la etiqueta: así los tres campos empiezan a la misma altura. */}
+          <span className={ui.help}>{n.commaSeparated}</span>
           {fieldError('tags')}
         </label>
       </div>
@@ -535,17 +536,25 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
       <div id="notebook-panel-preview" role="tabpanel" aria-labelledby="notebook-tab-preview" hidden={activeTab !== 'preview'}>
         {/* Oculta no se pinta: parsear el Markdown entero en cada pulsación frenaba la escritura en apuntes largos. */}
         {activeTab === 'preview' && <article className={styles.preview}>
-          <h1 id={hideFirstH1 ? firstHeading?.slug : undefined} className={styles.previewTitle}>{form.title.trim() || n.untitled}</h1>
+          {/* h2: el h1 de la página es «Editar apunte». */}
+          <h2 id={hideFirstH1 ? firstHeading?.slug : undefined} className={styles.previewTitle}>{form.title.trim() || n.untitled}</h2>
           {form.contentMarkdown === '' ? <p className={ui.help}>{n.nothingToShow}</p> : (
             <MarkdownRenderer markdown={form.contentMarkdown} basePath={savedNote === undefined ? '/notebook/' : readerHref} hideFirstH1={hideFirstH1} t={t} />
           )}
         </article>}
       </div>
 
+      {/*
+        El autoguardado ya guarda: lo principal es terminar, que guarda lo pendiente y vuelve al
+        lector. «Guardar ahora» solo aparece cuando queda algo por guardar, en vez de un primario gris.
+      */}
       <div className={styles.actions}>
-        <button type="button" className={ui.primary} disabled={editorLocked || finishing || issue !== null || !pendingChanges} onClick={() => { void save(true); }}>{n.saveNow}</button>
-        <button type="button" className={ui.secondary} disabled={editorLocked || finishing || issue !== null}
+        <button type="button" className={ui.primary} disabled={editorLocked || finishing || issue !== null}
           onClick={() => { void finishEditing(); }}>{n.finishEditing}</button>
+        {(pendingChanges || pending || issue !== null) && (
+          <button type="button" className={ui.secondary} disabled={editorLocked || finishing || issue !== null || !pendingChanges}
+            onClick={() => { void save(true); }}>{n.saveNow}</button>
+        )}
         {error !== null && <p role="alert" className={ui.fieldError}>{error}</p>}
       </div>
       <ConfirmDialog open={confirmDiscard} title={n.discardDraftTitle} confirmLabel={n.discardDraft}
@@ -555,6 +564,11 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
           else setDiscardError(n.discardFailed);
         }} onCancel={() => { setConfirmDiscard(false); setDiscardError(null); }}>
         {n.discardSelectedBody}
+      </ConfirmDialog>
+      <ConfirmDialog open={confirmLeave} title={n.leaveTitle} confirmLabel={n.leaveAnyway}
+        onConfirm={() => { setConfirmLeave(false); draft.flushNow(); router.push(readerHref); }}
+        onCancel={() => { setConfirmLeave(false); }}>
+        {n.leaveConfirm}
       </ConfirmDialog>
       <ConfirmDialog open={confirmLoadRemote} title={n.loadSaved} confirmLabel={n.loadSaved}
         onConfirm={loadSavedVersion} onCancel={() => { setConfirmLoadRemote(false); }}>

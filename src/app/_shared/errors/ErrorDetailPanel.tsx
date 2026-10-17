@@ -13,6 +13,7 @@ import { CorrectionPair } from '../CorrectionPair';
 import { sessionTitle, shortDate } from '../format';
 import { useT } from '../i18nClient';
 import { ankiState } from '../labels';
+import { useInertBehind, useMediaQuery } from '../layer';
 import { useToast } from '../Toast';
 import { usePreservedForm } from '../usePreservedForm';
 import { ankiClass } from './ankiClass';
@@ -22,7 +23,8 @@ import ui from '../ui.module.css';
 
 /**
  * Detalle de un error: leerlo entero sin entrar a editarlo, y editarlo en el mismo sitio.
- * En escritorio es una columna lateral no modal; por debajo de 1024 px ocupa la pantalla.
+ * En escritorio es una columna lateral no modal; por debajo de 1024 px ocupa la pantalla y
+ * deja el fondo inerte.
  * Escape sale de la edición y, si no se está editando, cierra el panel.
  */
 export function ErrorDetailPanel({
@@ -53,6 +55,8 @@ export function ErrorDetailPanel({
   const [editing, setEditing] = useState(false);
   const [editingId, setEditingId] = useState(error.id);
   const panelRef = useRef<HTMLElement>(null);
+  // Bajo 1024 px el detalle es una pantalla: la tabla de detrás no se alcanza.
+  useInertBehind(panelRef, useMediaQuery('(max-width: 1023px)'));
   const closeButton = useRef<HTMLButtonElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(false);
@@ -89,8 +93,9 @@ export function ErrorDetailPanel({
       }}
     >
       <div className={styles.head}>
+        {/* La sesión ya está en los datos de abajo: aquí, qué error es y dónde va. */}
         <span className={styles.context}>
-          {t.errors.errorRef(error.itemRef)} · {title}
+          {t.errors.errorRef(error.itemRef)}
           {position !== null && <span className={styles.position}>{t.errors.position(position.index + 1, position.total)}</span>}
         </span>
         <button type="button" className={ui.iconButton} aria-label={t.review.prevError} onClick={onPrev} disabled={!canStep}>
@@ -132,7 +137,17 @@ export function ErrorDetailPanel({
             <dt>{t.errorForm.confidence}</dt>
             <dd>{t.labels.confidence[error.confidence]}</dd>
             <dt>Anki</dt>
-            <dd className={anki.className}>{anki.label}</dd>
+            <dd>
+              <span className={anki.className}>{anki.label}</span>
+              {ankiOverride === undefined && state === 'PENDING' && (
+                <> · <Link href={`/anki?error=${String(error.id)}`}>{t.errors.ankiCreate}</Link></>
+              )}
+              {ankiOverride === undefined && state === 'LEGACY' && (
+                <span className={styles.ankiHint}>
+                  {t.errors.ankiLegacyHint} <Link href="/anki?tab=convertidas">{t.errors.ankiLegacyLink}</Link>
+                </span>
+              )}
+            </dd>
             <dt>{t.errors.session}</dt>
             <dd>
               {showSessionLink ? (

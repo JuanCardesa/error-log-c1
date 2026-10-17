@@ -17,12 +17,14 @@ export interface ShortcutLabels {
   readonly remove: string;
   readonly paste: string;
   readonly enter: string;
+  readonly undo: string;
 }
 
 const WINDOWS: Omit<ShortcutLabels, 'save' | 'remove' | 'enter'> = {
   search: 'Ctrl+K',
   nextPending: 'Alt+↓',
   paste: 'Ctrl+V',
+  undo: 'Ctrl+Z',
 };
 
 const MAC: ShortcutLabels = {
@@ -32,6 +34,7 @@ const MAC: ShortcutLabels = {
   remove: '⌥⌦',
   paste: '⌘V',
   enter: '↵',
+  undo: '⌘Z',
 };
 
 interface NavigatorWithUAData extends Navigator {

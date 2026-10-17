@@ -14,13 +14,14 @@ import { mediumDate, practiceLongLabel, sessionTitle } from '../_shared/format';
 import { useT } from '../_shared/i18nClient';
 import { Kbd } from '../_shared/Kbd';
 import { useShortcutLabels } from '../_shared/shortcuts';
-import { useToast } from '../_shared/Toast';
+import { useToast, useToastClearance } from '../_shared/Toast';
 import { EMPTY_STATE } from './formState';
 import { importErrorsAction, importSessionAction } from './importActions';
 import { buildImportPayload, type DraftRow, type MissingField, missingFields, nextPendingIndex, snapshotFromDraft } from './reviewRows';
 import { SessionFields } from './SessionFields';
 import { type HeaderDraft, type TandaDraft, clearDraft, readHeaderForm, toImportedSession, writeDraft } from './tandaDraft';
 import styles from './workspace.module.css';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 
 /**
@@ -61,6 +62,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
   const scope = useId();
   const keys = useShortcutLabels();
   const toast = useToast();
+  const bar = useToastClearance<HTMLDivElement>();
   const t = useT();
 
   const [rows, setRows] = useState<readonly DraftRow[]>(initial.rows);
@@ -263,23 +265,27 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
 
   return (
     <section className={styles.workspace} aria-labelledby={`${scope}-title`}>
-      <div className={styles.top}>
-        <div>
-          <button type="button" className={`${ui.backLink} ${styles.back}`} onClick={back}>
+      <PageHeader
+        back={{ node: (
+          <button type="button" className={ui.backLink} onClick={back}>
             <ArrowLeft size={16} aria-hidden="true" />
             {t.review.back}
           </button>
-          <h1 id={`${scope}-title`} ref={headingRef} tabIndex={-1} className={ui.pageTitle}>{t.paste.review}</h1>
-        </div>
-        <div className={styles.dest}>
-          <span>{t.review.destination} <strong>{destLabel}</strong></span>
-          {canChangeTarget && (
-            <button type="button" className={ui.textLink} aria-expanded={changingTarget} onClick={() => { setChangingTarget(!changingTarget); }}>
-              {t.review.changeDest}
-            </button>
-          )}
-        </div>
-      </div>
+        ) }}
+        title={t.paste.review}
+        titleId={`${scope}-title`}
+        titleRef={headingRef}
+        actions={(
+          <div className={styles.dest}>
+            <span>{t.review.destination} <strong>{destLabel}</strong></span>
+            {canChangeTarget && (
+              <button type="button" className={ui.textLink} aria-expanded={changingTarget} onClick={() => { setChangingTarget(!changingTarget); }}>
+                {t.review.changeDest}
+              </button>
+            )}
+          </div>
+        )}
+      />
 
       {changingTarget && canChangeTarget && (
         <div className={`${ui.field} ${styles.destSelect}`}>
@@ -348,19 +354,15 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
         </form>
       </section>
 
-      <div className={styles.progress}>
-        <div className={styles.segments} aria-hidden="true">
-          {rows.map((row) => (
-            <span
-              key={row.id}
-              className={`${styles.segment} ${pending.has(row.id) ? styles.segPending : styles.segDone} ${row.id === selectedId ? styles.segActive : ''}`}
-              onClick={() => { select(row.id); }}
-            />
-          ))}
-        </div>
-        <span className={styles.progressText}>
-          <span className={ui.ok}>{done}</span> / {rows.length} {t.review.complete}
-        </span>
+      {/* Solo un dibujo del avance: el índice y el selector son la navegación, y la barra
+          lo dice con palabras. */}
+      <div className={styles.segments} aria-hidden="true">
+        {rows.map((row) => (
+          <span
+            key={row.id}
+            className={`${styles.segment} ${pending.has(row.id) ? styles.segPending : styles.segDone} ${row.id === selectedId ? styles.segActive : ''}`}
+          />
+        ))}
       </div>
 
       <div className={`${ui.surface} ${styles.grid}`}>
@@ -461,10 +463,10 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
         </div>
       )}
 
-      <div className={styles.bar}>
-        <span id={`${scope}-pending`} className={`${styles.barText} ${pending.size > 0 ? ui.warn : ui.ok}`}>
+      <div ref={bar} className={styles.bar}>
+        <span id={`${scope}-pending`} className={`${styles.barText} ${pending.size > 0 || rows.length === 0 ? '' : ui.ok}`}>
           {pending.size > 0
-            ? t.review.pendingBar(pending.size)
+            ? t.review.pendingBar(done, rows.length)
             : rows.length === 0 ? t.review.noErrorsBar : t.review.readyBar(rows.length)}
         </span>
         <span className={ui.spacer} />
@@ -539,7 +541,7 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
       </p>
     );
   };
-  const detailsOpen = missing.includes('prompt') || ['prompt', 'itemRef', 'myAnswer', 'subcategory', 'lateInSession'].some((field) => errorFor(field).length > 0);
+  const detailsOpen = missing.includes('prompt') || ['prompt', 'itemRef', 'subcategory', 'lateInSession'].some((field) => errorFor(field).length > 0);
 
   return (
     <div className={styles.editor}>
@@ -569,13 +571,17 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
       </div>
 
       <div className={styles.answers}>
+        {/* Tachada como en el resto de la app, pero es un campo: se corrige aquí mismo. */}
         <div className={ui.field}>
-          <span>{t.correction.yourAnswer}</span>
-          {row.myAnswer.trim() === '' ? (
-            <span className={`${styles.mineBox} ${styles.mineMissing}`}>{t.correction.noAnswer}</span>
-          ) : (
-            <s className={styles.mineBox}>{row.myAnswer}</s>
-          )}
+          <label htmlFor={id('mine')}>{t.correction.yourAnswer}</label>
+          <input
+            id={id('mine')}
+            className={`${ui.input} ${styles.mineInput}`}
+            value={row.myAnswer}
+            placeholder={t.correction.noAnswer}
+            autoComplete="off"
+            onChange={(event) => { onChange({ myAnswer: event.target.value }); }}
+          />
         </div>
         <div className={ui.field}>
           <label htmlFor={id('correct')}>{t.correction.correction}</label>
@@ -674,10 +680,6 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
             <div className={ui.field}>
               <label htmlFor={id('f7')}>{t.errorForm.item}</label>
               <input id={id('f7')} className={ui.input} value={row.itemRef} autoComplete="off" onChange={(event) => { onChange({ itemRef: event.target.value }); }} />
-            </div>
-            <div className={ui.field}>
-              <label htmlFor={id('f8')}>{t.correction.yourAnswer}</label>
-              <input id={id('f8')} className={ui.input} value={row.myAnswer} autoComplete="off" onChange={(event) => { onChange({ myAnswer: event.target.value }); }} />
             </div>
             <div className={ui.field}>
               <label htmlFor={id('f9')}>{t.errorForm.subcategory}</label>

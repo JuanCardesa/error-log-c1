@@ -11,8 +11,10 @@ import { q6RewriteEfficacy } from '@/lib/queries/q6RewriteEfficacy';
 import { countByStatus, searchLibrary, selectLibrary, type LibraryQuery } from '@/lib/writing/library';
 import { parseProgressFilters } from '@/lib/writing/progress';
 import { writingHref } from '@/lib/writing/urls';
-import { decimal, mediumDate, percent, shortDate } from '../_shared/format';
+import { decimal, mediumDate, percent, shortDate, signedDecimal } from '../_shared/format';
+import { EmptyState } from '../_shared/EmptyState';
 import { getT } from '../_shared/i18nServer';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -60,23 +62,31 @@ export default async function WritingPage({ searchParams }: { readonly searchPar
 
   return (
     <div className={styles.page}>
-      <div className={styles.head}>
-        <div className={ui.pageHead}>
-          <h1 className={ui.pageTitle}>{t.nav.writing}</h1>
-          <Link href="/writing/importar" className={ui.primary}>
-            <Upload size={16} aria-hidden="true" />
-            {t.writingImport.title}
-          </Link>
-        </div>
-        <RouteTabs
-          label={w.views}
-          items={[
-            { href: '/writing', label: w.library, current: tab === 'biblioteca' },
-            { href: '/writing?tab=progreso', label: w.progressTab, current: tab === 'progreso' },
-            { href: `/writing?tab=reescrituras${windowDays === 30 ? '' : `&w=${String(windowDays)}`}`, label: w.rewrites, current: tab === 'reescrituras' },
-          ]}
-        />
-      </div>
+      <PageHeader
+        title={t.nav.writing}
+        actions={(
+          <>
+            {/* El periodo solo mueve Reescrituras: va arriba, como en Progreso, y solo en esa pestaña. */}
+            {tab === 'reescrituras' && (
+              <WindowSwitch current={windowDays} basePath="/writing" keep={{ tab: 'reescrituras' }} label={w.rewritesPeriod} />
+            )}
+            <Link href="/writing/importar" className={ui.primary}>
+              <Upload size={16} aria-hidden="true" />
+              {t.writingImport.title}
+            </Link>
+          </>
+        )}
+        tabs={(
+          <RouteTabs
+            label={w.views}
+            items={[
+              { href: '/writing', label: w.library, current: tab === 'biblioteca' },
+              { href: '/writing?tab=progreso', label: w.progressTab, current: tab === 'progreso' },
+              { href: `/writing?tab=reescrituras${windowDays === 30 ? '' : `&w=${String(windowDays)}`}`, label: w.rewrites, current: tab === 'reescrituras' },
+            ]}
+          />
+        )}
+      />
 
       {edit !== '' && <p className={ui.helpWarn} role="status">{w.notFound}</p>}
 
@@ -99,10 +109,7 @@ function Library({ items, query, t }: {
   const w = t.writing;
   if (items.length === 0) {
     return (
-      <div className={styles.empty}>
-        <p>{w.empty}</p>
-        <Link href="/writing/importar" className={ui.textLink}>{t.writingImport.title}</Link>
-      </div>
+      <EmptyState cause={w.empty} action={<Link href="/writing/importar" className={ui.textLink}>{t.writingImport.title}</Link>} />
     );
   }
   const shown = selectLibrary(items, query);
@@ -110,10 +117,11 @@ function Library({ items, query, t }: {
     <section className={styles.library} aria-label={w.library}>
       <LibraryToolbar query={query} counts={countByStatus(searchLibrary(items, query))} />
       {shown.length === 0 ? (
-        <div className={styles.empty}>
-          <p>{w.noMatch}</p>
-          {isFiltered(query) && <Link href="/writing" className={ui.textLink}>{t.common.clearFilters}</Link>}
-        </div>
+        <EmptyState
+          cause={query.q.trim() !== '' ? w.noMatchQuery(query.q.trim())
+            : query.status === 'AWAITING' && query.genre === null ? w.noAwaiting : w.noMatchFilters}
+          action={isFiltered(query) ? <Link href="/writing" className={ui.textLink}>{t.common.clearFilters}</Link> : undefined}
+        />
       ) : (
         <ul className={styles.entries} aria-label={w.listLabel(shown.length)}>
           {shown.map((item) => <Entry key={item.id} item={item} t={t} />)}
@@ -167,16 +175,13 @@ function Rewrites({ windowDays, items, t }: {
   const byId = new Map(items.map((item) => [item.id, item]));
   return (
     <div className={styles.rewrites}>
-      <div className={styles.rewritesHead}>
-        <p className={ui.help}>
-          {q6.pairs.length === 0
-            ? t.writing.noPairs(windowDays)
-            : q6.pctRepeated === null
-              ? t.writing.noOriginalErrors
-              : t.writing.repeatSummary(q6.totalRepeated, q6.totalOriginalErrors, percent(q6.pctRepeated, t), percent(REWRITE_REPEAT_PCT, t))}
-        </p>
-        <WindowSwitch current={windowDays} basePath="/writing" keep={{ tab: 'reescrituras' }} label={t.writing.rewritesPeriod} />
-      </div>
+      <p className={ui.help}>
+        {q6.pairs.length === 0
+          ? t.writing.noPairs(windowDays)
+          : q6.pctRepeated === null
+            ? t.writing.noOriginalErrors
+            : t.writing.repeatSummary(q6.totalRepeated, q6.totalOriginalErrors, percent(q6.pctRepeated, t), percent(REWRITE_REPEAT_PCT, t))}
+      </p>
       {q6.pairs.map((pair) => {
         const original = byId.get(pair.originalId);
         const rewrite = byId.get(pair.rewriteId);
@@ -184,34 +189,36 @@ function Rewrites({ windowDays, items, t }: {
         return (
           <section key={pair.rewriteId} className={styles.pair} aria-label={t.writing.pairLabel(original.title)}>
             <h2 className={styles.pairTitle}>{t.writing.pairTitle(original.title)}</h2>
-            <table className={styles.compare}>
-              <caption className="sr-only">{t.writing.compareCaption}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t.writing.band}</th>
-                  <th scope="col" className={styles.center}>{t.writing.originalCol(shortDate(original.date, t))}</th>
-                  <th scope="col" className={styles.center}>{t.writing.newCol(shortDate(rewrite.date, t))}</th>
-                  <th scope="col" className={styles.rightCell}>{t.writing.change}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BANDS.map((band) => {
-                  const before = original.row.piece[band.name];
-                  const after = rewrite.row.piece[band.name];
-                  const diff = before === null || after === null ? null : after - before;
-                  return (
-                    <tr key={band.name}>
-                      <th scope="row">{band.label}</th>
-                      <td className={styles.center}>{bandValue(before, t)}</td>
-                      <td className={`${styles.center} ${styles.strong}`}>{bandValue(after, t)}</td>
-                      <td className={`${styles.rightCell} ${diff !== null && diff > 0 ? ui.ok : diff !== null && diff < 0 ? ui.dangerText : styles.muted}`}>
-                        {diff === null ? '—' : diff > 0 ? `+${decimal(diff, t)}` : diff === 0 ? '=' : decimal(diff, t)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className={ui.scrollX}>
+              <table className={ui.dataTable}>
+                <caption className="sr-only">{t.writing.compareCaption}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{t.writing.band}</th>
+                    <th scope="col" className={ui.colNum}>{t.writing.originalCol(shortDate(original.date, t))}</th>
+                    <th scope="col" className={ui.colNum}>{t.writing.newCol(shortDate(rewrite.date, t))}</th>
+                    <th scope="col" className={ui.colNum}>{t.writing.change}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {BANDS.map((band) => {
+                    const before = original.row.piece[band.name];
+                    const after = rewrite.row.piece[band.name];
+                    const diff = before === null || after === null ? null : after - before;
+                    return (
+                      <tr key={band.name}>
+                        <th scope="row">{band.label}</th>
+                        <td className={ui.colNum}>{bandValue(before, t)}</td>
+                        <td className={`${ui.colNum} ${styles.strong}`}>{bandValue(after, t)}</td>
+                        <td className={`${ui.colNum} ${diff === null || diff === 0 ? styles.muted : styles.strong}`}>
+                          {diff === null ? '—' : signedDecimal(diff, t)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
             <p className={ui.help}>
               {pair.pctRepeated === null
                 ? t.writing.originalNoErrors
