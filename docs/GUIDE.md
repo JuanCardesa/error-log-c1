@@ -4,8 +4,8 @@ El [README](../README.md) presenta Error Log C1 en inglés y explica cómo arran
 reúne el detalle del uso diario, en español: registrar, pegar correcciones, Notebook, Progreso
 y Anki, copias y desarrollo.
 
-La interfaz arranca en inglés. El español se elige en **Ajustes → Idioma** (*Settings →
-Language*, en el menú «Más») y este navegador lo recuerda. Los nombres de botones y menús de
+La interfaz arranca en inglés. El español se elige en el menú **Más → Idioma** (*More →
+Language*) de la cabecera y este navegador lo recuerda. Los nombres de botones y menús de
 esta guía son los de la interfaz en español. Cambiar de idioma no toca lo que guardas: apuntes,
 errores, reglas y sesiones se leen tal como los escribiste.
 
