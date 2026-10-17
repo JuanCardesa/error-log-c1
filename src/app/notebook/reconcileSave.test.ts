@@ -7,6 +7,7 @@ const base: NotebookNote = {
   id: 42, uid: '9c8de1e3-03e6-42ec-a098-ac0db92331d0', revision: 1,
   title: 'Original', folderId: null, tags: [], contentMarkdown: 'Old',
   createdAt: '2026-09-29T10:00:00.000Z', updatedAt: '2026-09-29T10:00:00.000Z',
+  favoritedAt: null,
 };
 const snapshot = { uid: base.uid, title: 'Updated', folderId: null, tags: ['part4'], contentMarkdown: 'New' };
 const save: WriteAttempt = { kind: 'save', base, snapshot };

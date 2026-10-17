@@ -5,7 +5,7 @@ import { useId, useState } from 'react';
 
 import { PAPERS, SESSION_KINDS, SOURCES, partsFor, type Paper } from '@/lib/domain/enums';
 import type { ImportedSession } from '@/lib/import/errors';
-import { KIND_LABELS, PAPER_LONG_LABELS, SOURCE_LABELS } from '../_shared/labels';
+import { useT } from '../_shared/i18nClient';
 import styles from './session.module.css';
 import ui from '../_shared/ui.module.css';
 
@@ -23,6 +23,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
   readonly onTimedChange?: (timed: boolean) => void;
   readonly idPrefix?: string;
 }) {
+  const t = useT();
   const generatedId = useId();
   const fieldId = idPrefix ?? generatedId;
   const [paper, setPaper] = useState<Paper | null>(defaults?.paper === undefined ? 'RUOE' : defaults.paper);
@@ -48,10 +49,10 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
   return (
     <div className={styles.groups}>
       <div className={styles.group}>
-        <span className={styles.groupLabel}>Práctica</span>
+        <span className={styles.groupLabel}>{t.sessionForm.practice}</span>
         <div className={styles.grid2}>
           <div className={ui.field}>
-            <label htmlFor={`${fieldId}-f1`}>Fecha</label>
+            <label htmlFor={`${fieldId}-f1`}>{t.sessionForm.date}</label>
             <input id={`${fieldId}-f1`}
               type="date"
               name="date"
@@ -66,7 +67,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
           </div>
 
           <div className={ui.field}>
-            <label htmlFor={`${fieldId}-f2`}>Tipo</label>
+            <label htmlFor={`${fieldId}-f2`}>{t.sessionForm.kind}</label>
             <select id={`${fieldId}-f2`}
               name="kind"
               className={ui.select}
@@ -79,13 +80,13 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
               }}
             >
               {SESSION_KINDS.map((value) => (
-                <option key={value} value={value}>{KIND_LABELS[value]}</option>
+                <option key={value} value={value}>{t.labels.kind[value]}</option>
               ))}
             </select>
           </div>
 
           <div className={ui.field}>
-            <label htmlFor={`${fieldId}-f3`}>Formato de examen</label>
+            <label htmlFor={`${fieldId}-f3`}>{t.sessionForm.examFormat}</label>
             <select id={`${fieldId}-f3`}
               name="paper"
               className={ui.select}
@@ -97,10 +98,10 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
               aria-invalid={invalid('paper')}
               aria-describedby={describedBy('paper')}
             >
-              <option value="" disabled={kind === 'WRITING'}>Sin formato de examen</option>
+              <option value="" disabled={kind === 'WRITING'}>{t.format.noExamFormat}</option>
               {PAPERS.map((value) => (
                 <option key={value} value={value} disabled={kind === 'WRITING' && value !== 'WRITING'}>
-                  {PAPER_LONG_LABELS[value]}
+                  {t.labels.paperLong[value]}
                 </option>
               ))}
             </select>
@@ -109,7 +110,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
 
           {paper !== null && (
             <div className={ui.field}>
-              <label htmlFor={`${fieldId}-f4`}>Part</label>
+              <label htmlFor={`${fieldId}-f4`}>{t.sessionForm.part}</label>
               <select id={`${fieldId}-f4`}
                 name="part"
                 className={ui.select}
@@ -119,7 +120,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
                 aria-describedby={describedBy('part')}
               >
                 {partsFor(paper).map((value) => (
-                  <option key={value} value={value}>Part {value}</option>
+                  <option key={value} value={value}>{t.format.part(value)}</option>
                 ))}
               </select>
               {fieldError('part')}
@@ -130,16 +131,16 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
       </div>
 
       <div className={styles.group}>
-        <span className={styles.groupLabel}>Resultado</span>
+        <span className={styles.groupLabel}>{t.sessionForm.result}</span>
         {isWriting ? (
           <p className={styles.groupNote}>
-            Writing no registra ítems ni aciertos. La evaluación se guarda en su registro de Writing.
+            {t.sessionForm.writingNote}
           </p>
         ) : (
           <div className={styles.groupStack}>
             <div className={styles.grid2}>
               <div className={ui.field}>
-                <label htmlFor={`${fieldId}-f5`}>Ítems intentados</label>
+                <label htmlFor={`${fieldId}-f5`}>{t.sessionForm.itemsAttempted}</label>
                 <input id={`${fieldId}-f5`}
                   type="number"
                   name="itemsTotal"
@@ -153,7 +154,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
                 {fieldError('itemsTotal')}
               </div>
               <div className={ui.field}>
-                <label htmlFor={`${fieldId}-f6`}>Aciertos</label>
+                <label htmlFor={`${fieldId}-f6`}>{t.sessionForm.correct}</label>
                 <input id={`${fieldId}-f6`}
                   type="number"
                   name="itemsCorrect"
@@ -167,29 +168,29 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
                 {fieldError('itemsCorrect')}
               </div>
             </div>
-            <span className={ui.help}>Una sesión perfecta también es válida: registra 8 de 8 y ciérrala.</span>
+            <span className={ui.help}>{t.sessionForm.perfectHelp}</span>
           </div>
         )}
       </div>
 
       <div className={styles.group}>
-        <span className={styles.groupLabel}>Origen</span>
+        <span className={styles.groupLabel}>{t.sessionForm.origin}</span>
         <div className={styles.gridOrigin}>
           <div className={ui.field}>
-            <label htmlFor={`${fieldId}-f7`}>Fuente</label>
+            <label htmlFor={`${fieldId}-f7`}>{t.sessionForm.source}</label>
             <select id={`${fieldId}-f7`} name="source" className={ui.select} defaultValue={defaults?.source ?? 'LIBRO'}>
               {SOURCES.map((value) => (
-                <option key={value} value={value}>{SOURCE_LABELS[value]}</option>
+                <option key={value} value={value}>{t.labels.source[value]}</option>
               ))}
             </select>
           </div>
           <div className={ui.field}>
-            <label htmlFor={`${fieldId}-f8`}><span>Referencia <span className={ui.optional}>· opcional</span></span></label>
+            <label htmlFor={`${fieldId}-f8`}><span>{t.sessionForm.reference} <span className={ui.optional}>{t.common.optional}</span></span></label>
             <input id={`${fieldId}-f8`}
               name="sourceRef"
               autoComplete="off"
               className={ui.input}
-              placeholder="Unidad, test o ejercicio"
+              placeholder={t.sessionForm.referencePlaceholder}
               defaultValue={defaults?.sourceRef ?? ''}
             />
           </div>
@@ -199,12 +200,12 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
       <details className={`${ui.disclosure} ${styles.timeGroup}`} open={hasTime || undefined}>
         <summary>
           <ChevronRight size={14} className="chevron" aria-hidden="true" />
-          <span className={styles.summaryStrong}>Tiempo y duración</span>
-          <span className={ui.optional}>· opcional</span>
+          <span className={styles.summaryStrong}>{t.sessionForm.timeAndDuration}</span>
+          <span className={ui.optional}>{t.common.optional}</span>
         </summary>
         <div className={styles.timeFields}>
           <div className={`${ui.field} ${styles.duration}`}>
-            <label htmlFor={`${fieldId}-f9`}>Duración (min)</label>
+            <label htmlFor={`${fieldId}-f9`}>{t.sessionForm.durationMin}</label>
             <input id={`${fieldId}-f9`}
               type="number"
               name="durationMin"
@@ -223,7 +224,7 @@ export function SessionFields({ today, defaults, fieldErrors = {}, onTimedChange
               defaultChecked={defaults?.timed ?? false}
               onChange={(event) => onTimedChange?.(event.target.checked)}
             />
-            Cronometrada
+            {t.sessionForm.timed}
           </label>
         </div>
       </details>

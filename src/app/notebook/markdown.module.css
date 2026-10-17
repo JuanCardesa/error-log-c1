@@ -1,5 +1,5 @@
 .markdown {
-  font: 400 18px/1.65 var(--font-serif);
+  font: 400 var(--fs-section)/1.65 var(--font-serif);
   color: var(--color-ink);
   overflow-wrap: anywhere;
 }

@@ -1,9 +1,11 @@
 import Link from 'next/link';
 
 import type { NotebookSearchHit } from '@/lib/db/notebookSearch';
+import type { Messages } from '@/lib/i18n';
 import { findNotebookTextMatch, type NotebookTextMatch } from '@/lib/notebook/searchText';
 import type { NotebookFolder } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
+import { FavoriteToggle } from './FavoriteToggle';
 import styles from './notebook.module.css';
 
 function MarkedText({ text, match }: { readonly text: string; readonly match: NotebookTextMatch | null }) {
@@ -11,10 +13,11 @@ function MarkedText({ text, match }: { readonly text: string; readonly match: No
   return <>{text.slice(0, match.start)}<mark className={styles.searchMark}>{text.slice(match.start, match.end)}</mark>{text.slice(match.end)}</>;
 }
 
-export function NotebookSearchResults({ hits, folders, query }: {
+export function NotebookSearchResults({ hits, folders, query, t }: {
   readonly hits: readonly NotebookSearchHit[];
   readonly folders: readonly NotebookFolder[];
   readonly query: string;
+  readonly t: Messages;
 }) {
   return (
     <ul className={styles.searchResults}>
@@ -23,24 +26,27 @@ export function NotebookSearchResults({ hits, folders, query }: {
         const parent = folders.find((item) => item.id === folder?.parentId);
         const href = `${notebookNoteHref(note)}${excerpt?.heading === null || excerpt?.heading === undefined ? '' : `#${excerpt.heading.slug}`}`;
         return (
-          <li key={note.id}>
+          <li key={note.id} className={styles.noteRow}>
             <p className={styles.resultPath}>
-              Notebook · {parent === undefined ? '' : `${parent.name} / `}{folder?.name ?? 'Sin carpeta'}
+              {t.nav.notebook} · {parent === undefined ? '' : `${parent.name} / `}{folder?.name ?? t.notebook.noFolder}
               {excerpt?.heading !== null && excerpt?.heading !== undefined && ` / ${excerpt.heading.text}`}
             </p>
-            <Link href={href} className={styles.noteLink}>
-              <MarkedText text={note.title} match={findNotebookTextMatch(note.title, query)} />
-            </Link>
+            <div className={styles.noteRowMain}>
+              <FavoriteToggle id={note.id} title={note.title} favoritedAt={note.favoritedAt} compact />
+              <Link href={href} className={styles.noteLink}>
+                <MarkedText text={note.title} match={findNotebookTextMatch(note.title, query)} />
+              </Link>
+            </div>
             {excerpt !== null && (
               <p className={styles.resultSnippet}>
                 <MarkedText text={excerpt.text} match={excerpt.match} />
               </p>
             )}
             {excerpt === null && matchedIn !== null && (
-              <p className={styles.resultHint}>{matchedIn === 'title' ? 'Coincidencia en el título' : 'Coincidencia en una etiqueta'}</p>
+              <p className={styles.resultHint}>{matchedIn === 'title' ? t.notebook.matchTitle : t.notebook.matchTag}</p>
             )}
             {note.tags.length > 0 && (
-              <ul className={styles.resultTags} aria-label="Etiquetas">
+              <ul className={styles.resultTags} aria-label={t.notebook.tags}>
                 {note.tags.map((tag) => <li key={tag}><MarkedText text={tag} match={findNotebookTextMatch(tag, query)} /></li>)}
               </ul>
             )}

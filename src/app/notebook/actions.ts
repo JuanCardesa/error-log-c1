@@ -17,9 +17,12 @@ import {
   getNotebookNoteByUid,
   saveNotebookNote,
   saveNotebookAnnotation,
+  setNotebookNoteFavorite,
   updateNotebookFolder,
 } from '@/lib/db/notebookRepo';
 import { searchNotebookNotes } from '@/lib/db/notebookSearch';
+import type { Messages } from '@/lib/i18n';
+import { formErrors } from '@/lib/i18n/zod';
 import { parseNotebookMarkdownImport, type NotebookImportDraft } from '@/lib/notebook/import';
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import { saveStudyAnnotationSchema } from '@/lib/notebook/annotationSchemas';
@@ -38,6 +41,7 @@ import {
   notebookImportSizeError,
   removeErrorNoteLinkSchema,
   saveNotebookNoteSchema,
+  setNotebookNoteFavoriteSchema,
   searchNotebookSchema,
   setErrorNoteLinkSchema,
   updateNotebookFolderSchema,
@@ -49,19 +53,24 @@ import type {
 } from '@/lib/notebook/types';
 import { notebookNoteHref } from '@/lib/notebook/urls';
 import { collectIssues, text } from '../_shared/formData';
+import { getT } from '../_shared/i18nServer';
 
-/** Cada Server Action es un POST público: validar incluso si el cliente tiene tipos. */
-function validated<TSchema extends z.ZodType, T>(
+/**
+ * Cada Server Action es un POST público: validar incluso si el cliente tiene tipos. Los
+ * avisos salen en el idioma de la interfaz de quien llama.
+ */
+async function validated<TSchema extends z.ZodType, T>(
   schema: TSchema,
   raw: unknown,
   operation: (input: z.output<TSchema>) => T,
-): NotebookResult<T> {
-  const parsed = schema.safeParse(raw);
+): Promise<NotebookResult<T>> {
+  const t = await getT();
+  const parsed = schema.safeParse(raw, { error: formErrors(t) });
   if (!parsed.success) {
     return {
       ok: false,
       code: 'VALIDATION',
-      message: 'Revisa los campos indicados.',
+      message: t.notebook.checkFields,
       fieldErrors: collectIssues(parsed.error),
     };
   }
@@ -72,12 +81,12 @@ function validated<TSchema extends z.ZodType, T>(
       return {
         ok: false,
         code: error.code,
-        message: error.message,
+        message: error.text(t),
         ...(error.current === undefined ? {} : { current: error.current }),
       };
     }
     // Los detalles de SQLite y el Markdown personal no se devuelven al navegador.
-    return { ok: false, code: 'PERSISTENCE', message: 'No se pudo completar la operación. Inténtalo de nuevo.' };
+    return { ok: false, code: 'PERSISTENCE', message: t.common.unexpected };
   }
 }
 
@@ -93,6 +102,15 @@ export async function saveNoteAction(raw: unknown): Promise<NotebookResult<Noteb
     saveNotebookNote(getDb(), input, new Date().toISOString()));
 }
 
+export async function setNoteFavoriteAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {
+  return validated(setNotebookNoteFavoriteSchema, raw, (input) => {
+    const note = setNotebookNoteFavorite(getDb(), input, new Date().toISOString());
+    revalidatePath('/notebook');
+    revalidatePath(notebookNoteHref(note));
+    return note;
+  });
+}
+
 export async function saveStudyAnnotationAction(raw: unknown): Promise<NotebookResult<NotebookAnnotation[]>> {
   return validated(saveStudyAnnotationSchema, raw, (input) =>
     saveNotebookAnnotation(getDb(), input, new Date().toISOString()));
@@ -102,7 +120,7 @@ export async function getNoteAction(raw: unknown): Promise<NotebookResult<Notebo
   return validated(getNotebookNoteSchema, raw, ({ id, uid }) => {
     const note = getNotebookNote(getDb(), id);
     if (note === null || (uid !== undefined && note.uid !== uid)) {
-      throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+      throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteNotFound);
     }
     return note;
   });
@@ -111,7 +129,7 @@ export async function getNoteAction(raw: unknown): Promise<NotebookResult<Notebo
 export async function getNoteByUidAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {
   return validated(getNotebookNoteByUidSchema, raw, ({ uid }) => {
     const note = getNotebookNoteByUid(getDb(), uid);
-    if (note === null) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+    if (note === null) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteNotFound);
     return note;
   });
 }
@@ -120,9 +138,9 @@ export async function getNoteByUidAction(raw: unknown): Promise<NotebookResult<N
 export async function finishEditingAction(raw: unknown): Promise<NotebookResult<NotebookNote>> {
   return validated(finishNotebookEditingSchema, raw, ({ id, uid, expectedRevision, previousTitle }) => {
     const note = getNotebookNote(getDb(), id);
-    if (note === null || note.uid !== uid) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+    if (note === null || note.uid !== uid) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteNotFound);
     if (note.revision !== expectedRevision) {
-      throw new NotebookRepoError('CONFLICT', 'El apunte cambió en otra pestaña', note);
+      throw new NotebookRepoError('CONFLICT', (t) => t.notebookErrors.changedInOtherTab, note);
     }
     revalidatePath('/notebook');
     revalidatePath(notebookNoteHref(note));
@@ -174,7 +192,7 @@ export async function searchNotesAction(raw: unknown): Promise<NotebookResult<No
 export async function getNoteOutlineAction(raw: unknown): Promise<NotebookResult<NotebookOutline>> {
   return validated(getNotebookOutlineSchema, raw, ({ id }) => {
     const note = getNotebookNote(getDb(), id);
-    if (note === null) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+    if (note === null) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteNotFound);
     return { revision: note.revision, headings: analyzeNotebookMarkdown(note.contentMarkdown).headings };
   });
 }
@@ -212,22 +230,23 @@ function importFailure(message: string): NotebookResult<never> {
 }
 
 /** El tamaño se comprueba antes de leer: el nombre y el contenido se analizan de nuevo aquí. */
-async function readImportFile(form: FormData): Promise<NotebookResult<NotebookImportDraft>> {
+async function readImportFile(form: FormData, t: Messages): Promise<NotebookResult<NotebookImportDraft>> {
   const file = form.get('file');
-  if (file === null || typeof file === 'string') return importFailure('Elige un archivo .md.');
-  const sizeError = notebookImportSizeError(file.size);
+  if (file === null || typeof file === 'string') return importFailure(t.notebook.chooseMd);
+  const sizeError = notebookImportSizeError(file.size, t);
   if (sizeError !== null) return importFailure(sizeError);
-  const parsed = parseNotebookMarkdownImport(file.name, new Uint8Array(await file.arrayBuffer()));
+  const parsed = parseNotebookMarkdownImport(file.name, new Uint8Array(await file.arrayBuffer()), t);
   return parsed.ok ? { ok: true, data: parsed.draft } : importFailure(parsed.message);
 }
 
 /** Solo analiza: no escribe nada hasta `importMarkdownAction`. */
 export async function previewMarkdownImportAction(raw: unknown): Promise<NotebookResult<NotebookImportDraft>> {
-  if (!(raw instanceof FormData)) return importFailure('Elige un archivo .md.');
+  const t = await getT();
+  if (!(raw instanceof FormData)) return importFailure(t.notebook.chooseMd);
   try {
-    return await readImportFile(raw);
+    return await readImportFile(raw, t);
   } catch {
-    return { ok: false, code: 'PERSISTENCE', message: 'No se pudo leer el archivo. Vuelve a elegirlo.' };
+    return { ok: false, code: 'PERSISTENCE', message: t.notebook.readFailed };
   }
 }
 
@@ -239,16 +258,17 @@ export async function importMarkdownAction(raw: unknown): Promise<NotebookResult
   readonly href: string;
   readonly created: boolean;
 }>> {
-  if (!(raw instanceof FormData)) return importFailure('Elige un archivo .md.');
+  const t = await getT();
+  if (!(raw instanceof FormData)) return importFailure(t.notebook.chooseMd);
   let read: NotebookResult<NotebookImportDraft>;
   try {
-    read = await readImportFile(raw);
+    read = await readImportFile(raw, t);
   } catch {
-    return { ok: false, code: 'PERSISTENCE', message: 'No se pudo leer el archivo. Vuelve a elegirlo.' };
+    return { ok: false, code: 'PERSISTENCE', message: t.notebook.readFailed };
   }
   if (!read.ok) return read;
   if (read.data.contentHash !== text(raw, 'contentHash')) {
-    return importFailure('El archivo cambió desde la vista previa. Vuelve a elegirlo para revisar la versión actual.');
+    return importFailure(t.notebook.fileChanged);
   }
   const folder = text(raw, 'folderId').trim();
   return validated(createNotebookNoteSchema, {

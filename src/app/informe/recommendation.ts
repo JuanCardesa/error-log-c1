@@ -1,14 +1,17 @@
 import { MIN_N } from '@/lib/domain/thresholds';
+import type { Messages } from '@/lib/i18n';
 import type { RuleEvaluation, RulesReport } from '@/lib/rules';
 import type { Q5Result } from '@/lib/queries/q5AnkiDebt';
-import { RULE_RECOMMENDATIONS, RULE_SIGNAL_LABELS, categoryLabel } from '../_shared/labels';
+import { percent } from '../_shared/format';
+import { categoryLabel, ruleRecommendationLabel, ruleSignalLabel } from '../_shared/labels';
 
 /**
  * Qué dice la banda de recomendación de Progreso. Distingue lo que el motor sabe de lo
  * que no: sin datos, con muestra insuficiente, con señales a vigilar o sin alertas no son
  * lo mismo, y ninguno se presenta como un buen resultado.
  *
- * La prioridad, los umbrales y las guardas son del motor; aquí solo se redacta.
+ * La prioridad, los umbrales y las guardas son del motor; aquí solo se redacta, en el
+ * idioma de la interfaz.
  */
 
 export interface Recommendation {
@@ -20,83 +23,85 @@ export interface Recommendation {
   readonly why: string | null;
 }
 
-export function formatValue(rule: RuleEvaluation): string {
+export function formatValue(rule: RuleEvaluation, t: Messages): string {
   if (rule.value === null) return '—';
-  return rule.unit === 'pct' ? `${String(rule.value).replace('.', ',')} %` : String(rule.value);
+  return rule.unit === 'pct' ? percent(rule.value, t) : String(rule.value);
 }
 
-export function formatThreshold(rule: RuleEvaluation): string {
+export function formatThreshold(rule: RuleEvaluation, t: Messages): string {
   const sign = rule.direction === 'above' ? (rule.inclusive ? '≥' : '>') : '<';
-  return rule.unit === 'pct' ? `${sign} ${String(rule.threshold)} %` : `${sign} ${String(rule.threshold)}`;
+  return rule.unit === 'pct' ? `${sign} ${percent(rule.threshold, t)}` : `${sign} ${String(rule.threshold)}`;
 }
 
-export function signalLabel(rule: RuleEvaluation): string {
-  return RULE_SIGNAL_LABELS[rule.id] ?? rule.signal;
+export function signalLabel(rule: RuleEvaluation, t: Messages): string {
+  return ruleSignalLabel(rule.id, t) ?? rule.signal;
 }
 
-export function recommendationTitle(rule: RuleEvaluation): string {
-  const base = RULE_RECOMMENDATIONS[rule.id] ?? rule.action;
-  return rule.id === 3 && rule.detail !== null ? `${base}: ${categoryLabel(rule.detail)}` : base;
+export function recommendationTitle(rule: RuleEvaluation, t: Messages): string {
+  const base = ruleRecommendationLabel(rule.id, t) ?? rule.action;
+  return rule.id === 3 && rule.detail !== null ? `${base}: ${categoryLabel(rule.detail, t)}` : base;
 }
 
-function evidence(rule: RuleEvaluation, q5: Q5Result, windowDays: number): string {
+function evidence(rule: RuleEvaluation, q5: Q5Result, windowDays: number, t: Messages): string {
+  const p = t.progress;
   switch (rule.id) {
     case 4:
       // El denominador de la regla 4 son los errores elegibles, no el total.
-      return `${String(q5.added)} de ${String(q5.eligible)} errores elegibles de los últimos ${String(windowDays)} días tienen tarjeta. En total hay ${String(q5.queue.length)} pendientes en la cola.`;
+      return p.evidenceAnki(q5.added, q5.eligible, windowDays, q5.queue.length);
     case 2:
-      return `${String(rule.value ?? 0)} errores registrados con confianza «Seguro» en los últimos 30 días.`;
+      return p.evidenceSure(rule.value ?? 0);
     case 3:
-      return `${rule.detail === null ? 'Una categoría' : categoryLabel(rule.detail)} reúne el ${formatValue(rule)} de ${String(rule.sampleSize)} errores del periodo.`;
+      return p.evidenceCategory(rule.detail === null ? null : categoryLabel(rule.detail, t), formatValue(rule, t), rule.sampleSize);
     case 5:
-      return `El ${formatValue(rule)} de ${String(rule.sampleSize)} errores de sesiones cronometradas llegó al final de la sesión.`;
+      return p.evidenceLate(formatValue(rule, t), rule.sampleSize);
     case 6:
-      return `El ${formatValue(rule)} de ${String(rule.sampleSize)} errores de los textos originales reaparece en sus reescrituras.`;
+      return p.evidenceRewrite(formatValue(rule, t), rule.sampleSize);
     default:
-      return `${signalLabel(rule)}: ${formatValue(rule)} sobre ${String(rule.sampleSize)} errores del periodo.`;
+      return p.evidenceDefault(signalLabel(rule, t), formatValue(rule, t), rule.sampleSize);
   }
 }
 
-function actionFor(rule: RuleEvaluation, windowDays: number): Recommendation['action'] {
+function actionFor(rule: RuleEvaluation, windowDays: number, t: Messages): Recommendation['action'] {
   switch (rule.id) {
-    case 2: return { href: '/certezas', label: 'Ver falsas certezas' };
-    case 3: return rule.detail === null ? null : { href: `/errores?cat=${rule.detail}&w=${String(windowDays)}`, label: 'Ver sus errores' };
-    case 4: return { href: '/anki', label: 'Ver pendientes' };
-    case 6: return { href: '/writing?tab=reescrituras', label: 'Ver reescrituras' };
+    case 2: return { href: '/certezas', label: t.progress.seeFalseCertainties };
+    case 3: return rule.detail === null ? null : { href: `/errores?cat=${rule.detail}&w=${String(windowDays)}`, label: t.progress.seeItsErrors };
+    case 4: return { href: '/anki', label: t.progress.seePending };
+    case 6: return { href: '/writing?tab=reescrituras', label: t.progress.seeRewrites };
     default: return null;
   }
 }
 
-export function recommend(report: RulesReport, q5: Q5Result, totalErrors: number, windowDays: number): Recommendation {
+export function recommend(report: RulesReport, q5: Q5Result, totalErrors: number, windowDays: number, t: Messages): Recommendation {
+  const p = t.progress;
   const winner = report.doNow;
   if (winner !== null) {
     // La regla 4 se mide sobre los errores elegibles de Q5, no sobre el total.
-    const sample = winner.id === 4 ? `${String(q5.eligible)} errores elegibles` : String(winner.sampleSize);
+    const sample = winner.id === 4 ? p.eligibleErrors(q5.eligible) : String(winner.sampleSize);
     return {
-      kicker: 'Recomendación principal · esta semana',
-      title: recommendationTitle(winner),
-      evidence: evidence(winner, q5, windowDays),
-      action: actionFor(winner, windowDays),
-      why: `Regla ${String(winner.id)} · ${signalLabel(winner)}: ${formatValue(winner)} (umbral ${formatThreshold(winner)}, muestra de ${sample}). Solo manda la de mayor prioridad entre las que se disparan.`,
+      kicker: p.kickerMain,
+      title: recommendationTitle(winner, t),
+      evidence: evidence(winner, q5, windowDays, t),
+      action: actionFor(winner, windowDays, t),
+      why: p.why(winner.id, signalLabel(winner, t), formatValue(winner, t), formatThreshold(winner, t), sample),
     };
   }
   const watch = report.rules.filter((rule) => rule.status === 'WATCH');
   const short = report.rules.filter((rule) => rule.status === 'needs n ≥ 15');
   if (short.length > 0 && totalErrors < MIN_N) {
     return {
-      kicker: 'Todavía sin recomendación',
-      title: 'Falta muestra para estas recomendaciones',
-      evidence: `Hay ${String(totalErrors)} ${totalErrors === 1 ? 'error' : 'errores'} en el periodo; las reglas de patrón necesitan al menos ${String(MIN_N)}. Sigue registrando también las sesiones sin errores.`,
+      kicker: p.kickerNone,
+      title: p.titleShort,
+      evidence: p.evidenceShort(totalErrors, MIN_N),
       action: null,
       why: null,
     };
   }
   return {
-    kicker: 'Sin acciones prioritarias',
-    title: 'No se detectan acciones prioritarias en este periodo',
+    kicker: p.kickerOk,
+    title: p.titleOk,
     evidence: watch.length > 0
-      ? `Señales a vigilar: ${watch.map((rule) => signalLabel(rule).toLowerCase()).join('; ')}.`
-      : 'Ninguna regla con datos suficientes se ha disparado.',
+      ? p.watchSignals(watch.map((rule) => signalLabel(rule, t).toLowerCase()).join('; '))
+      : p.noneFired,
     action: null,
     why: null,
   };

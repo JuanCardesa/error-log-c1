@@ -6,6 +6,7 @@ import { runRules } from '../rules';
 import { q3RuoeAccuracy } from '../queries/q3RuoeAccuracy';
 import { q5AnkiDebt } from '../queries/q5AnkiDebt';
 import { q6RewriteEfficacy } from '../queries/q6RewriteEfficacy';
+import { getMessages } from '../i18n';
 import { toIsoDate } from '../time/dates';
 import { createDb } from './client';
 import { loadDataset } from './load';
@@ -38,7 +39,7 @@ it.each(['2026-10-01', '2026-10-05', '2027-01-03'])('recording story and real im
     expect(searchNotebookNotes(db, { query: 'research', folderId: null, tag: null, page: 1 }).items).toHaveLength(1);
     const batch = recordingImport(now);
     batch.errors[0]!.confidence = 'SEGURO'; // Same edit as the shooting script.
-    const result = importSessionWithErrors(db, batch, { today: toIsoDate(now), durationMin: null });
+    const result = importSessionWithErrors(db, batch, { today: toIsoDate(now), durationMin: null, t: getMessages('es') });
     expect(result.ok).toBe(true);
     const after = loadDataset(db);
     expect(after.sessions).toHaveLength(14);
@@ -63,7 +64,7 @@ it('reset creates independent takes and ignores the personal override', () => {
     const first = prepareRecording(scratch, now);
     const db = createDb(first.file);
     try {
-      importSessionWithErrors(db, recordingImport(now), { today: toIsoDate(now), durationMin: null });
+      importSessionWithErrors(db, recordingImport(now), { today: toIsoDate(now), durationMin: null, t: getMessages('es') });
       const second = prepareRecording(scratch, now);
       expect(second.file).not.toBe(first.file);
       const reset = createDb(second.file);

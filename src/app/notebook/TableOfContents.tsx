@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 
 import { buildNotebookToc, type NotebookTocNode } from '@/lib/notebook/toc';
 import type { NotebookHeading } from '@/lib/notebook/types';
+import { useT } from '../_shared/i18nClient';
 import styles from './toc.module.css';
 
 function TocLinks({ nodes, active, onNavigate }: {
@@ -11,6 +12,7 @@ function TocLinks({ nodes, active, onNavigate }: {
   readonly active: string | null;
   readonly onNavigate: (event: MouseEvent<HTMLAnchorElement>, slug: string) => void;
 }) {
+  const t = useT();
   return (
     <ol className={styles.list}>
       {nodes.map((node) => (
@@ -20,7 +22,7 @@ function TocLinks({ nodes, active, onNavigate }: {
             aria-current={active === node.heading.slug ? 'location' : undefined}
             onClick={(event) => { onNavigate(event, node.heading.slug); }}
           >
-            {node.heading.text || 'Apartado sin título'}
+            {node.heading.text || t.notebook.untitledSection}
           </a>
           {node.children.length > 0 && <TocLinks nodes={node.children} active={active} onNavigate={onNavigate} />}
         </li>
@@ -31,8 +33,20 @@ function TocLinks({ nodes, active, onNavigate }: {
 
 /** El hash sirve para enlaces compartidos; el observador sigue el apartado durante el scroll. */
 export function TableOfContents({ headings }: { readonly headings: readonly NotebookHeading[] }) {
+  const t = useT();
   const tree = useMemo(() => buildNotebookToc(headings), [headings]);
   const [active, setActive] = useState<string | null>(headings[0]?.slug ?? null);
+  const desktop = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const container = desktop.current;
+    const selected = container?.querySelector<HTMLElement>('a[aria-current="location"]');
+    if (container === null || selected === null || selected === undefined) return;
+    const area = container.getBoundingClientRect();
+    const item = selected.getBoundingClientRect();
+    if (item.top < area.top) container.scrollTop += item.top - area.top;
+    else if (item.bottom > area.bottom) container.scrollTop += item.bottom - area.bottom;
+  }, [active]);
 
   useEffect(() => {
     const slugs = new Set(headings.map((heading) => heading.slug));
@@ -111,12 +125,16 @@ export function TableOfContents({ headings }: { readonly headings: readonly Note
   };
 
   if (headings.length === 0) return null;
-  return (
+  return <>
+    <nav ref={desktop} aria-label={t.notebook.contents} className={styles.desktop}>
+      <h2>{t.notebook.inThisNote}</h2>
+      <TocLinks nodes={tree} active={active} onNavigate={onNavigate} />
+    </nav>
     <details className={styles.compact}>
-      <summary>En esta nota · {headings.length} {headings.length === 1 ? 'sección' : 'secciones'}</summary>
-      <nav aria-label="Índice del apunte">
+      <summary>{t.notebook.inThisNoteCount(headings.length)}</summary>
+      <nav aria-label={t.notebook.contents}>
         <TocLinks nodes={tree} active={active} onNavigate={onNavigate} />
       </nav>
     </details>
-  );
+  </>;
 }

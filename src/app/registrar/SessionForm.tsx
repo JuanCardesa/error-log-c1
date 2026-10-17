@@ -6,6 +6,7 @@ import { useActionState, useEffect, useId, useRef } from 'react';
 import type { SessionRow } from '@/lib/domain/types';
 import type { ImportedSession } from '@/lib/import/errors';
 import { Drawer } from '../_shared/Drawer';
+import { useT } from '../_shared/i18nClient';
 import { useToast } from '../_shared/Toast';
 import { usePreservedForm } from '../_shared/usePreservedForm';
 import { createSessionAction, updateSessionAction } from './actions';
@@ -32,6 +33,7 @@ export function SessionDrawer({ open, onClose, today, editing = null, preset, re
   /** Solo al abrir una nueva: a dónde ir tras crearla. `{id}` se sustituye por la nueva. */
   readonly returnTo?: string;
 }) {
+  const t = useT();
   const isEdit = editing !== null;
   const formId = useId();
   const { formRef, onReset } = usePreservedForm();
@@ -49,26 +51,26 @@ export function SessionDrawer({ open, onClose, today, editing = null, preset, re
     }
     if (state.createdId === undefined) return;
     if (isEdit) {
-      toast({ message: 'Sesión actualizada · sus errores no cambian' });
+      toast({ message: t.sessionForm.updated });
       onClose();
       return;
     }
-    toast({ message: 'Sesión creada. Añade errores o ciérrala si fue perfecta' });
+    toast({ message: t.sessionForm.created });
     const id = String(state.createdId);
     router.push(returnTo === undefined ? `/registrar?s=${id}&modo=captura` : returnTo.replace('{id}', id));
-  }, [state, isEdit, onClose, router, toast, returnTo, formRef]);
+  }, [state, isEdit, onClose, router, toast, returnTo, formRef, t]);
 
   return (
     <Drawer
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Editar sesión' : 'Nueva sesión'}
+      title={isEdit ? t.sessionView.editSession : t.palette.newSession}
       keepMounted
       footer={(
         <>
-          <button type="button" className={ui.ghost} onClick={onClose} disabled={pending}>Cancelar</button>
+          <button type="button" className={ui.ghost} onClick={onClose} disabled={pending}>{t.common.cancel}</button>
           <button type="submit" form={formId} className={ui.primary} disabled={pending} aria-busy={pending}>
-            {pending ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear sesión'}
+            {pending ? t.common.saving : isEdit ? t.common.saveChanges : t.sessionForm.create}
           </button>
         </>
       )}
@@ -78,7 +80,7 @@ export function SessionDrawer({ open, onClose, today, editing = null, preset, re
           <>
             <input type="hidden" name="id" value={editing.id} />
             <input type="hidden" name="status" value={editing.status} />
-            <p className={styles.editNote}>Editar la sesión no modifica sus errores.</p>
+            <p className={styles.editNote}>{t.sessionForm.editNote}</p>
           </>
         )}
         <SessionFields today={today} defaults={editing ?? preset} fieldErrors={state.fieldErrors} idPrefix={formId} />

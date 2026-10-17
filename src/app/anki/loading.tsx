@@ -1,3 +1,7 @@
+'use client';
+
+import { useT } from '../_shared/i18nClient';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import styles from './anki.module.css';
 
@@ -6,17 +10,15 @@ import styles from './anki.module.css';
  * la forma de la cola, sin brillo animado.
  */
 export default function AnkiLoading() {
+  const t = useT();
   return (
     <div className={styles.page} aria-busy="true">
       <div className={styles.head}>
-        <div className={ui.pageHead}>
-          <h1 className={ui.pageTitle}>Anki</h1>
-          <span className={ui.help} role="status">Consultando Anki…</span>
-        </div>
+        <PageHeader title="Anki" actions={<span className={ui.help} role="status">{t.anki.checking}</span>} />
       </div>
-      <p className={styles.lead}>Consultando Anki… la cola local estará disponible en un momento.</p>
+      <p className={styles.lead}>{t.anki.checkingLead}</p>
       <div className={styles.queueLayout} aria-hidden="true">
-        <div className={styles.table}>
+        <div className={styles.skeletonTable}>
           {Array.from({ length: 7 }, (_, index) => (
             <div key={index} className={styles.skeletonRow}>
               <span className={ui.skeleton} style={{ width: 44 }} />

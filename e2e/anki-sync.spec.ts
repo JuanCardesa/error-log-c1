@@ -4,6 +4,7 @@ import { createDb } from '../src/lib/db/client';
 import { FAKE_ANKI_PROFILE, FAKE_ANKI_URL } from './fakeAnki';
 import { E2E_DB } from './globalSetup';
 import { categoryLabel } from '../src/app/_shared/labels';
+import { getMessages } from '../src/lib/i18n';
 
 /**
  * Los flujos que solo se ven con Anki respondiendo: sincronizar, reintentar tras un
@@ -111,7 +112,10 @@ test('un fallo de Anki se explica y el reintento posterior funciona', async ({ p
 test('Anki cerrado se explica sin fingir que no hay fallos', async ({ page, request }) => {
   await control(request, { disconnected: true });
   await page.goto('/anki');
+  // El estado se dice una vez; el aviso explica el porqué y sincronizar pasa a reintentar.
   await expect(page.getByText('No disponible', { exact: true })).toBeVisible();
+  await expect(page.getByText('No conectado.', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Volver a probar', exact: true })).toHaveAccessibleDescription(/Puedes seguir leyendo/);
   await expect(page.getByText('No se puede conectar', { exact: false }).first()).toBeVisible();
   await expect(page.getByText('Puedes seguir leyendo y editando la cola.', { exact: false })).toBeVisible();
 
@@ -251,11 +255,11 @@ test('corregir la categoria de un error convertido reagrupa su fallo en el repas
   await control(request, { reviewsFor: { cardId: card?.cardId ?? 0, ease: 1, type: 1 } });
   await page.getByRole('button', { name: 'Sincronizar', exact: true }).click();
   // El aviso de la primera sincronización puede seguir a la vista: se espera el de esta.
-  await expect(toast(page, 'Sincronizado: 1 repasos nuevos')).toBeVisible();
+  await expect(toast(page, 'Sincronizado: 1 repaso nuevo')).toBeVisible();
 
-  const heading = (name: string) => page.getByRole('heading', { level: 3 }).filter({ hasText: name });
+  const heading = (name: string) => page.getByRole('heading', { level: 2 }).filter({ hasText: name });
   await page.goto('/anki?tab=repasos');
-  await expect(heading(categoryLabel(linked?.category ?? ''))).toBeVisible();
+  await expect(heading(categoryLabel(linked?.category ?? '', getMessages('es')))).toBeVisible();
 
   // Se corrige la categoría del error vinculado, desde su sesión.
   const panel = await editInSession(page, linked?.sessionId ?? 0, linked?.correctAnswer ?? '');
@@ -266,5 +270,5 @@ test('corregir la categoria de un error convertido reagrupa su fallo en el repas
   // El fallo pasa a contarse bajo la categoría corregida, sin tocar los tags de Anki.
   await page.goto('/anki?tab=repasos');
   await expect(heading('Registro')).toBeVisible();
-  await expect(heading(categoryLabel(linked?.category ?? ''))).toHaveCount(0);
+  await expect(heading(categoryLabel(linked?.category ?? '', getMessages('es')))).toHaveCount(0);
 });

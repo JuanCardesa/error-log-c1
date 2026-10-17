@@ -13,19 +13,23 @@ import {
 } from '@/lib/db/repo';
 import { PAPERS, SOURCES } from '@/lib/domain/enums';
 import type { SessionRow } from '@/lib/domain/types';
+import type { Messages } from '@/lib/i18n';
 import { toIsoDate } from '@/lib/time/dates';
 import { Kbd } from '../_shared/Kbd';
 import { longDate, practiceLabel, practiceLongLabel, score, sessionTitle, shortDate } from '../_shared/format';
-import { SOURCE_LABELS } from '../_shared/labels';
+import { EmptyState } from '../_shared/EmptyState';
+import { getT } from '../_shared/i18nServer';
+import { ankiState } from '../_shared/labels';
 import { StatusText } from '../_shared/StatusText';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import type { SearchParams } from '../_shared/window';
 import { BackToList, RememberList } from './BackToList';
+import { BatchDone } from './BatchDone';
 import { ImportHost } from './ImportHost';
 import { type ListParams, hasFilters, listHref, parseListParams } from './listParams';
 import { ManualSession } from './ManualSession';
 import { PasteEntry } from './PasteEntry';
-import { SavedNotice } from './SavedNotice';
 import { SessionControls } from './SessionControls';
 import { SessionErrors } from './SessionErrors';
 import { SessionTable } from './SessionTable';
@@ -49,27 +53,30 @@ function parseId(value: string | string[] | undefined): number | null {
 
 export default async function RegistrarPage({ searchParams }: { readonly searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  const t = await getT();
   const today = toIsoDate(new Date());
   const rawId = params['s'];
 
   if (rawId !== undefined) {
     const id = parseId(rawId);
     const session = id === null ? null : getSession(getDb(), id);
-    if (session === null) return <SessionNotFound />;
-    return <SessionDetail session={session} params={params} today={today} />;
+    if (session === null) return <SessionNotFound t={t} />;
+    return <SessionDetail session={session} params={params} today={today} t={t} />;
   }
-  return <SessionList params={parseListParams(params)} fromWriting={params['nueva'] === 'writing'} newSession={params['nueva'] === '1'} today={today} />;
+  return <SessionList params={parseListParams(params)} fromWriting={params['nueva'] === 'writing'} newSession={params['nueva'] === '1'} today={today} t={t} />;
 }
 
-function SessionList({ params, fromWriting, newSession, today }: {
+function SessionList({ params, fromWriting, newSession, today, t }: {
   readonly params: ListParams;
   readonly fromWriting: boolean;
   readonly newSession: boolean;
   readonly today: string;
+  readonly t: Messages;
 }) {
   const db = getDb();
   const q = params.q.toLowerCase();
-  const sources = q === '' ? [] : SOURCES.filter((source) => SOURCE_LABELS[source].toLowerCase().includes(q));
+  // La fuente se busca por su nombre en el idioma en que se lee.
+  const sources = q === '' ? [] : SOURCES.filter((source) => t.labels.source[source].toLowerCase().includes(q));
   const paper = params.practica === 'libre' ? 'NONE' as const : PAPERS.find((value) => value === params.practica);
   const filters = {
     q: params.q,
@@ -90,66 +97,65 @@ function SessionList({ params, fromWriting, newSession, today }: {
     <ImportHost key="lista" today={today} openSessions={listOpenSessions(db)} subcategorySuggestions={distinctSubcategories(db)}>
       <RememberList />
       <div className={styles.page}>
-        <header className={ui.pageHead}>
-          <div>
-            <h1 className={ui.pageTitle}>Sesiones</h1>
-            <p className={ui.lede}>Registrar práctica y consultar tu historial</p>
-          </div>
-          <ManualSession
-            today={today}
-            shortcut
-            initiallyOpen={fromWriting || newSession}
-            preset={fromWriting ? { kind: 'WRITING', paper: 'WRITING', part: 1 } : undefined}
-            returnTo={fromWriting ? '/writing?registrar=1&sesion={id}' : undefined}
-          />
-        </header>
+        <PageHeader
+          title={t.nav.sessions}
+          lede={t.sessions.lede}
+          actions={(
+            <ManualSession
+              today={today}
+              shortcut
+              initiallyOpen={fromWriting || newSession}
+              preset={fromWriting ? { kind: 'WRITING', paper: 'WRITING', part: 1 } : undefined}
+              returnTo={fromWriting ? '/writing/importar?sesion={id}' : undefined}
+            />
+          )}
+        />
 
-        <section id="pegar" aria-label="Importar correcciones">
+        <section id="pegar" aria-label={t.sessions.importSection}>
           <PasteEntry variant="entry" globalPaste />
         </section>
 
         {empty ? (
-          <section className={styles.empty} aria-labelledby="empty-heading">
-            <h2 id="empty-heading" className={ui.sectionTitle}>Aún no hay sesiones</h2>
-            <p>Pega una tanda corregida o crea una sesión manual. Las sesiones sin errores también cuentan.</p>
+          <section aria-labelledby="empty-heading">
+            <EmptyState title={t.sessions.emptyTitle} titleId="empty-heading" cause={t.sessions.emptyBody} />
           </section>
         ) : (
-          <section className={styles.history} aria-label="Historial de sesiones">
+          <section className={styles.history} aria-label={t.sessions.history}>
             <SessionsToolbar params={params} openCount={openCount} />
             {rows.length === 0 ? (
-              <div className={`${ui.tableEmpty} ${styles.table}`}>
-                <span>{params.q === '' ? 'Ninguna sesión coincide con los filtros.' : `Ninguna sesión coincide con «${params.q}».`}</span>
-                <Link href="/registrar" className={ui.textLink}>Limpiar búsqueda</Link>
-              </div>
+              <EmptyState
+                cause={params.q === '' ? t.sessions.noMatchFilters : t.sessions.noMatchQuery(params.q)}
+                action={<Link href="/registrar" className={ui.textLink}>{t.common.clearSearch}</Link>}
+              />
             ) : (
               <SessionTable rows={rows.map((row) => ({
                 id: row.id,
                 href: `/registrar?s=${String(row.id)}`,
-                date: shortDate(row.date),
-                title: sessionTitle(row),
-                source: SOURCE_LABELS[row.source],
-                practice: practiceLabel(row),
+                date: shortDate(row.date, t),
+                title: sessionTitle(row, t),
+                source: t.labels.source[row.source],
+                practice: practiceLabel(row, t),
                 score: score(row),
                 errors: row.errorCount,
                 status: row.status,
               }))} />
             )}
             {pages > 1 && (
-              <nav className={styles.pagination} aria-label="Páginas de sesiones">
+              <nav className={styles.pagination} aria-label={t.sessions.pages}>
                 {page > 1
-                  ? <Link href={listHref(params, { p: page - 1 })}>Anteriores</Link>
-                  : <span className={styles.pageDisabled}>Anteriores</span>}
+                  ? <Link href={listHref(params, { p: page - 1 })}>{t.common.listPrevious}</Link>
+                  : <span className={styles.pageDisabled}>{t.common.listPrevious}</span>}
                 <span className={styles.pageNow}>{page} / {pages}</span>
                 {page < pages
-                  ? <Link href={listHref(params, { p: page + 1 })}>Siguientes</Link>
-                  : <span className={styles.pageDisabled}>Siguientes</span>}
+                  ? <Link href={listHref(params, { p: page + 1 })}>{t.common.listNext}</Link>
+                  : <span className={styles.pageDisabled}>{t.common.listNext}</span>}
               </nav>
             )}
-            <div className={styles.shortcuts} aria-hidden="true">
-              <span><Kbd>J</Kbd><Kbd>K</Kbd>moverse</span>
-              <span><Kbd>↵</Kbd>abrir</span>
-              <span><Kbd>N</Kbd>nueva sesión</span>
-              <span><Kbd>G</Kbd><Kbd>E</Kbd>ir a Errores</span>
+            <div className={`${styles.shortcuts} keyboard-hint`} aria-hidden="true">
+              <span><Kbd>J</Kbd><Kbd>K</Kbd>{t.sessions.keyMove}</span>
+              <span><Kbd>↵</Kbd>{t.sessions.keyOpen}</span>
+              <span><Kbd>N</Kbd>{t.sessions.keyNew}</span>
+              <span><Kbd>G</Kbd><Kbd>E</Kbd>{t.sessions.keyErrors}</span>
             </div>
           </section>
         )}
@@ -158,10 +164,11 @@ function SessionList({ params, fromWriting, newSession, today }: {
   );
 }
 
-function SessionDetail({ session, params, today }: {
+function SessionDetail({ session, params, today, t }: {
   readonly session: SessionRow;
   readonly params: SearchParams;
   readonly today: string;
+  readonly t: Messages;
 }) {
   const db = getDb();
   const errors = listErrors(db, session.id);
@@ -171,6 +178,7 @@ function SessionDetail({ session, params, today }: {
   const errorId = parseId(params['error']);
   const capture = params['modo'] === 'captura';
   const open = session.status === 'OPEN';
+  const pendingCards = errors.filter((error) => ankiState(error) === 'PENDING').length;
 
   return (
     <ImportHost
@@ -181,27 +189,27 @@ function SessionDetail({ session, params, today }: {
       subcategorySuggestions={subcategories}
     >
       <div className={styles.detail}>
-        <BackToList />
-        <header className={styles.detailHead}>
-          <div className={styles.titleBlock}>
-            <div className={styles.titleRow}>
-              <h1 className={ui.pageTitle}>{sessionTitle(session)}</h1>
-              <StatusText status={session.status} />
-            </div>
-            <div className={styles.facts}>
-              <span>{longDate(session.date)}</span>
-              <span>{practiceLongLabel(session)}</span>
-              <span>{SOURCE_LABELS[session.source]}</span>
-              <span className={styles.factStrong}>
-                {session.itemsTotal === null ? 'Sin recuento de ítems (Writing)' : `${score(session)} aciertos`}
+        <PageHeader
+          back={{ node: <BackToList /> }}
+          title={sessionTitle(session, t)}
+          titleAside={<StatusText status={session.status} />}
+          lede={(
+            <>
+              <span className={styles.facts}>
+                <span>{longDate(session.date, t)}</span>
+                <span>{practiceLongLabel(session, t)}</span>
+                <span>{t.labels.source[session.source]}</span>
+                <span className={styles.factStrong}>
+                  {session.itemsTotal === null ? t.sessions.noItemCount : t.sessions.scoreCorrect(score(session))}
+                </span>
               </span>
-            </div>
-            {!open && <span className={ui.help}>Cerrada para añadir. Puedes corregir los datos existentes.</span>}
-          </div>
-          <SessionControls session={session} impact={sessionDeletionImpact(db, session.id)} today={today} />
-        </header>
+              {!open && <span className={ui.help}>{t.sessions.closedHelp}</span>}
+            </>
+          )}
+          actions={<SessionControls session={session} impact={sessionDeletionImpact(db, session.id)} today={today} />}
+        />
 
-        {notice !== null && <SavedNotice message={notice} sessionId={session.id} />}
+        <BatchDone notice={notice} sessionId={session.id} pendingCards={pendingCards} />
 
         <SessionErrors
           session={session}
@@ -216,13 +224,11 @@ function SessionDetail({ session, params, today }: {
   );
 }
 
-function SessionNotFound() {
+function SessionNotFound({ t }: { readonly t: Messages }) {
   return (
     <div className={styles.notFound}>
-      <BackToList />
-      <h1 className={ui.pageTitle}>No encontramos esta sesión</h1>
-      <p>Puede que se haya borrado o que el enlace esté incompleto. Tus demás sesiones siguen en el historial.</p>
-      <Link href="/registrar" className={ui.secondary}>Ir a Sesiones</Link>
+      <PageHeader back={{ node: <BackToList /> }} title={t.sessions.notFoundTitle} lede={t.sessions.notFoundBody} />
+      <Link href="/registrar" className={ui.secondary}>{t.common.goToSessions}</Link>
     </div>
   );
 }

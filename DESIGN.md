@@ -27,8 +27,8 @@ colors:
   viz-bar-past: "#9fbdb0"
   viz-acc-85: "#c9dcd3"
   viz-acc-70: "#dfe9e3"
-  viz-acc-55: "#ecedea"
-  viz-acc-low: "#f1e9da"
+  viz-acc-55: "#ebe6d8"
+  viz-acc-low: "#ecdcb9"
 typography:
   page-title:
     fontFamily: "Source Serif 4"
@@ -87,14 +87,44 @@ typography:
     fontSize: "11px"
     fontWeight: 500
     lineHeight: "16px"
+  meta:
+    fontFamily: "IBM Plex Sans"
+    fontSize: "12px"
+    fontWeight: 400
+    lineHeight: "16px"
+  entry-title:
+    fontFamily: "Source Serif 4"
+    fontSize: "19px"
+    fontWeight: 600
+    lineHeight: "26px"
+  quote:
+    fontFamily: "Source Serif 4"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: "24px"
+  metric:
+    fontFamily: "IBM Plex Sans"
+    fontSize: "28px"
+    fontWeight: 600
+    lineHeight: "32px"
+    fontFeature: "tnum"
+  figure:
+    fontFamily: "IBM Plex Sans"
+    fontSize: "20px"
+    fontWeight: 600
+    lineHeight: "28px"
+    fontFeature: "tnum"
 rounded:
   control: "4px"
   panel: "6px"
   overlay: "8px"
   float: "10px"
+  paper: "2px"
 spacing:
   space-1: "4px"
+  space-1-5: "6px"
   space-2: "8px"
+  space-2-5: "10px"
   space-3: "12px"
   space-4: "16px"
   space-5: "24px"
@@ -147,8 +177,8 @@ components:
 **Creative North Star: "Plex para trabajar, serif para leer"**
 
 Un cuaderno de trabajo editorial, preciso y tranquilo. La interfaz es de herramienta
-(IBM Plex Sans y Plex Mono, filas de 44 px, atajos de teclado visibles y búsqueda global
-con Ctrl/⌘+K). Lo que se lee —títulos de página, la recomendación de Progreso, los
+(IBM Plex Sans y Plex Mono, filas de 44 px, atajos de teclado visibles —ocultos en táctil— y
+búsqueda global con Ctrl/⌘+K). Lo que se lee —títulos de página, la recomendación de Progreso, los
 enunciados y la pareja «Tu respuesta → Corrección»— va en Source Serif 4.
 
 La profundidad no sale de cajas: papel con grano, una zona de trabajo blanca con sombra
@@ -177,17 +207,36 @@ la tanda, menús, la paleta ⌘K y avisos). Nunca en tablas ni datos.
 
 ### Estados
 - **Éxito** (`success`): guardado, verificado, «Listo», «Disponible».
-- **Aviso** (`warning`): pendiente, incompleto, sesión abierta (rombo), muestra pequeña,
-  «Siempre 30 días». Un campo pendiente de completar lleva el borde en este color.
+- **Aviso** (`warning`): lo que pide atención ahora: incompleto, sesión abierta (rombo),
+  muestra pequeña, Anki no disponible. Un campo pendiente de completar lleva el borde en
+  este color. No es para hechos neutros: el alcance de una descarga («Siempre 30 días») va
+  en `ink-2`, y «Pendiente» en una lista va en tinta con su forma (`AnkiStateText`).
+- **Deltas** en tinta con su signo (`signedDecimal`: «+0,5», «−0,5», «=»): el signo ya dice
+  la dirección y el rojo queda para el daño.
 - **Error / destructivo** (`danger`): validación, confirmación de borrado, tarjeta
   desactualizada, respuesta propia tachada.
 - **Información** (`info`): ayuda contextual (qué genera una causa, cabecera que no suma).
 
+### Marcador del Notebook
+- `--mark-green`, `--mark-red` y `--mark-blue` son `success`, `danger` e `info`: una marca roja
+  es el mismo rojo que un error. Solo `--mark-orange` y `--mark-highlight` (el amarillo de
+  resaltar) son propios del marcador.
+
 ### Visualización
 - **Causas**: `viz-study` las que se estudian, `viz-exec` las de protocolo de examen.
-- **RUOE**: `viz-acc-*` como fondo de celda por tramo; el número y la ratio mandan.
-- **Evolución por part**: semanas previas en `viz-bar-past`, la última en `brand`, sin
-  práctica = 2 px de `rule`.
+- **RUOE**: `viz-acc-*` como fondo de celda por tramo; el número y la ratio (en tinta)
+  mandan. Escala ordinal: verde, verde claro, arena (55–69 %) y ámbar (menos del 55 %);
+  ningún tramo coincide con `surface-2`. Columnas de semana iguales (`table-layout: fixed`);
+  si no caben, la matriz se abre por las semanas recientes con la columna Part fija (con el
+  grano de papel, `--paper-grain`). El panel se abre con la part más floja de la última
+  semana con práctica, y lo dice.
+- **Evolución por part**: una columna por semana con su ratio encima y su fecha de inicio
+  debajo. Semanas previas en `viz-bar-past` y, en `brand`, la última **con práctica**, que es
+  la cifra del titular. Sin práctica = solo la línea base y «—». Una part sin práctica en
+  esas semanas no se dibuja: se nombra en una línea («Sin práctica en estas semanas: Part 5
+  y Part 6»), igual que en la matriz. En móvil, una part por fila.
+- **Filas que enlazan** (categorías de Progreso): el enlace se estira sobre la fila con
+  `::after`, la fila entera es el objetivo y la flecha se tiñe al pasar.
 
 ### Named Rules
 **The Glass Rule.** El cristal es para lo que flota sobre la página. Lo que se lee o se
@@ -205,7 +254,17 @@ algo que haya que leer.
   tachada en `danger` (1,5 px).
 - **Section** (Sans 600, 18/24) y **Subtitle** (Sans 600, 16/22).
 - **Body** (Sans 400, 14/20). **Field** (15/22; 16 en móvil). **Label** (500, 13/18).
-- **Data** (Mono 13, tabular): fechas, ratios, respuestas en listas. **Kbd** (Mono 500 11/16).
+- **Data** (Mono 13, tabular): fechas, respuestas en listas, nombres de fichero. **Kbd**
+  (Mono 500 11/16). **Meta** (Sans 12/16): atajos al pie, grupos de la paleta, la ratio bajo una cifra.
+- **Entry title** (Serif 600, 19/26): título de una entrada en una lista. **Quote** (Serif 400,
+  16/24): el tramo citado en una fila o una nota y la respuesta en la paleta. **Answer** (Serif
+  400, 18/26): la respuesta propia junto a la corrección.
+- **Cifras** en Plex Sans tabular, nunca en mono: **Metric** (600, 28/32) para la principal y
+  **Figure** (600, 20/28) para las secundarias. Así «12,5/20» no abre huecos.
+
+La escala vive en `globals.css`: estilos completos `--text-*` y, cuando solo cambia el tamaño,
+los pasos `--fs-*` (11 · 12 · 13 · 14 · 15 · 16 · 18 · 19 · 20 · 22 · 25 · 28 · 30). Ningún
+módulo escribe un tamaño en px; el Markdown del Notebook escala sus encabezados en `em`.
 
 Las fuentes se sirven desde el propio origen (`next/font/local`, ficheros en
 `src/app/fonts/`, licencia OFL): ni el build ni el navegador piden nada a la red.
@@ -218,16 +277,33 @@ sigue siendo el valor interno.
 ## Layout
 
 - Página de 1200 px de contenido (1264 con márgenes), padding 32/32/96; 24 en tableta y 16
-  en móvil. Cabecera fija de 56 px en cristal (dos filas en móvil).
-- Navegación: **Sesiones · Errores · Progreso · Anki · Más ▾** (Writing, Exportar datos) y
-  el botón Buscar con su atajo.
+  en móvil. Cabecera fija de 56 px en cristal; por debajo de 800 px, dos filas (92 px), porque la fila única no cabe con margen.
+- Navegación en dos grupos, **Ritual | Biblioteca**: Sesiones · Errores · Progreso · Anki,
+  un filete vertical, Notebook · Writing. **Más ▾** guarda Exportar datos y, tras un
+  separador, el idioma (English / Español), que se elige ahí mismo; no hay página de Ajustes
+  para un solo control (`/ajustes` lleva a Sesiones). Al final, el botón Buscar con su atajo.
+- **Cabecera de página** (`PageHeader`), la misma en todas las vistas y con los huecos fijos:
+  «← Sección» arriba a la izquierda (`BackLink`, que hace de antetítulo: no hay otro), título
+  serif con lo que vaya a su lado (el estado de una sesión), entradilla en `ink-2`, acciones
+  a la derecha alineadas con el título (un primario como mucho, o el selector de periodo) y
+  pestañas debajo. Las hojas de lectura (una redacción, un apunte) llevan su título en la
+  hoja, pero el «volver» va en el mismo sitio.
 - Listado + detalle: rejilla `minmax(0,1fr) 360px` con el panel pegado arriba. Con el
-  panel abierto, la tabla retira columnas (Causa y Anki, o Contexto).
+  panel abierto, la tabla retira columnas (Causa y Anki, o Contexto). En móvil, Errores y
+  Certezas retiran también la Sesión y llevan su fecha bajo la corrección.
 - **Puntos de ruptura:** < 640 móvil (dos filas de cabecera, controles de 44 px, detalle y
   editores a pantalla completa); 640–1023 una columna con el detalle como pantalla;
-  ≥ 1024 listado y panel lado a lado. Nunca scroll horizontal de página: las tablas y
+  ≥ 1024 listado y panel lado a lado. Una sola excepción con nombre: el lector del Notebook
+  añade el índice como tercera columna a partir de 1280, porque antes directorio, folio e
+  índice no caben con `--reading-max`; entre 1024 y 1279 el índice va plegado encima del
+  folio. Nunca scroll horizontal de página: las tablas y
   matrices anchas se desplazan dentro de su contenedor (con `position: relative`, para que
   el `caption` accesible no escape).
+- **Táctil** (`pointer: coarse`), a cualquier ancho: lo que se pulsa llega a 44 px. Los
+  controles compactos (pestañas, segmentado, píldoras, filtros, chips) crecen; los enlaces y
+  botones de texto amplían su zona con relleno vertical y margen negativo, sin mover nada. Una
+  fila que es enlace entero ya cumple por su alto. Todo `:hover` va dentro de
+  `@media (hover: hover)`, para que un toque no deje el estado pegado.
 
 ## Elevation & Depth
 
@@ -236,11 +312,20 @@ sigue siendo el valor interno.
 - Cristal: cabecera y barra inferior `rgba(246,245,241,.74–.76)` con `blur(16px)`; menús y
   combobox en blanco al 84–92 %; paleta al 90 % con `blur(20px)`; avisos en tinta al 84 %.
   Fallback sólido con `@supports not (backdrop-filter)`.
+- **Una sola escala de capas** (`--z-*`): `raised` 1 dentro de un componente · `bar` 5 barras
+  pegajosas de la página · `float` 10 nota del lector y listas · `sticky` 20 cabecera y menús ·
+  `scrim` 25 velo · `drawer` 30 drawer, detalle a pantalla completa y panel de Writing ·
+  `toast` 40 · `dialog` 50 · `palette` 60. El aviso va por encima de cualquier panel.
+  Ningún módulo escribe un `z-index` numérico.
+- Un solo velo, `--scrim` (con `--scrim-blur` en dialog y paleta).
 
 ## Shapes
 
-Radios de 4 px (controles), 6 px (paneles), 8 px (menús y dialogs) y 10 px (⌘K). Píldora solo
-en el chip de filtro activo.
+Radios de 2 px (la hoja de una redacción o un apunte), 4 px (controles), 6 px (paneles), 8 px
+(menús y dialogs) y 10 px (⌘K). Sin píldoras: un filtro activo tiene la forma de un control.
+
+Espaciado en pasos de 4 (`--space-1` a `--space-7`) más dos intermedios, `--space-1-5` (6) y
+`--space-2-5` (10), solo para el relleno interior de controles: menú, opción, aviso.
 
 ## Components
 
@@ -252,36 +337,121 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   **destructivo** (`ui.danger`, solo dentro de una confirmación); `ui.compact` a 36 px.
 - **Icono** (`ui.iconButton`, 36×36, 44 en táctil) con `aria-label` específico.
 - **Kbd** junto a la acción que tiene atajo; las etiquetas salen de `useShortcutLabels()`
-  (⌘ en Mac, Ctrl en el resto) y el gestor acepta ambos modificadores.
+  (⌘ en Mac, Ctrl en el resto) y el gestor acepta ambos modificadores. En táctil
+  (`hover: none` y `pointer: coarse`) se ocultan, igual que las pistas que solo hablan de
+  atajos (clase global `keyboard-hint`).
 
 ### Navegación y filtros
+- **BackLink**: «← Sección» en tinta secundaria; su nombre accesible es «Volver a Sección»,
+  distinto del enlace de la navegación. Una pista detrás («· filtro conservado») si la hay.
 - **Tabs** (`ui.tabs`/`ui.tab`): enlaces con `aria-current`, subrayado de marca.
 - **Segmentado** (`ui.segmented`): conmutador 30/60 días; conserva los demás parámetros.
-- **Pills** (`ui.pills`) para Todas/Abiertas y **chip** (`ui.chip`) para un filtro activo.
+- **FilterBar**: búsqueda (`LiveSearch`), píldoras, menús y el recuento al final. **Todo se
+  aplica al momento** y vive en la URL: no hay botón «Aplicar». Las búsquedas filtran al
+  escribir (250 ms).
+- **FilterMenu**: un filtro como menú de enlaces; el botón dice el filtro y su valor
+  («Causa: Todas»). Activo, el botón va en `brand-tint` con su × para quitarlo sin abrir el
+  menú. Un menú largo (las etiquetas del Notebook) se desplaza dentro, hasta 420 px.
+- **Pills** (`ui.pills`) para Todas/Abiertas y **chip** (`ui.chip`) para un filtro que no
+  tiene menú (p. ej. «Solo sesiones con ítems», que llega desde Progreso).
 
 ### Datos
-- **Tablas** reales (`<table>` con `caption`) y columnas fijas; fila clicable con un
-  botón o enlace dentro para el teclado. Seleccionada: `selected` + barra de marca.
+- **Tabla** (`ui.dataTable`, con `ui.dataTableFixed` si la vista fija anchos): `<table>` real
+  con `caption`, filete de tinta arriba, filas de 44 px y dentro de `ui.scrollX`. Cada
+  columna declara su tipo: `colNum` (cifras a la derecha, tabulares), `colDate`, `colStatus`
+  (forma y texto, sin partir), texto (parte entre palabras; el ancho debe dejar caber la más
+  larga) y `colLong`. La cabecera de fila es un `<th scope="row">`. Fila clicable con
+  `data-clickable` y un botón o enlace dentro para el teclado; seleccionada con
+  `data-selected`: `selected` + barra de marca.
+- **EmptyState** (`ui.empty`): ocupa el sitio de lo que falta y arranca con su mismo filete.
+  Causa en tinta, detalle en `ink-2` y el siguiente paso (un enlace). Título solo en un
+  primer uso; `inset` lo deja sin filete dentro de un bloque que ya lo tiene. Nunca un «0»
+  ni una caja punteada.
+- **Decisión** (`ui.decision`): abre una vista de análisis (Progreso y Writing → Progreso).
+  Antetítulo en marca, titular en serif (Reco title), la evidencia en una línea de `ink-2`,
+  una acción y, al pie tras un filete, qué cubre la cifra. Una acción larga se parte en
+  vez de desbordar. Si la muestra no basta, `ui.smallSample` lo dice justo debajo:
+  «Muestra pequeña» en aviso y la explicación en `ink-2`.
+- **Fila de descarga** (Exportar): icono, nombre y fichero en Mono, alcance en `ink-2` y
+  «↓ Descargar» en `ink-2` sin borde; la fila entera es el enlace (nombre accesible
+  «Descargar …»), como las categorías de Progreso. Las ayudas dicen qué lleva cada archivo
+  en lenguaje llano.
+- **FileDrop**: elegir o soltar un archivo con los textos de la app, nunca el «Choose File»
+  del navegador. `zone` cuando es la entrada principal (título, pista y el elegido en mono);
+  `button` cuando es la alternativa a pegar el texto.
 - **StatusText**: rombo «Abierta» en aviso, cuadrado «Cerrada» en tinta secundaria.
+- **AnkiStateText**: el estado Anki en una fila. «Pendiente» en tinta con anillo hueco,
+  «Convertida» en `success` con punto, «Sin verificar» (la marca manual de versiones
+  anteriores) y «No aplica» en `ink-2`. La columna mide 140 px: cabe «Not applicable».
 - **CorrectionPair**: en línea (mono) para listas; en detalle (serif, dos filas). Sin
-  respuesta propia: «Mi respuesta no registrada», en cursiva y sin tachar.
+  respuesta propia: «Mi respuesta no registrada», en cursiva y sin tachar. En móvil y en un
+  contenedor de menos de 420 px (el panel de detalle, la vista previa de Anki) la etiqueta
+  va encima de la respuesta.
+
+### Detalle de error
+- **Cabecera:** «Error 38 · 26 de 27» y sus flechas; la sesión está en los datos de abajo.
+  Con la lista paginada, la posición se cuenta sobre todos los resultados y las flechas
+  siguen en la página de al lado al llegar al borde (`?at=first|last`, que se limpia).
+- **Anki** dice el siguiente paso: «Pendiente» va en aviso con «Crear la tarjeta» (abre
+  Anki con su vista previa, `?error=`); «Sin verificar» explica de dónde viene y enlaza a
+  Convertidas, donde se puede devolver a pendientes.
+- **Falsas certezas** añade la columna Causa: es la que separa el despiste de lo que no se
+  sabía. La entradilla dice el periodo y el recuento solo los casos.
+
+### Anki
+- El estado de la conexión se dice una vez, a la derecha del título («Disponible» o «No
+  disponible»); el aviso de debajo solo explica el porqué. Sin conexión, «Sincronizar» pasa a
+  «Volver a probar» y remite al aviso (`aria-describedby`).
+- Los grupos de Repasos son `h2`: no hay salto de `h1` a `h3`.
 
 ### Capas
-- **Toast** (`useToast`): abajo al centro, 5 s, «Deshacer» opcional; fuera de las filas que
-  se desmontan. `role=status`.
+- **Toast** (`useToast`): abajo al centro, por encima de cualquier panel; fuera de las filas
+  que se desmontan. Sube desde su borde (8 px, 200 ms). Una barra fija abajo (la de la tanda)
+  lo aparta con `useToastClearance`: mide la barra y el aviso queda encima, nunca la tapa. 5 s, o 10 s si lleva «Deshacer», y se detiene mientras el ratón o el foco
+  están en él. Ctrl/⌘+Z deshace fuera de un campo de texto, y el atajo se ve junto a la acción.
+  La región `role=status` está siempre montada, para que el lector de pantalla lo anuncie.
 - **ConfirmDialog**: `<dialog>` modal, foco en Cancelar, nombra el objeto y todas sus
   consecuencias.
-- **Drawer**: derecha, 520 px, blanco sólido, no modal; Escape cierra y devuelve el foco.
-- **Menu**: flechas, Escape y clic fuera.
+- **Drawer**: derecha, 520 px, bajo la cabecera, blanco sólido, no modal; Escape cierra y
+  devuelve el foco.
+- **Capas a pantalla completa** (el drawer en móvil, el detalle de Errores y el panel de
+  Writing bajo 1024 px): `useInertBehind` (`_shared/layer.ts`) deja inerte lo que hay detrás
+  en `<main>`, así que Tab no se escapa. La cabecera y el aviso siguen vivos.
+- **Menu**: flechas, Escape y clic fuera; crece desde la esquina de su botón. Admite
+  `menuitemradio` en grupo con título («Idioma»): la marca ✓ ocupa su hueco siempre y la
+  opción elegida va en 600; elegir cierra y devuelve el foco al botón. Dentro de la cabecera
+  (que ya es cristal) el menú va opaco, y en móvil se abre hacia dentro de la pantalla.
 - **CommandPalette** (Ctrl/⌘+K): errores (máx. 5) y sesiones (máx. 3) buscados en el
-  servidor, y acciones con sus atajos.
+  servidor, y acciones con sus atajos (también «Cambiar idioma a …»). La opción activa se ve
+  como una fila seleccionada (`selected` y barra de marca) y el campo con foco se subraya en
+  la marca. Abre sin animación: se usa con el teclado muchas veces al día.
 
 ### Revisión de tanda
-Índice de 300 px (nº · corrección · Listo/Falta) + un solo editor para la fila elegida,
-progreso segmentado y barra inferior en cristal. El borrador vive en el estado por fila y
-en el navegador hasta que el servidor confirma; el envío mantiene el contrato de siempre.
-Un fallo de transporte se dice como «No pudimos confirmar el guardado», nunca como «no se
-ha guardado nada».
+Índice de 300 px (264 bajo 1024; nº · corrección · Listo/Falta) + un solo editor para la
+fila elegida, progreso segmentado y barra inferior en cristal. El borrador vive en el estado
+por fila y en el navegador hasta que el servidor confirma; el envío mantiene el contrato de
+siempre. Un fallo de transporte se dice como «No pudimos confirmar el guardado», nunca como
+«no se ha guardado nada».
+
+- **Entrada:** Ctrl/⌘+V en cualquier parte de Sesiones es la entrada principal; el aviso va
+  junto a la etiqueta, en tinta y con su `Kbd`. El campo es la alternativa (y la única en
+  táctil).
+- **Datos que no valen:** un resumen y una línea por dato con su línea del JSON (un botón
+  que la selecciona en el campo), la etiqueta de la interfaz («Tipo», «Fuente») y los valores
+  admitidos; nunca la ruta interna ni el mensaje crudo de Zod. La detección no lo repite.
+- **Tu respuesta** es un campo en su sitio, tachada en `danger` mientras no se edita.
+- **Progreso segmentado:** solo dibujo (`aria-hidden`, sin clic); lo hecho en `success`, lo
+  que falta en `rule`, no en aviso. La barra lo dice en positivo: «3 de 5 listos · la tanda
+  se guarda entera».
+- **Barra inferior:** a sangre como la cabecera (el cristal de fuera de la columna es
+  `border-image` desbordado, que no crea scroll) y con el contenido alineado a la columna.
+- **Cierre:** al guardar, la sesión abre con un bloque en su región viva siempre montada:
+  lo guardado, las tarjetas que deja pendientes en Anki y lo siguiente («Ir a Anki»,
+  «Pegar otra tanda» si venía de la lista). Entra una vez (240 ms, el check se asienta) y
+  queda quieto; sin animación con `prefers-reduced-motion`.
+- **Historial:** sin columna Estado; una sesión abierta lo dice junto a su título.
+- **Campos de sesión:** con menos de 560 px de contenedor (el drawer), la etiqueta de grupo
+  sube encima de sus campos.
 
 ## Do's and Don'ts
 
@@ -290,6 +460,8 @@ ha guardado nada».
 - **Do** dar a cada cifra su denominador y a cada vacío su «—» o su frase; vacío no es cero.
 - **Do** confirmar con el servidor antes de anunciar éxito (guardar, importar, Anki).
 - **Do** usar las primitivas de `ui.module.css` antes de crear una clase nueva.
+- **Do** animar solo lo que informa de un estado (cierre de la tanda, paneles, avisos), con
+  `transform` y `opacity`, por debajo de 300 ms; nunca lo que se abre con el teclado.
 
 ### Don't:
 - **Don't** escribir colores, radios o tamaños literales en los módulos: todo sale de `:root`.
@@ -298,11 +470,56 @@ ha guardado nada».
 - **Don't** usar `window.confirm`: las confirmaciones son `ConfirmDialog`.
 - **Don't** poner más de un primario por tarea visible.
 
+## Writing
+
+- Writing es un destino principal con Biblioteca, Reescrituras y Progreso. La biblioteca
+  filtra redacciones por búsqueda, estado, tipo y orden; el lector presenta el texto en
+  una hoja serif y las correcciones en un panel, con Drawer en móvil.
+- El lector muestra en reposo solo los errores, con un subrayado rojo fino y sin fondo.
+  Al pasar por un párrafo (o con foco o un toque) aparecen sus fondos y sus notas de
+  párrafo, como marcas al margen. Pasar por un error abre una nota con «tu texto →
+  corrección», el comentario y el tipo; con un clic se queda y trae sus acciones.
+  La nota se puede recorrer con el ratón sin que desaparezca y Escape la cierra (WCAG 1.4.13).
+- El panel de anotaciones está cerrado por defecto y se abre como columna al margen
+  (bajo 1024 px, cajón bajo la cabecera, con velo y el fondo inerte). Anotar, corregir la transcripción en la propia hoja, editar
+  los datos y exportar viven en «Más acciones». Las anotaciones del panel son una lista de
+  botones (la elegida con `aria-current`) que se recorre también con flechas o J/K.
+- La cabecera de la hoja lleva género, fecha, palabras y estado, y la nota total a la
+  derecha; la evaluación del pie no la repite (solo explica un total parcial). Fuera del
+  rango del enunciado, las palabras lo dicen («57 palabras · por debajo de 220–260»), en
+  aviso. Los datos de esa línea se separan con «·» y una línea partida nunca empieza por él.
+- Un error ya estudiado se subraya más suave, pero a 3:1 sobre la hoja.
+- **Criterios con su nombre oficial**, el mismo en los dos idiomas: Content, Communicative
+  Achievement, Organisation y Language (`CRITERION_LABEL`), como «Part 5».
+- **Progreso** abre con una decisión: el criterio de media más baja (o los empatados), el
+  resto en una línea y la acción de repasar las anotaciones pendientes de la redacción más
+  reciente que las tenga. Si los cuatro están a menos de medio punto, van parejos; con
+  menos de 3 notas por criterio, muestra pequeña. Debajo, la tabla por criterio (Última,
+  Media, n, con el más bajo marcado) y la evolución de una medida, con **Medida** y **Tipo**
+  (solo si hay más de uno) como menús que se aplican al momento. La gráfica es HTML en
+  porcentajes: el texto no escala con la anchura y las fechas de los extremos caben
+  enteras; las fechas aproximadas van en punto hueco.
+- **Reescrituras** lleva el periodo (30/60) en la cabecera, junto al primario, solo en esa
+  pestaña. Un texto sin transcripción ofrece «Añadir transcripción», sin caja.
+- Los vacíos de la biblioteca dicen lo que pasa: la búsqueda escrita, «No hay redacciones
+  pendientes de corregir» o «Ninguna redacción cumple estos filtros».
+- La acción de exportación del lector descarga JSON reimportable con evaluación,
+  anotaciones y anclajes. Exportar datos incluye esas anotaciones en el volcado v4.
+  [Contrato JSON](docs/WRITING-JSON.md) y [plan](docs/WRITING-PLAN.md).
+
 ## Notebook
 
-- Entrada en Más y en la paleta, conservando los cuatro destinos de la cabecera. La
-  portada abre con búsqueda, carpetas, modificados recientes, la acción «Nuevo apunte» y
-  la secundaria «Importar .md». El estado vacío explica cómo crear el primero.
+- Entrada en la cabecera, en el grupo de la biblioteca junto a Writing, y en la paleta. La
+  portada usa `PageHeader` con la acción «Nuevo apunte» y la secundaria «Importar .md», y
+  debajo un `FilterBar` como el de Errores: búsqueda al escribir, **Carpeta** (cada raíz con
+  sus subcarpetas, sus hijas y «Sin carpeta») y **Etiqueta** (las que ya se usan, las más
+  repetidas primero, con su recuento). Todo se aplica al elegirlo y conserva lo demás. El
+  estado vacío explica cómo crear el primero.
+- El directorio es navegación, no una tarjeta: sin caja, con su cabecera sobre el mismo
+  filete que la del listado; enlaces en tinta y el actual en marca y 600. Organizar
+  carpetas queda debajo, tras un filete. Cada fila del listado es el enlace al apunte (el
+  enlace se estira sobre ella) y la estrella queda por encima con su propio botón. Bajo
+  1024 px el directorio va después del contenido, en la portada y en el lector.
 - Portada en `/notebook`, alta en `/notebook/nuevo`, importación en `/notebook/importar`,
   lector en `/notebook/<id>-<slug>` y editor en su subruta `/editar`. El sufijo describe
   el título; el ID conserva el enlace tras renombrar. Las descargas usan
@@ -314,12 +531,21 @@ ha guardado nada».
   editables, lista los avisos (frontmatter no interpretado, campos descartados, HTML,
   imágenes, destinos no resolubles) y enseña la vista previa con el renderizador del
   lector. Solo «Crear apunte» escribe, y siempre crea un apunte nuevo.
+- El lector no tiene acciones a la vista que no sean de lectura: Favorito y Editar como
+  secundarios y un menú «⋯» con Exportar .md y, tras un separador, Borrar apunte… (en rojo
+  y con confirmación). Las migas son su «volver», en `ink-2`. Cada etiqueta abre la portada
+  filtrada por ella.
 - La lectura usa Source Serif 4 y `--reading-max`; directorio e índice acompañan al
   texto en pantallas amplias. Bajo 1024 px, directorio e índice se despliegan y el
   contenido ocupa una columna. Las tablas Markdown desplazan dentro de su contenedor.
+- La estrella de favoritos confirma con el servidor antes de cambiar. El directorio muestra
+  hasta ocho y la vista Favoritos reúne todos; la marca no altera la fecha ni la revisión.
 - El editor usa Plex, textarea nativo, toolbar pequeña y pestañas Editar/Vista previa.
-  La vista previa comparte renderizador con el lector. Guardar ahora y Ctrl/⌘+S
-  complementan autosave; un estado visible distingue pendiente, guardando, guardado,
+  La vista previa comparte renderizador con el lector y titula con `h2` (el `h1` es «Editar
+  apunte»). Título, Carpeta y Etiquetas empiezan a la misma altura: la pista «separadas por
+  comas» va bajo el campo. El primario es **Terminar edición**, que guarda lo pendiente y
+  vuelve al lector; «Guardar ahora» (secundario) solo aparece mientras queda algo por
+  guardar, en vez de un primario gris. Ctrl/⌘+S y el autosave lo complementan; un estado visible distingue pendiente, guardando, guardado,
   conflicto y error. El borrador local se escribe a los 250 ms y se puede recuperar o
   descargar. El envío al servidor empieza tras un segundo sin cambios; solo la respuesta
   confirmada muestra «guardado». Un conflicto conserva el borrador y permite cargar lo

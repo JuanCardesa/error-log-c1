@@ -41,7 +41,7 @@ test('cuenta los errores pendientes y no envia hasta completarlos', async ({ pag
   await openImport(page);
   await review(page, JSON.stringify([rows[0], { ...rows[1], correctAnswer: '' }]));
   await expect(workspace(page).getByRole('heading', { name: 'Revisar importación' })).toBeFocused();
-  await expect(workspace(page).getByText('1 por completar · no se guarda nada hasta completarlos')).toBeVisible();
+  await expect(workspace(page).getByText('1 de 2 listos · la tanda se guarda entera', { exact: true })).toBeVisible();
   await expect(indexRow(page, 2)).toContainText('Falta');
   await expect(indexRow(page, 1)).toContainText('Listo');
 
@@ -53,9 +53,17 @@ test('cuenta los errores pendientes y no envia hasta completarlos', async ({ pag
 
   await correct(page).fill('in');
   await expect(workspace(page).getByText('2 errores listos para enviar')).toBeVisible();
+  // Tu respuesta se corrige donde está, sin abrir «Más detalles».
+  const mine = workspace(page).getByRole('textbox', { name: 'Tu respuesta', exact: true });
+  await expect(mine).toHaveValue('on');
+  await mine.fill('upon');
   await save(page, 2).click();
-  await expect(page.getByRole('status').filter({ hasText: '2 errores guardados.' })).toBeVisible();
+  // En una sesión abierta, el cierre no ofrece pegar otra tanda: la siguiente es otra sesión.
+  const done = page.getByRole('status').filter({ hasText: '2 errores guardados.' });
+  await expect(done).toBeVisible();
+  await expect(done.getByRole('link', { name: 'Pegar otra tanda' })).toHaveCount(0);
   await expect(sessionErrors(page)).toHaveCount(2);
+  await expect(page.getByRole('button', { name: /^Ver error 5/ })).toContainText('upon');
 });
 
 test('Alt+↓ recorre los pendientes en orden y enfoca lo que falta', async ({ page }) => {

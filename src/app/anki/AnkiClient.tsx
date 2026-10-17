@@ -2,9 +2,10 @@
 
 import { RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 
 import { CorrectionPair } from '../_shared/CorrectionPair';
+import { useT } from '../_shared/i18nClient';
 import { useToast } from '../_shared/Toast';
 import ui from '../_shared/ui.module.css';
 import { createAnkiAction, syncAnkiAction, undoAddedAction, updateAnkiAction } from './actions';
@@ -16,7 +17,12 @@ import styles from './anki.module.css';
  * las filas, que desaparecen al revalidar.
  */
 
-export function SyncButton() {
+/**
+ * Sin Anki, sincronizar es volver a intentar la conexión: lo dice así y remite al aviso que
+ * explica por qué no hay conexión.
+ */
+export function SyncButton({ available }: { readonly available: boolean }) {
+  const t = useT();
   const [pending, start] = useTransition();
   const toast = useToast();
   return (
@@ -25,19 +31,20 @@ export function SyncButton() {
       className={`${ui.secondary} ${ui.compact}`}
       disabled={pending}
       aria-busy={pending}
+      aria-describedby={available ? undefined : 'anki-status'}
       onClick={() => {
         start(async () => {
           try {
             const result = await syncAnkiAction();
             toast({ message: result.message, tone: result.ok ? 'ok' : 'error' });
           } catch {
-            toast({ message: 'No se pudo confirmar la sincronización. El historial anterior se conserva.', tone: 'error' });
+            toast({ message: t.anki.syncUncertain, tone: 'error' });
           }
         });
       }}
     >
       <RefreshCw size={16} aria-hidden="true" />
-      {pending ? 'Sincronizando…' : 'Sincronizar'}
+      {pending ? t.anki.syncing : available ? t.anki.sync : t.anki.retry}
     </button>
   );
 }
@@ -58,11 +65,25 @@ export interface QueueEntry {
 }
 
 /** Cola completa y vista previa de la seleccionada. Se crea de una en una. */
-export function PendingQueue({ entries, available }: { readonly entries: readonly QueueEntry[]; readonly available: boolean }) {
-  const [selectedId, setSelectedId] = useState<number | null>(entries[0]?.id ?? null);
+export function PendingQueue({ entries, available, initialId }: {
+  readonly entries: readonly QueueEntry[];
+  readonly available: boolean;
+  /** Error con el que abrir la vista previa; si no está en la cola, el primero. */
+  readonly initialId?: number;
+}) {
+  const t = useT();
+  const [selectedId, setSelectedId] = useState<number | null>(
+    entries.find((entry) => entry.id === initialId)?.id ?? entries[0]?.id ?? null,
+  );
   const [creating, start] = useTransition();
   const toast = useToast();
   const index = entries.findIndex((entry) => entry.id === selectedId);
+
+  // Llegando desde un error, su fila puede quedar fuera de la vista en una cola larga.
+  useEffect(() => {
+    if (initialId === undefined) return;
+    document.querySelector(`[data-entry="${String(initialId)}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [initialId]);
   const current = index >= 0 ? entries[index] : entries[0];
 
   if (entries.length === 0) return null;
@@ -77,32 +98,32 @@ export function PendingQueue({ entries, available }: { readonly entries: readonl
           toast({ message: result.message, tone: 'error' });
           return;
         }
-        toast({ message: `Tarjeta «${current.correct}» creada y verificada en Anki` });
+        toast({ message: t.anki.cardCreated(current.correct) });
         setSelectedId(next?.id ?? null);
       } catch {
-        toast({ message: 'No se pudo confirmar la tarjeta. Sincroniza antes de repetir: crearla otra vez no duplica la nota.', tone: 'error' });
+        toast({ message: t.anki.createUncertain, tone: 'error' });
       }
     });
   };
 
   return (
     <div className={styles.queueLayout}>
-      <div className={styles.queueTable}>
-        <table className={styles.table}>
-          <caption className="sr-only">Errores pendientes de tarjeta, más antiguos primero</caption>
+      <div className={`${ui.scrollX} ${styles.queueTable}`}>
+        <table className={`${ui.dataTable} ${ui.dataTableFixed}`}>
+          <caption className="sr-only">{t.anki.queueCaption}</caption>
           <thead>
             <tr>
-              <th scope="col" className={styles.colDate}>Fecha</th>
-              <th scope="col">Corrección</th>
-              <th scope="col" className={styles.colCategory}>Categoría</th>
+              <th scope="col" className={`${ui.colDate} ${styles.colDate}`}>{t.sessionForm.date}</th>
+              <th scope="col">{t.correction.correction}</th>
+              <th scope="col" className={styles.colCategory}>{t.errorForm.category}</th>
             </tr>
           </thead>
           <tbody>
             {entries.map((entry) => {
               const selected = entry.id === current?.id;
               return (
-                <tr key={entry.id} className={selected ? styles.selected : undefined} onClick={() => { setSelectedId(entry.id); }}>
-                  <td className={`${styles.colDate} ${styles.muted}`}>{entry.date}</td>
+                <tr key={entry.id} data-entry={entry.id} data-clickable data-selected={selected || undefined} onClick={() => { setSelectedId(entry.id); }}>
+                  <td className={`${ui.colDate} ${styles.colDate} ${styles.muted}`}>{entry.date}</td>
                   <td>
                     <button
                       type="button"
@@ -122,19 +143,19 @@ export function PendingQueue({ entries, available }: { readonly entries: readonl
       </div>
 
       {current !== undefined && (
-        <aside className={styles.preview} aria-label="Vista previa de la tarjeta">
+        <aside className={styles.preview} aria-label={t.anki.cardPreview}>
           <span className={ui.help}>
-            {current.sessionTitle} · {current.date}{current.itemRef === null ? '' : ` · ítem ${current.itemRef}`}
+            {current.sessionTitle} · {current.date}{current.itemRef === null ? '' : t.anki.itemSuffix(current.itemRef)}
           </span>
           <p className={styles.prompt}>{current.prompt}</p>
           <CorrectionPair mine={current.mine} correct={current.correct} variant="detail" />
           <div className={styles.rule}>
-            <span className={ui.label}>Regla · reverso de la tarjeta</span>
+            <span className={ui.label}>{t.anki.ruleBack}</span>
             <p>{current.rule}</p>
           </div>
           <span className={ui.help}>{current.category} · {current.cause} · {current.confidence}</span>
           <div className={styles.previewActions}>
-            <Link href={`/errores?error=${String(current.id)}`}>Abrir error</Link>
+            <Link href={`/errores?error=${String(current.id)}`}>{t.anki.openError}</Link>
             <button
               type="button"
               className={ui.primary}
@@ -143,12 +164,12 @@ export function PendingQueue({ entries, available }: { readonly entries: readonl
               aria-describedby={available ? undefined : 'anki-create-reason'}
               onClick={create}
             >
-              {creating ? 'Verificando…' : 'Crear en Anki'}
+              {creating ? t.anki.verifying : t.anki.createInAnki}
             </button>
           </div>
           {!available && (
             <span id="anki-create-reason" className={`${ui.helpWarn} ${styles.reason}`}>
-              Necesitas Anki abierto para crear tarjetas.
+              {t.anki.needAnkiOpen}
             </span>
           )}
         </aside>
@@ -165,12 +186,6 @@ export interface ConvertedEntry {
   readonly state: 'verified' | 'stale' | 'legacy';
 }
 
-const STATE_LABELS: Readonly<Record<ConvertedEntry['state'], string>> = {
-  verified: 'Verificada',
-  stale: 'Desactualizada',
-  legacy: 'Marca manual heredada',
-};
-
 export function ConvertedList({ entries, available }: { readonly entries: readonly ConvertedEntry[]; readonly available: boolean }) {
   return (
     <ul className={styles.converted}>
@@ -180,6 +195,7 @@ export function ConvertedList({ entries, available }: { readonly entries: readon
 }
 
 function ConvertedRow({ entry, available }: { readonly entry: ConvertedEntry; readonly available: boolean }) {
+  const t = useT();
   const [pending, start] = useTransition();
   const toast = useToast();
   const run = (action: (id: number) => Promise<{ ok: boolean; message: string }>) => {
@@ -188,7 +204,7 @@ function ConvertedRow({ entry, available }: { readonly entry: ConvertedEntry; re
         const result = await action(entry.id);
         toast({ message: result.message, tone: result.ok ? 'ok' : 'error' });
       } catch {
-        toast({ message: 'No se pudo confirmar la acción. Recarga Anki para ver su estado.', tone: 'error' });
+        toast({ message: t.anki.actionUncertain, tone: 'error' });
       }
     });
   };
@@ -200,7 +216,7 @@ function ConvertedRow({ entry, available }: { readonly entry: ConvertedEntry; re
         <span className={styles.correctMono}>{entry.correct}</span>
         <span className={ui.cellSub}>{entry.category}</span>
       </span>
-      <span className={stateClass}>{STATE_LABELS[entry.state]}</span>
+      <span className={stateClass}>{t.anki.convertedState[entry.state]}</span>
       <span className={styles.convertedActions}>
         {entry.state === 'stale' && (
           <button
@@ -208,14 +224,14 @@ function ConvertedRow({ entry, available }: { readonly entry: ConvertedEntry; re
             className={`${ui.primary} ${ui.compact}`}
             aria-disabled={!available || pending}
             aria-busy={pending}
-            title={available ? 'Reescribe la tarjeta con el texto actual del error.' : 'Abre Anki para poder actualizarla.'}
+            title={available ? t.anki.updateTitle : t.anki.updateNeedsAnki}
             onClick={() => { if (available && !pending) run(updateAnkiAction); }}
           >
-            Actualizar en Anki
+            {t.anki.updateInAnki}
           </button>
         )}
         <button type="button" className={`${ui.ghost} ${ui.compact}`} disabled={pending} onClick={() => { run(undoAddedAction); }}>
-          Devolver a pendientes
+          {t.anki.returnToPending}
         </button>
       </span>
     </li>

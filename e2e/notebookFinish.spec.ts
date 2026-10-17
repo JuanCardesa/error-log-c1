@@ -27,7 +27,7 @@ test('termina con cambios pendientes y actualiza lector visitado y listado', asy
   await expect(page).toHaveURL(/\/notebook\/\d+-[^/]+$/u);
   await expect(page.getByRole('heading', { level: 1, name: 'Después de editar' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Regla nueva' })).toBeVisible();
-  await page.getByRole('link', { name: 'Notebook', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Secciones' }).getByRole('link', { name: 'Notebook' }).click();
   await expect(page.getByRole('link', { name: 'Después de editar' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Antes de editar' })).toHaveCount(0);
   await page.goBack();
@@ -77,8 +77,8 @@ test('conserva el borrador al salir, volver y recargar antes de terminar', async
   await page.getByRole('textbox', { name: 'Título' }).fill('Borrador de navegación');
   await page.getByRole('textbox', { name: 'Contenido Markdown' }).fill('Texto pendiente de confirmar.');
   await page.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
-  page.on('dialog', (dialog) => { void dialog.accept(); });
   await page.getByRole('link', { name: 'Volver a Notebook' }).click();
+  await page.getByRole('alertdialog', { name: 'Salir del editor' }).getByRole('button', { name: 'Salir de todos modos' }).click();
   await expect(page.getByRole('heading', { name: 'Borradores locales pendientes (1)' })).toBeVisible();
   await page.getByRole('link', { name: 'Abrir borrador' }).click();
   await page.getByRole('button', { name: 'Recuperar borrador' }).click();
@@ -90,7 +90,7 @@ test('conserva el borrador al salir, volver y recargar antes de terminar', async
   await page.getByRole('button', { name: 'Terminar edición' }).click();
   await expect(page).toHaveURL(/\/notebook\/\d+-[^/]+$/u);
   await expect(page.getByRole('heading', { level: 1, name: 'Borrador de navegación' })).toBeVisible();
-  await page.getByRole('link', { name: 'Notebook', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Secciones' }).getByRole('link', { name: 'Notebook' }).click();
   await expect(page.getByRole('heading', { name: /Borradores locales pendientes/u })).toHaveCount(0);
 });
 
@@ -134,7 +134,6 @@ test('una nota guardada automáticamente aparece al volver por la navegación ge
   await page.getByRole('link', { name: 'Nuevo apunte' }).click();
   await page.getByRole('textbox', { name: 'Título' }).fill('Navegación tras autosave');
   await expect(page.getByText('Guardado', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Más' }).click();
-  await page.getByRole('menuitem', { name: 'Notebook' }).click();
+  await page.getByRole('navigation', { name: 'Secciones' }).getByRole('link', { name: 'Notebook' }).click();
   await expect(page.getByRole('link', { name: 'Navegación tras autosave' })).toBeVisible();
 });

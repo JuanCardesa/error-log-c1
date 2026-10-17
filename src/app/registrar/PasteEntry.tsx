@@ -3,9 +3,12 @@
 import { ChevronRight, Info } from 'lucide-react';
 import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react';
 
-import { IMPORT_PROMPT, IMPORT_TEMPLATE, parseImportedBatch } from '@/lib/import/errors';
+import type { Messages } from '@/lib/i18n';
+import { type ImportIssue, ImportProblem, importPrompt, importTemplate, parseImportedBatch } from '@/lib/import/errors';
 import { ConfirmDialog } from '../_shared/ConfirmDialog';
 import { sessionTitle } from '../_shared/format';
+import { useT } from '../_shared/i18nClient';
+import { Kbd } from '../_shared/Kbd';
 import { useShortcutLabels } from '../_shared/shortcuts';
 import { useImportHost } from './ImportHost';
 import styles from './paste.module.css';
@@ -21,17 +24,24 @@ import ui from '../_shared/ui.module.css';
 
 type Detection = { readonly tone: 'idle' | 'ok' | 'warn'; readonly text: string };
 
-function detect(text: string, today: string): Detection {
-  if (text.trim() === '') return { tone: 'idle', text: 'Sesión con errores, solo errores, JSON o TSV' };
+/** Lo que impide revisar: el resumen y, si la tanda es JSON, cada dato en su línea. */
+type Problem = { readonly message: string; readonly issues: readonly ImportIssue[] };
+
+function problemFrom(error: unknown, fallback: string): Problem {
+  if (error instanceof ImportProblem) return { message: error.message, issues: error.issues };
+  return { message: error instanceof Error ? error.message : fallback, issues: [] };
+}
+
+function detect(text: string, today: string, t: Messages): Detection {
+  if (text.trim() === '') return { tone: 'idle', text: t.paste.detectIdle };
   try {
-    const batch = parseImportedBatch(text, today);
+    const batch = parseImportedBatch(text, t, today);
     const n = batch.errors.length;
-    const errors = `${String(n)} ${n === 1 ? 'error' : 'errores'}`;
     return batch.session === null
-      ? { tone: 'ok', text: `Detectado: ${errors} sin cabecera` }
-      : { tone: 'ok', text: `Detectado: sesión + ${errors}` };
+      ? { tone: 'ok', text: t.paste.detectedRows(n) }
+      : { tone: 'ok', text: t.paste.detectedSession(n) };
   } catch (error) {
-    return { tone: 'warn', text: error instanceof Error ? error.message : 'No se reconoce el formato.' };
+    return { tone: 'warn', text: error instanceof Error ? error.message : t.paste.unrecognised };
   }
 }
 
@@ -42,22 +52,36 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
 }) {
   const host = useImportHost();
   const keys = useShortcutLabels();
+  const t = useT();
   const id = useId();
-  const [problem, setProblem] = useState('');
+  const [problem, setProblem] = useState<Problem | null>(null);
   const [copyMessage, setCopyMessage] = useState('');
   const area = useRef<HTMLTextAreaElement>(null);
   const instructions = useRef<HTMLTextAreaElement>(null);
   const deferred = useDeferredValue(host.text);
-  const detection = useMemo(() => detect(deferred, host.today), [deferred, host.today]);
+  const detection = useMemo(() => detect(deferred, host.today, t), [deferred, host.today, t]);
+  const prompt = importPrompt(t);
 
   const review = (source: string) => {
     try {
-      host.review(parseImportedBatch(source, host.today));
-      setProblem('');
+      host.review(parseImportedBatch(source, t, host.today));
+      setProblem(null);
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : 'No se pudo leer el texto.');
+      setProblem(problemFrom(error, t.paste.unreadable));
       area.current?.focus();
     }
+  };
+
+  // Lleva al dato que no vale: selecciona su línea y la deja a la vista.
+  const selectLine = (line: number) => {
+    const field = area.current;
+    if (field === null) return;
+    const lines = field.value.split('\n');
+    const start = lines.slice(0, line - 1).reduce((sum, value) => sum + value.length + 1, 0);
+    field.focus();
+    field.setSelectionRange(start, start + (lines[line - 1]?.length ?? 0));
+    const height = Number.parseFloat(getComputedStyle(field).lineHeight);
+    if (Number.isFinite(height)) field.scrollTop = Math.max(0, (line - 2) * height);
   };
 
   // Llegar desde la paleta con #pegar deja el cursor en el campo.
@@ -88,101 +112,117 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
     <div className={styles.entry}>
       {variant === 'entry' && <StoredDraftNotice />}
 
-      <label htmlFor={id} className={ui.label}>
-        {variant === 'entry' ? 'Pegar correcciones' : 'Errores para añadir a esta sesión'}
-      </label>
+      <div className={styles.head}>
+        <label htmlFor={id} className={ui.label}>
+          {variant === 'entry' ? t.paste.labelEntry : t.paste.labelSession}
+        </label>
+        {/* La entrada de verdad: Ctrl+V en cualquier parte. El campo es la alternativa. */}
+        {variant === 'entry' && (
+          <span className={`${styles.keyHint} keyboard-hint`}>
+            <Kbd>{keys.paste}</Kbd> {t.paste.pasteAnywhere}
+          </span>
+        )}
+      </div>
       <textarea
         id={id}
         ref={area}
         rows={variant === 'entry' ? 3 : 4}
         className={`${ui.textarea} ${ui.mono}`}
         value={host.text}
-        onChange={(event) => { host.setText(event.target.value); setProblem(''); }}
+        onChange={(event) => { host.setText(event.target.value); setProblem(null); }}
         onKeyDown={(event) => {
           if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
             event.preventDefault();
             review(host.text);
           }
         }}
-        placeholder={variant === 'entry'
-          ? 'Pega aquí la tanda: sesión y errores en JSON, o TSV'
-          : 'JSON, TSV o una fila por error (1–100 errores)'}
-        aria-invalid={problem !== '' || undefined}
-        aria-describedby={`${id}-detect${problem === '' ? '' : ` ${id}-problem`}`}
+        placeholder={variant === 'entry' ? t.paste.placeholderEntry : t.paste.placeholderSession}
+        aria-invalid={problem !== null || undefined}
+        aria-describedby={`${id}-detect${problem === null ? '' : ` ${id}-problem`}`}
       />
       {variant === 'session' && host.fixedTarget !== null && (
         <span className={ui.helpInfo}>
-          Si el texto trae cabecera de sesión, no sustituye ni suma los recuentos de «{sessionTitle(host.fixedTarget)}».
+          {t.paste.headerIgnored(sessionTitle(host.fixedTarget, t))}
         </span>
       )}
       <div className={styles.actions}>
-        <button type="button" className={ui.primary} onClick={() => { review(host.text); }}>Revisar importación</button>
+        <button type="button" className={ui.primary} onClick={() => { review(host.text); }}>{t.paste.review}</button>
+        {/* Con el aviso abajo, la detección no lo repite. */}
         <span id={`${id}-detect`} className={detection.tone === 'ok' ? `${ui.help} ${ui.ok}` : detection.tone === 'warn' ? ui.helpWarn : ui.help}>
-          {detection.text}
+          {problem === null ? detection.text : null}
         </span>
         <span className={ui.spacer} />
-        {variant === 'entry' && (
-          <span className={`${ui.help} ${styles.keyHint}`}>
-            {keys.paste} fuera de un campo pega y abre la revisión
-          </span>
-        )}
-        {onCancel !== undefined && <button type="button" className={ui.ghost} onClick={onCancel}>Cancelar</button>}
+        {onCancel !== undefined && <button type="button" className={ui.ghost} onClick={onCancel}>{t.common.cancel}</button>}
       </div>
-      {problem !== '' && <p id={`${id}-problem`} role="alert" className={ui.fieldError}>{problem}</p>}
+      {problem !== null && (
+        <div id={`${id}-problem`} role="alert" className={styles.problem}>
+          <p className={ui.fieldError}>{problem.message}</p>
+          {problem.issues.length > 0 && (
+            <ul className={styles.issues}>
+              {problem.issues.map((issue) => (
+                <li key={`${String(issue.line)}-${issue.field}-${issue.message}`}>
+                  {issue.line !== null && (
+                    <button type="button" className={styles.issueLine} aria-label={t.paste.selectLine(issue.line)} onClick={() => { if (issue.line !== null) selectLine(issue.line); }}>
+                      {t.import.line(issue.line)}
+                    </button>
+                  )}
+                  <span><strong className={styles.issueField}>{issue.field}</strong> {issue.message}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className={styles.help}>
         <details className={ui.disclosure}>
           <summary>
             <Info size={16} className={styles.infoIcon} aria-hidden="true" />
-            Formatos admitidos
+            {t.paste.formats}
           </summary>
           <div className={ui.disclosureBody}>
-            <p>
-              Un bloque JSON con cabecera de sesión trae la tanda completa (hasta 300 errores). También vale un
-              JSON solo con errores o filas copiadas de una hoja de cálculo con cabeceras (hasta 100). Máximo 200.000
-              caracteres. La app no lee imágenes.
-            </p>
+            <p>{t.paste.formatsBody}</p>
           </div>
         </details>
         <details className={ui.disclosure}>
           <summary>
             <ChevronRight size={14} className="chevron" aria-hidden="true" />
-            Preparar correcciones con IA
+            {t.paste.aiTitle}
           </summary>
           <div className={`${ui.disclosureBody} ${styles.helpBody}`}>
             <ol className={styles.steps}>
-              <li>Copia estas instrucciones en la IA que uses y pega tus correcciones, o adjunta fotos si esa IA admite imágenes.</li>
-              <li>En las fotos, recorta solo los ítems que fallaste: su frase, tu respuesta y la corrección. Usa imágenes de una sola sesión. Los ítems y aciertos totales no salen en los recortes: díselos a la IA o complétalos al revisar.</li>
-              <li>Pega aquí el bloque que te devuelva y revisa la importación.</li>
+              <li>{t.paste.aiStep1}</li>
+              <li>{t.paste.aiStep2}</li>
+              <li>{t.paste.aiStep3}</li>
             </ol>
             <button type="button" className={`${ui.secondary} ${ui.compact}`} onClick={() => {
               const selectInstructions = () => {
                 instructions.current?.focus();
                 instructions.current?.select();
-                setCopyMessage('Seleccionadas: pulsa Ctrl+C para copiarlas.');
+                setCopyMessage(t.paste.copySelected);
               };
               // Sin contexto seguro no hay API de portapapeles: se seleccionan para copiarlas a mano.
               try {
-                void navigator.clipboard.writeText(IMPORT_PROMPT).then(
-                  () => { setCopyMessage('Instrucciones copiadas. Pégalas junto a tus correcciones.'); },
+                void navigator.clipboard.writeText(prompt).then(
+                  () => { setCopyMessage(t.paste.copied); },
                   selectInstructions,
                 );
               } catch {
                 selectInstructions();
               }
-            }}>Copiar instrucciones para la IA</button>
+            }}>{t.paste.copyButton}</button>
             <p role="status" className={ui.help}>{copyMessage}</p>
-            <textarea ref={instructions} aria-label="Instrucciones para la IA" className={`${ui.textarea} ${ui.mono}`} value={IMPORT_PROMPT} readOnly rows={4} />
+            <textarea ref={instructions} aria-label={t.paste.instructionsLabel} className={`${ui.textarea} ${ui.mono}`} value={prompt} readOnly rows={4} />
           </div>
         </details>
         <details className={ui.disclosure}>
           <summary>
             <ChevronRight size={14} className="chevron" aria-hidden="true" />
-            Plantilla para hoja de cálculo
+            {t.paste.templateTitle}
           </summary>
           <div className={`${ui.disclosureBody} ${styles.helpBody}`}>
-            <p>Copia las celdas con sus cabeceras: Ítem, Enunciado, Mi respuesta, Correcta, Categoría y Regla. Puedes añadir Causa, Confianza y Subcategoría.</p>
-            <textarea aria-label="Plantilla para hoja de calculo" className={`${ui.textarea} ${ui.mono}`} readOnly value={IMPORT_TEMPLATE} rows={3} onFocus={(event) => { event.target.select(); }} />
+            <p>{t.paste.templateBody}</p>
+            <textarea aria-label={t.paste.templateLabel} className={`${ui.textarea} ${ui.mono}`} readOnly value={importTemplate(t)} rows={3} onFocus={(event) => { event.target.select(); }} />
           </div>
         </details>
       </div>
@@ -197,36 +237,36 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
  */
 export function StoredDraftNotice() {
   const host = useImportHost();
+  const t = useT();
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const stored = host.stored;
   if (stored === null) return null;
   const destination = stored.targetId === null
-    ? `sesión nueva${stored.header.sourceRef === null ? '' : ` «${sessionTitle(stored.header)}»`}`
-    : 'para esta sesión abierta';
+    ? t.paste.storedNew(stored.header.sourceRef === null ? null : sessionTitle(stored.header, t))
+    : t.paste.storedTarget;
   return (
     <div className={`${ui.notice} ${styles.stored}`} role="status">
-      <span className={ui.noticeTitleWarn}>Tanda sin guardar</span>
+      <span className={ui.noticeTitleWarn}>{t.paste.storedTitle}</span>
       <span className={styles.storedText}>
-        {stored.rows.length} {stored.rows.length === 1 ? 'error' : 'errores'} · {destination}.
-        {' '}Si un guardado quedó sin confirmar, comprueba antes la lista de sesiones.
+        {t.paste.storedText(stored.rows.length, destination)}
       </span>
       <span className={styles.storedActions}>
-        <button type="button" className={`${ui.secondary} ${ui.compact}`} onClick={host.recover}>Recuperar</button>
-        <button type="button" className={`${ui.ghost} ${ui.compact}`} onClick={() => { setConfirmDiscard(true); }}>Descartar</button>
+        <button type="button" className={`${ui.secondary} ${ui.compact}`} onClick={host.recover}>{t.paste.recover}</button>
+        <button type="button" className={`${ui.ghost} ${ui.compact}`} onClick={() => { setConfirmDiscard(true); }}>{t.paste.discard}</button>
       </span>
       <ConfirmDialog
         open={confirmDiscard}
-        title="Descartar la tanda sin guardar"
-        confirmLabel="Descartar tanda"
-        pendingLabel="Descartando…"
-        aside="No se puede deshacer."
+        title={t.paste.discardTitle}
+        confirmLabel={t.paste.discardConfirm}
+        pendingLabel={t.common.discarding}
+        aside={t.common.cannotUndo}
         onCancel={() => { setConfirmDiscard(false); }}
         onConfirm={() => {
           host.discardStored();
           setConfirmDiscard(false);
         }}
       >
-        <p>Se borra de este navegador la revisión que no llegó a guardarse. Las sesiones guardadas no cambian.</p>
+        <p>{t.paste.discardBody}</p>
       </ConfirmDialog>
     </div>
   );

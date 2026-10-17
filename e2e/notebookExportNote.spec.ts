@@ -34,7 +34,8 @@ test('descarga un apunte como .md y la pantalla de importar lo acepta sin avisos
   try {
     await page.goto(noteHref);
     const download = page.waitForEvent('download');
-    await page.getByRole('link', { name: 'Exportar .md' }).click();
+    await page.getByRole('button', { name: 'Más acciones del apunte' }).click();
+    await page.getByRole('menuitem', { name: 'Exportar .md' }).click();
     const saved = await download;
     expect(saved.suggestedFilename()).toBe(fileName);
 

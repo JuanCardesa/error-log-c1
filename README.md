@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <b>Spanish interface · Runs locally · No account</b><br>
+  <b>English or Spanish interface · Runs locally · No account</b><br>
   <a href="#quick-start">Try it locally</a> &nbsp;·&nbsp;
   <a href="#documentation">Documentation</a>
 </p>
@@ -138,8 +138,9 @@ sure, unsure or guessed. Mistakes you were *sure* about get their own list,
 | Task format | You broke a rule of the task | Review the instructions |
 | Time pressure | You ran out of time or rushed | Practise time management |
 
-The first three causes are eligible for Anki cards. The interface and import format use
-the Spanish names; the [specification](docs/SPEC.md) lists all values and thresholds.
+The first three causes are eligible for Anki cards. The import format uses the Spanish
+names, and the interface shows them in its language; the [specification](docs/SPEC.md)
+lists all values and thresholds.
 
 </details>
 
@@ -156,9 +157,12 @@ within that category; sessions without item counts, such as Writing, are exclude
 
 [![Progress: a recommendation to review pending Anki cards, with its evidence and the category and cause breakdowns](docs/screenshots/informe.png)](docs/screenshots/informe.png)
 
-**Writing** records the four assessment bands you enter and links originals to rewrites.
-It checks for repeated logged errors by matching category, subcategory and corrected answer.
-It does not grade essays or detect mistakes in the text automatically.
+**Writing** is a workspace for your transcribed essays and teacher corrections. Import a
+strict JSON prepared from your paper, annotate the exact text, edit four half-point bands,
+track progress by score or criterion, and compare rewrites. The library can export one
+transcribed writing with its annotations as JSON; the full-data dump includes Writing
+annotations as well. It does not read photos, grade essays or detect mistakes automatically.
+See the [Writing JSON contract](docs/WRITING-JSON.md).
 
 ### Notes next to your mistakes
 
@@ -190,8 +194,10 @@ finds mistakes, sessions and notes from any page.
 - **Markdown / ZIP:** portable notes without study marks. ZIP includes a metadata and
   error-link manifest, but only individual `.md` files can be imported, without restoring
   those links.
-- **JSON:** saved records, Anki history and the notebook, including study marks. Full JSON
-  import is not implemented.
+- **Writing JSON:** an individual transcribed writing and its annotations can be reimported
+  into Writing. The [format](docs/WRITING-JSON.md) preserves approximate date provenance.
+- **Full JSON:** all records, Anki history, Writing annotations and the notebook, including
+  study marks. This portability dump is not an import or restore file.
 - **SQLite backup:** the complete saved database for restoration. Browser drafts are
   separate and are not included in exports or backups.
 
@@ -292,9 +298,10 @@ preparation, and that's what it's used for.
   sessions count in the general reports and rules but don't have a dedicated view.
 - Accuracy reflects the answers you record. It isn't an official Cambridge score or a
   prediction of your result.
-- The interface is in Spanish and designed for one person on a computer. Layouts adapt to
-  narrow screens, but the documented setup is accessible only from the computer running
-  it; it does not provide access from a separate phone.
+- The interface is in English, with Spanish in **More → Language**, and is designed for
+  one person on a computer. Changing the language never touches your notes or errors.
+  Layouts adapt to narrow screens, but the documented setup is accessible only from the
+  computer running it; it does not provide access from a separate phone.
 
 **Current limits**
 
@@ -304,7 +311,7 @@ preparation, and that's what it's used for.
 
 ## Documentation
 
-The detailed guides are in Spanish, like the interface.
+The detailed guides are in Spanish.
 
 | Document | What's in it |
 | --- | --- |

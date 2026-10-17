@@ -11,7 +11,9 @@ import { EMPTY_STATE } from '../../registrar/formState';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { CorrectionPair } from '../CorrectionPair';
 import { sessionTitle, shortDate } from '../format';
-import { ANKI_STATE_LABELS, CATEGORY_LABELS, CAUSE_LABELS, CONFIDENCE_LABELS, ankiState } from '../labels';
+import { useT } from '../i18nClient';
+import { ankiState } from '../labels';
+import { useInertBehind, useMediaQuery } from '../layer';
 import { useToast } from '../Toast';
 import { usePreservedForm } from '../usePreservedForm';
 import { ankiClass } from './ankiClass';
@@ -21,7 +23,8 @@ import ui from '../ui.module.css';
 
 /**
  * Detalle de un error: leerlo entero sin entrar a editarlo, y editarlo en el mismo sitio.
- * En escritorio es una columna lateral no modal; por debajo de 1024 px ocupa la pantalla.
+ * En escritorio es una columna lateral no modal; por debajo de 1024 px ocupa la pantalla y
+ * deja el fondo inerte.
  * Escape sale de la edición y, si no se está editando, cierra el panel.
  */
 export function ErrorDetailPanel({
@@ -48,9 +51,12 @@ export function ErrorDetailPanel({
   /** Estado Anki que la vista conoce mejor (p. ej. «Desactualizada» en Anki). */
   readonly ankiOverride?: { readonly label: string; readonly className: string };
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [editingId, setEditingId] = useState(error.id);
   const panelRef = useRef<HTMLElement>(null);
+  // Bajo 1024 px el detalle es una pantalla: la tabla de detrás no se alcanza.
+  useInertBehind(panelRef, useMediaQuery('(max-width: 1023px)'));
   const closeButton = useRef<HTMLButtonElement>(null);
   const editButton = useRef<HTMLButtonElement>(null);
   const wasEditing = useRef(false);
@@ -70,15 +76,15 @@ export function ErrorDetailPanel({
   }, [editing]);
 
   const state = ankiState(error);
-  const anki = ankiOverride ?? { label: ANKI_STATE_LABELS[state], className: ankiClass(state) };
-  const title = sessionTitle(session);
+  const anki = ankiOverride ?? { label: t.labels.ankiState[state], className: ankiClass(state) };
+  const title = sessionTitle(session, t);
   const canStep = position !== null && position.total > 1;
 
   return (
     <aside
       ref={panelRef}
       className={styles.panel}
-      aria-label="Detalle del error"
+      aria-label={t.errors.detail}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
         event.preventDefault();
@@ -87,17 +93,18 @@ export function ErrorDetailPanel({
       }}
     >
       <div className={styles.head}>
+        {/* La sesión ya está en los datos de abajo: aquí, qué error es y dónde va. */}
         <span className={styles.context}>
-          {error.itemRef === null ? 'Error' : `Error ${error.itemRef}`} · {title}
-          {position !== null && <span className={styles.position}> · {position.index + 1} de {position.total}</span>}
+          {t.errors.errorRef(error.itemRef)}
+          {position !== null && <span className={styles.position}>{t.errors.position(position.index + 1, position.total)}</span>}
         </span>
-        <button type="button" className={ui.iconButton} aria-label="Error anterior" onClick={onPrev} disabled={!canStep}>
+        <button type="button" className={ui.iconButton} aria-label={t.review.prevError} onClick={onPrev} disabled={!canStep}>
           <ChevronLeft size={18} aria-hidden="true" />
         </button>
-        <button type="button" className={ui.iconButton} aria-label="Error siguiente" onClick={onNext} disabled={!canStep}>
+        <button type="button" className={ui.iconButton} aria-label={t.review.nextError} onClick={onNext} disabled={!canStep}>
           <ChevronRight size={18} aria-hidden="true" />
         </button>
-        <button ref={closeButton} type="button" className={ui.iconButton} aria-label="Cerrar detalle" onClick={onClose}>
+        <button ref={closeButton} type="button" className={ui.iconButton} aria-label={t.errors.closeDetail} onClick={onClose}>
           <X size={18} aria-hidden="true" />
         </button>
       </div>
@@ -116,36 +123,46 @@ export function ErrorDetailPanel({
           <p className={styles.prompt}>{error.prompt}</p>
           <CorrectionPair mine={error.myAnswer} correct={error.correctAnswer} variant="detail" />
           <div className={styles.rule}>
-            <span className={styles.ruleLabel}>Regla</span>
+            <span className={styles.ruleLabel}>{t.errorForm.rule}</span>
             <p>{error.ruleNote}</p>
           </div>
           <dl className={styles.facts}>
-            <dt>Categoría</dt>
+            <dt>{t.errorForm.category}</dt>
             <dd>
-              {CATEGORY_LABELS[error.category]}
+              {t.labels.category[error.category]}
               {error.subcategory !== null && <span className={ui.cellSub}> · {error.subcategory}</span>}
             </dd>
-            <dt>Causa</dt>
-            <dd>{CAUSE_LABELS[error.cause]}</dd>
-            <dt>Confianza</dt>
-            <dd>{CONFIDENCE_LABELS[error.confidence]}</dd>
+            <dt>{t.errorForm.cause}</dt>
+            <dd>{t.labels.cause[error.cause]}</dd>
+            <dt>{t.errorForm.confidence}</dt>
+            <dd>{t.labels.confidence[error.confidence]}</dd>
             <dt>Anki</dt>
-            <dd className={anki.className}>{anki.label}</dd>
-            <dt>Sesión</dt>
+            <dd>
+              <span className={anki.className}>{anki.label}</span>
+              {ankiOverride === undefined && state === 'PENDING' && (
+                <> · <Link href={`/anki?error=${String(error.id)}`}>{t.errors.ankiCreate}</Link></>
+              )}
+              {ankiOverride === undefined && state === 'LEGACY' && (
+                <span className={styles.ankiHint}>
+                  {t.errors.ankiLegacyHint} <Link href="/anki?tab=convertidas">{t.errors.ankiLegacyLink}</Link>
+                </span>
+              )}
+            </dd>
+            <dt>{t.errors.session}</dt>
             <dd>
               {showSessionLink ? (
                 <Link href={`/registrar?s=${String(session.id)}&error=${String(error.id)}`}>
-                  {shortDate(session.date)} · {title}
+                  {shortDate(session.date, t)} · {title}
                 </Link>
               ) : (
-                `${shortDate(session.date)} · ${title}`
+                `${shortDate(session.date, t)} · ${title}`
               )}
             </dd>
           </dl>
           <ErrorNotebookLinks key={error.id} errorId={error.id} />
           <div className={styles.actions}>
             <button ref={editButton} type="button" className={ui.secondary} onClick={() => { setEditing(true); }}>
-              Editar error
+              {t.errors.editError}
             </button>
           </div>
         </div>
@@ -161,6 +178,7 @@ function EditError({ error, session, subcategorySuggestions, onDone, onDeleted }
   readonly onDone: () => void;
   readonly onDeleted: () => void;
 }) {
+  const t = useT();
   const [state, formAction, pending] = useActionState(updateErrorAction, EMPTY_STATE);
   const { formRef, onReset } = usePreservedForm();
   const toast = useToast();
@@ -177,12 +195,12 @@ function EditError({ error, session, subcategorySuggestions, onDone, onDeleted }
     if (handled.current === state) return;
     handled.current = state;
     if (state.ok) {
-      toast({ message: 'Error guardado' });
+      toast({ message: t.errorForm.saved });
       onDone();
       return;
     }
     formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-  }, [state, onDone, toast, formRef]);
+  }, [state, onDone, toast, formRef, t]);
 
   return (
     <>
@@ -199,23 +217,23 @@ function EditError({ error, session, subcategorySuggestions, onDone, onDeleted }
         {state.message !== null && !state.ok && <p role="alert" className={ui.fieldError}>{state.message}</p>}
         <div className={styles.editActions}>
           <button type="button" className={ui.dangerLink} onClick={() => { setDeleteError(null); setConfirming(true); }}>
-            Borrar error…
+            {t.errors.deleteErrorMenu}
           </button>
           <span className={ui.spacer} />
-          <button type="button" className={ui.ghost} onClick={onDone} disabled={pending}>Cancelar</button>
+          <button type="button" className={ui.ghost} onClick={onDone} disabled={pending}>{t.common.cancel}</button>
           <button type="submit" className={ui.primary} disabled={pending} aria-busy={pending}>
-            {pending ? 'Guardando…' : 'Guardar cambios'}
+            {pending ? t.common.saving : t.common.saveChanges}
           </button>
         </div>
       </form>
 
       <ConfirmDialog
         open={confirming}
-        title={error.itemRef === null ? 'Borrar este error' : `Borrar el error ${error.itemRef}`}
-        confirmLabel="Borrar error"
+        title={t.errors.deleteTitle(error.itemRef)}
+        confirmLabel={t.errors.deleteError}
         pending={deleting}
         error={deleteError}
-        aside={error.ankiAdded ? 'Su nota de Anki se conserva. No se puede deshacer.' : 'No se puede deshacer.'}
+        aside={`${error.ankiAdded ? t.errors.ankiNoteKept : ''}${t.common.cannotUndo}`}
         onCancel={() => { setConfirming(false); }}
         onConfirm={() => {
           startDelete(async () => {
@@ -229,14 +247,12 @@ function EditError({ error, session, subcategorySuggestions, onDone, onDeleted }
               toast({ message: result.message });
               onDeleted();
             } catch {
-              setDeleteError('No se pudo confirmar el borrado. Recarga la sesión antes de repetirlo.');
+              setDeleteError(t.errors.deleteUncertain);
             }
           });
         }}
       >
-        <p>
-          Se eliminará «{error.correctAnswer}» de «{sessionTitle(session)}».
-        </p>
+        <p>{t.errors.deleteBody(error.correctAnswer, sessionTitle(session, t))}</p>
       </ConfirmDialog>
     </>
   );

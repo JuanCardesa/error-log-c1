@@ -9,7 +9,7 @@ import { prepareDemo } from './demo';
 import { loadDataset } from './load';
 import { getErrorNoteLinks } from './notebookLinkRepo';
 import { searchNotebookNotes } from './notebookSearch';
-import { errorRow, notebookFolder, notebookNote, session } from './schema';
+import { errorRow, notebookFolder, notebookNote, session, writingAnnotation, writingPiece } from './schema';
 import { seedIfEmpty } from './seedSafe';
 
 it('abre demos independientes y conserva intacta la anterior', () => {
@@ -51,6 +51,23 @@ it('prepara un cuaderno buscable con carpetas y vínculos a los errores de ejemp
     expect(links[0]?.link.headingSlug).toBe('nb-preposición-conservada');
     expect(links[0]?.headingStatus).toBe('valid');
     expect(() => seedIfEmpty(db, new Date('2026-09-16T12:00:00Z'))).toThrow('ya contiene datos');
+  } finally {
+    db.$client.close();
+    rmSync(scratch, { recursive: true, force: true });
+  }
+});
+
+it('incluye una redacción corregida con anotaciones en la demo', () => {
+  const scratch = mkdtempSync(join(tmpdir(), 'errorlog-demo-writing-'));
+  const db = createDb(prepareDemo(scratch, new Date('2026-09-16T12:00:00Z')));
+  try {
+    const piece = db.select().from(writingPiece).all().find((row) => row.title === 'Making cities more liveable');
+    expect(piece).toMatchObject({ status: 'CORRECTED', originalText: expect.stringContaining('there effect') });
+    const annotations = db.select().from(writingAnnotation).all();
+    expect(annotations).toHaveLength(2);
+    const anchored = annotations.find((row) => row.scope === 'SPAN');
+    expect(anchored?.anchor?.exact).toBe('there');
+    expect(piece?.originalText?.slice(anchored?.anchor?.start, anchored?.anchor?.end)).toBe('there');
   } finally {
     db.$client.close();
     rmSync(scratch, { recursive: true, force: true });

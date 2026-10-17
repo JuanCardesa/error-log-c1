@@ -8,6 +8,8 @@ import { MIGRATIONS_DIR } from '@/lib/db/paths';
 import { deleteError, deleteSession, deleteWritingPiece, getError, getSession, listErrors, listWritingPieces } from '@/lib/db/repo';
 import { linkAnkiNote } from '@/lib/db/ankiRepo';
 import { seed } from '@/lib/db/seed';
+import { writingPiece } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { addErrorAction, createSessionAction, deleteErrorAction, updateErrorAction, updateSessionAction } from './registrar/actions';
 import { EMPTY_STATE } from './registrar/formState';
 import { importErrorsAction } from './registrar/importActions';
@@ -15,6 +17,10 @@ import { MAX_IMPORT_ROWS, MAX_SESSION_IMPORT_ROWS } from '@/lib/import/errors';
 import { saveWritingPieceAction } from './writing/actions';
 
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+// Las acciones leen el idioma de la cookie de Ajustes; estas comprobaciones están en español.
+vi.mock('next/headers', () => ({
+  cookies: () => Promise.resolve({ get: (name: string) => (name === 'errorlog-locale' ? { value: 'es' } : undefined) }),
+}));
 vi.mock('@/lib/db/client', async (importOriginal) => {
   const original = await importOriginal<typeof DbClient>();
   return { ...original, getDb: vi.fn() };
@@ -243,7 +249,7 @@ describe('corregir errores existentes', () => {
 });
 
 describe('guardar Writing con datos cambiados en otra pestaña', () => {
-  it('rechaza una sesion que ya tiene texto sin sobrescribirlo', async () => {
+  it('no da de alta textos: las redacciones nuevas entran por la importación', async () => {
     const before = loadDataset(db);
     const original = before.pieces[0];
     if (original === undefined) throw new Error('Falta Writing en el seed');
@@ -251,7 +257,7 @@ describe('guardar Writing con datos cambiados en otra pestaña', () => {
     input.delete('id');
     const result = await saveWritingPieceAction(EMPTY_STATE, input);
     expect(result.ok).toBe(false);
-    expect(result.fieldErrors['sessionId']?.[0]).toContain('ya tiene un texto');
+    expect(result.message).toContain('no es válido');
     expect(loadDataset(db)).toEqual(before);
   });
 
@@ -264,15 +270,17 @@ describe('guardar Writing con datos cambiados en otra pestaña', () => {
     expect(result.message).toContain('ya no existe');
   });
 
-  it('avisa si se ha borrado la sesion seleccionada para un texto nuevo', async () => {
+  it('rechaza un formulario abierto antes del último guardado de otra pestaña', async () => {
     const original = listWritingPieces(db)[0];
     if (original === undefined) throw new Error('Falta Writing en el seed');
-    deleteSession(db, original.sessionId);
-    const input = form(original);
-    input.delete('id');
-    const result = await saveWritingPieceAction(EMPTY_STATE, input);
-    expect(result.ok).toBe(false);
-    expect(result.fieldErrors['sessionId']?.[0]).toContain('ya no está disponible');
+    db.update(writingPiece).set({ updatedAt: '2026-01-01T00:00:00.000Z' }).where(eq(writingPiece.id, original.id)).run();
+    const opened = { ...original, updatedAt: '2026-01-01T00:00:00.000Z' };
+    expect((await saveWritingPieceAction(EMPTY_STATE, form({ ...opened, personalNotes: 'Primera pestaña' }))).ok).toBe(true);
+    const stale = await saveWritingPieceAction(EMPTY_STATE, form({ ...opened, personalNotes: 'Segunda pestaña' }));
+    expect(stale.ok).toBe(false);
+    expect(stale.message).toContain('otra pestaña');
+    expect(db.select({ notes: writingPiece.personalNotes }).from(writingPiece).where(eq(writingPiece.id, original.id)).get())
+      .toEqual({ notes: 'Primera pestaña' });
   });
 
   it('no convierte una edicion con identificador invalido en una creacion', async () => {

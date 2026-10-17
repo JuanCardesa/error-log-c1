@@ -11,9 +11,12 @@ import {
   getNotebookNote,
   getNotebookNoteByUid,
   listNotebookFolders,
+  listFavoriteNotebookNotes,
   listNotebookNotes,
+  listNotebookTags,
   listRecentNotebookNotes,
   saveNotebookNote,
+  setNotebookNoteFavorite,
   updateNotebookFolder,
 } from './notebookRepo';
 import { notebookNote } from './schema';
@@ -39,6 +42,43 @@ function noteInput(changes: Record<string, unknown> = {}) {
 }
 
 describe('repositorio de apuntes Notebook', () => {
+  it('marca y desmarca sin editar y conserva la marca tras guardar', () => {
+    const first = createNotebookNote(db, noteInput(), NOW).note;
+    const marked = setNotebookNoteFavorite(db, { id: first.id, favorite: true }, '2026-09-29T08:00:00.000Z');
+    expect(marked).toMatchObject({ favoritedAt: '2026-09-29T08:00:00.000Z', revision: 1, updatedAt: NOW });
+    expect(setNotebookNoteFavorite(db, { id: first.id, favorite: true }, '2026-09-29T09:00:00.000Z'))
+      .toEqual(marked);
+    const saved = saveNotebookNote(db, {
+      ...noteInput({ title: 'Guardado' }), id: first.id, expectedRevision: 1,
+    }, '2026-09-29T10:00:00.000Z');
+    expect(saved.favoritedAt).toBe(marked.favoritedAt);
+    expect(setNotebookNoteFavorite(db, { id: first.id, favorite: false }, '2026-09-29T11:00:00.000Z'))
+      .toMatchObject({ favoritedAt: null, revision: 2, updatedAt: saved.updatedAt });
+    expect(listFavoriteNotebookNotes(db)).toEqual([]);
+    expect(() => setNotebookNoteFavorite(db, { id: 99999, favorite: true }, NOW))
+      .toThrow(expect.objectContaining({ code: 'NOT_FOUND' }));
+  });
+
+  it('ordena favoritos por fecha descendente y después por ID', () => {
+    const first = createNotebookNote(db, noteInput(), NOW).note;
+    const second = createNotebookNote(db, noteInput({ uid: 'd8766760-f8e8-4f34-b739-d07113f30d6a' }), NOW).note;
+    const third = createNotebookNote(db, noteInput({ uid: 'd8766760-f8e8-4f34-b739-d07113f30d6b' }), NOW).note;
+    setNotebookNoteFavorite(db, { id: first.id, favorite: true }, '2026-09-29T08:00:00.000Z');
+    setNotebookNoteFavorite(db, { id: second.id, favorite: true }, '2026-09-29T09:00:00.000Z');
+    setNotebookNoteFavorite(db, { id: third.id, favorite: true }, '2026-09-29T09:00:00.000Z');
+    expect(listFavoriteNotebookNotes(db).map((note) => note.id)).toEqual([second.id, third.id, first.id]);
+    expect(listRecentNotebookNotes(db).map((note) => note.id)).toEqual([third.id, second.id, first.id]);
+  });
+
+  it('lista las etiquetas en uso, las más repetidas primero', () => {
+    createNotebookNote(db, noteInput({ tags: ['part4', 'modales'] }), NOW);
+    createNotebookNote(db, noteInput({ uid: 'd8766760-f8e8-4f34-b739-d07113f30d6a', tags: ['part4', 'essay'] }), NOW);
+    createNotebookNote(db, noteInput({ uid: 'd8766760-f8e8-4f34-b739-d07113f30d6b', tags: [] }), NOW);
+    expect(listNotebookTags(db)).toEqual([
+      { tag: 'part4', count: 2 }, { tag: 'essay', count: 1 }, { tag: 'modales', count: 1 },
+    ]);
+  });
+
   it('crea una vez por UID y devuelve la fila ya confirmada al reintentar', () => {
     const first = createNotebookNote(db, noteInput(), NOW);
     expect(first).toMatchObject({ created: true, note: { uid: UID, revision: 1 } });
@@ -135,21 +175,21 @@ describe('repositorio de carpetas Notebook', () => {
 
   it('rechaza nombres equivalentes en el mismo nivel pero los permite en otro', () => {
     const grammar = create('Café');
-    expect(() => create('Cafe\u0301')).toThrow(/Ya existe/);
+    expect(() => create('Cafe\u0301')).toThrow(/already exists/);
     expect(() => create('Café', grammar.id)).not.toThrow();
   });
 
   it('rechaza padres inexistentes, tercer nivel y ciclos', () => {
-    expect(() => create('Huérfana', 999)).toThrow(/padre/);
+    expect(() => create('Huérfana', 999)).toThrow(/parent/);
     const root = create('Grammar');
     const child = create('Modal verbs', root.id);
-    expect(() => create('Third level', child.id)).toThrow(/padre/);
+    expect(() => create('Third level', child.id)).toThrow(/parent/);
     expect(() => updateNotebookFolder(db, {
       id: root.id, name: root.name, parentId: child.id,
-    }, NOW)).toThrow(/padre|subcarpetas/);
+    }, NOW)).toThrow(/parent|subfolders/);
     expect(() => updateNotebookFolder(db, {
       id: child.id, name: child.name, parentId: child.id,
-    }, NOW)).toThrow(/propio padre/);
+    }, NOW)).toThrow(/own parent/);
     expect(getNotebookFolder(db, root.id)?.parentId).toBeNull();
   });
 
@@ -168,13 +208,13 @@ describe('repositorio de carpetas Notebook', () => {
     }, NOW).parentId).toBeNull();
     expect(() => updateNotebookFolder(db, {
       id: 999, name: 'Missing', parentId: null,
-    }, NOW)).toThrow(/no encontrada/);
+    }, NOW)).toThrow(/not found/);
   });
 
   it('no borra carpetas con subcarpetas o apuntes', () => {
     const root = create('Grammar');
     const child = create('Modal verbs', root.id);
-    expect(() => deleteNotebookFolder(db, root.id)).toThrow(/contiene/);
+    expect(() => deleteNotebookFolder(db, root.id)).toThrow(/contains/);
     db.insert(notebookNote).values({
       uid: '9c8de1e3-03e6-42ec-a098-ac0db92331d0',
       folderId: child.id,
@@ -184,11 +224,11 @@ describe('repositorio de carpetas Notebook', () => {
       createdAt: NOW,
       updatedAt: NOW,
     }).run();
-    expect(() => deleteNotebookFolder(db, child.id)).toThrow(/contiene/);
+    expect(() => deleteNotebookFolder(db, child.id)).toThrow(/contains/);
     db.delete(notebookNote).run();
     deleteNotebookFolder(db, child.id);
     deleteNotebookFolder(db, root.id);
     expect(listNotebookFolders(db)).toEqual([]);
-    expect(() => deleteNotebookFolder(db, root.id)).toThrow(/no encontrada/);
+    expect(() => deleteNotebookFolder(db, root.id)).toThrow(/not found/);
   });
 });

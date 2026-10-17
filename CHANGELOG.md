@@ -3,35 +3,73 @@
 Formato inspirado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Cada
 versión corresponde a un tag `vX.Y` en `main`; `package.json` lleva el mismo número.
 
-## Pendiente de publicar
+## [2.1] — 2026-10-17
+
+Versión menor: llegan Notebook, Writing y la interfaz en inglés y español, y se revisa la
+interfaz entera. Las migraciones conservan todos los datos y no se retira nada.
 
 ### Añadido
 
+- **Writing:** importa una redacción transcrita con sus anotaciones en JSON (con vista previa
+  y unas instrucciones para pedírselo a una IA), léela con los errores marcados sobre el
+  texto y anota por fragmento, párrafo o texto entero. La transcripción se puede corregir:
+  cada anotación vuelve a anclarse o pasa a «Por colocar», y el texto anterior queda en un
+  historial. Las notas por criterio de Cambridge admiten medios puntos, y Writing → Progreso
+  abre con el criterio más débil. Cada redacción se exporta en el
+  [JSON de Writing](docs/WRITING-JSON.md) y se puede volver a importar.
+- **Idioma de la interfaz:** inglés por defecto y español en el menú Más → Idioma, sin recargar la
+  página. La preferencia se guarda en una cookie de este navegador. Solo cambian los textos de
+  la app: apuntes, errores, reglas, sesiones, JSON, CSV y tarjetas de Anki no se tocan.
 - **Notebook:** apuntes Markdown con carpetas de dos niveles, etiquetas, lector con índice,
   búsqueda FTS5, editor con vista previa, autosave y borradores recuperables. Vínculos
   manuales entre errores y apuntes o apartados, importación individual de `.md` y
   exportación de `.md` y ZIP. La demo incluye un cuaderno de ejemplo ficticio.
 - **Marcas de estudio:** resaltado y subrayado en cuatro colores, guardados aparte del
   Markdown. El JSON y las copias SQLite los conservan; `.md` y ZIP exportan el texto original.
+- **Favoritos de Notebook:** marca apuntes desde el lector, las filas y la búsqueda; el
+  directorio los deja a mano y ofrece una vista completa. Viajan en JSON y SQLite.
 
 ### Cambiado
 
-- El volcado `dump.json` usa `formatVersion: 3` e incorpora la clave `notebook` con
-  carpetas, apuntes, vínculos y anotaciones. El manifiesto del ZIP usa `formatVersion: 2`.
+- **Revisión visual v3:** navegación en dos grupos, Ritual (Sesiones · Errores · Progreso ·
+  Anki) y Biblioteca (Notebook · Writing); Más queda para Exportar y el idioma. Escala de
+  tipos, espaciado y capas común; cabeceras de página, filtros, tablas y estados vacíos
+  compartidos; Progreso abre con una decisión y fechas en la evolución semanal; filtros de
+  Notebook que se aplican al momento; zonas táctiles de 44 px y cabecera en dos filas por
+  debajo de 800 px.
+- El volcado `dump.json` usa `formatVersion: 4`: incorpora la clave `notebook` con
+  carpetas, apuntes, vínculos, anotaciones y favoritos, y `writingAnnotations` con las
+  anotaciones de Writing. El manifiesto del ZIP usa `formatVersion: 2`.
+- Notebook pasa a la cabecera y el índice vuelve a su columna lateral en escritorio.
 - README en inglés, como presentación del producto: qué problema resuelve, cómo funciona,
   la demo de 1:51 y el arranque. El detalle de uso pasa sin recortes a
   [docs/GUIDE.md](docs/GUIDE.md), en español como la interfaz.
-- Las migraciones `0008_notebook_core`, `0009_notebook_search` y
-  `0010_notebook_annotations` añaden las tablas, el índice y las marcas de estudio.
+- Las migraciones `0008_notebook_core`, `0009_notebook_search`,
+  `0010_notebook_annotations` y `0011_notebook_favorites` añaden las tablas, el índice,
+  las marcas de estudio y los favoritos. `0012_writing_workspace` reconstruye
+  `writing_piece` conservando cada redacción y añade las anotaciones y los recibos de
+  importación; `0013` añade el historial de transcripciones.
   Ejecuta `pnpm db:migrate` con la app detenida: antes guarda una copia
   verificada. Si el índice de búsqueda necesita reconstrucción, ejecuta
   `pnpm db:notebook-rebuild`.
 
+### Corregido
+
+- Guardar una transcripción o un formulario de Writing abiertos en otra pestaña ya no pisa
+  un cambio más reciente: la app avisa y pide recargar.
+- Las anotaciones de párrafo siguen a su párrafo cuando se reordena el texto.
+- Salir del editor de Notebook con cambios pide confirmación con el diálogo de la app.
+
+### Seguridad
+
+- Next.js 16.3.8 y `brace-expansion` parcheados por las alertas de Dependabot. La app no usa
+  `next/og` ni `next/image`, y funciona en local.
+
 ### Notas para actualizar desde 2.0
 
 - No hay migración inversa: conserva la copia SQLite previa para volver atrás.
-- Los consumidores del JSON deben aceptar `formatVersion: 3` y la nueva clave
-  `notebook`, incluidas sus `annotations`. El ZIP es una exportación portable; importar sus `.md` no reconstruye
+- Los consumidores del JSON deben aceptar `formatVersion: 4` y las nuevas claves
+  `notebook`, incluidas sus `annotations`, y `writingAnnotations`. El ZIP es una exportación portable; importar sus `.md` no reconstruye
   los vínculos con errores. La copia SQLite conserva todos los datos y relaciones.
 - Notebook no carga imágenes ni representa HTML, no guarda historial de versiones y
   admite un `.md` por importación. Sigue siendo una app local sin autenticación.

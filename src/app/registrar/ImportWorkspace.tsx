@@ -11,16 +11,17 @@ import { RULE_NOTE_MIN_LENGTH } from '@/lib/validation/schemas';
 import { CategoryCombobox } from '../_shared/CategoryCombobox';
 import { ConfirmDialog } from '../_shared/ConfirmDialog';
 import { mediumDate, practiceLongLabel, sessionTitle } from '../_shared/format';
+import { useT } from '../_shared/i18nClient';
 import { Kbd } from '../_shared/Kbd';
-import { CAUSE_LABELS, CONFIDENCE_LABELS, SOURCE_LABELS } from '../_shared/labels';
 import { useShortcutLabels } from '../_shared/shortcuts';
-import { useToast } from '../_shared/Toast';
+import { useToast, useToastClearance } from '../_shared/Toast';
 import { EMPTY_STATE } from './formState';
 import { importErrorsAction, importSessionAction } from './importActions';
 import { buildImportPayload, type DraftRow, type MissingField, missingFields, nextPendingIndex, snapshotFromDraft } from './reviewRows';
 import { SessionFields } from './SessionFields';
 import { type HeaderDraft, type TandaDraft, clearDraft, readHeaderForm, toImportedSession, writeDraft } from './tandaDraft';
 import styles from './workspace.module.css';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 
 /**
@@ -61,6 +62,8 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
   const scope = useId();
   const keys = useShortcutLabels();
   const toast = useToast();
+  const bar = useToastClearance<HTMLDivElement>();
+  const t = useT();
 
   const [rows, setRows] = useState<readonly DraftRow[]>(initial.rows);
   const [selectedId, setSelectedId] = useState<number | null>(initial.selectedId ?? initial.rows[0]?.id ?? null);
@@ -146,7 +149,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
     setSelectedId(next?.id ?? null);
     setDirty(true);
     toast({
-      message: `Error ${String(index + 1)} quitado de la tanda`,
+      message: t.review.removedToast(index + 1),
       undo: () => {
         setRows((list) => {
           if (list.some((row) => row.id === removed.id)) return list;
@@ -163,16 +166,16 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
     if (saving) return;
     if (pending.size > 0) {
       goToPending(selectedIndex);
-      toast({ message: `Completa ${pending.size === 1 ? 'el pendiente' : `los ${String(pending.size)} pendientes`} para guardar`, tone: 'error' });
+      toast({ message: t.review.completePending(pending.size), tone: 'error' });
       return;
     }
     if (target !== null && rows.length === 0) {
-      toast({ message: 'Esta tanda no tiene errores que añadir a la sesión.', tone: 'error' });
+      toast({ message: t.review.noErrorsToAdd, tone: 'error' });
       return;
     }
     if (target === null && headerIncomplete) {
       setHeaderOpen(true);
-      toast({ message: 'Completa los ítems y aciertos de la sesión antes de guardar.', tone: 'error' });
+      toast({ message: t.review.completeHeader, tone: 'error' });
       return;
     }
     // Sin esperar al guardado diferido: si la respuesta no llega, el borrador ya está.
@@ -196,7 +199,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
       if (result.ok && createdId !== undefined) {
         finished.current = true;
         clearDraft();
-        onSaved(result.message ?? 'Tanda guardada.', createdId, target === null);
+        onSaved(result.message ?? t.review.savedFallback, createdId, target === null);
         return;
       }
       const byRow = new Map<number, Record<string, string[]>>();
@@ -207,7 +210,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
       const headerErrors = Object.fromEntries(
         Object.entries(result.fieldErrors).filter(([key]) => key.startsWith('session.')).map(([key, value]) => [key.slice(8), value]),
       );
-      setSave({ kind: 'rejected', message: result.message ?? 'Revisa los campos señalados.', byRow, header: headerErrors });
+      setSave({ kind: 'rejected', message: result.message ?? t.review.checkFields, byRow, header: headerErrors });
       if (Object.keys(headerErrors).length > 0) setHeaderOpen(true);
       const firstRejected = sent.find((id) => byRow.has(id));
       if (firstRejected !== undefined) setSelectedId(firstRejected);
@@ -250,39 +253,43 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
     }
   };
 
-  const destLabel = target === null ? 'sesión nueva' : `${sessionTitle(target)} · abierta`;
+  const destLabel = target === null ? t.review.destNew : t.review.destOpen(sessionTitle(target, t));
   const canChangeTarget = fixedTarget === null && openSessions.length > 0;
   const summary = target === null ? header : target;
   const done = rows.length - pending.size;
   const rejectedFor = (id: number) => (save.kind === 'rejected' ? save.byRow.get(id) ?? {} : {});
-  const saveLabel = saving ? 'Guardando…'
+  const saveLabel = saving ? t.common.saving
     : target === null
-      ? rows.length === 0 ? 'Crear sesión sin errores' : `Crear sesión y guardar ${plural(rows.length)}`
-      : `Guardar ${plural(rows.length)} en esta sesión`;
+      ? rows.length === 0 ? t.review.saveCreateEmpty : t.review.saveCreate(rows.length)
+      : t.review.saveInto(rows.length);
 
   return (
     <section className={styles.workspace} aria-labelledby={`${scope}-title`}>
-      <div className={styles.top}>
-        <div>
-          <button type="button" className={`${ui.backLink} ${styles.back}`} onClick={back}>
+      <PageHeader
+        back={{ node: (
+          <button type="button" className={ui.backLink} onClick={back}>
             <ArrowLeft size={16} aria-hidden="true" />
-            Volver al texto pegado
+            {t.review.back}
           </button>
-          <h1 id={`${scope}-title`} ref={headingRef} tabIndex={-1} className={ui.pageTitle}>Revisar importación</h1>
-        </div>
-        <div className={styles.dest}>
-          <span>Destino: <strong>{destLabel}</strong></span>
-          {canChangeTarget && (
-            <button type="button" className={ui.textLink} aria-expanded={changingTarget} onClick={() => { setChangingTarget(!changingTarget); }}>
-              Cambiar destino
-            </button>
-          )}
-        </div>
-      </div>
+        ) }}
+        title={t.paste.review}
+        titleId={`${scope}-title`}
+        titleRef={headingRef}
+        actions={(
+          <div className={styles.dest}>
+            <span>{t.review.destination} <strong>{destLabel}</strong></span>
+            {canChangeTarget && (
+              <button type="button" className={ui.textLink} aria-expanded={changingTarget} onClick={() => { setChangingTarget(!changingTarget); }}>
+                {t.review.changeDest}
+              </button>
+            )}
+          </div>
+        )}
+      />
 
       {changingTarget && canChangeTarget && (
         <div className={`${ui.field} ${styles.destSelect}`}>
-          <label htmlFor={`${scope}-dest`}>Destino de la tanda</label>
+          <label htmlFor={`${scope}-dest`}>{t.review.destSelect}</label>
           <select id={`${scope}-dest`}
             className={ui.select}
             value={targetId === null ? 'new' : String(targetId)}
@@ -292,10 +299,10 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
               setDirty(true);
             }}
           >
-            <option value="new">Crear una sesión nueva con esta tanda</option>
+            <option value="new">{t.review.destNewOption}</option>
             {openSessions.map((session) => (
               <option key={session.id} value={session.id}>
-                Añadir a {sessionTitle(session)} · {mediumDate(session.date)} · abierta
+                {t.review.destAddOption(sessionTitle(session, t), mediumDate(session.date, t))}
               </option>
             ))}
           </select>
@@ -303,29 +310,33 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
       )}
 
       <div className={`${ui.surface} ${styles.summary}`}>
-        <span className={styles.summaryRef}>{sessionTitle(summary)}</span>
-        <span className={ui.help}>{mediumDate(summary.date)}</span>
-        <span className={ui.help}>{practiceLongLabel(summary)}</span>
-        <span className={ui.help}>{SOURCE_LABELS[summary.source]}</span>
+        <span className={styles.summaryRef}>{sessionTitle(summary, t)}</span>
+        <span className={ui.help}>{mediumDate(summary.date, t)}</span>
+        <span className={ui.help}>{practiceLongLabel(summary, t)}</span>
+        <span className={ui.help}>{t.labels.source[summary.source]}</span>
         <span className="num">
-          {summary.paper === 'WRITING' ? 'Writing, sin ítems'
-            : `${summary.itemsCorrect === null ? '—' : String(summary.itemsCorrect)} / ${summary.itemsTotal === null ? '—' : String(summary.itemsTotal)} aciertos${target !== null ? ' · no cambian' : ''}`}
+          {summary.paper === 'WRITING' ? t.review.writingNoItems
+            : t.review.summaryScore(
+              summary.itemsCorrect === null ? '—' : String(summary.itemsCorrect),
+              summary.itemsTotal === null ? '—' : String(summary.itemsTotal),
+              target !== null,
+            )}
         </span>
         {target === null && (
           <button type="button" className={`${ui.ghost} ${ui.compact} ${styles.summaryEdit}`} aria-expanded={headerOpen} onClick={() => { setHeaderOpen(!headerOpen); }}>
-            {headerOpen ? 'Cerrar datos de la sesión' : 'Editar sesión'}
+            {headerOpen ? t.review.closeHeader : t.sessionView.editSession}
           </button>
         )}
       </div>
       {target !== null && initial.importedHeader !== null && (
-        <p className={ui.helpInfo}>El bloque traía cabecera: no sustituye ni suma los recuentos de «{sessionTitle(target)}».</p>
+        <p className={ui.helpInfo}>{t.review.headerIgnored(sessionTitle(target, t))}</p>
       )}
       {target === null && headerIncomplete && !headerOpen && (
-        <p className={ui.helpWarn}>Faltan los ítems y aciertos de la sesión. Complétalos en «Editar sesión».</p>
+        <p className={ui.helpWarn}>{t.review.headerMissingItems}</p>
       )}
 
       {/* Montado aunque esté cerrado: lo escrito en la cabecera no se pierde. */}
-      <section className={`${ui.surface} ${styles.headerEditor}`} hidden={target !== null || !headerOpen} aria-label="Datos de la sesión nueva">
+      <section className={`${ui.surface} ${styles.headerEditor}`} hidden={target !== null || !headerOpen} aria-label={t.review.newSessionData}>
         <form
           ref={headerForm}
           onSubmit={(event) => { event.preventDefault(); }}
@@ -343,31 +354,27 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
         </form>
       </section>
 
-      <div className={styles.progress}>
-        <div className={styles.segments} aria-hidden="true">
-          {rows.map((row) => (
-            <span
-              key={row.id}
-              className={`${styles.segment} ${pending.has(row.id) ? styles.segPending : styles.segDone} ${row.id === selectedId ? styles.segActive : ''}`}
-              onClick={() => { select(row.id); }}
-            />
-          ))}
-        </div>
-        <span className={styles.progressText}>
-          <span className={ui.ok}>{done}</span> / {rows.length} completos
-        </span>
+      {/* Solo un dibujo del avance: el índice y el selector son la navegación, y la barra
+          lo dice con palabras. */}
+      <div className={styles.segments} aria-hidden="true">
+        {rows.map((row) => (
+          <span
+            key={row.id}
+            className={`${styles.segment} ${pending.has(row.id) ? styles.segPending : styles.segDone} ${row.id === selectedId ? styles.segActive : ''}`}
+          />
+        ))}
       </div>
 
       <div className={`${ui.surface} ${styles.grid}`}>
         <div className={styles.index}>
           <div className={styles.indexHead}>
-            <span className={styles.indexCount}>{plural(rows.length)}</span>
-            <div className={ui.pills} role="group" aria-label="Filtrar la lista">
-              <button type="button" className={`${ui.pill} ${styles.smallPill}`} aria-pressed={!onlyPending} onClick={() => { setOnlyPending(false); }}>Todos</button>
-              <button type="button" className={`${ui.pill} ${styles.smallPill}`} aria-pressed={onlyPending} onClick={() => { setOnlyPending(true); }}>Pendientes · {pending.size}</button>
+            <span className={styles.indexCount}>{t.format.errors(rows.length)}</span>
+            <div className={ui.pills} role="group" aria-label={t.review.filterList}>
+              <button type="button" className={`${ui.pill} ${styles.smallPill}`} aria-pressed={!onlyPending} onClick={() => { setOnlyPending(false); }}>{t.review.all}</button>
+              <button type="button" className={`${ui.pill} ${styles.smallPill}`} aria-pressed={onlyPending} onClick={() => { setOnlyPending(true); }}>{t.review.pendingCount(pending.size)}</button>
             </div>
           </div>
-          <ul className={styles.indexList} aria-label="Errores de la tanda">
+          <ul className={styles.indexList} aria-label={t.review.batchErrors}>
             {visible.map((row) => {
               const position = rows.indexOf(row);
               const isPending = pending.has(row.id);
@@ -383,11 +390,11 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
                     <span className={styles.indexN}>{position + 1}</span>
                     <span className={styles.indexCorrect}>{row.correctAnswer.trim() === '' ? '—' : row.correctAnswer}</span>
                     {rejected ? (
-                      <span className={`${styles.indexState} ${ui.dangerText}`}><CircleAlert size={14} aria-hidden="true" />Revisar</span>
+                      <span className={`${styles.indexState} ${ui.dangerText}`}><CircleAlert size={14} aria-hidden="true" />{t.review.statusCheck}</span>
                     ) : isPending ? (
-                      <span className={`${styles.indexState} ${ui.warn}`}><CircleDashed size={14} aria-hidden="true" />Falta</span>
+                      <span className={`${styles.indexState} ${ui.warn}`}><CircleDashed size={14} aria-hidden="true" />{t.review.statusMissing}</span>
                     ) : (
-                      <span className={`${styles.indexState} ${ui.ok}`}><CircleCheck size={14} aria-hidden="true" />Listo</span>
+                      <span className={`${styles.indexState} ${ui.ok}`}><CircleCheck size={14} aria-hidden="true" />{t.review.statusReady}</span>
                     )}
                   </button>
                 </li>
@@ -399,11 +406,11 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
         <div className={styles.editorPane}>
           {rows.length > 1 && (
             <div className={`${ui.field} ${styles.mobilePicker}`}>
-              <label htmlFor={`${scope}-picker`} className="sr-only">Error de la tanda</label>
+              <label htmlFor={`${scope}-picker`} className="sr-only">{t.review.pickerLabel}</label>
               <select id={`${scope}-picker`} className={ui.select} value={selectedId ?? ''} onChange={(event) => { select(Number(event.target.value)); }}>
                 {rows.map((row, index) => (
                   <option key={row.id} value={row.id}>
-                    Error {index + 1} de {rows.length}{pending.has(row.id) ? ' · falta' : ''}
+                    {t.review.pickerOption(index + 1, rows.length, pending.has(row.id))}
                   </option>
                 ))}
               </select>
@@ -412,10 +419,8 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
           {current === undefined ? (
             <p className={styles.noRows}>
               {rows.length === 0
-                ? target === null
-                  ? 'Esta tanda no contiene errores. La sesión contará igualmente en tus estadísticas.'
-                  : 'No quedan errores que añadir a esta sesión.'
-                : 'Elige un error de la lista.'}
+                ? target === null ? t.review.emptyNew : t.review.emptyTarget
+                : t.review.chooseError}
             </p>
           ) : (
             <RowEditor
@@ -441,35 +446,33 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
         <div role="alert" className={ui.alert}>
           <CircleAlert size={20} className={ui.alertIcon} aria-hidden="true" />
           <div className={styles.alertText}>
-            <strong>No pudimos confirmar el guardado</strong>
-            <span className={ui.help}>
-              Puede que la sesión se haya creado. Reintentar recuperará esa misma sesión si el guardado llegó al servidor. Tu borrador se conserva.
-            </span>
+            <strong>{t.review.uncertainTitle}</strong>
+            <span className={ui.help}>{t.review.uncertainBody}</span>
           </div>
-          <Link href="/registrar" className={ui.secondary}>Consultar sesiones</Link>
-          <button type="button" className={ui.ghost} onClick={submit}>Reintentar</button>
+          <Link href="/registrar" className={ui.secondary}>{t.review.checkSessions}</Link>
+          <button type="button" className={ui.ghost} onClick={submit}>{t.common.retry}</button>
         </div>
       )}
       {save.kind === 'rejected' && (
         <div role="alert" className={ui.alert}>
           <CircleAlert size={20} className={ui.alertIcon} aria-hidden="true" />
           <div className={styles.alertText}>
-            <strong>No se pudo guardar esta revisión</strong>
+            <strong>{t.review.rejectedTitle}</strong>
             <span className={ui.help}>{save.message}</span>
           </div>
         </div>
       )}
 
-      <div className={styles.bar}>
-        <span id={`${scope}-pending`} className={`${styles.barText} ${pending.size > 0 ? ui.warn : ui.ok}`}>
+      <div ref={bar} className={styles.bar}>
+        <span id={`${scope}-pending`} className={`${styles.barText} ${pending.size > 0 || rows.length === 0 ? '' : ui.ok}`}>
           {pending.size > 0
-            ? `${String(pending.size)} por completar · no se guarda nada hasta completarlos`
-            : rows.length === 0 ? 'Tanda sin errores' : `${plural(rows.length)} ${rows.length === 1 ? 'listo' : 'listos'} para enviar`}
+            ? t.review.pendingBar(done, rows.length)
+            : rows.length === 0 ? t.review.noErrorsBar : t.review.readyBar(rows.length)}
         </span>
         <span className={ui.spacer} />
         {pending.size > 0 && (
           <button type="button" className={ui.secondary} onClick={() => { goToPending(selectedIndex); }}>
-            Siguiente pendiente <Kbd>{keys.nextPending}</Kbd>
+            {t.review.nextPending} <Kbd>{keys.nextPending}</Kbd>
           </button>
         )}
         <button
@@ -486,10 +489,10 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
 
       <ConfirmDialog
         open={confirmBack}
-        title="Descartar la revisión"
-        confirmLabel="Descartar cambios"
-        pendingLabel="Descartando…"
-        aside="El texto pegado se conserva."
+        title={t.review.discardTitle}
+        confirmLabel={t.review.discardConfirm}
+        pendingLabel={t.common.discarding}
+        aside={t.review.discardAside}
         onCancel={() => { setConfirmBack(false); }}
         onConfirm={() => {
           finished.current = true;
@@ -498,14 +501,10 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
           onBack();
         }}
       >
-        <p>Se pierden los cambios hechos en esta revisión ({plural(rows.length)}).</p>
+        <p>{t.review.discardBody(rows.length)}</p>
       </ConfirmDialog>
     </section>
   );
-}
-
-function plural(n: number): string {
-  return `${String(n)} ${n === 1 ? 'error' : 'errores'}`;
 }
 
 /** El editor de la fila activa. Controlado: cada cambio va al estado de la tanda. */
@@ -523,9 +522,10 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
   readonly onNext: () => void;
   readonly onRemove: () => void;
 }) {
+  const t = useT();
   const missing = missingFields(snapshotFromDraft(row));
   const ruleLength = row.ruleNote.trim().length;
-  const cause = isCause(row.cause) ? CAUSE_META[row.cause] : null;
+  const cause = isCause(row.cause) ? row.cause : null;
   const id = (field: string) => `${scope}-${field}`;
   const errorFor = (field: string) => errors[field] ?? [];
   const described = (field: string, ...extra: string[]) => {
@@ -541,46 +541,50 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
       </p>
     );
   };
-  const detailsOpen = missing.includes('prompt') || ['prompt', 'itemRef', 'myAnswer', 'subcategory', 'lateInSession'].some((field) => errorFor(field).length > 0);
+  const detailsOpen = missing.includes('prompt') || ['prompt', 'itemRef', 'subcategory', 'lateInSession'].some((field) => errorFor(field).length > 0);
 
   return (
     <div className={styles.editor}>
       <div className={styles.editorHead}>
-        <h2 className={`${ui.subTitle} ${styles.editorTitle}`}>Error {position + 1} de {total}</h2>
+        <h2 className={`${ui.subTitle} ${styles.editorTitle}`}>{t.review.editorTitle(position + 1, total)}</h2>
         <div className={styles.editorNav}>
-          <button type="button" className={`${ui.iconButton} ${ui.iconBordered}`} aria-label="Error anterior" onClick={onPrev} disabled={position === 0}>
+          <button type="button" className={`${ui.iconButton} ${ui.iconBordered}`} aria-label={t.review.prevError} onClick={onPrev} disabled={position === 0}>
             <ChevronLeft size={18} aria-hidden="true" />
           </button>
-          <button type="button" className={`${ui.iconButton} ${ui.iconBordered}`} aria-label="Error siguiente" onClick={onNext} disabled={position === total - 1}>
+          <button type="button" className={`${ui.iconButton} ${ui.iconBordered}`} aria-label={t.review.nextError} onClick={onNext} disabled={position === total - 1}>
             <ChevronRight size={18} aria-hidden="true" />
           </button>
-          <button type="button" className={`${ui.ghost} ${ui.compact} ${styles.remove}`} aria-label={`Quitar error ${String(position + 1)} de la tanda`} onClick={onRemove}>
+          <button type="button" className={`${ui.ghost} ${ui.compact} ${styles.remove}`} aria-label={t.review.removeLabel(position + 1)} onClick={onRemove}>
             <X size={16} aria-hidden="true" />
-            Quitar <Kbd>{removeKey}</Kbd>
+            {t.review.remove} <Kbd>{removeKey}</Kbd>
           </button>
         </div>
       </div>
 
       <div className={styles.promptBlock}>
-        <span className={ui.label}>Enunciado{row.itemRef.trim() === '' ? '' : ` · ítem ${row.itemRef}`}</span>
+        <span className={ui.label}>{t.review.promptLabel(row.itemRef.trim() === '' ? null : row.itemRef)}</span>
         {row.prompt.trim() === '' ? (
-          <p className={`${ui.helpWarn} ${styles.promptMissing}`}>Falta el enunciado: escríbelo en «Más detalles».</p>
+          <p className={`${ui.helpWarn} ${styles.promptMissing}`}>{t.review.promptMissing}</p>
         ) : (
           <p className={styles.prompt}>{row.prompt}</p>
         )}
       </div>
 
       <div className={styles.answers}>
+        {/* Tachada como en el resto de la app, pero es un campo: se corrige aquí mismo. */}
         <div className={ui.field}>
-          <span>Tu respuesta</span>
-          {row.myAnswer.trim() === '' ? (
-            <span className={`${styles.mineBox} ${styles.mineMissing}`}>Mi respuesta no registrada</span>
-          ) : (
-            <s className={styles.mineBox}>{row.myAnswer}</s>
-          )}
+          <label htmlFor={id('mine')}>{t.correction.yourAnswer}</label>
+          <input
+            id={id('mine')}
+            className={`${ui.input} ${styles.mineInput}`}
+            value={row.myAnswer}
+            placeholder={t.correction.noAnswer}
+            autoComplete="off"
+            onChange={(event) => { onChange({ myAnswer: event.target.value }); }}
+          />
         </div>
         <div className={ui.field}>
-          <label htmlFor={id('correct')}>Corrección</label>
+          <label htmlFor={id('correct')}>{t.correction.correction}</label>
           <input
             id={id('correct')}
             className={`${ui.input} ${styles.correctInput} ${missing.includes('correctAnswer') ? ui.pending : ''}`}
@@ -596,7 +600,7 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
 
       <div className={styles.triple}>
         <div className={ui.field}>
-          <label htmlFor={id('category')}>Categoría</label>
+          <label htmlFor={id('category')}>{t.errorForm.category}</label>
           <CategoryCombobox
             id={id('category')}
             value={row.category}
@@ -608,7 +612,7 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
           {fieldError('category')}
         </div>
         <div className={ui.field}>
-          <label htmlFor={id('f4')}>Causa</label>
+          <label htmlFor={id('f4')}>{t.errorForm.cause}</label>
           <select id={id('f4')}
             className={ui.select}
             value={row.cause}
@@ -616,39 +620,39 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
             aria-invalid={errorFor('cause').length > 0 || undefined}
             aria-describedby={described('cause', id('cause-help'))}
           >
-            {CAUSES.map((value) => <option key={value} value={value}>{CAUSE_LABELS[value]}</option>)}
+            {CAUSES.map((value) => <option key={value} value={value}>{t.labels.cause[value]}</option>)}
           </select>
           {fieldError('cause')}
         </div>
         <div className={ui.field}>
-          <label htmlFor={id('f5')}>Confianza</label>
+          <label htmlFor={id('f5')}>{t.errorForm.confidence}</label>
           <select id={id('f5')} className={ui.select} value={row.confidence} onChange={(event) => { onChange({ confidence: event.target.value }); }}>
-            {CONFIDENCES.map((value) => <option key={value} value={value}>{CONFIDENCE_LABELS[value]}</option>)}
+            {CONFIDENCES.map((value) => <option key={value} value={value}>{t.labels.confidence[value]}</option>)}
           </select>
         </div>
       </div>
       {cause !== null && (
         <span id={id('cause-help')} className={`${ui.helpInfo} ${styles.causeHelp}`}>
-          {cause.meaning}. {cause.generatesCard ? 'Generará una tarjeta pendiente en Anki.' : 'No genera tarjeta.'}
+          {t.labels.causeMeaning[cause]}. {CAUSE_META[cause].generatesCard ? t.errorForm.createsCard : t.errorForm.noCard}
         </span>
       )}
 
       <div className={`${ui.field} ${styles.rule}`}>
-        <label htmlFor={id('rule')}>Regla</label>
+        <label htmlFor={id('rule')}>{t.errorForm.rule}</label>
         <textarea
           id={id('rule')}
           rows={3}
           className={`${ui.textarea} ${missing.includes('ruleNote') ? ui.pending : ''}`}
           value={row.ruleNote}
-          placeholder="Qué debes recordar para no repetirlo"
+          placeholder={t.review.rulePlaceholder}
           onChange={(event) => { onChange({ ruleNote: event.target.value }); }}
           aria-invalid={errorFor('ruleNote').length > 0 || undefined}
           aria-describedby={described('ruleNote', id('rule-count'))}
         />
         <span id={id('rule-count')} className={ruleLength >= RULE_NOTE_MIN_LENGTH ? ui.help : ui.helpWarn}>
           {ruleLength >= RULE_NOTE_MIN_LENGTH
-            ? `${String(ruleLength)} caracteres`
-            : `Faltan ${String(RULE_NOTE_MIN_LENGTH - ruleLength)} caracteres (mínimo ${String(RULE_NOTE_MIN_LENGTH)})`}
+            ? t.errorForm.characters(ruleLength)
+            : t.errorForm.charactersMissing(RULE_NOTE_MIN_LENGTH - ruleLength, RULE_NOTE_MIN_LENGTH)}
         </span>
         {fieldError('ruleNote')}
       </div>
@@ -656,11 +660,11 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
       <details className={ui.disclosure} open={detailsOpen || undefined}>
         <summary>
           <ChevronRight size={14} className="chevron" aria-hidden="true" />
-          Más detalles <span className={ui.optional}>· enunciado, ítem, tu respuesta, subcategoría{timed ? ', al final de la sesión' : ''}</span>
+          {t.errorForm.moreDetails} <span className={ui.optional}>{t.review.moreDetailsHint(timed)}</span>
         </summary>
         <div className={styles.more}>
           <div className={ui.field}>
-            <label htmlFor={id('prompt')}>Enunciado</label>
+            <label htmlFor={id('prompt')}>{t.errorForm.prompt}</label>
             <textarea
               id={id('prompt')}
               rows={2}
@@ -674,15 +678,11 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
           </div>
           <div className={styles.moreGrid}>
             <div className={ui.field}>
-              <label htmlFor={id('f7')}>Ítem</label>
+              <label htmlFor={id('f7')}>{t.errorForm.item}</label>
               <input id={id('f7')} className={ui.input} value={row.itemRef} autoComplete="off" onChange={(event) => { onChange({ itemRef: event.target.value }); }} />
             </div>
             <div className={ui.field}>
-              <label htmlFor={id('f8')}>Tu respuesta</label>
-              <input id={id('f8')} className={ui.input} value={row.myAnswer} autoComplete="off" onChange={(event) => { onChange({ myAnswer: event.target.value }); }} />
-            </div>
-            <div className={ui.field}>
-              <label htmlFor={id('f9')}>Subcategoría</label>
+              <label htmlFor={id('f9')}>{t.errorForm.subcategory}</label>
               <input id={id('f9')}
                 className={ui.input}
                 value={row.subcategory}
@@ -698,7 +698,7 @@ function RowEditor({ scope, row, position, total, timed, subcategorySuggestions,
           {timed && (
             <label className={ui.check}>
               <input type="checkbox" checked={row.lateInSession} onChange={(event) => { onChange({ lateInSession: event.target.checked }); }} />
-              Al final de la sesión
+              {t.errorForm.lateInSession}
             </label>
           )}
           {fieldError('subcategory')}

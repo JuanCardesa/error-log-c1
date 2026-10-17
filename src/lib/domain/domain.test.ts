@@ -16,11 +16,10 @@ describe('taxonomia de causas', () => {
     expect(CAUSES).toHaveLength(6);
   });
 
-  it('describe cada causa con lado y remedio', () => {
+  it('describe cada causa con su lado', () => {
+    // Significado y remedio son texto de interfaz: los comprueba el test de i18n.
     for (const cause of CAUSES) {
-      const meta = CAUSE_META[cause];
-      expect(meta.remedy.length).toBeGreaterThan(0);
-      expect(['study', 'exec']).toContain(meta.side);
+      expect(['study', 'exec']).toContain(CAUSE_META[cause].side);
     }
   });
 

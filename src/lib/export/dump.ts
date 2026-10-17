@@ -4,6 +4,7 @@ import { q1CauseSplit, q1ToCsv } from '../queries/q1CauseSplit';
 import { q2CategoryRate, q2ToCsv } from '../queries/q2CategoryRate';
 import { q3RuoeAccuracy, q3ToCsv } from '../queries/q3RuoeAccuracy';
 import { q4FalseCertainties, q4ToCsv } from '../queries/q4FalseCertainties';
+import type { writingAnnotation } from '../db/schema';
 
 /**
  * Exportacion. Un CSV por query, mas un volcado completo en JSON.
@@ -26,14 +27,6 @@ export function isCsvExport(value: string): value is CsvExport {
   return (CSV_EXPORTS as readonly string[]).includes(value);
 }
 
-export const CSV_LABELS: Readonly<Record<CsvExport, string>> = {
-  q1: 'Reparto de causas',
-  q2: 'Categorías por tasa',
-  q3: 'Precisión RUOE por part y semana',
-  q4: 'Falsas certezas',
-  q7: 'Repasos y fallos en Anki',
-};
-
 export function toCsvExport(
   which: CsvExport,
   data: Dataset,
@@ -55,8 +48,8 @@ export function toCsvExport(
   }
 }
 
-/** 3 añade marcas de estudio; 2 añadió Notebook; 1 no llevaba `formatVersion`. */
-export const JSON_DUMP_FORMAT_VERSION = 3;
+/** 4 añade anotaciones de Writing; 3 marcas de estudio; 2 Notebook; 1 no llevaba versión. */
+export const JSON_DUMP_FORMAT_VERSION = 4;
 
 export interface JsonDump {
   readonly formatVersion: number;
@@ -64,7 +57,10 @@ export interface JsonDump {
   /** Las filas crudas son el respaldo: sin ellas el volcado no reconstruye nada. */
   readonly rows: Dataset;
   readonly anki: AnkiDataset;
+  readonly writingAnnotations: readonly WritingAnnotationRow[];
 }
+
+type WritingAnnotationRow = typeof writingAnnotation.$inferSelect;
 
 /**
  * No depende de la ventana: se lleva el historial entero, no un recorte.
@@ -72,6 +68,11 @@ export interface JsonDump {
  * El cuaderno no entra aquí: sus apuntes se añaden por trozos al escribir la respuesta
  * (`notebookDumpChunks`) para no juntar todos los cuerpos en un mismo objeto.
  */
-export function toJsonDump(data: Dataset, now: Date, anki: AnkiDataset = EMPTY_ANKI_DATASET): JsonDump {
-  return { formatVersion: JSON_DUMP_FORMAT_VERSION, exportedAt: now.toISOString(), rows: data, anki };
+export function toJsonDump(
+  data: Dataset,
+  now: Date,
+  anki: AnkiDataset = EMPTY_ANKI_DATASET,
+  writingAnnotations: readonly WritingAnnotationRow[] = [],
+): JsonDump {
+  return { formatVersion: JSON_DUMP_FORMAT_VERSION, exportedAt: now.toISOString(), rows: data, anki, writingAnnotations };
 }

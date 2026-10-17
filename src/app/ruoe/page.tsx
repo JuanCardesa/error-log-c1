@@ -2,9 +2,13 @@ import Link from 'next/link';
 
 import { getDb } from '@/lib/db/client';
 import { loadDataset } from '@/lib/db/load';
+import { partsFor } from '@/lib/domain/enums';
 import { q3RuoeAccuracy } from '@/lib/queries/q3RuoeAccuracy';
 import { sliceWindow } from '@/lib/queries/window';
-import { percent, sessionTitle, shortDate } from '../_shared/format';
+import { partList, percent, sessionTitle, shortDate } from '../_shared/format';
+import { EmptyState } from '../_shared/EmptyState';
+import { getT } from '../_shared/i18nServer';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import { type SearchParams, parseWindow } from '../_shared/window';
@@ -23,11 +27,12 @@ export const dynamic = 'force-dynamic';
 
 export default async function RuoePage({ searchParams }: { readonly searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  const t = await getT();
   const windowDays = parseWindow(params['w']);
   const now = new Date();
   const data = loadDataset(getDb());
   const q3 = q3RuoeAccuracy(data, { now, windowDays });
-  const weeks = windowWeeks(now, windowDays);
+  const weeks = windowWeeks(now, windowDays, t);
   const { sessions } = sliceWindow(data, now, windowDays);
   const w = windowDays === 30 ? '' : `?w=${String(windowDays)}`;
 
@@ -39,43 +44,48 @@ export default async function RuoePage({ searchParams }: { readonly searchParams
       if (cell === null) return null;
       return {
         pct: cell.pct,
-        label: percent(cell.pct),
+        label: percent(cell.pct, t),
         correct: cell.correct,
         total: cell.total,
         sessions: sessionsInCell(sessions, row.part, week).map((session) => ({
           id: session.id,
-          title: sessionTitle(session),
-          date: shortDate(session.date),
+          title: sessionTitle(session, t),
+          date: shortDate(session.date, t),
         })),
       };
     }),
   }));
+  const unpractised = partsFor('RUOE').filter((part) => !rows.some((row) => row.part === part));
 
   return (
     <div className={styles.page}>
-      <div className={styles.head}>
-        <div className={ui.pageHead}>
-          <h1 className={ui.pageTitle}>Progreso</h1>
-          <WindowSwitch current={windowDays} basePath="/ruoe" />
-        </div>
-        <RouteTabs
-          label="Vistas de progreso"
-          items={[
-            { href: `/informe${w}`, label: 'Resumen', current: false },
-            { href: `/ruoe${w}`, label: 'Reading & Use of English', current: true },
-          ]}
-        />
-      </div>
+      <PageHeader
+        title={t.nav.progress}
+        actions={<WindowSwitch current={windowDays} basePath="/ruoe" />}
+        tabs={(
+          <RouteTabs
+            label={t.progress.views}
+            items={[
+              { href: `/informe${w}`, label: t.progress.summary, current: false },
+              { href: `/ruoe${w}`, label: t.labels.paperLong.RUOE, current: true },
+            ]}
+          />
+        )}
+      />
 
       {rows.length === 0 ? (
-        <div className={styles.empty}>
-          <p>Sin sesiones de Reading & Use of English con ítems en los últimos {windowDays} días.</p>
-          {windowDays === 30
-            ? <Link href="/ruoe?w=60" className={ui.textLink}>Ver los últimos 60 días</Link>
-            : <Link href="/registrar" className={ui.textLink}>Ir a Sesiones</Link>}
-        </div>
+        <EmptyState
+          cause={t.ruoe.empty(windowDays)}
+          action={windowDays === 30
+            ? <Link href="/ruoe?w=60" className={ui.textLink}>{t.ruoe.see60}</Link>
+            : <Link href="/registrar" className={ui.textLink}>{t.common.goToSessions}</Link>}
+        />
       ) : (
-        <RuoeMatrix weeks={weeks.map(({ iso, range, partial }) => ({ iso, range, partial }))} rows={rows} />
+        <RuoeMatrix
+          weeks={weeks.map(({ iso, range, partial }) => ({ iso, range, partial }))}
+          rows={rows}
+          unpractised={unpractised.length === 0 ? null : partList(unpractised, t)}
+        />
       )}
     </div>
   );

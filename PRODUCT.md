@@ -65,11 +65,21 @@ dashboard. La conversión a Anki solo se sella cuando la tarjeta existe y está 
   informe, medición de segundos, marca manual de tarjeta.
 - Idioma de la interfaz: español.
 
+### Writing workspace
+
+- Biblioteca de redacciones corregidas con transcripción, evaluación por criterios,
+  anotaciones ancladas al texto y seguimiento del progreso. La importación acepta el
+  contrato JSON de Writing; cada redacción transcrita se puede exportar y reimportar
+  conservando sus anotaciones. El volcado general incluye las filas de Writing y sus
+  anotaciones (`formatVersion: 4`). [Contrato JSON](docs/WRITING-JSON.md) y
+  [plan funcional](docs/WRITING-PLAN.md).
+
 ### Notebook (ampliación aprobada el 2026-09-29)
 
 - Cuaderno personal para convertir errores concretos en conocimiento consultable:
   apuntes Markdown con carpetas de hasta dos niveles, tags opcionales e índice por
-  encabezados. Se entra desde Más y desde la búsqueda global, sin añadir ruido al
+  encabezados. Se entra desde la cabecera, en el grupo de la biblioteca (Notebook ·
+  Writing), separado del ritual diario, y desde la búsqueda global, sin añadir ruido al
   recorrido diario de registro.
 - La lectura y la búsqueda son el recorrido principal. Escribir requiere vista previa,
   guardado automático confirmado, borrador recuperable y aviso de conflictos entre

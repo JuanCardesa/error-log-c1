@@ -1,10 +1,9 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 import { useEffect, useSyncExternalStore } from 'react';
 
-import ui from '../_shared/ui.module.css';
+import { BackLink } from '../_shared/BackLink';
+import { useT } from '../_shared/i18nClient';
 
 /**
  * Volver al historial con la misma búsqueda, filtros y página con los que se salió. El
@@ -41,13 +40,8 @@ export function useListHref(): string {
 }
 
 export function BackToList() {
+  const t = useT();
   const href = useListHref();
   const kept = href !== '/registrar';
-  return (
-    <Link href={href} className={ui.backLink}>
-      <ArrowLeft size={16} aria-hidden="true" />
-      Sesiones
-      {kept && <span className={ui.backHint}>· filtro conservado</span>}
-    </Link>
-  );
+  return <BackLink href={href} label={t.nav.sessions} hint={kept ? t.sessionView.filterKept : undefined} />;
 }

@@ -1,8 +1,13 @@
 # Guía de uso
 
 El [README](../README.md) presenta Error Log C1 en inglés y explica cómo arrancarlo. Esta guía
-reúne el detalle del uso diario, en español como la interfaz: registrar, pegar correcciones,
-Notebook, Progreso y Anki, copias y desarrollo.
+reúne el detalle del uso diario, en español: registrar, pegar correcciones, Notebook, Progreso
+y Anki, copias y desarrollo.
+
+La interfaz arranca en inglés. El español se elige en el menú **Más → Idioma** (*More →
+Language*) de la cabecera y este navegador lo recuerda. Los nombres de botones y menús de
+esta guía son los de la interfaz en español. Cambiar de idioma no toca lo que guardas: apuntes,
+errores, reglas y sesiones se leen tal como los escribiste.
 
 ## Instalar
 
@@ -111,13 +116,17 @@ completo de **Exportar**: importar `dump.json` no está implementado.
 
 ## Notebook: apuntes para repasar
 
-En **Más → Notebook** puedes crear apuntes Markdown, organizarlos en carpetas de hasta
+En **Notebook**, en la cabecera, puedes crear apuntes Markdown, organizarlos en carpetas de hasta
 dos niveles y añadir etiquetas. El editor ofrece vista previa, guardado automático,
 borradores locales recuperables y **Guardar ahora** (Ctrl/⌘+S). La lectura muestra un
 índice de apartados; la búsqueda encuentra títulos, texto y etiquetas. Desde el panel
 de un error puedes vincularlo manualmente a un apunte completo o a un apartado.
 
-El lector presenta el apunte como un folio y mantiene **En esta nota** cerrado al entrar.
+El lector presenta el apunte como un folio. En escritorio, **En esta nota** permanece visible
+a la derecha; en tableta y móvil, se abre como un desplegable encima del folio.
+Pulsa la estrella de un apunte para marcarlo como favorito desde el lector, los listados o
+los resultados de búsqueda. El directorio muestra hasta ocho favoritos y **Ver todos** abre
+la vista completa. Vuelve a pulsar la estrella para quitar la marca.
 En ordenador, selecciona texto para abrir **Rotulador · Color · Limpiar**: el rotulador
 amarillo y los colores de tinta se guardan automáticamente, sin cambiar el Markdown.
 Puedes quitar formato solo de una parte de una frase. Tab lleva el foco a la barra y
@@ -138,8 +147,8 @@ Importa **un `.md` por vez** con vista previa. Descarga cada apunte como `.md`, 
 cuaderno como ZIP o todos los datos como JSON desde **Exportar**. El ZIP incluye
 Markdown y un manifiesto, pero volver a importar sus `.md` no restaura los vínculos
 con errores. La demo incluye ocho apuntes ficticios para recorrer estas pantallas.
-Las marcas viajan en el JSON (versión 3) y las copias SQLite; las descargas `.md` y ZIP
-conservan el Markdown original sin marcas de estudio.
+Las marcas de estudio, los favoritos y las anotaciones de Writing viajan en el JSON (versión 4) y las copias SQLite;
+las descargas `.md` y ZIP conservan el Markdown original sin ese estado de la app.
 
 **Límites actuales:** Notebook no admite adjuntos ni imágenes: al leer se muestra su
 sintaxis, sin cargarlas. El HTML embebido no se representa. No hay historial de versiones
@@ -150,6 +159,26 @@ con `pnpm db:backup` y `pnpm db:restore`.
 | Lector con índice | Búsqueda con fragmentos |
 | --- | --- |
 | ![Apunte de oraciones enfáticas con carpetas a la izquierda e índice de apartados a la derecha](screenshots/notebook-lector.png) | ![Resultados de búsqueda de preposición en Notebook con fragmentos de los apuntes](screenshots/notebook-busqueda.png) |
+
+## Writing: redacciones y correcciones
+
+En **Writing** puedes importar un JSON preparado con ChatGPT o Claude, pegar el texto
+manualmente o registrar la corrección más tarde con otra importación. La app no lee fotos
+ni se conecta a una IA. La vista previa muestra cambios y anotaciones antes de guardar.
+
+La **Biblioteca** busca en títulos y transcripciones y filtra por estado y tipo. **Progreso**
+grafica la nota total o un criterio, con filtros por tipo y fechas; las fechas aproximadas
+se marcan con puntos huecos. Las medias excluyen las pendientes y las notas parciales solo
+cuentan para el criterio que tienen. **Reescrituras** compara originales y revisiones.
+
+Abre una redacción para leer su transcripción con anotaciones, marcarlas como estudiadas,
+corregir el texto y editar sus bandas (0–5 en medios puntos), estado y comentarios. El total
+solo aparece con los cuatro criterios. **Exportar JSON** descarga esa redacción y sus
+anotaciones; el contrato y un ejemplo están en [JSON de Writing](WRITING-JSON.md). El dump
+completo también incluye las anotaciones, pero no se puede reimportar; usa copias SQLite
+para restaurar.
+
+La demo incluye un ensayo con una corrección y una fortaleza de ejemplo.
 
 ## Progreso y Anki
 

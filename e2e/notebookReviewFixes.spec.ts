@@ -51,14 +51,18 @@ test('borra desde el lector con confirmación y conserva el error vinculado', as
   } finally { db.$client.close(); }
   const href = notebookNoteHref(note);
   await page.goto(href);
-  const remove = page.getByRole('button', { name: 'Borrar apunte…', exact: true });
-  await remove.click();
+  // Borrar no está en la vista de lectura: va al final del menú del apunte.
+  const remove = async () => {
+    await page.getByRole('button', { name: 'Más acciones del apunte' }).click();
+    await page.getByRole('menuitem', { name: 'Borrar apunte…', exact: true }).click();
+  };
+  await remove();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog.getByRole('button', { name: 'Cancelar' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   expect(readNote(note.id)).not.toBeNull();
-  await remove.click();
+  await remove();
   await dialog.getByRole('button', { name: 'Borrar apunte', exact: true }).click();
   await expect(page).toHaveURL('/notebook');
   expect(readNote(note.id)).toBeNull();
@@ -75,7 +79,8 @@ test('borra desde el lector con confirmación y conserva el error vinculado', as
 test('un borrado obsoleto pide revisar el apunte y no borra cambios ajenos', async ({ page }) => {
   const note = seedNote();
   await page.goto(notebookNoteHref(note));
-  await page.getByRole('button', { name: 'Borrar apunte…', exact: true }).click();
+  await page.getByRole('button', { name: 'Más acciones del apunte' }).click();
+  await page.getByRole('menuitem', { name: 'Borrar apunte…', exact: true }).click();
   const db = createDb(E2E_DB);
   try {
     saveNotebookNote(db, { id: note.id, uid: note.uid, expectedRevision: note.revision,
@@ -97,7 +102,8 @@ test('un fallo de transporte al borrar permite reintentar sin perder el apunte',
     if (offline && route.request().method() === 'POST') { await route.abort('failed'); return; }
     await route.continue();
   });
-  await page.getByRole('button', { name: 'Borrar apunte…', exact: true }).click();
+  await page.getByRole('button', { name: 'Más acciones del apunte' }).click();
+  await page.getByRole('menuitem', { name: 'Borrar apunte…', exact: true }).click();
   const confirm = page.getByRole('alertdialog').getByRole('button', { name: 'Borrar apunte', exact: true });
   await confirm.click();
   await expect(page.getByRole('alert').filter({ hasText: 'No se pudo confirmar el borrado' })).toBeVisible();
@@ -175,9 +181,8 @@ test('los filtros siguen la navegación y una carpeta incluye descendientes sin 
   await page.goto('/notebook?tag=review');
   const directory = page.getByRole('navigation', { name: 'Directorio de Notebook' });
   await directory.getByRole('link', { name: rootName, exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Carpeta', exact: true })).toHaveValue(String(rootId));
-  await expect(page.getByRole('textbox', { name: 'Etiqueta' })).toHaveValue('');
-  await page.getByRole('button', { name: 'Aplicar filtros' }).click();
+  await expect(page.getByRole('button', { name: `Carpeta: ${rootName}` })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Etiqueta', exact: true })).toBeVisible();
   const results = page.locator('section[aria-labelledby="notebook-list-title"]');
   await expect(results.getByRole('link', { name: rootNote.title, exact: true })).toBeVisible();
   await expect(results.getByRole('link', { name: childNote.title, exact: true })).toBeVisible();
@@ -186,22 +191,21 @@ test('los filtros siguen la navegación y una carpeta incluye descendientes sin 
   await expect(page).toHaveURL(/q=conditionals/u);
   await expect(results.getByRole('link', { name: childNote.title, exact: true })).toBeVisible();
   await directory.getByRole('link', { name: 'Sin carpeta', exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Carpeta', exact: true })).toHaveValue('sin-carpeta');
+  await expect(page.getByRole('button', { name: 'Carpeta: Sin carpeta' })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole('combobox', { name: 'Carpeta', exact: true })).toHaveValue(String(rootId));
+  await expect(page.getByRole('button', { name: `Carpeta: ${rootName}` })).toBeVisible();
 });
 
-test('el índice desplegable navega sin ocupar una columna permanente', async ({ page }) => {
+test('el índice lateral permanece visible y marca el apartado activo', async ({ page }) => {
   const note = seedNote(Array.from({ length: 15 }, (_, i) => `## Apartado ${String(i)}\n\n${'Explicación de la regla. '.repeat(60)}`).join('\n\n'));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(notebookNoteHref(note));
-  await page.locator('summary').filter({ hasText: 'En esta nota' }).click();
   const toc = page.getByRole('navigation', { name: 'Índice del apunte' });
   await toc.getByRole('link', { name: 'Apartado 8', exact: true }).click();
   await expect(page).toHaveURL(/#nb-apartado-8$/u);
   await expect.poll(async () => {
     const box = await toc.boundingBox();
-    return box !== null && box.y + box.height < 0;
+    return box !== null && box.y >= 0 && box.y + box.height <= 900;
   }).toBe(true);
   await expect(toc.getByRole('link', { name: 'Apartado 8', exact: true })).toHaveAttribute('aria-current', 'location');
 });
@@ -220,7 +224,8 @@ test('exporta Unicode por HTTP y conserva el nombre en la descarga del navegador
   expect(await response.text()).toContain(note.title);
   await page.goto(notebookNoteHref(note));
   const downloading = page.waitForEvent('download');
-  await page.getByRole('link', { name: 'Exportar .md' }).click();
+  await page.getByRole('button', { name: 'Más acciones del apunte' }).click();
+  await page.getByRole('menuitem', { name: 'Exportar .md' }).click();
   const download = await downloading;
   expect(download.suggestedFilename()).toBe(notebookNoteFileName(note));
   expect(readFileSync(await download.path(), 'utf8').endsWith(note.contentMarkdown)).toBe(true);

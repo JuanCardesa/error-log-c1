@@ -1,6 +1,6 @@
 import { type SQL, and, asc, desc, eq, inArray, isNotNull, isNull, notInArray, or, sql } from 'drizzle-orm';
 
-import { CAUSES, generatesCard, type Category, type Cause, type Confidence, type Paper, type SessionStatus, type Source } from '../domain/enums';
+import { CAUSES, generatesCard, type Category, type Cause, type Confidence, type Paper, type SessionStatus, type Source, type WritingStatus } from '../domain/enums';
 import { withSessionFormat } from '../domain/session';
 import type { ErrorRow, SessionRow, WritingPieceRow } from '../domain/types';
 import type {
@@ -250,8 +250,9 @@ const fingerprint = (row: Pick<ErrorInput, 'itemRef' | 'prompt' | 'myAnswer' | '
 export function importErrors(db: Db, sessionId: number, inputs: readonly ErrorInput[]) {
   return db.transaction((tx) => {
     const target = tx.select().from(session).where(eq(session.id, sessionId)).get();
-    if (target === undefined) return { ok: false, message: 'Esa sesión ya no existe.' } as const;
-    if (target.status !== 'OPEN') return { ok: false, message: 'La sesión está cerrada. Reábrela para importar.' } as const;
+    // El motivo y no el texto: el aviso lo redacta quien lo enseña, en su idioma.
+    if (target === undefined) return { ok: false, reason: 'missing' } as const;
+    if (target.status !== 'OPEN') return { ok: false, reason: 'closed' } as const;
 
     const existing = tx.select().from(errorRow).where(eq(errorRow.sessionId, sessionId)).all();
     const seen = new Set(existing.map(fingerprint));
@@ -375,34 +376,37 @@ export function getWritingPiece(db: Db, id: number): WritingPieceRow | null {
   return db.select().from(writingPiece).where(eq(writingPiece.id, id)).get() ?? null;
 }
 
+/** La marca de la última escritura: sirve de versión a quien edita los datos del texto. */
+export function getWritingPieceUpdatedAt(db: Db, id: number): string | null {
+  return db.select({ updatedAt: writingPiece.updatedAt }).from(writingPiece).where(eq(writingPiece.id, id)).get()?.updatedAt ?? null;
+}
+
+/** Con corrector o alguna banda el texto ya está corregido; es el criterio de la migración 0012. */
+function isAssessed(input: WritingPieceInput): boolean {
+  return input.corrector !== null
+    || [input.bandContent, input.bandCommunicative, input.bandOrganisation, input.bandLanguage].some((band) => band !== null);
+}
+
 export function createWritingPiece(db: Db, input: WritingPieceInput): WritingPieceRow {
-  const created = db.insert(writingPiece).values(input).returning().get();
+  const status: WritingStatus = isAssessed(input) ? 'CORRECTED' : 'AWAITING';
+  const created = db.insert(writingPiece).values({ ...input, status }).returning().get();
   if (created === undefined) throw new Error('No se pudo crear el texto');
   return created;
 }
 
+/**
+ * El formulario aún no edita el estado: una evaluación lo marca como corregido, pero quitarla
+ * no lo devuelve a pendiente, porque el estado puede venir de una importación posterior.
+ * Con transcripción las palabras se cuentan solas: el número tecleado no las sustituye.
+ */
 export function updateWritingPiece(db: Db, id: number, input: WritingPieceInput): void {
-  db.update(writingPiece).set(input).where(eq(writingPiece.id, id)).run();
+  const wordCount = sql<number | null>`CASE WHEN ${writingPiece.originalText} IS NULL THEN ${input.wordCount} ELSE ${writingPiece.wordCount} END`;
+  db.update(writingPiece)
+    .set({ ...input, wordCount, updatedAt: new Date().toISOString() })
+    .where(eq(writingPiece.id, id))
+    .run();
 }
 
 export function deleteWritingPiece(db: Db, id: number): void {
   db.delete(writingPiece).where(eq(writingPiece.id, id)).run();
-}
-
-/**
- * Sesiones de Writing que todavia no tienen texto. `writing_piece.session_id` es UNIQUE
- * (decision P1), asi que ofrecer una sesion ya usada solo produciria un error.
- */
-export function writingSessionsWithoutPiece(db: Db): SessionRow[] {
-  const taken = new Set(
-    db.select({ sessionId: writingPiece.sessionId }).from(writingPiece).all().map((r) => r.sessionId),
-  );
-  return db
-    .select()
-    .from(session)
-    .where(eq(session.paper, 'WRITING'))
-    .orderBy(desc(session.date))
-    .all()
-    .filter((row) => !taken.has(row.id))
-    .map(withSessionFormat);
 }

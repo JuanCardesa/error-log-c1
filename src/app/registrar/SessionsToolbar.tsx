@@ -1,33 +1,28 @@
 'use client';
 
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { Menu } from '../_shared/Menu';
-import overlay from '../_shared/overlay.module.css';
+import { FilterBar } from '../_shared/FilterBar';
+import { FilterMenu } from '../_shared/FilterMenu';
+import { useT } from '../_shared/i18nClient';
 import ui from '../_shared/ui.module.css';
 import { type ListParams, listHref } from './listParams';
-import styles from './sessions.module.css';
 
 /**
  * Búsqueda y filtros del historial. Todo vive en la URL: volver desde una sesión
  * recupera la misma búsqueda y página. La búsqueda filtra al escribir, en el servidor.
  */
 
-const PRACTICES: readonly { readonly value: string; readonly label: string }[] = [
-  { value: '', label: 'todas' },
-  { value: 'RUOE', label: 'Reading & Use of English' },
-  { value: 'WRITING', label: 'Writing' },
-  { value: 'LISTENING', label: 'Listening' },
-  { value: 'SPEAKING', label: 'Speaking' },
-  { value: 'libre', label: 'Sin formato de examen' },
-];
+/** `''` son todas; `libre`, sin formato de examen; el resto, un paper. */
+const PRACTICES = ['', 'RUOE', 'WRITING', 'LISTENING', 'SPEAKING', 'libre'] as const;
 
 const DEBOUNCE_MS = 250;
 
 export function SessionsToolbar({ params, openCount }: { readonly params: ListParams; readonly openCount: number }) {
+  const t = useT();
   const router = useRouter();
   const [q, setQ] = useState(params.q);
 
@@ -41,59 +36,53 @@ export function SessionsToolbar({ params, openCount }: { readonly params: ListPa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  const practice = PRACTICES.find((item) => item.value === params.practica) ?? PRACTICES[0];
+  const practiceLabel = (value: (typeof PRACTICES)[number]): string => value === '' ? t.sessionView.practiceAll
+    : value === 'libre' ? t.format.noExamFormat : t.labels.paperLong[value];
+  const practice = PRACTICES.find((value) => value === params.practica) ?? '';
 
   return (
-    <div className={styles.toolbar}>
-      <input
-        type="search"
-        className={`${ui.input} ${styles.search}`}
-        value={q}
-        onChange={(event) => { setQ(event.target.value); }}
-        placeholder="Buscar por referencia, fuente o fecha…"
-        aria-label="Buscar sesión"
-      />
-      <nav className={ui.pills} aria-label="Estado">
+    <FilterBar
+      search={(
+        <input
+          type="search"
+          className={`${ui.input} ${ui.filterSearch}`}
+          value={q}
+          onChange={(event) => { setQ(event.target.value); }}
+          placeholder={t.sessionView.searchPlaceholder}
+          aria-label={t.sessionView.searchLabel}
+        />
+      )}
+    >
+      <nav className={ui.pills} aria-label={t.sessionView.status}>
         <Link href={listHref(params, { estado: '' })} className={ui.pill} aria-current={params.estado === '' ? 'true' : undefined} scroll={false}>
-          Todas
+          {t.common.all}
         </Link>
         <Link href={listHref(params, { estado: 'abiertas' })} className={ui.pill} aria-current={params.estado === 'abiertas' ? 'true' : undefined} scroll={false}>
-          Abiertas ({openCount})
+          {t.sessionView.openCount(openCount)}
         </Link>
       </nav>
       <span className={ui.spacer} />
-      <Menu
-        label="Práctica"
-        trigger={(props) => (
-          <button type="button" {...props} className={`${ui.ghost} ${ui.compact} ${styles.filterButton}`}>
-            Práctica: {practice?.label ?? 'todas'}
-            <ChevronDown size={14} aria-hidden="true" />
-          </button>
-        )}
-      >
-        {(close) => PRACTICES.map((item) => (
-          <Link
-            key={item.value}
-            role="menuitem"
-            href={listHref(params, { practica: item.value })}
-            className={overlay.menuItem}
-            aria-current={item.value === params.practica ? 'page' : undefined}
-            onClick={close}
-            scroll={false}
-          >
-            {item.label === 'todas' ? 'Todas las prácticas' : item.label}
-          </Link>
-        ))}
-      </Menu>
+      <FilterMenu
+        align="end"
+        label={t.sessionForm.practice}
+        text={practice === '' ? t.sessionForm.practice : t.sessionView.practiceFilter(practiceLabel(practice))}
+        options={PRACTICES.map((value) => ({
+          key: value, href: listHref(params, { practica: value }), current: value === params.practica,
+          label: value === '' ? t.sessionView.allPractices : practiceLabel(value),
+        }))}
+        clear={practice === '' ? undefined : {
+          href: listHref(params, { practica: '' }), label: t.errors.removeFilter(practiceLabel(practice)),
+        }}
+      />
       <Link
         href={listHref(params, { orden: params.orden === 'asc' ? '' : 'asc' })}
-        className={`${ui.ghost} ${ui.compact} ${styles.filterButton}`}
+        className={ui.filterButton}
         scroll={false}
-        aria-label={params.orden === 'asc' ? 'Fecha: más antiguas primero. Cambiar a más recientes' : 'Fecha: más recientes primero. Cambiar a más antiguas'}
+        aria-label={params.orden === 'asc' ? t.sessionView.sortAsc : t.sessionView.sortDesc}
       >
         <ArrowUpDown size={16} aria-hidden="true" />
-        Fecha {params.orden === 'asc' ? '↑' : '↓'}
+        {t.sessionForm.date} {params.orden === 'asc' ? '↑' : '↓'}
       </Link>
-    </div>
+    </FilterBar>
   );
 }

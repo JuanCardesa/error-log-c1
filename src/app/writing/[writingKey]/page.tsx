@@ -1,0 +1,213 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+
+import { eq } from 'drizzle-orm';
+import { getDb } from '@/lib/db/client';
+import { writingAnnotation } from '@/lib/db/schema';
+import { listWritingLibrary } from '@/lib/db/writingRepo';
+import { toIsoDate } from '@/lib/time/dates';
+import { assessedCriteria, writingTotal } from '@/lib/writing/library';
+import { countWords } from '@/lib/writing/text';
+import { parseWritingKey, writingHref } from '@/lib/writing/urls';
+import { BackLink } from '../../_shared/BackLink';
+import { decimal, mediumDate } from '../../_shared/format';
+import { getT } from '../../_shared/i18nServer';
+import ui from '../../_shared/ui.module.css';
+import { BANDS } from '../bands';
+import { editableRow, libraryItems, pieceOptions } from '../entries';
+import { ReaderActions } from '../ReaderActions';
+import { ReaderProvider } from '../ReaderContext';
+import { WritingStatusText } from '../WritingStatusText';
+import { WritingReadingView } from '../WritingReadingView';
+import { WritingTranscriptionEditor } from '../WritingTranscriptionEditor';
+import styles from '../writing.module.css';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * El lector: la redacción en su hoja de papel, tal como se escribió, y la evaluación al pie.
+ * El texto es texto plano: un asterisco escrito a mano no es formato.
+ */
+export default async function WritingReaderPage({ params, searchParams }: {
+  readonly params: Promise<{ readonly writingKey: string }>;
+  readonly searchParams: Promise<{ readonly editar?: string | string[] }>;
+}) {
+  const { writingKey } = await params;
+  const id = parseWritingKey(writingKey);
+  if (id === null) notFound();
+
+  const t = await getT();
+  const w = t.writing;
+  const items = libraryItems(listWritingLibrary(getDb()), t);
+  const item = items.find((entry) => entry.id === id);
+  if (item === undefined) notFound();
+  const { piece, session } = item.row;
+  const original = piece.rewriteOf === null ? undefined : items.find((entry) => entry.id === piece.rewriteOf);
+  const href = writingHref(piece);
+  const assessed = assessedCriteria(piece);
+  const total = writingTotal(piece);
+  const text = piece.originalText;
+  const annotations = text === null ? [] : getDb().select({
+    id: writingAnnotation.id,
+    kind: writingAnnotation.kind,
+    focus: writingAnnotation.focus,
+    source: writingAnnotation.source,
+    scope: writingAnnotation.scope,
+    anchor: writingAnnotation.anchor,
+    paragraph: writingAnnotation.paragraph,
+    quote: writingAnnotation.quote,
+    comment: writingAnnotation.comment,
+    suggestion: writingAnnotation.suggestion,
+    reviewedAt: writingAnnotation.reviewedAt,
+  }).from(writingAnnotation).where(eq(writingAnnotation.pieceId, piece.id)).all();
+  const marked = assessed > 0 || piece.corrector !== null || piece.correctedOn !== null || piece.teacherComment !== null;
+  const words = text === null ? piece.wordCount : piece.wordCount ?? countWords(text);
+  const [wordMin, wordMax] = piece.wordMin === null || piece.wordMax === null ? [220, 260] : [piece.wordMin, piece.wordMax];
+  const wordRange = `${String(wordMin)}–${String(wordMax)}`;
+  // Fuera del rango del enunciado se dice en claro: en el examen cuesta nota.
+  const outside = text === null || words === null ? null : words < wordMin ? 'below' : words > wordMax ? 'above' : null;
+
+  return (
+    <ReaderProvider>
+    <div className={styles.readerPage}>
+      <div className={styles.readerBar}>
+        <BackLink href="/writing" label={t.nav.writing} />
+        <ReaderActions
+          count={annotations.length}
+          exportHref={text === null ? null : `/exportar/writing-${String(piece.id)}.json`}
+          editor={{
+            editing: editableRow(piece),
+            editingSession: session,
+            originals: pieceOptions(items, t),
+            transcribed: text !== null,
+            today: toIsoDate(new Date()),
+            initiallyOpen: (await searchParams).editar === '1',
+            closeHref: href,
+          }}
+          labels={{
+            annotations: w.reading.annotationPanel, annotationsCount: w.reading.annotations(annotations.length),
+            moreActions: w.reading.moreActions, editDetails: w.editDetails,
+            correctTranscription: w.reading.correctTranscription, annotateText: w.reading.annotateText, exportJson: w.exportJson,
+          }}
+        />
+      </div>
+
+      <article className={styles.sheet} aria-labelledby="writing-title">
+        <header className={styles.sheetHead}>
+          <div className={styles.sheetHeading}>
+            <p className={styles.sheetMeta}>
+              <span>{t.labels.genre[piece.genre]}</span>
+              <span>
+                <time dateTime={piece.date}>{mediumDate(piece.date, t)}</time>
+                {piece.dateBasis !== 'WRITTEN' && ` · ${t.writingImport.approximate}`}
+              </span>
+              {words !== null && <span>{text === null ? w.words(words) : w.reading.wordCount(words, outside === null ? wordRange : null)}</span>}
+              {outside !== null && (
+                <span className={styles.metaWarn}>{outside === 'below' ? w.reading.wordsBelow(wordRange) : w.reading.wordsAbove(wordRange)}</span>
+              )}
+              <span><WritingStatusText status={piece.status} t={t} /></span>
+            </p>
+            <h1 id="writing-title" className={styles.sheetTitle}>{item.title}</h1>
+            {original !== undefined && (
+              <p className={styles.sheetMeta}>
+                <span>{w.rewriteOf} <Link href={writingHref(original.row.piece)}>{original.title}</Link></span>
+              </p>
+            )}
+          </div>
+          <p className={styles.sheetTotal}>
+            {total === null
+              ? <><span aria-hidden="true">—</span><span className="sr-only">{w.noScore}</span></>
+              : w.score(decimal(total, t))}
+          </p>
+        </header>
+
+        {piece.taskPrompt !== null && (
+          <section className={styles.task} aria-labelledby="writing-task">
+            <h2 id="writing-task">{w.task}</h2>
+            <p>{piece.taskPrompt}</p>
+          </section>
+        )}
+
+        {text === null ? (
+          <div className={styles.noText}>
+            <p className={styles.noTextTitle}>{w.noTranscription}</p>
+            <p>{w.noTextBody}</p>
+            <WritingTranscriptionEditor pieceId={piece.id} revision={piece.textRevision} initialText="" labels={{
+              correct: w.reading.addTranscription, save: w.reading.saveTranscription,
+              transcription: w.reading.transcription, saving: w.reading.saving, cancel: t.common.cancel,
+            }} />
+          </div>
+        ) : (
+          <WritingReadingView pieceId={piece.id} revision={piece.textRevision} text={text} annotations={annotations} labels={{
+              closeAnnotations: w.reading.closeAnnotations, annotationPanel: w.reading.annotationPanel,
+              filterType: w.reading.filterType, kindLabel: w.reading.kindLabel, focusLabel: w.reading.focusLabel,
+              allKinds: w.reading.allKinds, pendingOnly: w.reading.pendingOnly,
+              wholeText: w.reading.wholeText, wholeTextNote: w.reading.wholeTextNote, needsPlacing: w.reading.needsPlacing,
+              paragraphPrefix: w.reading.paragraph(1).replace('1', ''),
+              noAnnotations: w.reading.noAnnotations, noAnnotationsYet: w.reading.noAnnotationsYet,
+              reviewed: w.reading.reviewed, unreviewed: w.reading.unreviewed,
+              showInList: w.reading.showInList, newAnnotation: w.reading.newAnnotation,
+              annotateText: w.reading.annotateText, annotateHint: w.reading.annotateHint,
+              finishAnnotating: w.reading.finishAnnotating, transcriptionHint: w.reading.transcriptionHint,
+              createAnnotation: w.reading.createAnnotation, editAnnotation: w.reading.editAnnotation,
+              deleteAnnotation: w.reading.deleteAnnotation, placeHere: w.reading.placeHere,
+              correctTranscription: w.reading.correctTranscription,
+              saveTranscription: w.reading.saveTranscription, transcription: w.reading.transcription,
+              cancel: t.common.cancel,
+              chooseCandidate: w.reading.chooseCandidate, saving: w.reading.saving,
+              comment: w.reading.comment, suggestion: w.reading.suggestion,
+              savingSource: w.reading.savingSource, invalidTarget: w.reading.invalidTarget,
+              restoreConflict: w.reading.restoreConflict, noMatches: w.reading.noMatches,
+              aiSuggestion: w.reading.aiSuggestion, markStudied: w.reading.markStudied,
+              saveAnnotation: w.reading.saveAnnotation,
+              kind: w.reading.kind, kindPlural: w.reading.kindPlural, source: w.reading.source, focus: w.reading.focus,
+            }} />
+        )}
+
+        <section className={styles.assessment} aria-labelledby="writing-assessment">
+          <h2 id="writing-assessment">{t.writingImport.assessmentTitle}</h2>
+          {!marked ? <p className={ui.help}>{t.writingImport.notAssessed}</p> : (
+            <>
+              {assessed > 0 && (
+                <dl className={styles.scores}>
+                  {BANDS.map((band) => {
+                    const value = piece[band.name];
+                    return (
+                      <div key={band.name}>
+                        <dt>{band.label}</dt>
+                        <dd className="num">{value === null ? '—' : decimal(value, t)}</dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              )}
+              {/* El total ya va arriba, junto al título; aquí solo se explica cuando falta. */}
+              {assessed > 0 && total === null && <p className={ui.help}>{t.writingImport.partial(assessed)}</p>}
+              {(piece.corrector !== null || piece.correctedOn !== null) && (
+                <p className={styles.markedBy}>
+                  {piece.corrector !== null && <span>{w.corrector}: {t.labels.corrector[piece.corrector]}</span>}
+                  {piece.correctedOn !== null && (
+                    <span>{t.writingImport.corrected}: <time dateTime={piece.correctedOn}>{mediumDate(piece.correctedOn, t)}</time></span>
+                  )}
+                </p>
+              )}
+              {piece.teacherComment !== null && (
+                <figure className={styles.comment}>
+                  <figcaption>{t.writingImport.teacherComment}</figcaption>
+                  <blockquote>{piece.teacherComment}</blockquote>
+                </figure>
+              )}
+            </>
+          )}
+          {piece.personalNotes !== null && (
+            <figure className={styles.comment}>
+              <figcaption>{t.writingImport.field.personalNotes}</figcaption>
+              <blockquote>{piece.personalNotes}</blockquote>
+            </figure>
+          )}
+        </section>
+      </article>
+    </div>
+    </ReaderProvider>
+  );
+}

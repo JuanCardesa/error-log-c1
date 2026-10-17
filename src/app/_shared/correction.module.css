@@ -33,7 +33,7 @@
   padding: var(--space-3) 0;
   border-top: 1px solid var(--color-rule);
   border-bottom: 1px solid var(--color-rule);
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 
 .detail dt {
@@ -46,7 +46,7 @@
 }
 
 .mineSerif {
-  font: 400 18px/26px var(--font-serif);
+  font: var(--text-answer);
   color: var(--color-ink-2);
   text-decoration-line: line-through;
   text-decoration-color: var(--color-danger);
@@ -54,7 +54,8 @@
 }
 
 .missingSerif {
-  font: italic 400 18px/26px var(--font-serif);
+  font: var(--text-answer);
+  font-style: italic;
   color: var(--color-ink-2);
 }
 
@@ -62,7 +63,22 @@
   font: var(--text-correction);
 }
 
+/*
+ * Apilado (etiqueta encima): en móvil y en un contenedor estrecho como el panel de detalle,
+ * donde la columna de etiquetas dejaba la respuesta en tres líneas.
+ */
 @media (max-width: 639px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .detail dd + dt {
+    margin-top: var(--space-2);
+  }
+}
+
+@container (max-width: 420px) {
   .detail {
     grid-template-columns: minmax(0, 1fr);
     gap: 2px;

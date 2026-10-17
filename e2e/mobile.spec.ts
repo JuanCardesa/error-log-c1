@@ -23,7 +23,7 @@ for (const route of ROUTES) {
 }
 
 test.describe('envoltorios con scroll horizontal', () => {
-  for (const route of ['/writing', '/ruoe?w=60'] as const) {
+  for (const route of ['/ruoe?w=60'] as const) {
     test(`en ${route} recortan lo que posicionan en absoluto`, async ({ page }) => {
       await page.goto(route);
       const wraps = await page.evaluate(() =>

@@ -1,37 +1,42 @@
 'use client';
 
-import { ChevronDown, Search } from 'lucide-react';
+import { Check, ChevronDown, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
+
+import { LOCALES } from '@/lib/i18n';
 
 import { CommandPalette } from './CommandPalette';
+import { useT } from './i18nClient';
 import { Kbd } from './Kbd';
 import { Menu } from './Menu';
 import { isPlainKey, useShortcutLabels } from './shortcuts';
+import { useLocaleSwitch } from './useLocaleSwitch';
 import styles from './header.module.css';
 import overlay from './overlay.module.css';
 
 /**
- * Cabecera fija en cristal: marca, cuatro destinos, «Más» y la búsqueda global.
+ * Cabecera fija en cristal: marca, seis destinos en dos grupos —el ritual (Sesiones,
+ * Errores, Progreso, Anki) y la biblioteca (Notebook, Writing)—, «Más» (Exportar y el idioma)
+ * y la búsqueda global.
  *
- * Atajos globales: Ctrl/⌘+K abre la búsqueda; G seguida de S, E, P o A (en menos de un
- * segundo) va a Sesiones, Errores, Progreso o Anki. Las teclas sueltas no se disparan
- * dentro de un campo ni con un diálogo abierto.
+ * Atajos globales: Ctrl/⌘+K abre la búsqueda; G seguida de S, E, P, A, N o W (en menos de un
+ * segundo) va a Sesiones, Errores, Progreso, Anki, Notebook o Writing. Las teclas sueltas no se
+ * disparan dentro de un campo ni con un diálogo abierto.
  */
 
 const NAV = [
-  { href: '/registrar', label: 'Sesiones', key: 's', match: ['/registrar'] },
-  { href: '/errores', label: 'Errores', key: 'e', match: ['/errores', '/certezas'] },
-  { href: '/informe', label: 'Progreso', key: 'p', match: ['/informe', '/ruoe'] },
-  { href: '/anki', label: 'Anki', key: 'a', match: ['/anki'] },
+  { href: '/registrar', label: 'sessions', key: 's', match: ['/registrar'] },
+  { href: '/errores', label: 'errors', key: 'e', match: ['/errores', '/certezas'] },
+  { href: '/informe', label: 'progress', key: 'p', match: ['/informe', '/ruoe'] },
+  { href: '/anki', label: 'anki', key: 'a', match: ['/anki'] },
+  // Desde aquí, la biblioteca: se consulta, no forma parte del registro diario.
+  { href: '/notebook', label: 'notebook', key: 'n', match: ['/notebook'], library: true },
+  { href: '/writing', label: 'writing', key: 'w', match: ['/writing'] },
 ] as const;
 
-const MORE = [
-  { href: '/notebook', label: 'Notebook' },
-  { href: '/writing', label: 'Writing' },
-  { href: '/exportar', label: 'Exportar datos' },
-] as const;
+const EXPORT_HREF = '/exportar';
 
 const G_WINDOW_MS = 900;
 
@@ -41,8 +46,11 @@ export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const keys = useShortcutLabels();
+  const t = useT();
   const [palette, setPalette] = useState(false);
   const gAt = useRef(0);
+  const language = useLocaleSwitch();
+  const languageId = useId();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -68,7 +76,7 @@ export function AppHeader() {
     return () => { window.removeEventListener('keydown', onKey); };
   }, [router]);
 
-  const moreActive = MORE.some((item) => within(pathname, item.href));
+  const moreActive = within(pathname, EXPORT_HREF);
 
   return (
     <header className={styles.header}>
@@ -79,24 +87,26 @@ export function AppHeader() {
         </Link>
 
         <div className={styles.navGroup}>
-          <nav className={styles.nav} aria-label="Secciones">
+          <nav className={styles.nav} aria-label={t.nav.sections}>
             {NAV.map((item) => {
               const current = item.match.some((base) => within(pathname, base));
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={styles.navLink}
-                  aria-current={current ? 'page' : undefined}
-                >
-                  {item.label}
-                </Link>
+                <Fragment key={item.href}>
+                  {'library' in item && <span className={styles.navSep} aria-hidden="true" />}
+                  <Link
+                    href={item.href}
+                    className={styles.navLink}
+                    aria-current={current ? 'page' : undefined}
+                  >
+                    {t.nav[item.label]}
+                  </Link>
+                </Fragment>
               );
             })}
           </nav>
 
           <Menu
-            label="Más secciones"
+            label={t.nav.moreSections}
             align="start"
             trigger={(props) => (
               <button
@@ -105,23 +115,46 @@ export function AppHeader() {
                 className={`${styles.navLink} ${styles.moreButton}`}
                 data-active={moreActive ? 'true' : undefined}
               >
-                Más
+                {t.nav.more}
                 <ChevronDown size={14} aria-hidden="true" />
               </button>
             )}
           >
-            {(close) => MORE.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                role="menuitem"
-                className={overlay.menuItem}
-                aria-current={within(pathname, item.href) ? 'page' : undefined}
-                onClick={close}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {(close, restore) => (
+              <>
+                <Link
+                  href={EXPORT_HREF}
+                  role="menuitem"
+                  className={overlay.menuItem}
+                  aria-current={moreActive ? 'page' : undefined}
+                  onClick={close}
+                >
+                  {t.nav.exportData}
+                </Link>
+                <div className={overlay.menuSep} role="separator" />
+                {/* El idioma se elige aquí mismo: no merece una página para un solo control. */}
+                <div role="group" aria-labelledby={languageId}>
+                  <span id={languageId} className={overlay.menuLabel}>{t.settings.language}</span>
+                  {LOCALES.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="menuitemradio"
+                      lang={value}
+                      aria-checked={value === language.shown}
+                      className={`${overlay.menuItem} ${overlay.menuRadio}`}
+                      onClick={() => {
+                        restore();
+                        language.choose(value);
+                      }}
+                    >
+                      <Check size={16} className={overlay.menuCheck} aria-hidden="true" />
+                      {t.settings.languages[value]}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </Menu>
         </div>
 
@@ -130,12 +163,12 @@ export function AppHeader() {
         <button
           type="button"
           className={styles.search}
-          aria-label={`Buscar (${keys.search})`}
+          aria-label={t.nav.search(keys.search)}
           aria-haspopup="dialog"
           onClick={() => { setPalette(true); }}
         >
           <Search size={16} aria-hidden="true" />
-          <span className={styles.searchText}>Buscar errores, sesiones, apuntes</span>
+          <span className={styles.searchText}>{t.nav.searchPlaceholder}</span>
           <Kbd>{keys.search}</Kbd>
         </button>
       </div>

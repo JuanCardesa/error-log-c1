@@ -71,7 +71,9 @@ function marks() {
 }
 
 test('ratón: rotulador y color persisten; limpiar respeta el resto de la selección', async ({ page }) => {
-  await expect(page.getByRole('navigation', { name: 'Índice del apunte' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Índice del apunte' })).toHaveCount(1);
+  await expect(page.locator('article').getByRole('navigation', { name: 'Índice del apunte' })).toHaveCount(0);
+  await expect(page.locator('[data-study-content]').getByRole('navigation', { name: 'Índice del apunte' })).toHaveCount(0);
   await select(page, 'An important concept', true);
   await page.getByRole('button', { name: 'Rotulador', exact: true }).click();
   await saved(page);

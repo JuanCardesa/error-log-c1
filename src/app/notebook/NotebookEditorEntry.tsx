@@ -1,9 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import type { NotebookFolder, NotebookNote } from '@/lib/notebook/types';
+import { useT } from '../_shared/i18nClient';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import { getNoteAction } from './actions';
 import { NotebookEditor } from './NotebookEditor';
@@ -15,6 +16,7 @@ export function NotebookEditorEntry({ id, uid, folders, requestedDraftKey }: {
   readonly folders: readonly NotebookFolder[];
   readonly requestedDraftKey?: string;
 }) {
+  const t = useT();
   const [note, setNote] = useState<NotebookNote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -26,18 +28,17 @@ export function NotebookEditorEntry({ id, uid, folders, requestedDraftKey }: {
       if (result.ok) setNote(result.data);
       else setError(result.message);
     }).catch(() => {
-      if (active) setError('No se pudo cargar la versión actual del apunte. Tu borrador local se conserva.');
+      if (active) setError(t.notebook.loadCurrentFailed);
     });
     return () => { active = false; };
-  }, [id, uid, attempt]);
+  }, [id, uid, attempt, t]);
 
   if (note !== null) return <NotebookEditor note={note} folders={folders} requestedDraftKey={requestedDraftKey} />;
   return <div>
-    <h1>Editar apunte</h1>
-    {error === null ? <p role="status">Cargando versión actual…</p> : <>
+    <PageHeader back={{ href: '/notebook', label: t.nav.notebook }} title={t.notebook.editNote} />
+    {error === null ? <p role="status">{t.notebook.loadingCurrent}</p> : <>
       <p role="alert">{error}</p>
-      <button type="button" className={ui.secondary} onClick={() => { setError(null); setAttempt(attempt + 1); }}>Reintentar</button>
+      <button type="button" className={ui.secondary} onClick={() => { setError(null); setAttempt(attempt + 1); }}>{t.common.retry}</button>
     </>}
-    <Link href="/notebook" className={ui.backLink}>Volver a Notebook</Link>
   </div>;
 }

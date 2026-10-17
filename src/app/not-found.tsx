@@ -1,14 +1,16 @@
 import Link from 'next/link';
 
+import { getT } from './_shared/i18nServer';
 import ui from './_shared/ui.module.css';
 import styles from './status.module.css';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getT();
   return (
     <div className={styles.status}>
-      <h1 className={ui.pageTitle}>Esta página no existe</h1>
-      <p>Puede que el enlace esté incompleto. Tus sesiones y errores siguen donde estaban.</p>
-      <Link href="/registrar" className={ui.secondary}>Ir a Sesiones</Link>
+      <h1 className={ui.pageTitle}>{t.status.notFoundTitle}</h1>
+      <p>{t.status.notFoundBody}</p>
+      <Link href="/registrar" className={ui.secondary}>{t.common.goToSessions}</Link>
     </div>
   );
 }

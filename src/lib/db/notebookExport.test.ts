@@ -10,7 +10,7 @@ import {
   NOTEBOOK_MANIFEST_VERSION, notebookDumpChunks, notebookExportPaths, notebookManifest, notebookZipEntries,
 } from './notebookExport';
 import { setErrorNoteLink } from './notebookLinkRepo';
-import { createNotebookFolder, createNotebookNote } from './notebookRepo';
+import { createNotebookFolder, createNotebookNote, setNotebookNoteFavorite } from './notebookRepo';
 
 const NOW = new Date('2026-09-29T10:00:00.000Z');
 let db: Db;
@@ -181,7 +181,7 @@ describe('volcado JSON', () => {
 
   it('conserva exportedAt, rows y anki, y añade formatVersion y notebook', () => {
     const parsed = JSON.parse(dump()) as Record<string, unknown>;
-    expect(Object.keys(parsed)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki', 'notebook']);
+    expect(Object.keys(parsed)).toEqual(['formatVersion', 'exportedAt', 'rows', 'anki', 'writingAnnotations', 'notebook']);
     expect(parsed['formatVersion']).toBe(JSON_DUMP_FORMAT_VERSION);
     expect(parsed['exportedAt']).toBe(NOW.toISOString());
   });
@@ -189,17 +189,19 @@ describe('volcado JSON', () => {
   it('lleva carpetas, apuntes con su cuerpo y vínculos', () => {
     const grammar = folder('Grammar');
     const first = note('Past modal verbs', { folderId: grammar, markdown: '# Past\n\ncuerpo íntegro\n' });
+    const markedAt = '2026-09-29T11:00:00.000Z';
+    setNotebookNoteFavorite(db, { id: first.id, favorite: true }, markedAt);
     const errorId = error();
     setErrorNoteLink(db, { errorId, noteId: first.id, headingSlug: null }, NOW.toISOString());
 
     const notebook = (JSON.parse(dump()) as { notebook: {
       folders: Array<{ id: number }>;
-      notes: Array<{ id: number; contentMarkdown: string; uid: string; revision: number }>;
+      notes: Array<{ id: number; contentMarkdown: string; uid: string; revision: number; favoritedAt: string | null }>;
       errorLinks: Array<{ errorId: number; noteId: number }>;
     } }).notebook;
     expect(notebook.folders.map((item) => item.id)).toEqual([grammar]);
     expect(notebook.notes).toEqual([expect.objectContaining({
-      id: first.id, uid: first.uid, revision: 1, contentMarkdown: '# Past\n\ncuerpo íntegro\n',
+      id: first.id, uid: first.uid, revision: 1, contentMarkdown: '# Past\n\ncuerpo íntegro\n', favoritedAt: markedAt,
     })]);
     expect(notebook.errorLinks).toEqual([expect.objectContaining({ errorId, noteId: first.id })]);
   });

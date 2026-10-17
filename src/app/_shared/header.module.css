@@ -24,14 +24,23 @@
   gap: var(--space-2);
   flex-shrink: 0;
   color: var(--color-ink);
-  font-size: 16px;
+  font-size: var(--fs-subtitle);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.brand:hover {
-  color: var(--color-ink);
+@media (pointer: coarse) {
+  .brand {
+    padding-block: var(--space-3);
+    margin-block: calc(-1 * var(--space-3));
+  }
+}
+
+@media (hover: hover) {
+  .brand:hover {
+    color: var(--color-ink);
+  }
 }
 
 .brandMark {
@@ -58,7 +67,7 @@
 .navLink {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   height: 100%;
   padding: 0 var(--space-3);
   border: 0;
@@ -69,8 +78,20 @@
   white-space: nowrap;
 }
 
-.navLink:hover {
-  color: var(--color-ink);
+@media (hover: hover) {
+  .navLink:hover {
+    color: var(--color-ink);
+  }
+}
+
+/* Separa el ritual (registrar, revisar, estudiar) de la biblioteca (consultar). */
+.navSep {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  margin: 0 var(--space-2);
+  background: var(--color-rule);
 }
 
 .navLink[aria-current='page'],
@@ -88,6 +109,14 @@
   height: var(--header-h);
 }
 
+/*
+ * El menú de «Más» vive dentro de la cabecera, que ya es cristal: su desenfoque no alcanza
+ * la página de detrás y el texto se transparentaría. Aquí va opaco.
+ */
+.navGroup [role='menu'] {
+  background: var(--color-surface);
+}
+
 .spacer {
   flex: 1;
 }
@@ -99,17 +128,19 @@
   flex: 0 1 300px;
   min-width: 44px;
   height: 34px;
-  padding: 0 var(--space-2) 0 10px;
+  padding: 0 var(--space-2) 0 var(--space-2-5);
   overflow: hidden;
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-control);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--glass-card-bg);
   color: var(--color-ink-2);
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 
-.search:hover {
-  background: var(--color-surface);
+@media (hover: hover) {
+  .search:hover {
+    background: var(--color-surface);
+  }
 }
 
 .searchText {
@@ -123,7 +154,16 @@
 
 @media (max-width: 1023px) {
   .inner {
-    gap: var(--space-4);
+    gap: var(--space-3);
+  }
+
+  /* Tableta: los seis destinos, Más y buscar en una fila; sin el aire de escritorio no caben a 800. */
+  .navLink {
+    padding: 0 var(--space-2);
+  }
+
+  .navSep {
+    margin: 0 var(--space-1);
   }
 
   .searchText {
@@ -136,10 +176,11 @@
 }
 
 /*
- * Móvil: dos filas. Marca, Más y buscar arriba; los cuatro destinos repartidos debajo, sin
- * scroll horizontal y con la sección activa siempre a la vista.
+ * Móvil y tableta estrecha: dos filas. Marca, Más y buscar arriba; los seis destinos
+ * repartidos debajo, sin scroll horizontal y con la sección activa siempre a la vista.
+ * Por debajo de 800 px la fila única no cabe con margen.
  */
-@media (max-width: 639px) {
+@media (max-width: 799px) {
   .inner {
     display: grid;
     grid-template-columns: 1fr auto auto;
@@ -163,6 +204,13 @@
     display: contents;
   }
 
+  /* «Más» queda arriba a la derecha: su menú se abre hacia dentro de la pantalla. */
+  .navGroup [role='menu'] {
+    right: 0;
+    left: auto;
+    transform-origin: top right;
+  }
+
   .search {
     grid-row: 1;
     grid-column: 3;
@@ -178,19 +226,27 @@
     display: none;
   }
 
+  /* Cada destino ocupa lo que mide su nombre más una parte igual del sobrante: a 320 px
+     caben los seis enteros, y en pantallas mayores las zonas de toque crecen por igual. */
   .nav {
     grid-row: 2;
     grid-column: 1 / -1;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    margin: 0 calc(-1 * var(--space-2)) 0 calc(-1 * var(--space-4));
+    display: flex;
+    gap: 0;
+    margin: 0 calc(-1 * var(--space-2));
     height: 44px;
   }
 
   .navLink {
+    flex: 1 1 auto;
     justify-content: center;
-    padding: 0;
-    font-size: 14px;
+    min-width: 0;
+    padding: 0 2px;
+    font: var(--text-label);
+  }
+
+  .navSep {
+    margin: 0 2px;
   }
 
   .moreButton {

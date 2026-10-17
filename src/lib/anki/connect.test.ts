@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ankiConfig } from './config';
+import { getMessages } from '../i18n';
 import { ANKI_TIMEOUT_MS, AnkiError, ankiMessage, httpTransport, timeoutFor, unwrap, withRetry, type AnkiRequest, type Transport } from './connect';
 import { ankiApi, searchTerm } from './api';
 import { FakeAnki, CONFIG } from './fixtures/build';
@@ -87,8 +88,15 @@ describe('configuración y transporte local', () => {
   });
   it('propaga errores de Anki sin confundirlos con Anki cerrado', () => {
     expect(() => unwrap({ result: null, error: 'unsupported action' })).toThrow('unsupported action');
-    expect(ankiMessage(new AnkiError('ANKI_ERROR', 'mensaje'))).toBe('mensaje');
-    expect(ankiMessage(new Error('privado'))).not.toContain('privado');
+    expect(ankiMessage(new AnkiError('ANKI_ERROR', () => 'mensaje'), getMessages('es'))).toBe('mensaje');
+    expect(ankiMessage(new Error('privado'), getMessages('es'))).not.toContain('privado');
+  });
+  it('redacta el aviso en el idioma de quien lo lee', () => {
+    const error = new AnkiError('ANKI_LENTO', (t) => t.ankiErrors.slow);
+    expect(ankiMessage(error, getMessages('es'))).toContain('tardó demasiado');
+    expect(ankiMessage(error, getMessages('en'))).toContain('took too long');
+    // `message`, para registros y tests, va en el idioma por defecto.
+    expect(error.message).toContain('took too long');
   });
   it('escapa nombres de mazo en búsquedas', () => {
     expect(searchTerm('deck', 'A"B\\C_*')).toBe('deck:"A\\"B\\\\C\\_\\*"');
@@ -135,7 +143,7 @@ describe('plazos y reintentos', () => {
 
   it('espera de verdad cuando no se le inyecta un reloj', async () => {
     const inner = vi.fn<Transport>()
-      .mockRejectedValueOnce(new AnkiError('ANKI_LENTO', 'lento'))
+      .mockRejectedValueOnce(new AnkiError('ANKI_LENTO', () => 'lento'))
       .mockResolvedValueOnce({ result: 6, error: null });
     expect(await withRetry(inner, { delayMs: 0 })(read('findCards'))).toEqual({ result: 6, error: null });
     expect(inner).toHaveBeenCalledTimes(2);
@@ -144,7 +152,7 @@ describe('plazos y reintentos', () => {
   it('reintenta una lectura que expiró y devuelve el resultado del segundo intento', async () => {
     const slept: number[] = [];
     const inner = vi.fn<Transport>()
-      .mockRejectedValueOnce(new AnkiError('ANKI_LENTO', 'lento'))
+      .mockRejectedValueOnce(new AnkiError('ANKI_LENTO', () => 'lento'))
       .mockResolvedValueOnce({ result: [1], error: null });
     const result = await withRetry(inner, { sleep: async (ms) => { slept.push(ms); } })(multi('cardsInfo'));
     expect(result).toEqual({ result: [1], error: null });
@@ -154,7 +162,7 @@ describe('plazos y reintentos', () => {
 
   it('espera cada vez más y se rinde con el último error', async () => {
     const slept: number[] = [];
-    const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError('ANKI_LENTO', 'lento'));
+    const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError('ANKI_LENTO', () => 'lento'));
     await expect(withRetry(inner, { sleep: async (ms) => { slept.push(ms); } })(read('notesInfo')))
       .rejects.toMatchObject({ code: 'ANKI_LENTO' });
     expect(inner).toHaveBeenCalledTimes(3);
@@ -172,14 +180,14 @@ describe('plazos y reintentos', () => {
     ['un multi anidado con una escritura dentro', nested],
     ['un multi vacío', multi()],
   ])('no reintenta %s aunque expire', async (_label, body) => {
-    const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError('ANKI_LENTO', 'lento'));
+    const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError('ANKI_LENTO', () => 'lento'));
     await expect(withRetry(inner, { sleep: async () => undefined })(body)).rejects.toThrow('lento');
     expect(inner).toHaveBeenCalledTimes(1);
   });
 
   it.each(['ANKI_CERRADO', 'ANKI_ERROR', 'ANKI_RESPUESTA_RARA', 'ANKI_CONFIG'] as const)(
     'no hace esperar al usuario cuando el fallo no mejora repitiéndolo (%s)', async (code) => {
-      const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError(code, 'fallo'));
+      const inner = vi.fn<Transport>().mockRejectedValue(new AnkiError(code, () => 'fallo'));
       await expect(withRetry(inner, { sleep: async () => undefined })(read('notesInfo'))).rejects.toThrow('fallo');
       expect(inner).toHaveBeenCalledTimes(1);
     });
@@ -194,9 +202,9 @@ describe('validación del contrato AnkiConnect', () => {
     const fake = new FakeAnki();
     expect(await ankiApi(fake.transport).notesInfo([999])).toEqual([null]);
     fake.override = () => ({ result: [], error: null });
-    await expect(ankiApi(fake.transport).notesInfo([20])).rejects.toThrow('Faltan notas');
+    await expect(ankiApi(fake.transport).notesInfo([20])).rejects.toThrow('notes are missing');
     fake.override = () => ({ result: [{ ...fake.notes.get(20)!, noteId: 21 }], error: null });
-    await expect(ankiApi(fake.transport).notesInfo([20])).rejects.toThrow('no coinciden');
+    await expect(ankiApi(fake.transport).notesInfo([20])).rejects.toThrow('don’t match');
     fake.override = () => ({ result: [[]], error: null });
     await expect(ankiApi(fake.transport).notesInfo([20])).rejects.toMatchObject({ code: 'ANKI_RESPUESTA_RARA' });
   });

@@ -1,11 +1,13 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
+
+import { useT } from './i18nClient';
 
 /**
- * Atajos de teclado. Las etiquetas dependen del sistema (⌘ en Mac, Ctrl en el resto),
- * pero el gestor acepta `metaKey || ctrlKey` en ambos: se enseña lo que toca y funciona
- * lo que se pulse.
+ * Atajos de teclado. Las etiquetas dependen del sistema (⌘ en Mac, Ctrl en el resto) y, en
+ * Windows, del idioma (Intro/Enter, Supr/Del), pero el gestor acepta `metaKey || ctrlKey`
+ * en ambos: se enseña lo que toca y funciona lo que se pulse.
  */
 
 export interface ShortcutLabels {
@@ -15,15 +17,14 @@ export interface ShortcutLabels {
   readonly remove: string;
   readonly paste: string;
   readonly enter: string;
+  readonly undo: string;
 }
 
-const WINDOWS: ShortcutLabels = {
+const WINDOWS: Omit<ShortcutLabels, 'save' | 'remove' | 'enter'> = {
   search: 'Ctrl+K',
-  save: 'Ctrl+Intro',
   nextPending: 'Alt+↓',
-  remove: 'Alt+Supr',
   paste: 'Ctrl+V',
-  enter: 'Intro',
+  undo: 'Ctrl+Z',
 };
 
 const MAC: ShortcutLabels = {
@@ -33,6 +34,7 @@ const MAC: ShortcutLabels = {
   remove: '⌥⌦',
   paste: '⌘V',
   enter: '↵',
+  undo: '⌘Z',
 };
 
 interface NavigatorWithUAData extends Navigator {
@@ -49,7 +51,8 @@ const subscribe = () => () => undefined;
 /** En el servidor se pintan las de Windows; el cliente corrige al hidratar si es Mac. */
 export function useShortcutLabels(): ShortcutLabels {
   const mac = useSyncExternalStore(subscribe, isMac, () => false);
-  return mac ? MAC : WINDOWS;
+  const { shortcuts } = useT();
+  return useMemo(() => (mac ? MAC : { ...WINDOWS, ...shortcuts }), [mac, shortcuts]);
 }
 
 /**

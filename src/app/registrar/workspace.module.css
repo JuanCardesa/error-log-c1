@@ -1,23 +1,7 @@
 .workspace {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
-
-.top {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.back {
-  margin-bottom: var(--space-2);
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 14px;
+  gap: var(--space-5);
 }
 
 .dest {
@@ -25,7 +9,7 @@
   align-items: center;
   gap: var(--space-5);
   flex-wrap: wrap;
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--color-ink-2);
 }
 
@@ -41,10 +25,10 @@
 .summary {
   display: flex;
   align-items: center;
-  gap: var(--space-2) 20px;
+  gap: var(--space-2) var(--space-5);
   flex-wrap: wrap;
   padding: var(--space-3) var(--space-4);
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 
 .summaryRef {
@@ -63,17 +47,10 @@
   display: none;
 }
 
-/* ── Progreso segmentado ─────────────────────────────────────────────────── */
-
-.progress {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
+/* ── Progreso segmentado: solo dibujo, la barra inferior lo dice con palabras ── */
 
 .segments {
   display: flex;
-  flex: 1;
   gap: 3px;
   min-width: 0;
 }
@@ -82,24 +59,20 @@
   flex: 1;
   height: 6px;
   border-radius: 1px;
-  cursor: pointer;
+  transition: background-color var(--dur-panel) var(--ease-out);
 }
 
 .segDone {
   background: var(--color-success);
 }
 
+/* Lo que falta es trabajo por hacer, no un aviso: en neutro. */
 .segPending {
-  background: var(--color-warning-soft);
+  background: var(--color-rule);
 }
 
 .segActive {
   box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 3px var(--color-brand);
-}
-
-.progressText {
-  font: var(--text-data);
-  white-space: nowrap;
 }
 
 /* ── Índice + editor ──────────────────────────────────────────────────────── */
@@ -128,16 +101,17 @@
 }
 
 .indexCount {
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .smallPill {
   height: 28px;
-  padding: 0 10px;
+  padding: 0 var(--space-2-5);
   border: 0;
   background: none;
-  font-size: 13px;
+  font-size: var(--fs-label);
   cursor: pointer;
 }
 
@@ -153,7 +127,7 @@
 .indexRow {
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: var(--space-2-5);
   align-items: center;
   width: 100%;
   height: 44px;
@@ -162,27 +136,35 @@
   border-bottom: 1px solid var(--color-surface-2);
   background: none;
   color: var(--color-ink);
-  font-size: 14px;
+  font-size: var(--fs-body);
   text-align: left;
   white-space: nowrap;
 }
 
-.indexRow:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .indexRow:hover {
+    background: var(--color-surface-2);
+  }
 }
 
 .indexRow:focus-visible {
   outline-offset: -2px;
 }
 
-.indexActive,
-.indexActive:hover {
+.indexActive {
   background: var(--color-selected);
   box-shadow: inset 3px 0 0 var(--color-brand);
 }
 
+@media (hover: hover) {
+  .indexActive:hover {
+    background: var(--color-selected);
+    box-shadow: inset 3px 0 0 var(--color-brand);
+  }
+}
+
 .indexN {
-  font-size: 13px;
+  font-size: var(--fs-label);
   color: var(--color-ink-2);
   font-variant-numeric: tabular-nums;
 }
@@ -196,8 +178,8 @@
 .indexState {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  gap: var(--space-1-5);
+  font-size: var(--fs-label);
   font-weight: 500;
 }
 
@@ -218,7 +200,7 @@
 .editor {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .editor > * {
@@ -249,7 +231,7 @@
 .promptBlock {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1-5);
 }
 
 .prompt {
@@ -258,7 +240,7 @@
 }
 
 .promptMissing {
-  font-size: 15px;
+  font-size: var(--fs-field);
 }
 
 .answers {
@@ -267,29 +249,28 @@
   gap: var(--space-4);
 }
 
-.mineBox {
-  display: flex;
-  align-items: center;
-  min-height: var(--control-h);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-control);
-  background: var(--color-bg);
-  font: 400 19px/26px var(--font-serif);
+/* Tu respuesta, tachada como en toda la app mientras no se edita. */
+.mineInput {
+  font: var(--text-prompt);
   color: var(--color-ink-2);
+}
+
+.mineInput:not(:placeholder-shown):not(:focus) {
   text-decoration-line: line-through;
   text-decoration-color: var(--color-danger);
   text-decoration-thickness: 1.5px;
-  overflow-wrap: anywhere;
 }
 
-.mineMissing {
+.mineInput:focus {
+  color: var(--color-ink);
+}
+
+.mineInput::placeholder {
   font-style: italic;
-  font-size: 16px;
-  text-decoration: none;
 }
 
 .correctInput {
-  font: 600 18px/26px var(--font-serif);
+  font: var(--text-correction);
 }
 
 .triple {
@@ -311,7 +292,7 @@
 
 .moreGrid {
   display: grid;
-  grid-template-columns: 96px repeat(2, minmax(0, 1fr));
+  grid-template-columns: 96px minmax(0, 1fr);
   gap: var(--space-3);
 }
 
@@ -322,31 +303,40 @@
   gap: 2px;
 }
 
-/* ── Barra inferior fija, en cristal ──────────────────────────────────────── */
+/* ── Barra inferior fija, en cristal ──────────────────────────────────────────
+ * A sangre como la cabecera, con el contenido alineado con la columna. El cristal de
+ * fuera de la columna es `border-image` desbordado: se pinta, pero no crea scroll. */
 
 .bar {
   position: sticky;
   bottom: 0;
-  z-index: 5;
+  z-index: var(--z-bar);
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3) var(--space-4);
   flex-wrap: wrap;
-  margin: 0 calc(-1 * var(--page-pad));
-  padding: var(--space-4) var(--page-pad);
-  background: var(--glass-footer-bg);
+  padding: var(--space-3) 0;
+  border-image: linear-gradient(to bottom, var(--glass-border) 0 1px, var(--glass-footer-bg) 1px) 0 fill / 0 / 0 100vw;
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
-  border-top: 1px solid var(--glass-border);
 }
 
 .barText {
   font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 1023px) {
   .grid {
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: 264px minmax(0, 1fr);
+  }
+
+  .indexHead {
+    padding-inline: var(--space-3);
+  }
+
+  .indexRow {
+    padding-inline: var(--space-3);
   }
 
   .editorPane {
@@ -408,7 +398,11 @@
 
   .barText {
     flex-basis: 100%;
-    font-size: 13px;
+    font-size: var(--fs-label);
+  }
+
+  .bar > button {
+    flex: 1 1 auto;
   }
 }
 

@@ -41,7 +41,7 @@ function positiveInt(env: Readonly<Record<string, string | undefined>>, name: st
   if (raw === undefined || raw === '') return fallback;
   const value = Number(raw);
   if (!Number.isInteger(value) || value < 1 || value > max) {
-    throw new AnkiError('ANKI_CONFIG', `${name} debe ser un entero entre 1 y ${String(max)}.`);
+    throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.configInt(name, max));
   }
   return value;
 }
@@ -63,7 +63,7 @@ const textSchema = (max: number) => z.string().min(1).max(max)
 function configText(name: string, value: unknown, max: number): string {
   const parsed = textSchema(max).safeParse(value);
   if (!parsed.success) {
-    throw new AnkiError('ANKI_CONFIG', `${name} debe ser una cadena no vacía de hasta ${String(max)} caracteres, sin caracteres de control.`);
+    throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.configText(name, max));
   }
   return parsed.data;
 }
@@ -72,13 +72,13 @@ function connectUrl(raw: unknown): URL {
   const value = configText('ANKI_CONNECT_URL', raw, 2048);
   let url: URL;
   try { url = new URL(value); }
-  catch { throw new AnkiError('ANKI_CONFIG', 'ANKI_CONNECT_URL debe ser una URL HTTP o HTTPS válida de este equipo, con puerto entre 1 y 65535.'); }
+  catch { throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.configUrlInvalid); }
   const port = Number(url.port || (url.protocol === 'https:' ? 443 : 80));
   if (!['http:', 'https:'].includes(url.protocol)
     || !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
     || url.username !== '' || url.password !== '' || url.search !== '' || url.hash !== ''
     || port < 1 || port > 65535 || url.href.length > 2048) {
-    throw new AnkiError('ANKI_CONFIG', 'ANKI_CONNECT_URL debe apuntar a AnkiConnect en este equipo, con puerto entre 1 y 65535 y sin credenciales, consulta ni fragmento.');
+    throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.configUrlLocal);
   }
   return url;
 }
@@ -100,11 +100,11 @@ export function ankiConfig(env: Readonly<Record<string, string | undefined>> = p
   const url = connectUrl(fakeUrl ?? recordingUrl ?? env['ANKI_CONNECT_URL'] ?? `http://127.0.0.1:${ANKI_CONNECT_PORT}`);
   // Un doble en el puerto real dejaría de ser un doble.
   if (fakeUrl !== undefined && (url.port === ANKI_CONNECT_PORT || url.port === '')) {
-    throw new AnkiError('ANKI_CONFIG', `El doble de AnkiConnect no puede escuchar en el puerto ${ANKI_CONNECT_PORT}.`);
+    throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.fakePort(ANKI_CONNECT_PORT));
   }
   const rollover = env['ANKI_ROLLOVER_HOUR']?.trim();
   if (rollover !== undefined && rollover !== '' && !isRolloverHour(Number(rollover))) {
-    throw new AnkiError('ANKI_CONFIG', 'ANKI_ROLLOVER_HOUR debe ser una hora entera entre 0 y 23.');
+    throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.rolloverHour);
   }
   const sourceDeck = configText('ANKI_SOURCE_DECK', env['ANKI_SOURCE_DECK'] ?? 'English B2 to C1 Practice', 256).trim();
   const targetDeck = configText('ANKI_TARGET_DECK', env['ANKI_TARGET_DECK'] ?? `${sourceDeck}::Error Log`, 256).trim();

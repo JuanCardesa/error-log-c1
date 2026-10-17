@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { Category, Cause, Confidence } from '../domain/enums';
+import { DEFAULT_LOCALE, getMessages } from '../i18n';
 import { parseImportedBatch } from '../import/errors';
 import { analyzeNotebookMarkdown } from '../notebook/markdown';
 import { addDays, parseIsoDate, toIsoDate, toUtcIsoDate } from '../time/dates';
@@ -96,7 +97,7 @@ function seedRecording(db: Db, today: Date) {
       source: 'ACADEMIA', sourceRef: `A greener campus · ${rewrite ? 'rewrite' : 'first draft'}`,
       timed: false, status: 'CLOSED' }).returning().get();
     const piece = db.insert(writingPiece).values({ sessionId: saved.id, date, genre: 'ESSAY',
-      wordCount: rewrite ? 248 : 241, minutes: rewrite ? 36 : 43, corrector: 'YO', rewriteOf: originalId }).returning().get();
+      wordCount: rewrite ? 248 : 241, minutes: rewrite ? 36 : 43, corrector: 'YO', status: 'CORRECTED', rewriteOf: originalId }).returning().get();
     originalId = piece.id;
     const writing: readonly Example[] = [
       ['Extract: The proposal depends of student support.', 'depends of', 'depends on', 'Depend se construye con on, también en un ensayo formal.'],
@@ -141,7 +142,7 @@ export function prepareRecording(directory: string, today: Date) {
     ids = db.$client.transaction(() => seedRecording(db, today)).immediate();
   } finally { db.$client.close(); }
   const payload = recordingImport(today);
-  parseImportedBatch(JSON.stringify(payload), toIsoDate(today));
+  parseImportedBatch(JSON.stringify(payload), getMessages(DEFAULT_LOCALE), toIsoDate(today));
   const importFile = join(directory, 'import.json');
   writeFileSync(importFile, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   const state = { file, importFile, date: toIsoDate(today), ...ids };

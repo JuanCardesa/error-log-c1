@@ -7,8 +7,10 @@ import {
   CircleAlert,
   ClipboardPaste,
   Download,
+  Languages,
   List,
   type LucideIcon,
+  PenLine,
   Plus,
   RefreshCw,
   Search,
@@ -16,9 +18,12 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
+import { LOCALES } from '@/lib/i18n';
 import { notebookNoteHref } from '@/lib/notebook/urls';
+import { useT } from './i18nClient';
 import { type PaletteResults, searchPaletteAction } from './searchActions';
 import { useShortcutLabels } from './shortcuts';
+import { useLocaleSwitch } from './useLocaleSwitch';
 import styles from './palette.module.css';
 
 /**
@@ -31,13 +36,14 @@ import styles from './palette.module.css';
 
 interface Item {
   readonly key: string;
-  readonly group: 'Errores' | 'Sesiones' | 'Notebook' | 'Acciones';
+  readonly group: 'errors' | 'sessions' | 'notebook' | 'actions';
   readonly icon: LucideIcon;
   readonly label: string;
   readonly mine?: string | null;
   readonly sub?: string;
   readonly kbd?: string;
-  readonly href: string;
+  /** Una ruta a la que ir, o una acción que se queda en la página (cambiar de idioma). */
+  readonly href: string | (() => void);
 }
 
 const EMPTY: PaletteResults = { errors: [], sessions: [], notes: [] };
@@ -48,6 +54,9 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
   const input = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const keys = useShortcutLabels();
+  const t = useT();
+  const language = useLocaleSwitch();
+  const otherLocale = LOCALES.find((locale) => locale !== language.shown) ?? language.shown;
   const listId = useId();
   const [query, setQuery] = useState('');
   const [resultState, setResultState] = useState<{ query: string; results: PaletteResults }>({ query: '', results: EMPTY });
@@ -84,7 +93,7 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
     const found: Item[] = q === '' ? [] : [
       ...results.errors.map((error): Item => ({
         key: `e${String(error.id)}`,
-        group: 'Errores',
+        group: 'errors',
         icon: CircleAlert,
         label: error.correct,
         mine: error.mine,
@@ -93,7 +102,7 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
       })),
       ...results.sessions.map((session): Item => ({
         key: `s${String(session.id)}`,
-        group: 'Sesiones',
+        group: 'sessions',
         icon: Calendar,
         label: session.title,
         sub: session.sub,
@@ -101,7 +110,7 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
       })),
       ...results.notes.map((note): Item => ({
         key: `n${String(note.id)}`,
-        group: 'Notebook',
+        group: 'notebook',
         icon: BookOpen,
         label: note.title,
         sub: note.sub,
@@ -109,17 +118,22 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
       })),
     ];
     const actions: Item[] = [
-      { key: 'new', group: 'Acciones', icon: Plus, label: 'Nueva sesión', kbd: 'N', href: '/registrar?nueva=1' },
-      { key: 'paste', group: 'Acciones', icon: ClipboardPaste, label: 'Pegar tanda', kbd: keys.paste, href: '/registrar#pegar' },
-      { key: 'gs', group: 'Acciones', icon: Calendar, label: 'Ir a Sesiones', kbd: 'G S', href: '/registrar' },
-      { key: 'ge', group: 'Acciones', icon: List, label: 'Ir a Errores', kbd: 'G E', href: '/errores' },
-      { key: 'gp', group: 'Acciones', icon: ChartColumn, label: 'Ir a Progreso', kbd: 'G P', href: '/informe' },
-      { key: 'ga', group: 'Acciones', icon: RefreshCw, label: 'Ir a Anki', kbd: 'G A', href: '/anki' },
-      { key: 'gn', group: 'Acciones', icon: BookOpen, label: 'Ir a Notebook', href: '/notebook' },
-      { key: 'export', group: 'Acciones', icon: Download, label: 'Exportar datos', href: '/exportar' },
+      { key: 'new', group: 'actions', icon: Plus, label: t.palette.newSession, kbd: 'N', href: '/registrar?nueva=1' },
+      { key: 'paste', group: 'actions', icon: ClipboardPaste, label: t.palette.pasteBatch, kbd: keys.paste, href: '/registrar#pegar' },
+      { key: 'gs', group: 'actions', icon: Calendar, label: t.palette.goTo(t.nav.sessions), kbd: 'G S', href: '/registrar' },
+      { key: 'ge', group: 'actions', icon: List, label: t.palette.goTo(t.nav.errors), kbd: 'G E', href: '/errores' },
+      { key: 'gp', group: 'actions', icon: ChartColumn, label: t.palette.goTo(t.nav.progress), kbd: 'G P', href: '/informe' },
+      { key: 'ga', group: 'actions', icon: RefreshCw, label: t.palette.goTo(t.nav.anki), kbd: 'G A', href: '/anki' },
+      { key: 'gn', group: 'actions', icon: BookOpen, label: t.palette.goTo(t.nav.notebook), kbd: 'G N', href: '/notebook' },
+      { key: 'gw', group: 'actions', icon: PenLine, label: t.palette.goTo(t.nav.writing), kbd: 'G W', href: '/writing' },
+      { key: 'export', group: 'actions', icon: Download, label: t.nav.exportData, href: '/exportar' },
+      {
+        key: 'language', group: 'actions', icon: Languages, label: t.palette.switchLanguage(t.settings.languages[otherLocale]),
+        href: () => { language.choose(otherLocale); },
+      },
     ];
     return [...found, ...actions.filter((action) => q === '' || action.label.toLowerCase().includes(q))];
-  }, [query, results, keys.paste]);
+  }, [query, results, keys.paste, t, language, otherLocale]);
 
   const current = Math.min(active, Math.max(0, items.length - 1));
 
@@ -134,14 +148,15 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
   const run = (item: Item | undefined) => {
     if (item === undefined) return;
     close();
-    router.push(item.href);
+    if (typeof item.href === 'string') router.push(item.href);
+    else item.href();
   };
 
   return (
     <dialog
       ref={ref}
       className={styles.palette}
-      aria-label="Buscar"
+      aria-label={t.palette.label}
       onCancel={(event) => {
         event.preventDefault();
         close();
@@ -159,8 +174,8 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
               ref={input}
               className={styles.input}
               value={query}
-              placeholder="Busca errores, sesiones, apuntes o acciones"
-              aria-label="Buscar"
+              placeholder={t.palette.placeholder}
+              aria-label={t.palette.label}
               maxLength={200}
               role="combobox"
               aria-expanded="true"
@@ -189,13 +204,13 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
             <kbd>esc</kbd>
           </div>
 
-          <div id={listId} role="listbox" aria-label="Resultados" className={styles.list}>
+          <div id={listId} role="listbox" aria-label={t.palette.results} className={styles.list}>
             {items.map((item, index) => {
               const Icon = item.icon;
               const head = index === 0 || items[index - 1]?.group !== item.group;
               return (
                 <div key={item.key} role="presentation">
-                  {head && <div className={styles.group} role="presentation">{item.group}</div>}
+                  {head && <div className={styles.group} role="presentation">{t.palette.groups[item.group]}</div>}
                   <div
                     id={`${listId}-${item.key}`}
                     role="option"
@@ -222,14 +237,14 @@ export function CommandPalette({ open, onClose }: { readonly open: boolean; read
                 </div>
               );
             })}
-            {items.length === 0 && <p className={styles.empty}>Sin resultados para «{query}».</p>}
+            {items.length === 0 && <p className={styles.empty}>{t.palette.noResults(query)}</p>}
           </div>
 
-          <div className={styles.foot} aria-hidden="true">
-            <span>↑↓ navegar</span>
-            <span>↵ abrir</span>
-            <span>esc cerrar</span>
-            <span className={styles.footHint}>Busca en errores, sesiones y apuntes</span>
+          <div className={`${styles.foot} keyboard-hint`} aria-hidden="true">
+            <span>{t.palette.navigate}</span>
+            <span>{t.palette.open}</span>
+            <span>{t.palette.close}</span>
+            <span className={styles.footHint}>{t.palette.hint}</span>
           </div>
         </div>
       )}

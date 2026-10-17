@@ -11,23 +11,35 @@ import {
   SESSION_KINDS,
   SESSION_STATUSES,
   SOURCES,
+  WRITING_STATUSES,
 } from '../domain/enums';
+import type { Messages } from '../i18n';
 import { isIsoDate } from '../time/dates';
 import { withSessionFormat } from '../domain/session';
+import { BAND_STEP } from '../writing/limits';
 
 /**
  * Validacion de entrada. Los mismos invariantes viven tambien como CHECK en la base
  * (SPEC §2): aqui atrapan al usuario con un mensaje util, alli protegen el dato de
  * cualquier escritura que no pase por este camino.
+ *
+ * Los mensajes salen del diccionario `t`, en el idioma de quien rellena el formulario.
+ * Los de Zod que no se redactan aquí llegan traducidos si se valida con `formErrors(t)`.
  */
 
 export const RULE_NOTE_MIN_LENGTH = 15;
 
-const isoDate = z
+const isoDate = (t: Messages) => z
   .string()
-  .refine(isIsoDate, { message: 'Fecha invalida, se espera YYYY-MM-DD' });
+  .refine(isIsoDate, { message: t.validation.invalidDate });
 
-const band = z.number().int().min(0).max(5).nullable();
+/** De 0 a 5 en medios puntos: la profesora puede poner un 2,5. */
+const band = (t: Messages) => z
+  .number()
+  .min(0)
+  .max(5)
+  .multipleOf(BAND_STEP, { message: t.validation.halfPoints })
+  .nullable();
 
 const optionalText = z
   .string()
@@ -38,12 +50,15 @@ const optionalText = z
 export interface SessionSchemaOptions {
   /** Hoy, en `YYYY-MM-DD`. Se inyecta: aqui dentro no se lee el reloj. */
   readonly today: string;
+  /** Diccionario de la interfaz: los mensajes se escriben en su idioma. */
+  readonly t: Messages;
 }
 
 export function sessionInputSchema(options: SessionSchemaOptions) {
+  const { t } = options;
   return z
     .object({
-      date: isoDate,
+      date: isoDate(t),
       kind: z.enum(SESSION_KINDS),
       paper: z.enum(PAPERS).nullable(),
       part: z.number().int().positive().nullable(),
@@ -60,7 +75,7 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
         ctx.addIssue({
           code: 'custom',
           path: ['date'],
-          message: 'La fecha no puede ser futura',
+          message: t.validation.futureDate,
         });
       }
 
@@ -68,7 +83,7 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
         ctx.addIssue({
           code: 'custom',
           path: ['part'],
-          message: 'Una sesión sin formato de examen no tiene part',
+          message: t.validation.partWithoutPaper,
         });
       } else if (value.paper !== null) {
         const maxPart = MAX_PART[value.paper];
@@ -76,7 +91,7 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
           ctx.addIssue({
             code: 'custom',
             path: ['part'],
-            message: `${value.paper} requiere una part entre 1 y ${String(maxPart)}`,
+            message: t.validation.partRange(value.paper, maxPart),
           });
         }
       }
@@ -86,7 +101,7 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
         ctx.addIssue({
           code: 'custom',
           path: ['paper'],
-          message: 'Una sesión de tipo Writing tiene que ser del paper Writing',
+          message: t.validation.writingKindNeedsPaper,
         });
       }
 
@@ -96,14 +111,14 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
           ctx.addIssue({
             code: 'custom',
             path: ['itemsTotal'],
-            message: 'Solo el paper Writing puede quedarse sin ítems',
+            message: t.validation.itemsRequired,
           });
         }
         if (value.itemsCorrect === null) {
           ctx.addIssue({
             code: 'custom',
             path: ['itemsCorrect'],
-            message: 'Solo el paper Writing puede quedarse sin ítems',
+            message: t.validation.itemsRequired,
           });
         }
       }
@@ -116,19 +131,19 @@ export function sessionInputSchema(options: SessionSchemaOptions) {
         ctx.addIssue({
           code: 'custom',
           path: ['itemsCorrect'],
-          message: 'No puedes acertar más ítems de los que intentaste',
+          message: t.validation.correctOverTotal,
         });
       }
     })
     .transform((value) => withSessionFormat(value));
 }
 
-const errorFields = z.object({
+const errorFields = (t: Messages) => z.object({
   sessionId: z.number().int().positive(),
   itemRef: optionalText.default(null),
-  prompt: z.string().trim().min(1, 'El enunciado es obligatorio'),
+  prompt: z.string().trim().min(1, t.validation.promptRequired),
   myAnswer: optionalText.default(null),
-  correctAnswer: z.string().trim().min(1, 'La respuesta correcta es obligatoria'),
+  correctAnswer: z.string().trim().min(1, t.validation.correctAnswerRequired),
   cause: z.enum(CAUSES),
   category: z.enum(CATEGORIES),
   subcategory: optionalText.default(null),
@@ -137,23 +152,22 @@ const errorFields = z.object({
   ruleNote: z
     .string()
     .trim()
-    .min(
-      RULE_NOTE_MIN_LENGTH,
-      `La regla necesita al menos ${String(RULE_NOTE_MIN_LENGTH)} caracteres`,
-    ),
+    .min(RULE_NOTE_MIN_LENGTH, t.validation.ruleMinLength(RULE_NOTE_MIN_LENGTH)),
 });
 
 /** El campo que hace el trabajo es la regla, no la solucion copiada. */
-function ruleIsNotTheAnswer(
-  value: { readonly ruleNote: string; readonly correctAnswer: string },
-  ctx: z.RefinementCtx,
-): void {
-  if (value.ruleNote.trim().toLowerCase() !== value.correctAnswer.trim().toLowerCase()) return;
-  ctx.addIssue({
-    code: 'custom',
-    path: ['ruleNote'],
-    message: 'La regla no puede ser la respuesta correcta: escribela con tus palabras',
-  });
+function ruleIsNotTheAnswer(t: Messages) {
+  return (
+    value: { readonly ruleNote: string; readonly correctAnswer: string },
+    ctx: z.RefinementCtx,
+  ): void => {
+    if (value.ruleNote.trim().toLowerCase() !== value.correctAnswer.trim().toLowerCase()) return;
+    ctx.addIssue({
+      code: 'custom',
+      path: ['ruleNote'],
+      message: t.validation.ruleIsAnswer,
+    });
+  };
 }
 
 /**
@@ -168,33 +182,44 @@ function ruleIsNotTheAnswer(
  * and Mutations»: manda una referencia y el cambio, y relee lo demas de una fuente de
  * confianza), de modo que un campo ausente tampoco puede significar «borralo».
  */
-export function errorInputSchema() {
-  return errorFields.superRefine(ruleIsNotTheAnswer);
+export function errorInputSchema(t: Messages) {
+  return errorFields(t).superRefine(ruleIsNotTheAnswer(t));
 }
 
 export function writingPieceInputSchema(options: SessionSchemaOptions) {
+  const { t } = options;
   return z
     .object({
       sessionId: z.number().int().positive(),
-      date: isoDate,
+      date: isoDate(t),
       genre: z.enum(GENRES),
+      status: z.enum(WRITING_STATUSES).default('AWAITING'),
+      correctedOn: isoDate(t).nullable().default(null),
+      teacherComment: z.string().trim().max(5000).transform((value) => value === '' ? null : value).nullable().default(null),
+      personalNotes: z.string().trim().max(5000).transform((value) => value === '' ? null : value).nullable().default(null),
       wordCount: z.number().int().min(0).nullable().default(null),
       minutes: z.number().int().min(0).nullable().default(null),
       timed: z.boolean().default(false),
       rewriteOf: z.number().int().positive().nullable().default(null),
       corrector: z.enum(CORRECTORS).nullable().default(null),
-      bandContent: band.default(null),
-      bandCommunicative: band.default(null),
-      bandOrganisation: band.default(null),
-      bandLanguage: band.default(null),
+      bandContent: band(t).default(null),
+      bandCommunicative: band(t).default(null),
+      bandOrganisation: band(t).default(null),
+      bandLanguage: band(t).default(null),
     })
     .superRefine((value, ctx) => {
       if (value.date > options.today) {
         ctx.addIssue({
           code: 'custom',
           path: ['date'],
-          message: 'La fecha no puede ser futura',
+          message: t.validation.futureDate,
         });
+      }
+      if (value.correctedOn !== null && value.correctedOn > options.today) {
+        ctx.addIssue({ code: 'custom', path: ['correctedOn'], message: t.validation.futureDate });
+      }
+      if (value.correctedOn !== null && value.correctedOn < value.date) {
+        ctx.addIssue({ code: 'custom', path: ['correctedOn'], message: t.writingImport.correctedBeforeWritten });
       }
     });
 }

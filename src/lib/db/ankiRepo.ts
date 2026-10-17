@@ -16,11 +16,12 @@ export function getAnkiSync(db: AnkiDb): AnkiSyncRow | null {
 
 export function assertAnkiScope(state: AnkiSyncRow | null, config: AnkiConfig, profile: string): void {
   if (config.requiredProfile !== undefined && profile !== config.requiredProfile) {
-    throw new AnkiError('ANKI_CONFIG', `La grabación solo usa el perfil de Anki «${config.requiredProfile}» y está abierto «${profile}». Abre ese perfil: así no se toca ninguna otra colección.`);
+    const required = config.requiredProfile;
+    throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.recordingProfile(required, profile));
   }
   if (state !== null && (state.profile !== profile || state.url !== config.url
     || state.sourceDeck !== config.sourceDeck || state.targetDeck !== config.targetDeck)) {
-    throw new AnkiError('ANKI_CONFIG', `Esta base está vinculada al perfil ${state.profile} y al mazo ${state.sourceDeck}. Abre ese perfil y conserva su configuración para no mezclar colecciones. Para otra colección usa una base nueva con DB_FILE_OVERRIDE.`);
+    throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.boundProfile(state.profile, state.sourceDeck));
   }
 }
 
@@ -51,10 +52,7 @@ function assertLinkedIdentities(db: AnkiDb, namespace: string, plan: ReturnType<
     if (noteId === null) continue;
     if (missing.has(noteId) && !plan.noteIdentities.has(noteId)) continue;
     if (plan.noteIdentities.get(noteId) !== errorLogIdentity(namespace, errorId)) {
-      throw new AnkiError('ANKI_CONFIG',
-        `La nota ${String(noteId)} no contiene el ErrorLogId esperado para el error ${String(errorId)}. `
-        + 'La colección puede haber cambiado. No se ha guardado nada. Abre la colección original; '
-        + 'para otra colección usa una base nueva con DB_FILE_OVERRIDE.');
+      throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.noteWithoutId(noteId, errorId));
     }
   }
 }
@@ -77,11 +75,8 @@ function assertNotWholesaleUnlink(db: AnkiDb, missingNoteIds: readonly number[])
   const linked = new Set(linkedAnkiNotes(db));
   if (linked.size < MIN_LINKED_TO_GUARD) return;
   if (missingNoteIds.filter((noteId) => linked.has(noteId)).length !== linked.size) return;
-  throw new AnkiError('ANKI_CONFIG',
-    `Anki no reconoce ninguna de las ${String(linked.size)} notas vinculadas a esta base. `
-    + 'Suele significar que el perfil abierto tiene otra colección, restaurada o recreada. '
-    + 'No se ha cambiado nada. Si de verdad has borrado todas esas tarjetas, usa «Deshacer» '
-    + 'en la cola de conversion y vuelve a sincronizar.');
+  const count = linked.size;
+  throw new AnkiError('ANKI_CONFIG', (t) => t.ankiErrors.noLinkedNotes(count));
 }
 
 export function linkAnkiNote(db: Db, errorId: number, note: AnkiNoteRow, at: string, contentHash: string): void {

@@ -7,12 +7,12 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  z-index: 6;
+  z-index: var(--z-float);
   min-width: max(100%, 260px);
   max-height: 248px;
   padding: var(--space-1);
   overflow: auto;
-  border: 1px solid rgba(124, 132, 122, 0.3);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-overlay);
   background: var(--glass-list-bg);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -31,9 +31,9 @@
   justify-content: space-between;
   gap: var(--space-3);
   min-height: 34px;
-  padding: 6px 10px;
+  padding: var(--space-1-5) var(--space-2-5);
   border-radius: var(--radius-control);
-  font-size: 14px;
+  font-size: var(--fs-body);
   font-weight: 400;
   white-space: nowrap;
   cursor: pointer;

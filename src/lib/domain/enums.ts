@@ -59,6 +59,62 @@ export type Genre = (typeof GENRES)[number];
 export const CORRECTORS = ['PROFESOR', 'YO', 'IA'] as const;
 export type Corrector = (typeof CORRECTORS)[number];
 
+/** Pendiente de corrección, corregido, o práctica que nadie va a corregir. */
+export const WRITING_STATUSES = ['AWAITING', 'CORRECTED', 'NOT_SUBMITTED'] as const;
+export type WritingStatus = (typeof WRITING_STATUSES)[number];
+
+/** De dónde sale la fecha de un texto cuando no se sabe cuándo se escribió. */
+export const WRITING_DATE_BASES = ['WRITTEN', 'CORRECTED', 'IMPORTED'] as const;
+export type WritingDateBasis = (typeof WRITING_DATE_BASES)[number];
+
+/** Los cuatro criterios con los que Cambridge puntúa cada texto, de 0 a 5. */
+export const WRITING_CRITERIA = ['CONTENT', 'COMMUNICATIVE', 'ORGANISATION', 'LANGUAGE'] as const;
+export type WritingCriterion = (typeof WRITING_CRITERIA)[number];
+
+export const ANNOTATION_KINDS = ['ERROR', 'IMPROVEMENT', 'STRENGTH', 'COMMENT'] as const;
+export type AnnotationKind = (typeof ANNOTATION_KINDS)[number];
+
+/** Un fragmento del texto, un párrafo entero o el texto completo. */
+export const ANNOTATION_SCOPES = ['SPAN', 'PARAGRAPH', 'DOCUMENT'] as const;
+export type AnnotationScope = (typeof ANNOTATION_SCOPES)[number];
+
+/**
+ * Sobre qué trata una anotación de Writing. No son las categorías de error (§3): esas
+ * describen fallos de Use of English, y aquí también se señalan aciertos, contenido y
+ * claridad. La equivalencia con aquellas solo hará falta si una anotación pasa al registro.
+ */
+export const ANNOTATION_FOCUSES = [
+  'GRAMMAR',
+  'SPELLING',
+  'PUNCTUATION',
+  'WORD_ORDER',
+  'VOCABULARY',
+  'COLLOCATION',
+  'REGISTER',
+  'CLARITY',
+  'LINKING',
+  'ORGANISATION',
+  'CONTENT',
+  'OTHER',
+] as const;
+export type AnnotationFocus = (typeof ANNOTATION_FOCUSES)[number];
+
+/** Criterio al que pertenece cada foco. `OTHER` no cuenta para ninguno. */
+export const FOCUS_CRITERION: Readonly<Record<AnnotationFocus, WritingCriterion | null>> = {
+  GRAMMAR: 'LANGUAGE',
+  SPELLING: 'LANGUAGE',
+  PUNCTUATION: 'LANGUAGE',
+  WORD_ORDER: 'LANGUAGE',
+  VOCABULARY: 'LANGUAGE',
+  COLLOCATION: 'LANGUAGE',
+  REGISTER: 'COMMUNICATIVE',
+  CLARITY: 'COMMUNICATIVE',
+  LINKING: 'ORGANISATION',
+  ORGANISATION: 'ORGANISATION',
+  CONTENT: 'CONTENT',
+  OTHER: null,
+};
+
 /** Numero maximo de `part` por paper (SPEC §2). */
 export const MAX_PART: Readonly<Record<Paper, number>> = {
   RUOE: 8,
@@ -73,51 +129,20 @@ export const MAX_PART: Readonly<Record<Paper, number>> = {
  */
 export type CauseSide = 'study' | 'exec';
 
+/** Qué significa y qué remedio tiene cada causa se lee en el diccionario de la interfaz. */
 export interface CauseMeta {
   readonly side: CauseSide;
   /** Si genera deuda de Anki (`DEBT`). SPEC §3. */
   readonly generatesCard: boolean;
-  readonly meaning: string;
-  readonly remedy: string;
 }
 
 export const CAUSE_META: Readonly<Record<Cause, CauseMeta>> = {
-  DESCONOCIMIENTO: {
-    side: 'study',
-    generatesCard: true,
-    meaning: 'No lo sabía, no podía saberlo',
-    remedy: 'Tarjeta Anki y nada más',
-  },
-  CONFUSION: {
-    side: 'study',
-    generatesCard: true,
-    meaning: 'Lo sabía, elegí mal entre dos',
-    remedy: 'Tarjeta de contraste con el par confundido',
-  },
-  DESPISTE: {
-    side: 'exec',
-    generatesCard: false,
-    meaning: 'Lo sabía. No leí / no releí / no comprobé',
-    remedy: 'No se estudia. Cambia el protocolo de revisión',
-  },
-  FORMATO: {
-    side: 'exec',
-    generatesCard: false,
-    meaning: 'Rompí una norma de la tarea',
-    remedy: 'Releer instrucciones del paper, checklist',
-  },
-  TIEMPO: {
-    side: 'exec',
-    generatesCard: false,
-    meaning: 'Se acabó el tiempo o fui con prisa',
-    remedy: 'Gestión del tiempo, no contenido',
-  },
-  ORTOGRAFIA: {
-    side: 'study',
-    generatesCard: true,
-    meaning: 'Sabía la palabra, la escribí mal',
-    remedy: 'Tarjeta de spelling. Crítico en Listening P2',
-  },
+  DESCONOCIMIENTO: { side: 'study', generatesCard: true },
+  CONFUSION: { side: 'study', generatesCard: true },
+  DESPISTE: { side: 'exec', generatesCard: false },
+  FORMATO: { side: 'exec', generatesCard: false },
+  TIEMPO: { side: 'exec', generatesCard: false },
+  ORTOGRAFIA: { side: 'study', generatesCard: true },
 };
 
 export function generatesCard(cause: Cause): boolean {

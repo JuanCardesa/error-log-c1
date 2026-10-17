@@ -7,7 +7,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import {
   ankiCard, ankiNote, ankiReview, ankiSync, errorRow,
   notebookAnnotation, notebookErrorLink, notebookFolder, notebookNote,
-  session, sessionImportReceipt, writingPiece,
+  session, sessionImportReceipt, writingAnnotation, writingImportReceipt, writingPiece, writingTextHistory,
 } from './schema';
 
 function requireNewDestination(file: string): void {
@@ -46,6 +46,9 @@ function checkDatabase(sqlite: Database.Database, requireCurrentSchema: boolean)
   db.select().from(sessionImportReceipt).limit(0).all();
   db.select().from(errorRow).limit(0).all();
   db.select().from(writingPiece).limit(0).all();
+  db.select().from(writingAnnotation).limit(0).all();
+  db.select().from(writingImportReceipt).limit(0).all();
+  db.select().from(writingTextHistory).limit(0).all();
   db.select().from(ankiNote).limit(0).all();
   db.select().from(ankiCard).limit(0).all();
   db.select().from(ankiReview).limit(0).all();

@@ -1,9 +1,14 @@
-/* Campos de sesión en grupos: etiqueta de grupo a la izquierda y campos a la derecha. */
+/*
+ * Campos de sesión en grupos: etiqueta de grupo a la izquierda y campos a la derecha.
+ * En un contenedor estrecho (el drawer), la etiqueta sube: con ella al lado, «Reading &
+ * Use of English» y «Examen pasado» no cabían en sus selects.
+ */
 
 .groups {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  container-type: inline-size;
 }
 
 .group {
@@ -13,21 +18,22 @@
 }
 
 .groupLabel {
-  padding-top: 28px;
-  font: 600 13px/18px var(--font-sans);
+  padding-top: var(--space-6);
+  font: var(--text-label);
+  font-weight: 600;
   color: var(--color-ink-2);
 }
 
 .groupNote {
-  padding-top: 28px;
-  font-size: 14px;
+  padding-top: var(--space-6);
+  font-size: var(--fs-body);
   color: var(--color-ink-2);
 }
 
 .groupStack {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1-5);
 }
 
 .grid2 {
@@ -71,8 +77,24 @@
 }
 
 .editNote {
-  font-size: 14px;
+  font-size: var(--fs-body);
   color: var(--color-ink-2);
+}
+
+@container (max-width: 560px) {
+  .group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+
+  .groupLabel,
+  .groupNote {
+    padding-top: 0;
+  }
+
+  .gridOrigin {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 639px) {

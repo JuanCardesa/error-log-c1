@@ -4,21 +4,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition, type FormEvent } from 'react';
 
-import type { NotebookImportDraft, NotebookImportTitleSource } from '@/lib/notebook/import';
+import type { NotebookImportDraft } from '@/lib/notebook/import';
 import { analyzeNotebookMarkdown } from '@/lib/notebook/markdown';
 import { NOTEBOOK_IMPORT_ACCEPT, NOTEBOOK_LIMITS, notebookImportSizeError } from '@/lib/notebook/schemas';
 import type { NotebookFolder } from '@/lib/notebook/types';
+import { FileDrop } from '../_shared/FileDrop';
+import { useT } from '../_shared/i18nClient';
+import { PageHeader } from '../_shared/PageHeader';
 import ui from '../_shared/ui.module.css';
 import { importMarkdownAction, previewMarkdownImportAction } from './actions';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import editor from './editor.module.css';
 import styles from './import.module.css';
-
-const SOURCE_LABELS: Readonly<Record<NotebookImportTitleSource, string>> = {
-  frontmatter: 'Tomado del frontmatter.',
-  heading: 'Tomado del primer encabezado H1.',
-  file: 'Tomado del nombre del archivo.',
-};
 
 type Form = { title: string; tagsText: string; folderId: number | null };
 /** El UID se fija al analizar: reintentar la confirmación no crea un segundo apunte. */
@@ -32,6 +29,8 @@ export function NotebookImport({ folders, initialFolderId }: {
   readonly folders: readonly NotebookFolder[];
   readonly initialFolderId: number | null;
 }) {
+  const t = useT();
+  const n = t.notebook;
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -44,15 +43,14 @@ export function NotebookImport({ folders, initialFolderId }: {
   // Si se elige otro archivo mientras se analiza el anterior, gana el último.
   const requestRef = useRef(0);
 
-  const choose = (next: File | null) => {
+  const choose = (next: File) => {
     const request = ++requestRef.current;
     setFile(next);
     setPreview(null);
     setFileError(null);
     setError(null);
     setFieldErrors({});
-    if (next === null) return;
-    const sizeError = notebookImportSizeError(next.size);
+    const sizeError = notebookImportSizeError(next.size, t);
     if (sizeError !== null) { setFileError(sizeError); return; }
     const data = new FormData();
     data.set('file', next);
@@ -64,7 +62,7 @@ export function NotebookImport({ folders, initialFolderId }: {
         setPreview({ draft: result.data, uid: crypto.randomUUID() });
         setForm({ title: result.data.title, tagsText: result.data.tags.join(', '), folderId: initialFolderId });
       } catch {
-        if (request === requestRef.current) setFileError('No se pudo analizar el archivo. Vuelve a elegirlo.');
+        if (request === requestRef.current) setFileError(n.analyseFailed);
       }
     });
   };
@@ -93,7 +91,7 @@ export function NotebookImport({ folders, initialFolderId }: {
         }
         router.push(result.data.href);
       } catch {
-        setError('No se pudo confirmar la importación. Vuelve a pulsar «Crear apunte»: no se duplicará.');
+        setError(n.importUncertain);
       }
     });
   };
@@ -111,88 +109,79 @@ export function NotebookImport({ folders, initialFolderId }: {
   const hideFirstH1 = firstHeading?.depth === 1 && firstHeading.text === form.title.trim();
   const notices = draft === undefined ? [] : [
     ...draft.warnings.map((warning) => warning.message),
-    ...(draft.unknownFields.length > 0
-      ? [`Campos del frontmatter que no se importan: ${draft.unknownFields.join(', ')}.`] : []),
-    ...(draft.ignoredFields.length > 0
-      ? [`${draft.ignoredFields.join(', ')} vienen de otra exportación y no se aplican: el apunte importado será nuevo, con fecha de hoy.`] : []),
+    ...(draft.unknownFields.length > 0 ? [n.unknownFields(draft.unknownFields.join(', '))] : []),
+    ...(draft.ignoredFields.length > 0 ? [n.ignoredFields(draft.ignoredFields.join(', '))] : []),
   ];
 
   return (
     <div className={editor.editor}>
-      <div className={editor.heading}>
-        <div>
-          <p className={editor.eyebrow}>Notebook</p>
-          <h1>Importar apunte</h1>
-        </div>
-        <Link href="/notebook" className={ui.backLink}>Volver a Notebook</Link>
-      </div>
+      <PageHeader back={{ href: '/notebook', label: t.nav.notebook }} title={n.importNote} />
 
       <div className={styles.chooser}>
-        <label className={ui.field}>Archivo Markdown
-          <span className={ui.optional}>
-            .md o .markdown · UTF-8 · contenido de hasta {NOTEBOOK_LIMITS.contentBytes / 1024} KiB
-          </span>
-          <input type="file" accept={NOTEBOOK_IMPORT_ACCEPT} disabled={saving}
-            aria-invalid={fileError !== null}
-            onChange={(event) => { choose(event.currentTarget.files?.[0] ?? null); }} />
-        </label>
-        <p className={ui.help}>
-          Se crea un apunte nuevo; ninguno existente se sustituye por título ni por identificador.
-          Los enlaces con errores de otra base no se importan.
-        </p>
-        {analyzing && <p role="status" className={ui.help}>Analizando el archivo…</p>}
+        <FileDrop
+          label={n.markdownFile}
+          hint={n.fileHint(NOTEBOOK_LIMITS.contentBytes / 1024)}
+          accept={NOTEBOOK_IMPORT_ACCEPT}
+          fileName={file?.name ?? null}
+          disabled={saving}
+          invalid={fileError !== null}
+          onFile={choose}
+        />
+        <p className={ui.help}>{n.importHelp}</p>
+        {analyzing && <p role="status" className={ui.help}>{n.analysing}</p>}
         {fileError !== null && <p role="alert" className={ui.fieldError}>{fileError}</p>}
       </div>
 
       {preview !== null && draft !== undefined && (
-        <form className={editor.editor} onSubmit={confirm} aria-label={`Importar ${draft.fileName}`}>
+        <form className={editor.editor} onSubmit={confirm} aria-label={n.importFile(draft.fileName)}>
           <div className={editor.metaFields}>
-            <label className={ui.field}>Título
+            <label className={ui.field}>{n.title}
               <input className={ui.input} value={form.title} maxLength={NOTEBOOK_LIMITS.title} required disabled={saving}
                 aria-invalid={fieldErrors['title'] !== undefined}
                 onChange={(event) => { setForm({ ...form, title: event.target.value }); }} />
-              <span className={ui.help}>{SOURCE_LABELS[draft.titleSource]}</span>
+              <span className={ui.help}>{n.titleSource[draft.titleSource]}</span>
               {fieldError('title')}
             </label>
-            <label className={ui.field}>Carpeta
+            <label className={ui.field}>{n.folder}
               <select className={ui.select} value={form.folderId ?? ''} disabled={saving}
                 onChange={(event) => { setForm({ ...form, folderId: event.target.value === '' ? null : Number(event.target.value) }); }}>
-                <option value="">Sin carpeta</option>
+                <option value="">{n.noFolder}</option>
                 {folders.map((folder) => <option key={folder.id} value={folder.id}>
                   {folder.parentId === null ? folder.name : `${folders.find((parent) => parent.id === folder.parentId)?.name ?? ''} / ${folder.name}`}
                 </option>)}
               </select>
               {fieldError('folderId')}
             </label>
-            <label className={ui.field}>Etiquetas <span className={ui.optional}>separadas por comas</span>
-              <input className={ui.input} value={form.tagsText} placeholder="gramática, part4" disabled={saving}
+            <label className={ui.field}>{n.tags}
+              <input className={ui.input} value={form.tagsText} placeholder={n.tagsPlaceholder} disabled={saving}
                 aria-invalid={fieldError('tags') !== null}
                 onChange={(event) => { setForm({ ...form, tagsText: event.target.value }); }} />
+              <span className={ui.help}>{n.commaSeparated}</span>
               {fieldError('tags')}
             </label>
           </div>
 
           <section className={styles.notices} aria-labelledby="notebook-import-notices">
-            <h2 id="notebook-import-notices">Antes de importar</h2>
-            {notices.length === 0 ? <p className={ui.help}>Sin avisos: el archivo se importa tal cual.</p> : (
+            <h2 id="notebook-import-notices">{n.beforeImport}</h2>
+            {notices.length === 0 ? <p className={ui.help}>{n.noNotices}</p> : (
               <ul>{notices.map((notice) => <li key={notice}>{notice}</li>)}</ul>
             )}
           </section>
 
-          <section aria-label="Vista previa del apunte">
+          <section aria-label={n.notePreview}>
             <article className={editor.preview}>
-              <h1 id={hideFirstH1 ? firstHeading.slug : undefined} className={editor.previewTitle}>{form.title.trim() || 'Sin título'}</h1>
-              {draft.contentMarkdown === '' ? <p className={ui.help}>El archivo no tiene contenido.</p> : (
-                <MarkdownRenderer markdown={draft.contentMarkdown} hideFirstH1={hideFirstH1} />
+              <h2 id={hideFirstH1 ? firstHeading.slug : undefined} className={editor.previewTitle}>{form.title.trim() || n.untitled}</h2>
+              {draft.contentMarkdown === '' ? <p className={ui.help}>{n.fileEmpty}</p> : (
+                <MarkdownRenderer markdown={draft.contentMarkdown} hideFirstH1={hideFirstH1} t={t} />
               )}
             </article>
           </section>
 
           <div className={editor.actions}>
             <button type="submit" className={ui.primary} disabled={saving} aria-busy={saving}>
-              {saving ? 'Creando…' : 'Crear apunte'}
+              {saving ? n.creating : n.createNote}
             </button>
-            <Link href="/notebook" className={ui.secondary}>Cancelar</Link>
+            <Link href="/notebook" className={ui.secondary}>{t.common.cancel}</Link>
             {error !== null && <p role="alert" className={ui.fieldError}>{error}</p>}
           </div>
         </form>

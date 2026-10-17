@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   notebookFolderDirName, notebookFrontmatter, notebookNoteFileName, notebookNoteToMarkdown,
 } from './export';
+import { getMessages } from '../i18n';
 import { parseNotebookMarkdownImport } from './import';
 import type { NotebookNote } from './types';
 
@@ -19,6 +20,7 @@ function note(changes: Partial<NotebookNote> = {}): NotebookNote {
     revision: 3,
     createdAt: '2026-09-01T10:00:00.000Z',
     updatedAt: '2026-09-28T18:30:00.000Z',
+    favoritedAt: null,
     ...changes,
   };
 }
@@ -105,7 +107,7 @@ describe('frontmatter', () => {
 describe('ida y vuelta con el importador', () => {
   function reimport(value: NotebookNote) {
     const text = notebookNoteToMarkdown(value);
-    const result = parseNotebookMarkdownImport(notebookNoteFileName(value), new TextEncoder().encode(text));
+    const result = parseNotebookMarkdownImport(notebookNoteFileName(value), new TextEncoder().encode(text), getMessages('es'));
     if (!result.ok) throw new Error(result.message);
     return result.draft;
   }

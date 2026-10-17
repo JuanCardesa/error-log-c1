@@ -7,12 +7,15 @@ import { CATEGORIES, CAUSES, CONFIDENCES } from '@/lib/domain/enums';
 import { WINDOW_DAYS_OPTIONS } from '@/lib/domain/thresholds';
 import { toIsoDate, windowStart } from '@/lib/time/dates';
 import { ErrorExplorer, type ExplorerRow } from '../_shared/errors/ErrorExplorer';
-import { CATEGORY_LABELS, CAUSE_LABELS, CONFIDENCE_LABELS } from '../_shared/labels';
+import { EmptyState } from '../_shared/EmptyState';
+import { FilterBar } from '../_shared/FilterBar';
+import { FilterMenu } from '../_shared/FilterMenu';
+import { getT } from '../_shared/i18nServer';
 import { LiveSearch } from '../_shared/LiveSearch';
+import { PageHeader } from '../_shared/PageHeader';
 import { RouteTabs } from '../_shared/RouteTabs';
 import ui from '../_shared/ui.module.css';
 import type { SearchParams } from '../_shared/window';
-import { FiltersToggle } from './FiltersToggle';
 import styles from './errores.module.css';
 
 /**
@@ -25,17 +28,15 @@ export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 25;
 
-const ANKI_FILTERS: Readonly<Record<AnkiFilter, string>> = {
-  pendiente: 'Anki: pendiente',
-  convertida: 'Anki: convertida',
-  'no-aplica': 'Anki: no aplica',
-};
+/** El valor de `?anki=` y el estado que nombra. */
+const ANKI_FILTERS = { pendiente: 'PENDING', convertida: 'CONVERTED', 'no-aplica': 'NOT_APPLICABLE' } as const satisfies Record<AnkiFilter, string>;
 
 const one = (value: string | string[] | undefined): string => (typeof value === 'string' ? value : '');
 const pick = <T extends string>(list: readonly T[], value: string): T | undefined => list.find((item) => item === value);
 
 export default async function ErroresPage({ searchParams }: { readonly searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  const t = await getT();
   const q = one(params['q']).slice(0, 200);
   const category = pick(CATEGORIES, one(params['cat']));
   const cause = pick(CAUSES, one(params['causa']));
@@ -45,6 +46,8 @@ export default async function ErroresPage({ searchParams }: { readonly searchPar
   const withItemsOnly = one(params['items']) === '1';
   const requestedPage = Number(one(params['p']));
   const selectedId = Number(one(params['error']));
+  // Al pasar de página con las flechas del detalle: abrir el primero o el último.
+  const at = one(params['at']);
 
   const now = new Date();
   const db = getDb();
@@ -83,120 +86,119 @@ export default async function ErroresPage({ searchParams }: { readonly searchPar
     return text === '' ? '/errores' : `/errores?${text}`;
   };
 
-  const chips: { label: string; remove: string }[] = [
-    ...(category === undefined ? [] : [{ label: CATEGORY_LABELS[category], remove: href({ cat: undefined }) }]),
-    ...(cause === undefined ? [] : [{ label: CAUSE_LABELS[cause], remove: href({ causa: undefined }) }]),
-    ...(confidence === undefined ? [] : [{ label: `Confianza: ${CONFIDENCE_LABELS[confidence]}`, remove: href({ conf: undefined }) }]),
-    ...(anki === undefined ? [] : [{ label: ANKI_FILTERS[anki], remove: href({ anki: undefined }) }]),
-    ...(days === undefined ? [] : [{ label: `${String(days)} días`, remove: href({ w: undefined }) }]),
-    ...(withItemsOnly ? [{ label: 'Solo sesiones con ítems', remove: href({ items: undefined }) }] : []),
-  ];
-  const filtered = chips.length > 0 || q !== '';
+  const edgeRow = at === 'first' ? result.rows[0] : at === 'last' ? result.rows.at(-1) : undefined;
+  const initialSelectedId = edgeRow?.error.id ?? (Number.isInteger(selectedId) && selectedId > 0 ? selectedId : null);
+  const paging = {
+    offset: (page - 1) * PAGE_SIZE,
+    total: result.total,
+    prevHref: pages > 1 ? href({ p: String(page > 1 ? page - 1 : pages) }) : null,
+    nextHref: pages > 1 ? href({ p: String(page < pages ? page + 1 : 1) }) : null,
+  };
+
+  const filtered = q !== '' || category !== undefined || cause !== undefined || confidence !== undefined
+    || anki !== undefined || days !== undefined || withItemsOnly;
 
   return (
     <div className={styles.page}>
-      <div className={styles.head}>
-        <h1 className={ui.pageTitle}>Errores</h1>
-        <RouteTabs
-          label="Vistas de errores"
-          items={[
-            { href: '/errores', label: 'Todos', current: true },
-            { href: '/certezas', label: 'Falsas certezas', current: false },
-          ]}
-        />
-      </div>
+      <PageHeader
+        title={t.nav.errors}
+        tabs={(
+          <RouteTabs
+            label={t.errors.views}
+            items={[
+              { href: '/errores', label: t.errors.all, current: true },
+              { href: '/certezas', label: t.errors.falseCertainties, current: false },
+            ]}
+          />
+        )}
+      />
 
-      <div className={styles.toolbar}>
-        <LiveSearch placeholder="Buscar en respuestas, enunciados y reglas…" label="Buscar errores" className={styles.search} />
-        <FiltersToggle active={chips.length}>
-          <form action="/errores" className={styles.filtersForm}>
-            {q !== '' && <input type="hidden" name="q" value={q} />}
-            {withItemsOnly && <input type="hidden" name="items" value="1" />}
-            <div className={ui.field}>
-              <label htmlFor="filtro-1">Categoría</label>
-              <select id="filtro-1" name="cat" className={ui.select} defaultValue={category ?? ''}>
-                <option value="">Todas</option>
-                {CATEGORIES.map((value) => <option key={value} value={value}>{CATEGORY_LABELS[value]}</option>)}
-              </select>
-            </div>
-            <div className={ui.field}>
-              <label htmlFor="filtro-2">Causa</label>
-              <select id="filtro-2" name="causa" className={ui.select} defaultValue={cause ?? ''}>
-                <option value="">Todas</option>
-                {CAUSES.map((value) => <option key={value} value={value}>{CAUSE_LABELS[value]}</option>)}
-              </select>
-            </div>
-            <div className={ui.field}>
-              <label htmlFor="filtro-3">Confianza</label>
-              <select id="filtro-3" name="conf" className={ui.select} defaultValue={confidence ?? ''}>
-                <option value="">Todas</option>
-                {CONFIDENCES.map((value) => <option key={value} value={value}>{CONFIDENCE_LABELS[value]}</option>)}
-              </select>
-            </div>
-            <div className={ui.field}>
-              <label htmlFor="filtro-4">Anki</label>
-              <select id="filtro-4" name="anki" className={ui.select} defaultValue={anki ?? ''}>
-                <option value="">Cualquier estado</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="convertida">Convertida</option>
-                <option value="no-aplica">No aplica</option>
-              </select>
-            </div>
-            <div className={ui.field}>
-              <label htmlFor="filtro-5">Fecha de práctica</label>
-              <select id="filtro-5" name="w" className={ui.select} defaultValue={days === undefined ? '' : String(days)}>
-                <option value="">Todo el historial</option>
-                {WINDOW_DAYS_OPTIONS.map((value) => <option key={value} value={value}>Últimos {value} días</option>)}
-              </select>
-            </div>
-            <div className={styles.filtersActions}>
-              <button type="submit" className={ui.primary}>Aplicar filtros</button>
-              <Link href={q === '' ? '/errores' : `/errores?q=${encodeURIComponent(q)}`} className={ui.ghost}>Quitar filtros</Link>
-            </div>
-          </form>
-        </FiltersToggle>
-        {chips.map((chip) => (
-          <span key={chip.label} className={ui.chip}>
-            {chip.label}
-            <Link href={chip.remove} className={ui.chipX} aria-label={`Quitar filtro ${chip.label}`} scroll={false}>
+      <FilterBar
+        search={<LiveSearch placeholder={t.errors.searchPlaceholder} label={t.errors.searchLabel} className={ui.filterSearch} />}
+        aside={t.errors.results(result.total)}
+      >
+        <FilterMenu
+          label={t.errorForm.category}
+          text={category === undefined ? t.errorForm.category : t.common.filterValue(t.errorForm.category, t.labels.category[category])}
+          options={[undefined, ...CATEGORIES].map((value) => ({
+            key: value ?? 'all', href: href({ cat: value }), current: value === category,
+            label: value === undefined ? t.common.all : t.labels.category[value],
+          }))}
+          clear={category === undefined ? undefined : { href: href({ cat: undefined }), label: t.errors.removeFilter(t.labels.category[category]) }}
+        />
+        <FilterMenu
+          label={t.errorForm.cause}
+          text={cause === undefined ? t.errorForm.cause : t.common.filterValue(t.errorForm.cause, t.labels.cause[cause])}
+          options={[undefined, ...CAUSES].map((value) => ({
+            key: value ?? 'all', href: href({ causa: value }), current: value === cause,
+            label: value === undefined ? t.common.all : t.labels.cause[value],
+          }))}
+          clear={cause === undefined ? undefined : { href: href({ causa: undefined }), label: t.errors.removeFilter(t.labels.cause[cause]) }}
+        />
+        <FilterMenu
+          label={t.errorForm.confidence}
+          text={confidence === undefined ? t.errorForm.confidence : t.common.filterValue(t.errorForm.confidence, t.labels.confidence[confidence])}
+          options={[undefined, ...CONFIDENCES].map((value) => ({
+            key: value ?? 'all', href: href({ conf: value }), current: value === confidence,
+            label: value === undefined ? t.common.all : t.labels.confidence[value],
+          }))}
+          clear={confidence === undefined ? undefined : {
+            href: href({ conf: undefined }), label: t.errors.removeFilter(t.errors.confidenceChip(t.labels.confidence[confidence])),
+          }}
+        />
+        <FilterMenu
+          label="Anki"
+          text={anki === undefined ? 'Anki' : t.common.filterValue('Anki', t.labels.ankiState[ANKI_FILTERS[anki]])}
+          options={[undefined, ...(Object.keys(ANKI_FILTERS) as AnkiFilter[])].map((value) => ({
+            key: value ?? 'all', href: href({ anki: value }), current: value === anki,
+            label: value === undefined ? t.errors.anyStatus : t.labels.ankiState[ANKI_FILTERS[value]],
+          }))}
+          clear={anki === undefined ? undefined : {
+            href: href({ anki: undefined }), label: t.errors.removeFilter(t.errors.ankiChip(t.labels.ankiState[ANKI_FILTERS[anki]])),
+          }}
+        />
+        <FilterMenu
+          label={t.errors.practiceDate}
+          text={days === undefined ? t.errors.practiceDate : t.common.filterValue(t.errors.practiceDate, t.errors.lastDays(days))}
+          options={[undefined, ...WINDOW_DAYS_OPTIONS].map((value) => ({
+            key: value === undefined ? 'all' : String(value), href: href({ w: value === undefined ? undefined : String(value) }), current: value === days,
+            label: value === undefined ? t.errors.wholeHistory : t.errors.lastDays(value),
+          }))}
+          clear={days === undefined ? undefined : { href: href({ w: undefined }), label: t.errors.removeFilter(t.format.days(days)) }}
+        />
+        {withItemsOnly && (
+          <span className={ui.chip}>
+            {t.errors.withItemsOnly}
+            <Link href={href({ items: undefined })} className={ui.chipX} aria-label={t.errors.removeFilter(t.errors.withItemsOnly)} scroll={false}>
               <X size={14} aria-hidden="true" />
             </Link>
           </span>
-        ))}
-        <span className={ui.spacer} />
-        <span className={styles.count}>{result.total} {result.total === 1 ? 'resultado' : 'resultados'}</span>
-      </div>
+        )}
+      </FilterBar>
 
       <ErrorExplorer
-        key={`${q}|${chips.map((chip) => chip.label).join('|')}|${String(page)}`}
+        key={href({ p: String(page) })}
         rows={result.rows}
         mode="global"
-        initialSelectedId={Number.isInteger(selectedId) && selectedId > 0 ? selectedId : null}
+        initialSelectedId={initialSelectedId}
         outsideSelected={outside}
+        paging={paging}
         subcategorySuggestions={distinctSubcategories(db)}
-        caption="Errores encontrados"
+        caption={t.errors.foundCaption}
         empty={(
-          <div className={`${ui.tableEmpty} ${styles.emptyTable}`}>
-            {filtered ? (
-              <>
-                <span>Ningún error coincide con la búsqueda y los filtros activos.</span>
-                <Link href="/errores" className={ui.textLink}>Limpiar filtros</Link>
-              </>
-            ) : (
-              <>
-                <span>Todavía no hay errores. Aparecerán aquí al guardar tu primera sesión.</span>
-                <Link href="/registrar" className={ui.textLink}>Ir a Sesiones</Link>
-              </>
-            )}
-          </div>
+          filtered ? (
+            <EmptyState cause={t.errors.noMatch} action={<Link href="/errores" className={ui.textLink}>{t.common.clearFilters}</Link>} />
+          ) : (
+            <EmptyState cause={t.errors.none} action={<Link href="/registrar" className={ui.textLink}>{t.common.goToSessions}</Link>} />
+          )
         )}
       />
 
       {pages > 1 && (
-        <nav className={styles.pagination} aria-label="Páginas de errores">
-          {page > 1 ? <Link href={href({ p: String(page - 1) })}>Anteriores</Link> : <span className={styles.pageDisabled}>Anteriores</span>}
+        <nav className={styles.pagination} aria-label={t.errors.pages}>
+          {page > 1 ? <Link href={href({ p: String(page - 1) })}>{t.common.listPrevious}</Link> : <span className={styles.pageDisabled}>{t.common.listPrevious}</span>}
           <span className={styles.pageNow}>{page} / {pages}</span>
-          {page < pages ? <Link href={href({ p: String(page + 1) })}>Siguientes</Link> : <span className={styles.pageDisabled}>Siguientes</span>}
+          {page < pages ? <Link href={href({ p: String(page + 1) })}>{t.common.listNext}</Link> : <span className={styles.pageDisabled}>{t.common.listNext}</span>}
         </nav>
       )}
     </div>

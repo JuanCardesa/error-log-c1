@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { useActionState, useEffect, useRef, useState } from 'react';
 
 import type { SessionRow } from '@/lib/domain/types';
+import { useT } from '../_shared/i18nClient';
 import { Kbd } from '../_shared/Kbd';
 import { useShortcutLabels } from '../_shared/shortcuts';
 import { usePreservedForm } from '../_shared/usePreservedForm';
@@ -31,6 +32,7 @@ interface Props {
 export function CaptureForm({ session, subcategorySuggestions, lastCategory, onClose, visible = true }: Props) {
   const [state, formAction, pending] = useActionState(addErrorAction, EMPTY_STATE);
   const keys = useShortcutLabels();
+  const t = useT();
 
   const { formRef, onReset, resetForm } = usePreservedForm();
   const firstFieldRef = useRef<HTMLInputElement>(null);
@@ -64,8 +66,8 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory, onC
   return (
     <section id="captura" className={`${ui.surface} ${styles.block}`} aria-labelledby="capture-heading" hidden={!visible}>
       <div className={styles.blockHead}>
-        <h3 id="capture-heading" className={styles.blockTitle}>Añadir error</h3>
-        <button type="button" className={`${ui.ghost} ${ui.compact}`} onClick={onClose}>Terminar</button>
+        <h3 id="capture-heading" className={styles.blockTitle}>{t.errorForm.addError}</h3>
+        <button type="button" className={`${ui.ghost} ${ui.compact}`} onClick={onClose}>{t.errorForm.done}</button>
       </div>
 
       <form
@@ -98,14 +100,14 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory, onC
         <div className={styles.submitRow}>
           <span aria-live="polite" className={styles.saved}>
             {state.ok && state.createdId !== undefined && !pending && (
-              <><Check size={16} aria-hidden="true" />Error guardado</>
+              <><Check size={16} aria-hidden="true" />{t.errorForm.saved}</>
             )}
           </span>
-          <span className={ui.help}>
-            <Kbd>{keys.enter}</Kbd> guarda · en la regla, <Kbd>{keys.save}</Kbd>
+          <span className={`${ui.help} keyboard-hint`}>
+            <Kbd>{keys.enter}</Kbd> {t.errorForm.enterSaves} <Kbd>{keys.save}</Kbd>
           </span>
           <button type="submit" className={ui.primary} disabled={pending} aria-busy={pending}>
-            {pending ? 'Guardando…' : 'Guardar y seguir'}
+            {pending ? t.common.saving : t.errorForm.saveAndContinue}
           </button>
         </div>
       </form>

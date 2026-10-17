@@ -10,13 +10,10 @@
 :root {
   /* ── Superficies ─────────────────────────────── */
   --color-bg: #f6f5f1;
+  /* Grano de papel: ruido SVG al 7 % de alfa, 180 px en mosaico. Lo usa el body y lo que
+     tenga que tapar la página sin verse como una caja (la columna fija de RUOE). */
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .13 0 0 0 0 .14 0 0 0 0 .12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --color-surface: #ffffff;
-  --study-highlight: #fff0a8;
-  --study-green: #276544;
-  --study-red: #a32e28;
-  --study-blue: #315f83;
-  --study-orange: #8b450f;
-  --study-paper-radius: 2px;
   --color-surface-2: #ecedea;
   --color-skeleton: #e4e5e0;
   --color-selected: #e6ece8;
@@ -46,38 +43,89 @@
   --color-toast-check: #9fd3b4;
   --color-toast-muted: #b7bdb4;
 
+  /*
+   * ── Marcador del Notebook ───────────────────────
+   * Los colores con que se marca un apunte. Verde, rojo y azul son los semánticos, para
+   * que una marca roja sea el mismo rojo que un error en el resto de la app; el naranja y
+   * el amarillo de resaltar no tienen equivalente y viven solo aquí.
+   */
+  --mark-green: var(--color-success);
+  --mark-red: var(--color-danger);
+  --mark-blue: var(--color-info);
+  --mark-orange: #8b450f;
+  --mark-highlight: #fff0a8;
+
   /* ── Visualización ───────────────────────────── */
   --viz-study: #315f83;
   --viz-exec: #9aa396;
   --viz-bar-past: #9fbdb0;
   --viz-acc-85: #c9dcd3;
   --viz-acc-70: #dfe9e3;
-  --viz-acc-55: #ecedea;
-  --viz-acc-low: #f1e9da;
+  --viz-acc-55: #ebe6d8;
+  --viz-acc-low: #ecdcb9;
 
   /* ── Tipografía ──────────────────────────────── */
   --font-sans: var(--font-plex-sans), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
   --font-serif: var(--font-source-serif), Georgia, serif;
 
-  --text-page-title: 600 30px/36px var(--font-serif);
-  --text-reco-title: 600 30px/38px var(--font-serif);
-  --text-prompt-lg: 400 22px/32px var(--font-serif);
-  --text-prompt: 400 19px/28px var(--font-serif);
-  --text-correction: 600 18px/26px var(--font-serif);
-  --text-section: 600 18px/24px var(--font-sans);
-  --text-subtitle: 600 16px/22px var(--font-sans);
-  --text-body: 400 14px/20px var(--font-sans);
-  --text-field: 400 15px/22px var(--font-sans);
-  --text-label: 500 13px/18px var(--font-sans);
-  --text-aux: 400 13px/18px var(--font-sans);
-  --text-kbd: 500 11px/16px var(--font-mono);
-  --text-data: 400 13px/20px var(--font-mono);
-  --text-metric: 600 28px/32px var(--font-sans);
+  /*
+   * Escala de tamaños. Ningún módulo escribe un tamaño en px: o usa un estilo completo
+   * (`--text-*`) o, si solo cambia el tamaño, uno de estos pasos.
+   */
+  --fs-kbd: 11px;
+  --fs-meta: 12px;
+  --fs-label: 13px;
+  --fs-body: 14px;
+  --fs-field: 15px;
+  --fs-subtitle: 16px;
+  --fs-section: 18px;
+  --fs-prompt: 19px;
+  --fs-prompt-lg: 22px;
+  --fs-figure: 20px;
+  --fs-page-title-sm: 25px;
+  --fs-metric: 28px;
+  --fs-page-title: 30px;
+
+  /* Leer: Source Serif 4. */
+  --text-page-title: 600 var(--fs-page-title)/36px var(--font-serif);
+  --text-page-title-sm: 600 var(--fs-page-title-sm)/30px var(--font-serif);
+  --text-reco-title: 600 var(--fs-page-title)/38px var(--font-serif);
+  --text-prompt-lg: 400 var(--fs-prompt-lg)/32px var(--font-serif);
+  --text-prompt: 400 var(--fs-prompt)/28px var(--font-serif);
+  /* Título de una entrada en una lista (una redacción, un apunte). */
+  --text-entry-title: 600 var(--fs-prompt)/26px var(--font-serif);
+  --text-correction: 600 var(--fs-section)/26px var(--font-serif);
+  /* La respuesta propia junto a la corrección: mismo cuerpo, sin peso. */
+  --text-answer: 400 var(--fs-section)/26px var(--font-serif);
+  /* Texto citado en una fila o una nota: el tramo anotado, la respuesta en la paleta. */
+  --text-quote: 400 var(--fs-subtitle)/24px var(--font-serif);
+
+  /* Trabajar: IBM Plex Sans. */
+  --text-section: 600 var(--fs-section)/24px var(--font-sans);
+  --text-subtitle: 600 var(--fs-subtitle)/22px var(--font-sans);
+  --text-field: 400 var(--fs-field)/22px var(--font-sans);
+  --text-body: 400 var(--fs-body)/20px var(--font-sans);
+  --text-label: 500 var(--fs-label)/18px var(--font-sans);
+  --text-aux: 400 var(--fs-label)/18px var(--font-sans);
+  /* Lo más pequeño que se lee: atajos al pie, grupos de la paleta, ratios bajo una cifra. */
+  --text-meta: 400 var(--fs-meta)/16px var(--font-sans);
+
+  /* Cifras: Plex Sans con números tabulares (`.num`), nunca mono. */
+  --text-metric: 600 var(--fs-metric)/32px var(--font-sans);
+  --text-figure: 600 var(--fs-figure)/28px var(--font-sans);
+
+  /* Plex Mono: respuestas en listas, fechas, nombres de fichero y atajos. */
+  --text-data: 400 var(--fs-label)/20px var(--font-mono);
+  --text-data-sm: 400 var(--fs-meta)/16px var(--font-mono);
+  --text-kbd: 500 var(--fs-kbd)/16px var(--font-mono);
 
   /* ── Espacio ─────────────────────────────────── */
   --space-1: 4px;
+  /* Pasos intermedios, solo dentro de un control: relleno de menú, de opción, de aviso. */
+  --space-1-5: 6px;
   --space-2: 8px;
+  --space-2-5: 10px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
@@ -99,6 +147,8 @@
   --radius-panel: 6px;
   --radius-overlay: 8px;
   --radius-float: 10px;
+  /* La hoja de papel de una redacción o un apunte: casi recta. */
+  --radius-paper: 2px;
 
   /* ── Profundidad ─────────────────────────────── */
   --shadow-1: 0 1px 2px rgba(32, 35, 31, 0.04), 0 6px 20px rgba(32, 35, 31, 0.05);
@@ -115,19 +165,34 @@
   --glass-list-bg: rgba(255, 255, 255, 0.92);
   --glass-palette-bg: rgba(255, 255, 255, 0.9);
   --glass-toast-bg: rgba(32, 35, 31, 0.84);
-  --glass-border: rgba(124, 132, 122, 0.28);
+  --glass-border: rgba(124, 132, 122, 0.3);
   --glass-blur: blur(16px) saturate(1.4);
   --glass-blur-strong: blur(20px) saturate(1.5);
+  --glass-blur-toast: blur(12px);
+  /* Pie de la paleta y fondo de las tarjetas que se leen sobre el papel. */
+  --glass-foot-bg: rgba(246, 245, 241, 0.8);
+  --glass-card-bg: rgba(255, 255, 255, 0.62);
+  /* Velo bajo lo que tapa la página: dialog, paleta y panel de Writing en pantalla estrecha. */
   --scrim: rgba(32, 35, 31, 0.3);
+  --scrim-blur: blur(3px);
 
   /* ── Movimiento ──────────────────────────────── */
   --dur-fast: 120ms;
   --dur-panel: 160ms;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  /* ── Capas ───────────────────────────────────── */
-  --z-sticky: 20;
-  --z-drawer: 30;
+  /*
+   * ── Capas ───────────────────────────────────────
+   * Una sola escala para toda la app. El aviso va por encima de cualquier panel: su
+   * «Deshacer» tiene que poder pulsarse siempre. Dialog y paleta usan la capa superior
+   * del navegador (`showModal`); sus valores solo ordenan si alguno no la usa.
+   */
+  --z-raised: 1;    /* dentro de un componente: un hijo por encima de su vecino */
+  --z-bar: 5;       /* barra pegajosa dentro de la página: la de la tanda, la de modo del lector */
+  --z-float: 10;   /* flota dentro de la página: nota del lector, lista de un combobox */
+  --z-sticky: 20;   /* cabecera fija, barras pegajosas y menús */
+  --z-scrim: 25;    /* velo bajo un panel que tapa la página */
+  --z-drawer: 30;   /* drawer, detalle a pantalla completa, panel de Writing */
   --z-toast: 40;
   --z-dialog: 50;
   --z-palette: 60;
@@ -136,11 +201,16 @@
   --header-h: 56px;
 }
 
+@media (max-width: 799px) {
+  :root {
+    /* Dos filas: marca, Más y buscar; debajo, los seis destinos. */
+    --header-h: 92px;
+  }
+}
+
 @media (max-width: 639px) {
   :root {
     --page-pad: 16px;
-    /* Dos filas: marca + Más, y los cuatro destinos. */
-    --header-h: 92px;
   }
 }
 
@@ -169,8 +239,7 @@ html {
 
 body {
   background-color: var(--color-bg);
-  /* Grano de papel: ruido SVG al 7 % de alfa, 180 px en mosaico. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .13 0 0 0 0 .14 0 0 0 0 .12 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: var(--paper-grain);
   color: var(--color-ink);
   font: var(--text-body);
   -webkit-font-smoothing: antialiased;
@@ -187,8 +256,10 @@ a {
   text-underline-offset: 3px;
 }
 
-a:hover {
-  color: var(--color-ink);
+@media (hover: hover) {
+  a:hover {
+    color: var(--color-ink);
+  }
 }
 
 p {
@@ -290,6 +361,17 @@ kbd {
   background: var(--color-surface);
   color: var(--color-ink-2);
   white-space: nowrap;
+}
+
+/*
+ * Con el dedo no hay teclado físico que valga: las teclas y las pistas que solo hablan de
+ * atajos (`keyboard-hint`) se ocultan. Lo que dicen sigue en `aria-keyshortcuts`.
+ */
+@media (hover: none) and (pointer: coarse) {
+  kbd,
+  .keyboard-hint {
+    display: none !important;
+  }
 }
 
 /* Accesible para lector de pantalla, invisible en pantalla. */

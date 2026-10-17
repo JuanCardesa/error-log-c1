@@ -17,6 +17,7 @@ function noteSummary(note: NotebookNote): NotebookNoteSummary {
   return {
     id: note.id, uid: note.uid, folderId: note.folderId, title: note.title,
     tags: note.tags, revision: note.revision, createdAt: note.createdAt, updatedAt: note.updatedAt,
+    favoritedAt: note.favoritedAt,
   };
 }
 
@@ -36,18 +37,18 @@ export function setErrorNoteLink(db: Db, input: SetErrorNoteLinkInput, at: strin
     const error = tx.select({ id: errorRow.id }).from(errorRow).where(eq(errorRow.id, errorId)).get();
     const note = tx.select().from(notebookNote).where(eq(notebookNote.id, noteId)).get();
     if (error === undefined || note === undefined) {
-      throw new NotebookRepoError('NOT_FOUND', 'Error o apunte no encontrado');
+      throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.errorOrNoteNotFound);
     }
     let headingText: string | null = null;
     if (headingSlug !== null) {
       const headings = analyzeNotebookMarkdown(note.contentMarkdown).headings;
       const selected = headings.find((heading) => heading.slug === headingSlug);
       if (selected === undefined || selected.text === '') {
-        throw new NotebookRepoError('VALIDATION', 'El apartado ya no existe');
+        throw new NotebookRepoError('VALIDATION', (t) => t.notebookErrors.sectionGone);
       }
       const normalized = normalizeNotebookSearchText(selected.text);
       if (headings.filter((heading) => normalizeNotebookSearchText(heading.text) === normalized).length !== 1) {
-        throw new NotebookRepoError('VALIDATION', 'El apartado no es inequívoco');
+        throw new NotebookRepoError('VALIDATION', (t) => t.notebookErrors.sectionAmbiguous);
       }
       headingText = selected.text;
     }
@@ -65,14 +66,14 @@ export function removeErrorNoteLink(db: Db, input: RemoveErrorNoteLinkInput): No
   const removed = db.delete(notebookErrorLink)
     .where(and(eq(notebookErrorLink.errorId, errorId), eq(notebookErrorLink.noteId, noteId)))
     .returning().get();
-  if (removed === undefined) throw new NotebookRepoError('NOT_FOUND', 'Vínculo no encontrado');
+  if (removed === undefined) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.linkNotFound);
   return removed;
 }
 
 /** Only notes attached to this error are parsed for section drift. */
 export function getErrorNoteLinks(db: Db, errorId: number): NotebookLinkedNote[] {
   const exists = db.select({ id: errorRow.id }).from(errorRow).where(eq(errorRow.id, errorId)).get();
-  if (exists === undefined) throw new NotebookRepoError('NOT_FOUND', 'Error no encontrado');
+  if (exists === undefined) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.errorNotFound);
   return db.select({ link: notebookErrorLink, note: notebookNote }).from(notebookErrorLink)
     .innerJoin(notebookNote, eq(notebookErrorLink.noteId, notebookNote.id))
     .where(eq(notebookErrorLink.errorId, errorId))
@@ -88,10 +89,10 @@ export function listNoteErrorLinks(db: Db, noteId: number, page: number, pageSiz
   const offset = (page - 1) * pageSize;
   if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(pageSize) || pageSize < 1
     || pageSize > 100 || !Number.isSafeInteger(offset)) {
-    throw new NotebookRepoError('VALIDATION', 'Página inválida');
+    throw new NotebookRepoError('VALIDATION', (t) => t.notebookErrors.invalidPage);
   }
   const note = db.select().from(notebookNote).where(eq(notebookNote.id, noteId)).get();
-  if (note === undefined) throw new NotebookRepoError('NOT_FOUND', 'Apunte no encontrado');
+  if (note === undefined) throw new NotebookRepoError('NOT_FOUND', (t) => t.notebookErrors.noteNotFound);
   const headings = analyzeNotebookMarkdown(note.contentMarkdown).headings;
   const rows = db.select({ link: notebookErrorLink, error: errorRow }).from(notebookErrorLink)
     .innerJoin(errorRow, eq(notebookErrorLink.errorId, errorRow.id))

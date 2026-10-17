@@ -65,16 +65,42 @@ denominador y registrar un error debe costar menos de 30 segundos.
 | `id` | PK | |
 | `session_id` | FK → `session` | |
 | `date` | ISO date | |
-| `genre` | enum | `ESSAY` `REPORT` `PROPOSAL` `LETTER` `REVIEW` |
+| `genre` | enum | `ESSAY` `REPORT` `PROPOSAL` `LETTER` `REVIEW`; `LETTER` se muestra «Letter / Email» |
 | `word_count` | int | |
 | `minutes` | int | |
 | `timed` | bool | |
 | `rewrite_of` | FK → `writing_piece`, nullable | |
 | `corrector` | enum | `PROFESOR` `YO` `IA` |
-| `band_content` | int 0–5, nullable | |
-| `band_communicative` | int 0–5, nullable | |
-| `band_organisation` | int 0–5, nullable | |
-| `band_language` | int 0–5, nullable | |
+| `band_content` | real 0–5 en medios puntos, nullable | null = sin evaluar, no cero |
+| `band_communicative` | real 0–5 en medios puntos, nullable | |
+| `band_organisation` | real 0–5 en medios puntos, nullable | |
+| `band_language` | real 0–5 en medios puntos, nullable | |
+| `uid` | UUID v4, único | identidad en el contrato JSON; la genera la base |
+| `title`, `task_prompt` | texto, nullable | 1–200 y hasta 5 000 caracteres |
+| `original_text` | texto, nullable | 1–20 000; lo escrito, errores incluidos. Null solo antes de 0012 |
+| `text_fingerprint` | texto, nullable | huella del texto normalizado; existe si y solo si hay texto |
+| `text_revision` | int ≥ 1 | solo cambia al corregir una transcripción |
+| `date_basis` | enum | `WRITTEN` `CORRECTED` `IMPORTED`: de dónde sale `date` |
+| `corrected_on` | ISO date, nullable | no anterior a `date` |
+| `status` | enum | `AWAITING` `CORRECTED` `NOT_SUBMITTED` |
+| `teacher_comment`, `personal_notes` | texto, nullable | hasta 5 000 caracteres |
+| `word_min`, `word_max` | int, nullable | los dos o ninguno, 1 ≤ min ≤ max ≤ 2 000; null = 220–260 |
+| `created_at`, `updated_at` | timestamp | |
+
+**Writing Workspace (aprobado el 2026-10-15, 0012).** Plan y contrato en
+[WRITING-PLAN.md](WRITING-PLAN.md). Los textos anteriores a 0012 quedan sin transcripción,
+con alta a medianoche de su fecha y estado `CORRECTED` si tenían corrector o alguna banda.
+
+| tabla | campos y relaciones |
+| --- | --- |
+| `writing_annotation` | `id` UUID, `piece_id` FK → writing_piece (CASCADE), `kind`, `focus` nullable, `source` (`CORRECTORS`), `scope`, `anchor` JSON nullable, `paragraph` nullable, `quote` nullable, `comment`, `suggestion`, `reviewed_at`, `import_key` único por texto, `created_at`, `updated_at` |
+| `writing_import_receipt` | `import_id` PK, `payload_hash`, `piece_id` sin FK (como `session_import_receipt`), `created_at` |
+
+Una anotación `DOCUMENT` no lleva anclaje, párrafo ni cita; una `PARAGRAPH` lleva párrafo; una
+`SPAN` lleva anclaje (offsets UTF-16 sobre `original_text` más texto exacto y contexto, como
+`notebook_annotation`) o, si su cita no se localizó con seguridad, solo la cita: queda sin
+colocar y nunca se ancla por aproximación. Toda anotación lleva comentario o corrección; un
+acierto (`STRENGTH`) puede llevar solo su foco.
 
 ### Espejo de Anki (2026-09-22)
 
@@ -129,6 +155,7 @@ se conservan; no se actualizan automáticamente al editar después el error en l
   (es la regla, no la respuesta).
 - Una sesión con cero errores es válida y **cuenta en el denominador**.
 - `rewrite_of` no puede apuntar a sí misma ni formar ciclos.
+- Las bandas de Writing van de 0 a 5 en medios puntos (2,5 sí, 2,3 no); vacía no es cero.
 
 ---
 
@@ -154,6 +181,23 @@ problema no es de estudio.
 `COLOCACION`, `PHRASAL_VERB`, `WORD_FORMATION`, `PREPOSICION_DEPENDIENTE`,
 `TIEMPO_VERBAL`, `ESTRUCTURA`, `ARTICULO_CUANTIFICADOR`, `LEXICO`, `EXPRESION_FIJA`,
 `DISCURSO`, `COMPRENSION`, `REGISTRO`, `ESTRUCTURA_TEXTO`, `SPELLING`.
+
+### Anotaciones de Writing (2026-10-15)
+
+Independientes de las categorías de error: también señalan aciertos, contenido y claridad.
+
+- **Tipo:** `ERROR`, `IMPROVEMENT`, `STRENGTH`, `COMMENT`.
+- **Alcance:** `SPAN`, `PARAGRAPH`, `DOCUMENT`.
+- **Procedencia:** los valores de `corrector` (`PROFESOR`, `IA`, `YO`).
+- **Foco**, agrupado por el criterio de Cambridge al que pertenece:
+
+| criterio | focos |
+|---|---|
+| Content | `CONTENT` |
+| Communicative Achievement | `REGISTER`, `CLARITY` |
+| Organisation | `LINKING`, `ORGANISATION` |
+| Language | `GRAMMAR`, `SPELLING`, `PUNCTUATION`, `WORD_ORDER`, `VOCABULARY`, `COLLOCATION` |
+| — | `OTHER` |
 
 ---
 
@@ -301,9 +345,12 @@ La revisión de respuesta correcta, categoría y regla sigue siendo obligatoria.
    actualización y deshacer explícitos, y consulta de repasos/fallos por categoría (Q7).
    No hay marca manual: una conversión solo se sella tras verificar la tarjeta.
 5. **Falsas certezas** — Q4.
-6. **Writing** — alta y edición de `writing_piece` con las cuatro bandas, y Q6.
+6. **Writing** — biblioteca, lector, evaluación, anotaciones y progreso sobre
+   `writing_piece`, además de Q6. El lector exporta cada redacción transcrita a JSON;
+   el contrato y las reglas de reimportación están en [WRITING-JSON.md](WRITING-JSON.md).
 7. **Exportar** — un CSV por cada query que sea una tabla (Q1–Q4 y Q7), más un dump JSON
-   con solo los datos: filas y espejo de Anki, sin agregaciones ni ventana.
+   con solo los datos: filas, anotaciones de Writing y espejo de Anki, sin agregaciones
+   ni ventana (`formatVersion: 4`).
 
 CRUD completo: crear sesión, cerrarla, reabrirla, corregir sesiones pasadas, editar y
 borrar filas de error. Borrado con confirmación. Nada de datos irrecuperables por un clic.
@@ -386,7 +433,7 @@ tras confirmación del servidor. Un conflicto conserva el borrador y permite car
 versión guardada o conservar el trabajo como apunte nuevo.
 
 Se admite importar un `.md` por operación, exportar un apunte `.md`, el cuaderno ZIP y
-Notebook en el dump JSON (`formatVersion: 2`). Reimportar los `.md` del ZIP crea apuntes
+Notebook en el dump JSON v4 (`formatVersion: 4`). Reimportar los `.md` del ZIP crea apuntes
 nuevos y no restaura los vínculos con errores. El backup SQLite es la recuperación íntegra.
 No se importan adjuntos ni se cargan imágenes remotas al leer: se muestra su sintaxis.
 HTML embebido no se representa; se rechazan protocolos de URL activos. Los enlaces
