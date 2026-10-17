@@ -177,8 +177,8 @@ components:
 **Creative North Star: "Plex para trabajar, serif para leer"**
 
 Un cuaderno de trabajo editorial, preciso y tranquilo. La interfaz es de herramienta
-(IBM Plex Sans y Plex Mono, filas de 44 px, atajos de teclado visibles y búsqueda global
-con Ctrl/⌘+K). Lo que se lee —títulos de página, la recomendación de Progreso, los
+(IBM Plex Sans y Plex Mono, filas de 44 px, atajos de teclado visibles —ocultos en táctil— y
+búsqueda global con Ctrl/⌘+K). Lo que se lee —títulos de página, la recomendación de Progreso, los
 enunciados y la pareja «Tu respuesta → Corrección»— va en Source Serif 4.
 
 La profundidad no sale de cajas: papel con grano, una zona de trabajo blanca con sombra
@@ -279,8 +279,9 @@ sigue siendo el valor interno.
 - Página de 1200 px de contenido (1264 con márgenes), padding 32/32/96; 24 en tableta y 16
   en móvil. Cabecera fija de 56 px en cristal (dos filas en móvil).
 - Navegación en dos grupos, **Ritual | Biblioteca**: Sesiones · Errores · Progreso · Anki,
-  un filete vertical, Notebook · Writing. **Más ▾** solo guarda Exportar datos y Ajustes.
-  Al final, el botón Buscar con su atajo.
+  un filete vertical, Notebook · Writing. **Más ▾** guarda Exportar datos y, tras un
+  separador, el idioma (English / Español), que se elige ahí mismo; no hay página de Ajustes
+  para un solo control (`/ajustes` lleva a Sesiones). Al final, el botón Buscar con su atajo.
 - **Cabecera de página** (`PageHeader`), la misma en todas las vistas y con los huecos fijos:
   «← Sección» arriba a la izquierda (`BackLink`, que hace de antetítulo: no hay otro), título
   serif con lo que vaya a su lado (el estado de una sesión), entradilla en `ink-2`, acciones
@@ -298,6 +299,11 @@ sigue siendo el valor interno.
   folio. Nunca scroll horizontal de página: las tablas y
   matrices anchas se desplazan dentro de su contenedor (con `position: relative`, para que
   el `caption` accesible no escape).
+- **Táctil** (`pointer: coarse`), a cualquier ancho: lo que se pulsa llega a 44 px. Los
+  controles compactos (pestañas, segmentado, píldoras, filtros, chips) crecen; los enlaces y
+  botones de texto amplían su zona con relleno vertical y margen negativo, sin mover nada. Una
+  fila que es enlace entero ya cumple por su alto. Todo `:hover` va dentro de
+  `@media (hover: hover)`, para que un toque no deje el estado pegado.
 
 ## Elevation & Depth
 
@@ -331,7 +337,9 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   **destructivo** (`ui.danger`, solo dentro de una confirmación); `ui.compact` a 36 px.
 - **Icono** (`ui.iconButton`, 36×36, 44 en táctil) con `aria-label` específico.
 - **Kbd** junto a la acción que tiene atajo; las etiquetas salen de `useShortcutLabels()`
-  (⌘ en Mac, Ctrl en el resto) y el gestor acepta ambos modificadores.
+  (⌘ en Mac, Ctrl en el resto) y el gestor acepta ambos modificadores. En táctil
+  (`hover: none` y `pointer: coarse`) se ocultan, igual que las pistas que solo hablan de
+  atajos (clase global `keyboard-hint`).
 
 ### Navegación y filtros
 - **BackLink**: «← Sección» en tinta secundaria; su nombre accesible es «Volver a Sección»,
@@ -364,6 +372,10 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
   una acción y, al pie tras un filete, qué cubre la cifra. Una acción larga se parte en
   vez de desbordar. Si la muestra no basta, `ui.smallSample` lo dice justo debajo:
   «Muestra pequeña» en aviso y la explicación en `ink-2`.
+- **Fila de descarga** (Exportar): icono, nombre y fichero en Mono, alcance en `ink-2` y
+  «↓ Descargar» en `ink-2` sin borde; la fila entera es el enlace (nombre accesible
+  «Descargar …»), como las categorías de Progreso. Las ayudas dicen qué lleva cada archivo
+  en lenguaje llano.
 - **FileDrop**: elegir o soltar un archivo con los textos de la app, nunca el «Choose File»
   del navegador. `zone` cuando es la entrada principal (título, pista y el elegido en mono);
   `button` cuando es la alternativa a pegar el texto.
@@ -394,7 +406,8 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
 
 ### Capas
 - **Toast** (`useToast`): abajo al centro, por encima de cualquier panel; fuera de las filas
-  que se desmontan. 5 s, o 10 s si lleva «Deshacer», y se detiene mientras el ratón o el foco
+  que se desmontan. Sube desde su borde (8 px, 200 ms). Una barra fija abajo (la de la tanda)
+  lo aparta con `useToastClearance`: mide la barra y el aviso queda encima, nunca la tapa. 5 s, o 10 s si lleva «Deshacer», y se detiene mientras el ratón o el foco
   están en él. Ctrl/⌘+Z deshace fuera de un campo de texto, y el atajo se ve junto a la acción.
   La región `role=status` está siempre montada, para que el lector de pantalla lo anuncie.
 - **ConfirmDialog**: `<dialog>` modal, foco en Cancelar, nombra el objeto y todas sus
@@ -404,10 +417,14 @@ Primitivas en `src/app/_shared/ui.module.css` (sin margen exterior) y capas en
 - **Capas a pantalla completa** (el drawer en móvil, el detalle de Errores y el panel de
   Writing bajo 1024 px): `useInertBehind` (`_shared/layer.ts`) deja inerte lo que hay detrás
   en `<main>`, así que Tab no se escapa. La cabecera y el aviso siguen vivos.
-- **Menu**: flechas, Escape y clic fuera.
+- **Menu**: flechas, Escape y clic fuera; crece desde la esquina de su botón. Admite
+  `menuitemradio` en grupo con título («Idioma»): la marca ✓ ocupa su hueco siempre y la
+  opción elegida va en 600; elegir cierra y devuelve el foco al botón. Dentro de la cabecera
+  (que ya es cristal) el menú va opaco, y en móvil se abre hacia dentro de la pantalla.
 - **CommandPalette** (Ctrl/⌘+K): errores (máx. 5) y sesiones (máx. 3) buscados en el
-  servidor, y acciones con sus atajos. La opción activa se ve como una fila seleccionada
-  (`selected` y barra de marca) y el campo con foco se subraya en la marca.
+  servidor, y acciones con sus atajos (también «Cambiar idioma a …»). La opción activa se ve
+  como una fila seleccionada (`selected` y barra de marca) y el campo con foco se subraya en
+  la marca. Abre sin animación: se usa con el teclado muchas veces al día.
 
 ### Revisión de tanda
 Índice de 300 px (264 bajo 1024; nº · corrección · Listo/Falta) + un solo editor para la
@@ -443,6 +460,8 @@ siempre. Un fallo de transporte se dice como «No pudimos confirmar el guardado�
 - **Do** dar a cada cifra su denominador y a cada vacío su «—» o su frase; vacío no es cero.
 - **Do** confirmar con el servidor antes de anunciar éxito (guardar, importar, Anki).
 - **Do** usar las primitivas de `ui.module.css` antes de crear una clase nueva.
+- **Do** animar solo lo que informa de un estado (cierre de la tanda, paneles, avisos), con
+  `transform` y `opacity`, por debajo de 300 ms; nunca lo que se abre con el teclado.
 
 ### Don't:
 - **Don't** escribir colores, radios o tamaños literales en los módulos: todo sale de `:root`.
