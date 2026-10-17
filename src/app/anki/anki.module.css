@@ -251,8 +251,10 @@
   font-size: var(--fs-body);
 }
 
-.groupSummary:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .groupSummary:hover {
+    background: var(--color-surface-2);
+  }
 }
 
 .groupName {
@@ -334,5 +336,14 @@
 
   .colCategory {
     width: 38%;
+  }
+}
+
+/* Táctil: la zona que se pulsa llega a 44 px sin mover la fila. */
+@media (pointer: coarse) {
+  .rowButton,
+  .previewActions a {
+    padding-block: var(--space-3);
+    margin-block: calc(-1 * var(--space-3));
   }
 }

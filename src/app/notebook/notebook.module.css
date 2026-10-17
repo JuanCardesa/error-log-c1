@@ -64,9 +64,11 @@
   text-decoration: none;
 }
 
-.directory a:hover {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .directory a:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .directory a[aria-current='page'] {
@@ -110,8 +112,10 @@
   font: var(--text-aux);
 }
 
-.directory .favoriteLinks a:hover {
-  color: var(--color-brand);
+@media (hover: hover) {
+  .directory .favoriteLinks a:hover {
+    color: var(--color-brand);
+  }
 }
 
 .favoriteAll {
@@ -133,9 +137,14 @@
   font-weight: 500;
 }
 
-.folderManager summary:hover,
 .folderManager details[open] summary {
   color: var(--color-ink);
+}
+
+@media (hover: hover) {
+  .folderManager summary:hover {
+    color: var(--color-ink);
+  }
 }
 
 .folderForms {
@@ -198,8 +207,10 @@
   cursor: pointer;
 }
 
-.folderToggle:hover {
-  color: var(--color-ink);
+@media (hover: hover) {
+  .folderToggle:hover {
+    color: var(--color-ink);
+  }
 }
 
 .subfolderList {
@@ -266,9 +277,11 @@
   outline-offset: -2px;
 }
 
-.noteRow:hover .noteLink {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .noteRow:hover .noteLink {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .noteRowMain {
@@ -368,9 +381,11 @@
   text-decoration: none;
 }
 
-.breadcrumbs a:hover {
-  color: var(--color-ink);
-  text-decoration: underline;
+@media (hover: hover) {
+  .breadcrumbs a:hover {
+    color: var(--color-ink);
+    text-decoration: underline;
+  }
 }
 
 .readerColumn {
@@ -437,8 +452,10 @@
 }
 
 /* Cada etiqueta abre la portada filtrada por ella. */
-.tags a:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .tags a:hover {
+    text-decoration: underline;
+  }
 }
 
 @media (max-width: 1023px) {

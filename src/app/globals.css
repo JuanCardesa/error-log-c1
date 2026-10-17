@@ -251,8 +251,10 @@ a {
   text-underline-offset: 3px;
 }
 
-a:hover {
-  color: var(--color-ink);
+@media (hover: hover) {
+  a:hover {
+    color: var(--color-ink);
+  }
 }
 
 p {
@@ -354,6 +356,17 @@ kbd {
   background: var(--color-surface);
   color: var(--color-ink-2);
   white-space: nowrap;
+}
+
+/*
+ * Con el dedo no hay teclado físico que valga: las teclas y las pistas que solo hablan de
+ * atajos (`keyboard-hint`) se ocultan. Lo que dicen sigue en `aria-keyshortcuts`.
+ */
+@media (hover: none) and (pointer: coarse) {
+  kbd,
+  .keyboard-hint {
+    display: none !important;
+  }
 }
 
 /* Accesible para lector de pantalla, invisible en pantalla. */

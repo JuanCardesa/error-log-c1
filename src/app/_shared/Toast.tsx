@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, X } from 'lucide-react';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 
 import { useT } from './i18nClient';
 import { useShortcutLabels } from './shortcuts';
@@ -136,7 +136,7 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
             {toast.undo !== undefined && (
               <button type="button" className={styles.toastUndo} aria-keyshortcuts="Control+Z Meta+Z" onClick={undo}>
                 {t.common.undo}
-                <span className={styles.toastKbd} aria-hidden="true">{keys.undo}</span>
+                <span className={`${styles.toastKbd} keyboard-hint`} aria-hidden="true">{keys.undo}</span>
               </button>
             )}
             <button type="button" className={styles.toastClose} aria-label={t.common.closeNotice} onClick={clear}>
@@ -151,4 +151,29 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
 
 export function useToast(): (toast: ToastInput) => void {
   return useContext(ToastContext);
+}
+
+/**
+ * Para una barra fija abajo (la de la tanda): mientras está montada, el aviso sube por
+ * encima de ella en vez de taparla. Mide la barra cada vez que cambia de alto (en móvil se
+ * parte en dos líneas) y devuelve el ref que hay que ponerle.
+ */
+export function useToastClearance<T extends HTMLElement>(): RefObject<T | null> {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const bar = ref.current;
+    if (bar === null) return;
+    const root = document.documentElement;
+    const update = () => {
+      root.style.setProperty('--toast-clearance', `${String(Math.round(bar.getBoundingClientRect().height))}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(bar);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--toast-clearance');
+    };
+  }, []);
+  return ref;
 }

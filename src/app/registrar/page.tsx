@@ -151,7 +151,7 @@ function SessionList({ params, fromWriting, newSession, today, t }: {
                   : <span className={styles.pageDisabled}>{t.common.listNext}</span>}
               </nav>
             )}
-            <div className={styles.shortcuts} aria-hidden="true">
+            <div className={`${styles.shortcuts} keyboard-hint`} aria-hidden="true">
               <span><Kbd>J</Kbd><Kbd>K</Kbd>{t.sessions.keyMove}</span>
               <span><Kbd>↵</Kbd>{t.sessions.keyOpen}</span>
               <span><Kbd>N</Kbd>{t.sessions.keyNew}</span>

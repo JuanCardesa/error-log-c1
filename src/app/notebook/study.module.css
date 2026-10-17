@@ -29,7 +29,9 @@
   font: inherit;
   cursor: pointer;
 }
-.toolbar button:hover { background: var(--color-surface-2); }
+@media (hover: hover) {
+  .toolbar button:hover { background: var(--color-surface-2); }
+}
 .toolbar button[aria-pressed='true'] { background: var(--mark-highlight); }
 .toolbar button:disabled { cursor: wait; opacity: 0.6; }
 .palette { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--color-rule); }

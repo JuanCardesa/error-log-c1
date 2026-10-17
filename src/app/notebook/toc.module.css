@@ -19,11 +19,18 @@
   overflow-wrap: anywhere;
 }
 
-.list a:hover,
 .list a[aria-current='location'] {
   color: var(--color-brand);
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .list a:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 
 .list a[aria-current='location'] {

@@ -6,7 +6,7 @@ import { DEFAULT_LOCALE, type Locale, type Messages, getMessages } from '@/lib/i
 
 /**
  * Idioma en los componentes de cliente. El layout lo lee de la cookie y lo pasa aquí:
- * al cambiarlo en Ajustes, el servidor vuelve a pintar el layout y todo el árbol cambia
+ * al cambiarlo en «Más» o en ⌘K, el servidor vuelve a pintar el layout y todo el árbol cambia
  * a la vez, sin recargar la página.
  */
 

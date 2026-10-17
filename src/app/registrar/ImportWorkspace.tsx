@@ -14,7 +14,7 @@ import { mediumDate, practiceLongLabel, sessionTitle } from '../_shared/format';
 import { useT } from '../_shared/i18nClient';
 import { Kbd } from '../_shared/Kbd';
 import { useShortcutLabels } from '../_shared/shortcuts';
-import { useToast } from '../_shared/Toast';
+import { useToast, useToastClearance } from '../_shared/Toast';
 import { EMPTY_STATE } from './formState';
 import { importErrorsAction, importSessionAction } from './importActions';
 import { buildImportPayload, type DraftRow, type MissingField, missingFields, nextPendingIndex, snapshotFromDraft } from './reviewRows';
@@ -62,6 +62,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
   const scope = useId();
   const keys = useShortcutLabels();
   const toast = useToast();
+  const bar = useToastClearance<HTMLDivElement>();
   const t = useT();
 
   const [rows, setRows] = useState<readonly DraftRow[]>(initial.rows);
@@ -462,7 +463,7 @@ export function ImportWorkspace({ initial, today, openSessions, fixedTarget, sub
         </div>
       )}
 
-      <div className={styles.bar}>
+      <div ref={bar} className={styles.bar}>
         <span id={`${scope}-pending`} className={`${styles.barText} ${pending.size > 0 || rows.length === 0 ? '' : ui.ok}`}>
           {pending.size > 0
             ? t.review.pendingBar(done, rows.length)

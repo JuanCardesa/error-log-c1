@@ -118,7 +118,7 @@ export function PasteEntry({ variant, globalPaste = false, onCancel }: {
         </label>
         {/* La entrada de verdad: Ctrl+V en cualquier parte. El campo es la alternativa. */}
         {variant === 'entry' && (
-          <span className={styles.keyHint}>
+          <span className={`${styles.keyHint} keyboard-hint`}>
             <Kbd>{keys.paste}</Kbd> {t.paste.pasteAnywhere}
           </span>
         )}

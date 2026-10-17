@@ -1,4 +1,4 @@
-import { ChevronRight, Download, FileArchive, FileBraces, FileSpreadsheet } from 'lucide-react';
+import { ChevronRight, Download, FileArchive, FileBraces, FileSpreadsheet, type LucideIcon } from 'lucide-react';
 
 import { CSV_EXPORTS, type CsvExport } from '@/lib/export/dump';
 import { getT } from '../_shared/i18nServer';
@@ -38,22 +38,16 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
         </div>
         <ul className={styles.list}>
           {ordered.map((key) => (
-            <li key={key} className={styles.row}>
-              <span className={styles.name}>
-                <FileSpreadsheet size={18} className={styles.icon} aria-hidden="true" />
-                <span className={styles.nameText}>
-                  <span className={styles.label}>{x.csv[key]}</span>
-                  <span className={styles.file}>errorlog-{key}.csv</span>
-                </span>
-              </span>
-              <span className={styles.scope}>
-                {FIXED.has(key) ? x.always30 : t.format.days(windowDays)}
-              </span>
-              <a className={`${ui.secondary} ${ui.compact} ${styles.download}`} href={`/exportar/${key}.csv${FIXED.has(key) ? '' : query}`} download aria-label={x.downloadLabel(x.csv[key])}>
-                <Download size={16} aria-hidden="true" />
-                {t.common.download}
-              </a>
-            </li>
+            <DownloadRow
+              key={key}
+              icon={FileSpreadsheet}
+              label={x.csv[key]}
+              file={`errorlog-${key}.csv`}
+              scope={FIXED.has(key) ? x.always30 : t.format.days(windowDays)}
+              href={`/exportar/${key}.csv${FIXED.has(key) ? '' : query}`}
+              name={x.downloadLabel(x.csv[key])}
+              cue={t.common.download}
+            />
           ))}
         </ul>
       </section>
@@ -61,20 +55,15 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
       <section className={styles.section} aria-labelledby="json-heading">
         <h2 id="json-heading" className={ui.sectionTitle}>{x.fullTitle}</h2>
         <ul className={styles.list}>
-          <li className={styles.row}>
-            <span className={styles.name}>
-              <FileBraces size={18} className={styles.icon} aria-hidden="true" />
-              <span className={styles.nameText}>
-                <span className={styles.label}>{x.fullJson}</span>
-                <span className={styles.file}>errorlog-dump.json</span>
-              </span>
-            </span>
-            <span className={styles.scope}>{t.errors.wholeHistory}</span>
-            <a className={`${ui.secondary} ${ui.compact} ${styles.download}`} href="/exportar/dump.json" download aria-label={x.downloadJson}>
-              <Download size={16} aria-hidden="true" />
-              {t.common.download}
-            </a>
-          </li>
+          <DownloadRow
+            icon={FileBraces}
+            label={x.fullJson}
+            file="errorlog-dump.json"
+            scope={t.errors.wholeHistory}
+            href="/exportar/dump.json"
+            name={x.downloadJson}
+            cue={t.common.download}
+          />
         </ul>
         <p className={ui.help}>{x.fullHelp}</p>
       </section>
@@ -82,20 +71,15 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
       <section className={styles.section} aria-labelledby="notebook-heading">
         <h2 id="notebook-heading" className={ui.sectionTitle}>{x.notebookTitle}</h2>
         <ul className={styles.list}>
-          <li className={styles.row}>
-            <span className={styles.name}>
-              <FileArchive size={18} className={styles.icon} aria-hidden="true" />
-              <span className={styles.nameText}>
-                <span className={styles.label}>{x.notebookZip}</span>
-                <span className={styles.file}>errorlog-notebook.zip</span>
-              </span>
-            </span>
-            <span className={styles.scope}>{x.allNotes}</span>
-            <a className={`${ui.secondary} ${ui.compact} ${styles.download}`} href="/exportar/notebook.zip" download aria-label={x.downloadZip}>
-              <Download size={16} aria-hidden="true" />
-              {t.common.download}
-            </a>
-          </li>
+          <DownloadRow
+            icon={FileArchive}
+            label={x.notebookZip}
+            file="errorlog-notebook.zip"
+            scope={x.allNotes}
+            href="/exportar/notebook.zip"
+            name={x.downloadZip}
+            cue={t.common.download}
+          />
         </ul>
         <p className={ui.help}>
           {x.zipHelp1}<code className={styles.code}>.md</code>{x.zipHelp2}<code className={styles.code}>manifest.json</code>{x.zipHelp3}
@@ -112,5 +96,37 @@ export default async function ExportarPage({ searchParams }: { readonly searchPa
         </p>
       </details>
     </div>
+  );
+}
+
+/**
+ * Una descarga: la fila entera es el enlace, como las categorías de Progreso. A la derecha,
+ * «Descargar» en tinta secundaria anuncia qué pasa al pulsar sin repetir siete botones.
+ */
+function DownloadRow({ icon: Icon, label, file, scope, href, name, cue }: {
+  readonly icon: LucideIcon;
+  readonly label: string;
+  readonly file: string;
+  readonly scope: string;
+  readonly href: string;
+  /** Nombre accesible del enlace: «Descargar …». */
+  readonly name: string;
+  readonly cue: string;
+}) {
+  return (
+    <li className={styles.row}>
+      <span className={styles.name}>
+        <Icon size={18} className={styles.icon} aria-hidden="true" />
+        <span className={styles.nameText}>
+          <a className={styles.label} href={href} download aria-label={name}>{label}</a>
+          <span className={styles.file}>{file}</span>
+        </span>
+      </span>
+      <span className={styles.scope}>{scope}</span>
+      <span className={styles.cue} aria-hidden="true">
+        <Download size={16} />
+        {cue}
+      </span>
+    </li>
   );
 }

@@ -31,3 +31,11 @@
   color: var(--color-ink);
   font-variant-numeric: tabular-nums;
 }
+
+/* Táctil: la zona que se pulsa llega a 44 px sin mover la fila. */
+@media (pointer: coarse) {
+  .pagination a {
+    padding-block: var(--space-3);
+    margin-block: calc(-1 * var(--space-3));
+  }
+}

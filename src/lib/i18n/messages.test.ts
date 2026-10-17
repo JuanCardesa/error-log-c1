@@ -45,6 +45,7 @@ function render(t: Messages, n: number) {
     'nav.search': t.nav.search("Ctrl+K"),
     'palette.noResults': t.palette.noResults("café & té"),
     'palette.goTo': t.palette.goTo("[section]"),
+    'palette.switchLanguage': t.palette.switchLanguage("[language]"),
     'labels.unknownCategory': t.labels.unknownCategory("42.5%"),
     'validation.partRange': t.validation.partRange("RUOE", 120),
     'validation.ruleMinLength': t.validation.ruleMinLength(n),

@@ -8,7 +8,8 @@
 .toastRegion {
   position: fixed;
   left: 50%;
-  bottom: var(--space-5);
+  /* `--toast-clearance`: el alto de una barra fija abajo, si la hay (`useToastClearance`). */
+  bottom: calc(var(--toast-clearance, 0px) + var(--space-5));
   z-index: var(--z-toast);
   transform: translateX(-50%);
   width: max-content;
@@ -29,7 +30,15 @@
   font-size: var(--fs-body);
   box-shadow: var(--shadow-toast);
   pointer-events: auto;
-  animation: el-pop 160ms var(--ease-out);
+  /* Sube desde su propio borde, el de abajo. */
+  animation: toast-in 200ms var(--ease-out);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 
 .toastError {
@@ -70,8 +79,10 @@
   color: var(--color-toast-muted);
 }
 
-.toastClose:hover {
-  color: var(--color-on-ink);
+@media (hover: hover) {
+  .toastClose:hover {
+    color: var(--color-on-ink);
+  }
 }
 
 .toastUndo:focus-visible,
@@ -216,8 +227,10 @@
   display: none;
 }
 
+/* Crece desde su esquina, la del botón que lo abre. */
 .menuEnd {
   right: 0;
+  transform-origin: top right;
 }
 
 .menuStart {
@@ -240,11 +253,18 @@
   white-space: nowrap;
 }
 
-.menuItem:hover,
 .menuItem:focus-visible {
   background: var(--color-surface-2);
   color: var(--color-ink);
   outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .menuItem:hover {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+    outline-offset: -2px;
+  }
 }
 
 .menuItem[aria-current='page'] {
@@ -260,14 +280,50 @@
   color: var(--color-danger);
 }
 
-.menuItemDanger:hover,
 .menuItemDanger:focus-visible {
   background: var(--color-danger-soft);
   color: var(--color-danger);
+}
+
+@media (hover: hover) {
+  .menuItemDanger:hover {
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
 }
 
 .menuSep {
   height: 1px;
   margin: var(--space-1-5) 0;
   background: var(--color-rule);
+}
+
+/* Título de un grupo dentro del menú («Idioma»): no se pulsa, solo nombra. */
+.menuLabel {
+  display: block;
+  padding: var(--space-1-5) var(--space-3) var(--space-1);
+  font: var(--text-meta);
+  color: var(--color-ink-2);
+}
+
+/* Opción de una sola elección: la marca ocupa su hueco siempre y solo se ve en la elegida. */
+.menuRadio {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: var(--space-2);
+}
+
+.menuCheck {
+  flex-shrink: 0;
+  color: var(--color-brand);
+  visibility: hidden;
+}
+
+.menuRadio[aria-checked='true'] {
+  font-weight: 600;
+}
+
+.menuRadio[aria-checked='true'] .menuCheck {
+  visibility: visible;
 }

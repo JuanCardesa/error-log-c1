@@ -95,8 +95,10 @@ thead .partHead,
   color: var(--color-ink);
 }
 
-.cell:hover {
-  filter: brightness(0.97);
+@media (hover: hover) {
+  .cell:hover {
+    filter: brightness(0.97);
+  }
 }
 
 .cellSelected {
@@ -203,8 +205,10 @@ thead .partHead,
   text-decoration: none;
 }
 
-.asideLink:hover {
-  color: var(--color-brand);
+@media (hover: hover) {
+  .asideLink:hover {
+    color: var(--color-brand);
+  }
 }
 
 .asideDate {

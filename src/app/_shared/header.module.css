@@ -30,8 +30,17 @@
   white-space: nowrap;
 }
 
-.brand:hover {
-  color: var(--color-ink);
+@media (pointer: coarse) {
+  .brand {
+    padding-block: var(--space-3);
+    margin-block: calc(-1 * var(--space-3));
+  }
+}
+
+@media (hover: hover) {
+  .brand:hover {
+    color: var(--color-ink);
+  }
 }
 
 .brandMark {
@@ -69,8 +78,10 @@
   white-space: nowrap;
 }
 
-.navLink:hover {
-  color: var(--color-ink);
+@media (hover: hover) {
+  .navLink:hover {
+    color: var(--color-ink);
+  }
 }
 
 /* Separa el ritual (registrar, revisar, estudiar) de la biblioteca (consultar). */
@@ -98,6 +109,14 @@
   height: var(--header-h);
 }
 
+/*
+ * El menú de «Más» vive dentro de la cabecera, que ya es cristal: su desenfoque no alcanza
+ * la página de detrás y el texto se transparentaría. Aquí va opaco.
+ */
+.navGroup [role='menu'] {
+  background: var(--color-surface);
+}
+
 .spacer {
   flex: 1;
 }
@@ -118,8 +137,10 @@
   font-size: var(--fs-body);
 }
 
-.search:hover {
-  background: var(--color-surface);
+@media (hover: hover) {
+  .search:hover {
+    background: var(--color-surface);
+  }
 }
 
 .searchText {
@@ -171,6 +192,13 @@
   /* En dos filas cada pieza se coloca sola en la rejilla. */
   .navGroup {
     display: contents;
+  }
+
+  /* «Más» queda arriba a la derecha: su menú se abre hacia dentro de la pantalla. */
+  .navGroup [role='menu'] {
+    right: 0;
+    left: auto;
+    transform-origin: top right;
   }
 
   .search {

@@ -54,10 +54,12 @@
   overflow-wrap: anywhere;
 }
 
-.entryTitle:hover {
-  color: var(--color-brand);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+@media (hover: hover) {
+  .entryTitle:hover {
+    color: var(--color-brand);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
 }
 
 /*
@@ -264,7 +266,6 @@
 }
 
 /* Al pasar por un párrafo (o tocarlo, o entrar con el teclado) aparece todo lo marcado en él. */
-.text p:hover .mark,
 .text p:focus-within .mark,
 .text p[data-revealed='true'] .mark,
 .text[data-reading-mode='annotate'] .mark {
@@ -273,10 +274,24 @@
   transition-delay: 60ms;
 }
 
-.mark:hover,
+@media (hover: hover) {
+  .text p:hover .mark {
+    background-color: var(--mark-tint);
+    text-decoration-color: var(--mark-ink);
+    transition-delay: 60ms;
+  }
+}
+
 .mark[aria-expanded='true'] {
   background-color: color-mix(in srgb, var(--mark-ink) 20%, transparent);
   transition-delay: 0ms;
+}
+
+@media (hover: hover) {
+  .mark:hover {
+    background-color: color-mix(in srgb, var(--mark-ink) 20%, transparent);
+    transition-delay: 0ms;
+  }
 }
 
 /* La anotación elegida en el panel se distingue en el texto por un fondo más intenso. */
@@ -317,7 +332,6 @@
 .paragraphNote[data-kind='IMPROVEMENT'] { --note-ink: var(--color-brand); }
 .paragraphNote[data-kind='STRENGTH'] { --note-ink: var(--color-success); }
 
-.text p:hover .paragraphNote,
 .text p:focus-within .paragraphNote,
 .text p[data-revealed='true'] .paragraphNote,
 .text[data-reading-mode='annotate'] .paragraphNote,
@@ -326,9 +340,20 @@
   opacity: 1;
 }
 
-.paragraphNote:hover,
+@media (hover: hover) {
+  .text p:hover .paragraphNote {
+    opacity: 1;
+  }
+}
+
 .paragraphNote[aria-expanded='true'] {
   background: color-mix(in srgb, var(--note-ink) 12%, transparent);
+}
+
+@media (hover: hover) {
+  .paragraphNote:hover {
+    background: color-mix(in srgb, var(--note-ink) 12%, transparent);
+  }
 }
 
 .paragraphNoteCount {
@@ -359,14 +384,21 @@
   top: 32px;
 }
 
-.text p:hover .addParagraphNote,
 .addParagraphNote:focus-visible {
   opacity: 1;
 }
 
-.addParagraphNote:hover {
-  border-color: var(--color-control);
-  color: var(--color-ink);
+@media (hover: hover) {
+  .text p:hover .addParagraphNote {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) {
+  .addParagraphNote:hover {
+    border-color: var(--color-control);
+    color: var(--color-ink);
+  }
 }
 
 /* La nota junto al texto: al pasar el ratón se lee; con un clic se queda y trae acciones. */
@@ -614,6 +646,13 @@
   box-shadow: none;
 }
 
+@media (pointer: coarse) {
+  .annotationFilters > button,
+  .pendingPill {
+    height: var(--control-h-touch);
+  }
+}
+
 .annotationList {
   margin: 0;
   padding: 0;
@@ -647,8 +686,10 @@
   cursor: pointer;
 }
 
-.annotationItem:not([data-selected='true']) .annotationRow:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .annotationItem:not([data-selected='true']) .annotationRow:hover {
+    background: var(--color-surface-2);
+  }
 }
 
 .annotationRow:focus-visible {

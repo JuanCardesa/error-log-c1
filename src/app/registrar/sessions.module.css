@@ -47,9 +47,11 @@
   overflow-wrap: anywhere;
 }
 
-.ref:hover {
-  color: var(--color-ink);
-  text-decoration-color: var(--color-ink-2);
+@media (hover: hover) {
+  .ref:hover {
+    color: var(--color-ink);
+    text-decoration-color: var(--color-ink-2);
+  }
 }
 
 .sub {
@@ -266,5 +268,14 @@
   .doneActions {
     grid-column: 1 / -1;
     flex-wrap: wrap;
+  }
+}
+
+/* Táctil: la zona que se pulsa llega a 44 px sin mover la fila. */
+@media (pointer: coarse) {
+  .ref,
+  .pagination a {
+    padding-block: var(--space-3);
+    margin-block: calc(-1 * var(--space-3));
   }
 }

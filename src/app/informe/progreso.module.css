@@ -86,13 +86,17 @@
   outline-offset: -2px;
 }
 
-.catRow:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .catRow:hover {
+    background: var(--color-surface-2);
+  }
 }
 
-.catRow:hover .catLink {
-  color: var(--color-brand);
-  text-decoration: underline;
+@media (hover: hover) {
+  .catRow:hover .catLink {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
 }
 
 .arrowCell {
@@ -100,8 +104,10 @@
   color: var(--color-ink-2);
 }
 
-.catRow:hover .arrowCell {
-  color: var(--color-brand);
+@media (hover: hover) {
+  .catRow:hover .arrowCell {
+    color: var(--color-brand);
+  }
 }
 
 .restList {
@@ -146,8 +152,10 @@
   font-size: var(--fs-body);
 }
 
-.causeSummary:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .causeSummary:hover {
+    background: var(--color-surface-2);
+  }
 }
 
 .causeName {
@@ -316,9 +324,11 @@
   text-decoration: none;
 }
 
-.recentLink:hover {
-  background: var(--color-surface-2);
-  color: var(--color-ink);
+@media (hover: hover) {
+  .recentLink:hover {
+    background: var(--color-surface-2);
+    color: var(--color-ink);
+  }
 }
 
 .recentDate {
@@ -395,5 +405,13 @@
   /* Cuatro semanas con su fecha no caben en media pantalla: una part por fila. */
   .multiples {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Táctil: la zona que se pulsa llega a 44 px sin mover la fila. */
+@media (pointer: coarse) {
+  .moreLink {
+    padding-block: var(--space-3);
+    margin-block: calc(-1 * var(--space-3));
   }
 }

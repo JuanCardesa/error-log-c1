@@ -57,9 +57,11 @@
   cursor: pointer;
 }
 
-.issueLine:hover {
-  color: var(--color-ink);
-  text-decoration-color: var(--color-ink-2);
+@media (hover: hover) {
+  .issueLine:hover {
+    color: var(--color-ink);
+    text-decoration-color: var(--color-ink-2);
+  }
 }
 
 .issueField {

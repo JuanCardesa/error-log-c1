@@ -103,7 +103,7 @@ export function CaptureForm({ session, subcategorySuggestions, lastCategory, onC
               <><Check size={16} aria-hidden="true" />{t.errorForm.saved}</>
             )}
           </span>
-          <span className={ui.help}>
+          <span className={`${ui.help} keyboard-hint`}>
             <Kbd>{keys.enter}</Kbd> {t.errorForm.enterSaves} <Kbd>{keys.save}</Kbd>
           </span>
           <button type="submit" className={ui.primary} disabled={pending} aria-busy={pending}>

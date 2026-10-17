@@ -141,18 +141,26 @@
   white-space: nowrap;
 }
 
-.indexRow:hover {
-  background: var(--color-surface-2);
+@media (hover: hover) {
+  .indexRow:hover {
+    background: var(--color-surface-2);
+  }
 }
 
 .indexRow:focus-visible {
   outline-offset: -2px;
 }
 
-.indexActive,
-.indexActive:hover {
+.indexActive {
   background: var(--color-selected);
   box-shadow: inset 3px 0 0 var(--color-brand);
+}
+
+@media (hover: hover) {
+  .indexActive:hover {
+    background: var(--color-selected);
+    box-shadow: inset 3px 0 0 var(--color-brand);
+  }
 }
 
 .indexN {

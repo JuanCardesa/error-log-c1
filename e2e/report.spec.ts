@@ -69,9 +69,9 @@ test.describe('progreso', () => {
     await expect(nav.getByRole('link', { name: 'Progreso', exact: true })).toHaveAttribute('aria-current', 'page');
     await expect(nav.getByRole('link', { name: 'Anki', exact: true })).not.toHaveAttribute('aria-current', 'page');
 
-    // Exportar y Ajustes, a un clic en «Más».
+    // Exportar y el idioma, a un clic en «Más».
     await page.getByRole('button', { name: 'Más' }).click();
-    await expect(page.getByRole('menuitem', { name: 'Ajustes' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Idioma' }).getByRole('menuitemradio')).toHaveCount(2);
     await expect(page.getByRole('menuitem', { name: 'Writing' })).toHaveCount(0);
     await page.getByRole('menuitem', { name: 'Exportar datos' }).click();
     await expect(page).toHaveURL(/\/exportar/);

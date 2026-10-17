@@ -27,8 +27,9 @@
 }
 
 .row {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px 130px;
+  grid-template-columns: minmax(0, 1fr) 160px auto;
   gap: var(--space-4);
   align-items: center;
   min-height: 56px;
@@ -55,8 +56,45 @@
   min-width: 0;
 }
 
+/* La fila entera es el enlace: el nombre se estira con ::after sobre toda la fila. */
 .label {
+  color: var(--color-ink);
   font-weight: 500;
+  text-decoration: none;
+}
+
+.label::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.label:focus-visible {
+  outline: none;
+}
+
+.label:focus-visible::after {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) {
+  .row:hover {
+    background: var(--color-surface-2);
+  }
+}
+
+@media (hover: hover) {
+  .row:hover .label {
+    color: var(--color-brand);
+    text-decoration: underline;
+  }
+}
+
+@media (hover: hover) {
+  .row:hover .cue {
+    color: var(--color-brand);
+  }
 }
 
 .file {
@@ -70,8 +108,14 @@
   color: var(--color-ink-2);
 }
 
-.download {
+/* «Descargar» dice qué hace la fila, sin borde: no son siete botones. */
+.cue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
   justify-self: end;
+  color: var(--color-ink-2);
+  font-weight: 500;
 }
 
 .backup {
@@ -97,7 +141,7 @@
     font-size: var(--fs-label);
   }
 
-  .download {
+  .cue {
     grid-column: 2;
     grid-row: 1 / span 2;
   }
