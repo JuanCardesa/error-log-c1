@@ -64,6 +64,7 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [discardError, setDiscardError] = useState<string | null>(null);
   const [savedNote, setSavedNote] = useState(note);
   const savedRef = useRef(note);
@@ -415,8 +416,8 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
         <BackLink href={readerHref} label={savedNote === undefined ? t.nav.notebook : n.reading} onClick={(event) => {
           if (finishingRef.current) { event.preventDefault(); return; }
           if (pendingChanges || issueRef.current !== null) {
-            if (!window.confirm(n.leaveConfirm)) event.preventDefault();
-            else draft.flushNow();
+            event.preventDefault();
+            setConfirmLeave(true);
           } else if (savedRef.current !== undefined && !editorLocked) {
             event.preventDefault();
             void finishEditing();
@@ -563,6 +564,11 @@ export function NotebookEditor({ note, folders, initialFolderId = null, requeste
           else setDiscardError(n.discardFailed);
         }} onCancel={() => { setConfirmDiscard(false); setDiscardError(null); }}>
         {n.discardSelectedBody}
+      </ConfirmDialog>
+      <ConfirmDialog open={confirmLeave} title={n.leaveTitle} confirmLabel={n.leaveAnyway}
+        onConfirm={() => { setConfirmLeave(false); draft.flushNow(); router.push(readerHref); }}
+        onCancel={() => { setConfirmLeave(false); }}>
+        {n.leaveConfirm}
       </ConfirmDialog>
       <ConfirmDialog open={confirmLoadRemote} title={n.loadSaved} confirmLabel={n.loadSaved}
         onConfirm={loadSavedVersion} onCancel={() => { setConfirmLoadRemote(false); }}>

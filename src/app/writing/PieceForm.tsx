@@ -33,7 +33,7 @@ export interface PieceOption {
 export type WritingEditablePiece = Pick<WritingRow,
   | 'id' | 'sessionId' | 'date' | 'genre' | 'status' | 'correctedOn' | 'teacherComment' | 'personalNotes'
   | 'wordCount' | 'minutes' | 'timed' | 'rewriteOf' | 'corrector'
-  | 'bandContent' | 'bandCommunicative' | 'bandOrganisation' | 'bandLanguage'
+  | 'bandContent' | 'bandCommunicative' | 'bandOrganisation' | 'bandLanguage' | 'updatedAt'
 >;
 
 export function WritingDrawer({ open, onClose, originals, editing, editingSession, transcribed, today }: {
@@ -95,6 +95,8 @@ export function WritingDrawer({ open, onClose, originals, editing, editingSessio
     >
       <form id={formId} ref={formRef} action={formAction} onReset={onReset} className={session.form}>
         <input type="hidden" name="id" value={editing.id} />
+        {/* La versión que se abrió: si otra pestaña guarda antes, el servidor lo rechaza. */}
+        <input type="hidden" name="updatedAt" value={editing.updatedAt} />
 
         <div className={session.group}>
           <span className={session.groupLabel}>{t.errors.session}</span>

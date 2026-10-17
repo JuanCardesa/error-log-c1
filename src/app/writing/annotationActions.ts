@@ -115,14 +115,19 @@ export async function restoreWritingAnnotationAction(rawToken: unknown): Promise
   return { ok: true, message: t.writing.reading.annotationRestored };
 }
 
-export async function updateWritingTextAction(rawId: unknown, rawText: unknown): Promise<AnnotationActionResult> {
+export async function updateWritingTextAction(
+  rawId: unknown, rawText: unknown, rawRevision: unknown,
+): Promise<AnnotationActionResult> {
   const t = await getT();
   const id = z.number().int().positive().safeParse(rawId);
+  const revision = z.number().int().positive().safeParse(rawRevision);
   const parsedText = z.string().max(WRITING_LIMITS.text).transform(normalizeWritingText)
     .pipe(z.string().min(1).max(WRITING_LIMITS.text)).safeParse(rawText);
-  if (!id.success || !parsedText.success) return { ok: false, message: t.writing.reading.transcriptionInvalid };
-  const result = updateWritingText(getDb(), id.data, parsedText.data, new Date());
-  if (!result.ok) return { ok: false, message: t.writing.reading.writingMissing };
+  if (!id.success || !parsedText.success || !revision.success) return { ok: false, message: t.writing.reading.transcriptionInvalid };
+  const result = updateWritingText(getDb(), id.data, parsedText.data, new Date(), revision.data);
+  if (!result.ok) {
+    return { ok: false, message: result.reason === 'conflict' ? t.writing.reading.transcriptionConflict : t.writing.reading.writingMissing };
+  }
   refreshWriting();
   return { ok: true, message: t.writing.reading.transcriptionSaved };
 }

@@ -101,8 +101,9 @@ function exactAnchor(annotation: Annotation, text: string): StudyAnchor | null {
     && anchor.end > anchor.start && text.slice(anchor.start, anchor.end) === anchor.exact ? anchor : null;
 }
 
-export function WritingReadingView({ pieceId, text, annotations, labels }: {
+export function WritingReadingView({ pieceId, revision, text, annotations, labels }: {
   readonly pieceId: number;
+  readonly revision: number;
   readonly text: string;
   readonly annotations: readonly Annotation[];
   readonly labels: Labels;
@@ -452,7 +453,7 @@ export function WritingReadingView({ pieceId, text, annotations, labels }: {
 
   if (mode === 'transcribe') {
     return (
-      <WritingTranscriptionEditor pieceId={pieceId} initialText={text} controlled onDone={() => setMode('read')} labels={{
+      <WritingTranscriptionEditor pieceId={pieceId} revision={revision} initialText={text} controlled onDone={() => setMode('read')} labels={{
         correct: labels.correctTranscription, save: labels.saveTranscription, transcription: labels.transcription,
         saving: labels.saving, cancel: labels.cancel, hint: labels.transcriptionHint,
       }} />

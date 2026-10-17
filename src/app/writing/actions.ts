@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { getDb } from '@/lib/db/client';
-import { getSession, getWritingPiece, listWritingPieces, updateWritingPiece } from '@/lib/db/repo';
+import { getSession, getWritingPiece, getWritingPieceUpdatedAt, listWritingPieces, updateWritingPiece } from '@/lib/db/repo';
 import { formErrors } from '@/lib/i18n/zod';
 import { toIsoDate } from '@/lib/time/dates';
 import { checkRewriteLink } from '@/lib/validation/rewriteChain';
@@ -41,6 +41,7 @@ export async function saveWritingPieceAction(
   const db = getDb();
   const t = await getT();
   const editingId = integer(form, 'id');
+  const openedAt = text(form, 'updatedAt');
 
   // Solo se editan textos guardados: los nuevos entran por la importación, con su texto.
   if (editingId === null || !isValidId(editingId)) {
@@ -64,6 +65,10 @@ export async function saveWritingPieceAction(
       const original = getWritingPiece(db, editingId);
       if (original === null) {
         return { ok: false, fieldErrors: {}, message: t.writing.gone };
+      }
+      // Un formulario abierto antes del último guardado restauraría campos ya cambiados.
+      if (getWritingPieceUpdatedAt(db, editingId) !== openedAt) {
+        return { ok: false, fieldErrors: {}, message: t.writing.staleForm };
       }
       if (original.sessionId !== parsed.data.sessionId) {
         return { ok: false, fieldErrors: { sessionId: [t.writing.sessionLocked] }, message: null };

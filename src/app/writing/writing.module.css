@@ -394,6 +394,25 @@
   }
 }
 
+/* Sin ratón no hay «pasar por encima»: en modo anotar el + está siempre a la vista, y las
+   dos marcas del margen llegan a 44 px de alto sin cambiar de tamaño visible. */
+@media (pointer: coarse) {
+  .text[data-reading-mode='annotate'] .addParagraphNote {
+    opacity: 1;
+  }
+
+  .text p:has(.paragraphNote) .addParagraphNote {
+    top: 48px;
+  }
+
+  .paragraphNote::after,
+  .addParagraphNote::after {
+    content: '';
+    position: absolute;
+    inset: -11px -9px;
+  }
+}
+
 @media (hover: hover) {
   .addParagraphNote:hover {
     border-color: var(--color-control);

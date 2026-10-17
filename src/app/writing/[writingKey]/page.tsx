@@ -132,13 +132,13 @@ export default async function WritingReaderPage({ params, searchParams }: {
           <div className={styles.noText}>
             <p className={styles.noTextTitle}>{w.noTranscription}</p>
             <p>{w.noTextBody}</p>
-            <WritingTranscriptionEditor pieceId={piece.id} initialText="" labels={{
+            <WritingTranscriptionEditor pieceId={piece.id} revision={piece.textRevision} initialText="" labels={{
               correct: w.reading.addTranscription, save: w.reading.saveTranscription,
               transcription: w.reading.transcription, saving: w.reading.saving, cancel: t.common.cancel,
             }} />
           </div>
         ) : (
-          <WritingReadingView pieceId={piece.id} text={text} annotations={annotations} labels={{
+          <WritingReadingView pieceId={piece.id} revision={piece.textRevision} text={text} annotations={annotations} labels={{
               closeAnnotations: w.reading.closeAnnotations, annotationPanel: w.reading.annotationPanel,
               filterType: w.reading.filterType, kindLabel: w.reading.kindLabel, focusLabel: w.reading.focusLabel,
               allKinds: w.reading.allKinds, pendingOnly: w.reading.pendingOnly,

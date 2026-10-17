@@ -376,6 +376,11 @@ export function getWritingPiece(db: Db, id: number): WritingPieceRow | null {
   return db.select().from(writingPiece).where(eq(writingPiece.id, id)).get() ?? null;
 }
 
+/** La marca de la última escritura: sirve de versión a quien edita los datos del texto. */
+export function getWritingPieceUpdatedAt(db: Db, id: number): string | null {
+  return db.select({ updatedAt: writingPiece.updatedAt }).from(writingPiece).where(eq(writingPiece.id, id)).get()?.updatedAt ?? null;
+}
+
 /** Con corrector o alguna banda el texto ya está corregido; es el criterio de la migración 0012. */
 function isAssessed(input: WritingPieceInput): boolean {
   return input.corrector !== null

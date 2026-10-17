@@ -77,8 +77,8 @@ test('conserva el borrador al salir, volver y recargar antes de terminar', async
   await page.getByRole('textbox', { name: 'Título' }).fill('Borrador de navegación');
   await page.getByRole('textbox', { name: 'Contenido Markdown' }).fill('Texto pendiente de confirmar.');
   await page.getByRole('textbox', { name: /Etiquetas/u }).fill('duplicada, duplicada');
-  page.on('dialog', (dialog) => { void dialog.accept(); });
   await page.getByRole('link', { name: 'Volver a Notebook' }).click();
+  await page.getByRole('alertdialog', { name: 'Salir del editor' }).getByRole('button', { name: 'Salir de todos modos' }).click();
   await expect(page.getByRole('heading', { name: 'Borradores locales pendientes (1)' })).toBeVisible();
   await page.getByRole('link', { name: 'Abrir borrador' }).click();
   await page.getByRole('button', { name: 'Recuperar borrador' }).click();

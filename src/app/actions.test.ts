@@ -8,6 +8,8 @@ import { MIGRATIONS_DIR } from '@/lib/db/paths';
 import { deleteError, deleteSession, deleteWritingPiece, getError, getSession, listErrors, listWritingPieces } from '@/lib/db/repo';
 import { linkAnkiNote } from '@/lib/db/ankiRepo';
 import { seed } from '@/lib/db/seed';
+import { writingPiece } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 import { addErrorAction, createSessionAction, deleteErrorAction, updateErrorAction, updateSessionAction } from './registrar/actions';
 import { EMPTY_STATE } from './registrar/formState';
 import { importErrorsAction } from './registrar/importActions';
@@ -266,6 +268,19 @@ describe('guardar Writing con datos cambiados en otra pestaña', () => {
     const result = await saveWritingPieceAction(EMPTY_STATE, form(original));
     expect(result.ok).toBe(false);
     expect(result.message).toContain('ya no existe');
+  });
+
+  it('rechaza un formulario abierto antes del último guardado de otra pestaña', async () => {
+    const original = listWritingPieces(db)[0];
+    if (original === undefined) throw new Error('Falta Writing en el seed');
+    db.update(writingPiece).set({ updatedAt: '2026-01-01T00:00:00.000Z' }).where(eq(writingPiece.id, original.id)).run();
+    const opened = { ...original, updatedAt: '2026-01-01T00:00:00.000Z' };
+    expect((await saveWritingPieceAction(EMPTY_STATE, form({ ...opened, personalNotes: 'Primera pestaña' }))).ok).toBe(true);
+    const stale = await saveWritingPieceAction(EMPTY_STATE, form({ ...opened, personalNotes: 'Segunda pestaña' }));
+    expect(stale.ok).toBe(false);
+    expect(stale.message).toContain('otra pestaña');
+    expect(db.select({ notes: writingPiece.personalNotes }).from(writingPiece).where(eq(writingPiece.id, original.id)).get())
+      .toEqual({ notes: 'Primera pestaña' });
   });
 
   it('no convierte una edicion con identificador invalido en una creacion', async () => {
