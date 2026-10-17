@@ -298,7 +298,7 @@ preparation, and that's what it's used for.
   sessions count in the general reports and rules but don't have a dedicated view.
 - Accuracy reflects the answers you record. It isn't an official Cambridge score or a
   prediction of your result.
-- The interface is in English, with Spanish in **Settings → Language**, and is designed for
+- The interface is in English, with Spanish in **More → Language**, and is designed for
   one person on a computer. Changing the language never touches your notes or errors.
   Layouts adapt to narrow screens, but the documented setup is accessible only from the
   computer running it; it does not provide access from a separate phone.
